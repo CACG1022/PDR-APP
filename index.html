@@ -1,0 +1,213 @@
+<script>
+let map;
+let controlCapas;
+
+let postes = JSON.parse(localStorage.getItem("postes")) || [];
+let postesPendientes = JSON.parse(localStorage.getItem("postesPendientes")) || [];
+
+// =============================
+// CONFIG BACKEND
+// =============================
+const API_URL = "https://tu-backend.com/api/postes"; 
+// ejemplo local: http://localhost:8000/api/postes
+
+// =============================
+// UTILIDADES STORAGE
+// =============================
+function guardarStorage() {
+    localStorage.setItem("postes", JSON.stringify(postes));
+    localStorage.setItem("postesPendientes", JSON.stringify(postesPendientes));
+}
+
+// =============================
+// DETECTAR ONLINE / OFFLINE
+// =============================
+function actualizarEstado() {
+    const estado = document.getElementById("status");
+
+    if (navigator.onLine) {
+        estado.textContent = `🟢 Online | Pendientes: ${postesPendientes.length}`;
+        estado.className = "status online";
+    } else {
+        estado.textContent = `🔴 Offline | Pendientes: ${postesPendientes.length}`;
+        estado.className = "status offline";
+    }
+}
+
+window.addEventListener("online", async () => {
+    actualizarEstado();
+    await sincronizarPendientes();
+});
+
+window.addEventListener("offline", actualizarEstado);
+
+// =============================
+// INICIALIZAR MAPA
+// =============================
+function initMap() {
+    map = L.map("map").setView([4.1420, -73.6266], 14);
+
+    const osm = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { maxZoom: 19 }
+    );
+
+    const offlineLayer = L.tileLayer(
+        "capas/tiles/{z}/{x}/{y}.png",
+        { maxZoom: 19 }
+    );
+
+    if (navigator.onLine) {
+        osm.addTo(map);
+    } else {
+        offlineLayer.addTo(map);
+    }
+
+    controlCapas = L.control.layers({
+        "Online": osm,
+        "Offline": offlineLayer
+    }).addTo(map);
+
+    cargarCapaInicial();
+    cargarPostesGuardados();
+
+    map.on("click", guardarPoste);
+}
+
+// =============================
+// CARGAR GEOJSON
+// =============================
+function cargarCapaInicial() {
+    fetch("capas/base.geojson")
+        .then(res => res.json())
+        .then(data => {
+            const capa = L.geoJSON(data, {
+                style: function(feature) {
+                    if (feature.geometry.type.includes("Line")) {
+                        return { color: "blue", weight: 3 };
+                    }
+
+                    if (feature.geometry.type.includes("Polygon")) {
+                        return { color: "green", fillOpacity: 0.2 };
+                    }
+                }
+            });
+
+            capa.addTo(map);
+            controlCapas.addOverlay(capa, "Cartografía");
+        })
+        .catch(() => {
+            console.log("No se pudo cargar base.geojson desde red; se espera caché.");
+        });
+}
+
+// =============================
+// GUARDAR POSTE
+// =============================
+async function guardarPoste(e) {
+    const punto = {
+        id_local: crypto.randomUUID(),
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+        fecha: new Date().toISOString(),
+        sincronizado: false
+    };
+
+    // Guardar siempre localmente
+    postes.push(punto);
+    postesPendientes.push(punto);
+    guardarStorage();
+
+    L.marker([punto.lat, punto.lng])
+        .addTo(map)
+        .bindPopup("Poste guardado localmente");
+
+    actualizarEstado();
+
+    // Si hay internet, intenta sincronizar de una vez
+    if (navigator.onLine) {
+        await sincronizarPendientes();
+    }
+}
+
+// =============================
+// CARGAR POSTES GUARDADOS
+// =============================
+function cargarPostesGuardados() {
+    postes.forEach(p => {
+        const texto = p.sincronizado ? "Poste sincronizado" : "Poste pendiente";
+        L.marker([p.lat, p.lng]).addTo(map).bindPopup(texto);
+    });
+}
+
+// =============================
+// ENVIAR UN POSTE AL BACKEND
+// =============================
+async function enviarPosteAlBackend(poste) {
+    const respuesta = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(poste)
+    });
+
+    if (!respuesta.ok) {
+        throw new Error(`Error HTTP ${respuesta.status}`);
+    }
+
+    return await respuesta.json();
+}
+
+// =============================
+// SINCRONIZAR COLA PENDIENTE
+// =============================
+async function sincronizarPendientes() {
+    if (!navigator.onLine || postesPendientes.length === 0) {
+        actualizarEstado();
+        return;
+    }
+
+    const pendientesActuales = [...postesPendientes];
+    const pendientesNoEnviados = [];
+
+    for (const poste of pendientesActuales) {
+        try {
+            await enviarPosteAlBackend(poste);
+
+            // marcar como sincronizado dentro de "postes"
+            const idx = postes.findIndex(p => p.id_local === poste.id_local);
+            if (idx !== -1) {
+                postes[idx].sincronizado = true;
+            }
+
+            console.log("Sincronizado:", poste.id_local);
+
+        } catch (error) {
+            console.error("No se pudo sincronizar:", poste.id_local, error);
+            pendientesNoEnviados.push(poste);
+        }
+    }
+
+    postesPendientes = pendientesNoEnviados;
+    guardarStorage();
+    actualizarEstado();
+}
+
+// =============================
+// SERVICE WORKER
+// =============================
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker registrado"))
+        .catch(err => console.error("SW error:", err));
+}
+
+actualizarEstado();
+initMap();
+
+// intenta sincronizar al abrir
+if (navigator.onLine) {
+    sincronizarPendientes();
+}
+</script>
