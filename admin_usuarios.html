@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administración de usuarios - PDR APP</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#071a1d;
+      --bg2:#0b2b30;
+      --card:rgba(255,255,255,.06);
+      --line:rgba(255,255,255,.1);
+      --text:#ecfffb;
+      --muted:#9ec0bd;
+      --green:#32d399;
+      --green2:#1ea672;
+      --danger:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      min-height:100vh;
+      color:var(--text);
+      background:linear-gradient(135deg,var(--bg),var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .card{
+      width:100%;
+      max-width:720px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 20px 50px rgba(0,0,0,.35);
+      backdrop-filter:blur(12px);
+      overflow:hidden;
+    }
+    .header{
+      padding:22px 24px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+    }
+    .header h1{
+      margin:0;
+      font-size:22px;
+    }
+    .header p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .content{
+      padding:24px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .field.full{
+      grid-column:1 / -1;
+    }
+    label{
+      font-size:13px;
+      font-weight:bold;
+    }
+    input, select{
+      width:100%;
+      height:46px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:0 14px;
+      outline:none;
+    }
+    input::placeholder{
+      color:#b7d0cd;
+    }
+    select option{
+      color:#111;
+    }
+    .actions{
+      display:flex;
+      gap:12px;
+      margin-top:18px;
+    }
+    button{
+      height:46px;
+      border:none;
+      border-radius:12px;
+      padding:0 18px;
+      font-weight:bold;
+      cursor:pointer;
+    }
+    .primary{
+      background:linear-gradient(90deg,var(--green2),var(--green));
+      color:#04241d;
+      flex:1;
+    }
+    .secondary{
+      background:rgba(255,255,255,.08);
+      color:var(--text);
+    }
+    .msg{
+      margin-top:14px;
+      min-height:20px;
+      font-size:14px;
+    }
+    .ok{ color:#7ff0bf; }
+    .err{ color:var(--danger); }
+    .muted{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:10px;
+      line-height:1.5;
+    }
+    @media (max-width: 700px){
+      .grid{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1>Crear usuario</h1>
+        <p>PDR APP · Administración de técnicos, coordinadores y admin</p>
+      </div>
+      <button id="logoutBtn" class="secondary" type="button">Salir</button>
+    </div>
+
+    <div class="content">
+      <div class="grid">
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" type="text" placeholder="Nombre completo" />
+        </div>
+
+        <div class="field">
+          <label for="correo">Correo</label>
+          <input id="correo" type="email" placeholder="correo@dominio.com" />
+        </div>
+
+        <div class="field">
+          <label for="password">Contraseña temporal</label>
+          <input id="password" type="password" placeholder="Mínimo 6 caracteres" />
+        </div>
+
+        <div class="field">
+          <label for="perfil">Perfil</label>
+          <select id="perfil">
+            <option value="">Seleccione perfil</option>
+            <option value="admin">Admin</option>
+            <option value="coordinador">Coordinador</option>
+            <option value="tecnico">Tecnico</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="ciudad">Ciudad</label>
+          <input id="ciudad" type="text" placeholder="Ciudad" />
+        </div>
+
+        <div class="field">
+          <label for="proyecto">Proyecto</label>
+          <select id="proyecto">
+            <option value="">Cargando proyectos...</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="poligono">Polígono</label>
+          <select id="poligono">
+            <option value="">Seleccione un proyecto primero</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="limpiarBtn" class="secondary" type="button">Limpiar</button>
+        <button id="crearBtn" class="primary" type="button">Crear usuario</button>
+      </div>
+
+      <div id="msg" class="msg"></div>
+      <div class="muted">
+        Este panel debe usar una sesión iniciada de un usuario administrador.
+        La creación del usuario se hace en una Edge Function segura.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://hqvxtynigoxxuscmwjde.supabase.co";
+    const SUPABASE_ANON_KEY = "REEMPLAZA_AQUI_TU_ANON_KEY";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const nombreEl = document.getElementById("nombre");
+    const correoEl = document.getElementById("correo");
+    const passwordEl = document.getElementById("password");
+    const perfilEl = document.getElementById("perfil");
+    const ciudadEl = document.getElementById("ciudad");
+    const proyectoEl = document.getElementById("proyecto");
+    const poligonoEl = document.getElementById("poligono");
+    const msgEl = document.getElementById("msg");
+    const crearBtn = document.getElementById("crearBtn");
+    const limpiarBtn = document.getElementById("limpiarBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    function setMsg(text, type = "") {
+      msgEl.className = "msg";
+      if (type) msgEl.classList.add(type);
+      msgEl.textContent = text;
+    }
+
+    function limpiarFormulario() {
+      nombreEl.value = "";
+      correoEl.value = "";
+      passwordEl.value = "";
+      perfilEl.value = "";
+      ciudadEl.value = "";
+      proyectoEl.value = "";
+      poligonoEl.innerHTML = `<option value="">Seleccione un proyecto primero</option>`;
+      setMsg("");
+    }
+
+    async function validarSesion() {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        window.location.href = "login.html";
+        return null;
+      }
+      return data.session;
+    }
+
+    async function cargarProyectos() {
+      const { data, error } = await supabase
+        .from("proyectos")
+        .select("id,nombre")
+        .order("nombre");
+
+      if (error) {
+        setMsg("No se pudieron cargar los proyectos: " + error.message, "err");
+        proyectoEl.innerHTML = `<option value="">Error cargando proyectos</option>`;
+        return;
+      }
+
+      proyectoEl.innerHTML = `<option value="">Seleccione proyecto</option>`;
+      data.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.nombre;
+        proyectoEl.appendChild(opt);
+      });
+    }
+
+    async function cargarPoligonos(proyectoId) {
+      poligonoEl.innerHTML = `<option value="">Cargando polígonos...</option>`;
+
+      if (!proyectoId) {
+        poligonoEl.innerHTML = `<option value="">Seleccione un proyecto primero</option>`;
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("poligonos")
+        .select("id,nombre,proyecto_id")
+        .eq("proyecto_id", proyectoId)
+        .order("nombre");
+
+      if (error) {
+        setMsg("No se pudieron cargar los polígonos: " + error.message, "err");
+        poligonoEl.innerHTML = `<option value="">Error cargando polígonos</option>`;
+        return;
+      }
+
+      poligonoEl.innerHTML = `<option value="">Seleccione polígono</option>`;
+      data.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.nombre;
+        poligonoEl.appendChild(opt);
+      });
+    }
+
+    async function crearUsuario() {
+      const nombre = nombreEl.value.trim();
+      const correo = correoEl.value.trim().toLowerCase();
+      const password = passwordEl.value.trim();
+      const perfil = perfilEl.value;
+      const ciudad = ciudadEl.value.trim();
+      const proyecto_id = proyectoEl.value;
+      const poligono_id = poligonoEl.value;
+
+      if (!nombre || !correo || !password || !perfil || !ciudad || !proyecto_id || !poligono_id) {
+        setMsg("Completa todos los campos.", "err");
+        return;
+      }
+
+      if (password.length < 6) {
+        setMsg("La contraseña debe tener al menos 6 caracteres.", "err");
+        return;
+      }
+
+      crearBtn.disabled = true;
+      crearBtn.textContent = "Creando...";
+      setMsg("");
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+
+        if (!accessToken) {
+          throw new Error("Tu sesión expiró. Vuelve a iniciar sesión.");
+        }
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-user-admin`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            nombre,
+            correo,
+            password,
+            perfil,
+            ciudad,
+            proyecto_id,
+            poligono_id
+          })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "No se pudo crear el usuario.");
+        }
+
+        setMsg("Usuario creado correctamente.", "ok");
+        limpiarFormulario();
+        await cargarProyectos();
+      } catch (err) {
+        setMsg(err.message || "Ocurrió un error inesperado.", "err");
+      } finally {
+        crearBtn.disabled = false;
+        crearBtn.textContent = "Crear usuario";
+      }
+    }
+
+    proyectoEl.addEventListener("change", () => cargarPoligonos(proyectoEl.value));
+    crearBtn.addEventListener("click", crearUsuario);
+    limpiarBtn.addEventListener("click", limpiarFormulario);
+    logoutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.href = "login.html";
+    });
+
+    (async function init() {
+      await validarSesion();
+      await cargarProyectos();
+      poligonoEl.innerHTML = `<option value="">Seleccione un proyecto primero</option>`;
+    })();
+  </script>
+</body>
+</html>
