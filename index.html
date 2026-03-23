@@ -608,32 +608,71 @@
       limpiarFormularioVisual();
     }
 
-    function cargarGeoJSON() {
-      fetch("capas/base.geojson")
-        .then(res => res.json())
-        .then(data => {
-          geoJsonLayer = L.geoJSON(data, {
-            style: function(feature) {
-              if (!feature.geometry) return {};
-              const type = feature.geometry.type;
+   function cargarCapas() {
 
-              if (type.includes("Line")) {
-                return { color: "blue", weight: 3 };
-              }
+  const overlays = {};
 
-              if (type.includes("Polygon")) {
-                return { color: "green", weight: 2, fillOpacity: 0.2 };
-              }
+  // =========================
+  // CAPA BASE
+  // =========================
+  fetch("capas/base.geojson")
+    .then(res => res.json())
+    .then(data => {
 
-              return {};
-            }
-          }).addTo(map);
-        })
-        .catch(() => {
-          console.log("No se pudo cargar capas/base.geojson");
-        });
-    }
+      const capaBase = L.geoJSON(data, {
+        style: function(feature) {
+          if (!feature.geometry) return {};
 
+          const type = feature.geometry.type;
+
+          if (type.includes("Line")) {
+            return { color: "blue", weight: 3 };
+          }
+
+          if (type.includes("Polygon")) {
+            return { color: "green", weight: 2, fillOpacity: 0.2 };
+          }
+
+          return {};
+        }
+      }).addTo(map);
+
+      overlays["Base"] = capaBase;
+
+    });
+
+  // =========================
+  // CAPA LOTEO
+  // =========================
+  fetch("capas/loteo.geojson")
+    .then(res => res.json())
+    .then(data => {
+
+      const capaLoteo = L.geoJSON(data, {
+        style: {
+          color: "#16a34a",
+          weight: 2,
+          fillOpacity: 0.3
+        },
+
+        onEachFeature: function(feature, layer) {
+          layer.bindPopup(`
+            <b>Lote:</b> ${feature.properties?.nombre || "Sin nombre"}
+          `);
+        }
+      }).addTo(map);
+
+      overlays["Loteo"] = capaLoteo;
+
+    });
+
+  // =========================
+  // CONTROL DE CAPAS
+  // =========================
+  setTimeout(() => {
+    L.control.layers(null, overlays).addTo(map);
+  }, 500);
+}
     function pintarRegistrosGuardados() {
       registros.forEach(reg => {
         const marker = L.marker(
@@ -693,7 +732,7 @@
 
       osm.addTo(map);
 
-      cargarGeoJSON();
+      cargarCapas();
       pintarRegistrosGuardados();
 
       map.on("click", function(e) {
