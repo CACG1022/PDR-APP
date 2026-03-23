@@ -1,50 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIS Campo</title>
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    height: 100vh;
+    width: 100vw;
+}
+
+.status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    color: white;
+    font-family: Arial;
+}
+
+.online { background: green; }
+.offline { background: red; }
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+<div id="status" class="status">Cargando...</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
+// =============================
+// VARIABLES
+// =============================
 let map;
-let controlCapas;
 
 let postes = JSON.parse(localStorage.getItem("postes")) || [];
-let postesPendientes = JSON.parse(localStorage.getItem("postesPendientes")) || [];
+let pendientes = JSON.parse(localStorage.getItem("pendientes")) || [];
+
+// ⚠️ Dejar vacío si no tienes backend aún
+const API_URL = "";
 
 // =============================
-// CONFIG BACKEND
+// GUARDAR STORAGE
 // =============================
-const API_URL = "https://tu-backend.com/api/postes"; 
-// ejemplo local: http://localhost:8000/api/postes
-
-// =============================
-// UTILIDADES STORAGE
-// =============================
-function guardarStorage() {
+function saveStorage() {
     localStorage.setItem("postes", JSON.stringify(postes));
-    localStorage.setItem("postesPendientes", JSON.stringify(postesPendientes));
+    localStorage.setItem("pendientes", JSON.stringify(pendientes));
 }
 
 // =============================
-// DETECTAR ONLINE / OFFLINE
+// ESTADO ONLINE/OFFLINE
 // =============================
-function actualizarEstado() {
-    const estado = document.getElementById("status");
+function updateStatus() {
+    const el = document.getElementById("status");
 
     if (navigator.onLine) {
-        estado.textContent = `🟢 Online | Pendientes: ${postesPendientes.length}`;
-        estado.className = "status online";
+        el.textContent = `🟢 Online (${pendientes.length} pendientes)`;
+        el.className = "status online";
     } else {
-        estado.textContent = `🔴 Offline | Pendientes: ${postesPendientes.length}`;
-        estado.className = "status offline";
+        el.textContent = `🔴 Offline (${pendientes.length} pendientes)`;
+        el.className = "status offline";
     }
 }
 
-window.addEventListener("online", async () => {
-    actualizarEstado();
-    await sincronizarPendientes();
-});
-
-window.addEventListener("offline", actualizarEstado);
+window.addEventListener("online", syncData);
+window.addEventListener("offline", updateStatus);
 
 // =============================
-// INICIALIZAR MAPA
+// MAPA
 // =============================
 function initMap() {
+
     map = L.map("map").setView([4.1420, -73.6266], 14);
 
     const osm = L.tileLayer(
@@ -52,162 +94,109 @@ function initMap() {
         { maxZoom: 19 }
     );
 
-    const offlineLayer = L.tileLayer(
-        "capas/tiles/{z}/{x}/{y}.png",
-        { maxZoom: 19 }
-    );
+    osm.addTo(map);
 
-    if (navigator.onLine) {
-        osm.addTo(map);
-    } else {
-        offlineLayer.addTo(map);
-    }
-
-    controlCapas = L.control.layers({
-        "Online": osm,
-        "Offline": offlineLayer
-    }).addTo(map);
-
-    cargarCapaInicial();
-    cargarPostesGuardados();
-
-    map.on("click", guardarPoste);
-}
-
-// =============================
-// CARGAR GEOJSON
-// =============================
-function cargarCapaInicial() {
+    // cargar capa base
     fetch("capas/base.geojson")
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
-            const capa = L.geoJSON(data, {
-                style: function(feature) {
-                    if (feature.geometry.type.includes("Line")) {
-                        return { color: "blue", weight: 3 };
-                    }
-
-                    if (feature.geometry.type.includes("Polygon")) {
-                        return { color: "green", fillOpacity: 0.2 };
-                    }
-                }
-            });
-
-            capa.addTo(map);
-            controlCapas.addOverlay(capa, "Cartografía");
+            L.geoJSON(data).addTo(map);
         })
         .catch(() => {
-            console.log("No se pudo cargar base.geojson desde red; se espera caché.");
+            console.log("GeoJSON no disponible (offline)");
         });
+
+    // cargar postes guardados
+    postes.forEach(p => {
+        L.marker([p.lat, p.lng]).addTo(map);
+    });
+
+    // evento click
+    map.on("click", addPoint);
 }
 
 // =============================
-// GUARDAR POSTE
+// AGREGAR PUNTO
 // =============================
-async function guardarPoste(e) {
-    const punto = {
-        id_local: crypto.randomUUID(),
+function addPoint(e) {
+
+    const p = {
+        id: Date.now(),
         lat: e.latlng.lat,
         lng: e.latlng.lng,
-        fecha: new Date().toISOString(),
-        sincronizado: false
+        synced: false
     };
 
-    // Guardar siempre localmente
-    postes.push(punto);
-    postesPendientes.push(punto);
-    guardarStorage();
+    postes.push(p);
+    pendientes.push(p);
 
-    L.marker([punto.lat, punto.lng])
+    saveStorage();
+
+    L.marker([p.lat, p.lng])
         .addTo(map)
-        .bindPopup("Poste guardado localmente");
+        .bindPopup("Guardado");
 
-    actualizarEstado();
+    updateStatus();
 
-    // Si hay internet, intenta sincronizar de una vez
     if (navigator.onLine) {
-        await sincronizarPendientes();
+        syncData();
     }
 }
 
 // =============================
-// CARGAR POSTES GUARDADOS
+// SINCRONIZACIÓN
 // =============================
-function cargarPostesGuardados() {
-    postes.forEach(p => {
-        const texto = p.sincronizado ? "Poste sincronizado" : "Poste pendiente";
-        L.marker([p.lat, p.lng]).addTo(map).bindPopup(texto);
-    });
-}
+async function syncData() {
 
-// =============================
-// ENVIAR UN POSTE AL BACKEND
-// =============================
-async function enviarPosteAlBackend(poste) {
-    const respuesta = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(poste)
-    });
+    updateStatus();
 
-    if (!respuesta.ok) {
-        throw new Error(`Error HTTP ${respuesta.status}`);
-    }
+    if (!navigator.onLine || pendientes.length === 0) return;
 
-    return await respuesta.json();
-}
-
-// =============================
-// SINCRONIZAR COLA PENDIENTE
-// =============================
-async function sincronizarPendientes() {
-    if (!navigator.onLine || postesPendientes.length === 0) {
-        actualizarEstado();
+    // si no hay backend, solo limpia pendientes
+    if (!API_URL) {
+        pendientes = [];
+        saveStorage();
+        updateStatus();
         return;
     }
 
-    const pendientesActuales = [...postesPendientes];
-    const pendientesNoEnviados = [];
+    const nuevos = [];
 
-    for (const poste of pendientesActuales) {
+    for (let p of pendientes) {
         try {
-            await enviarPosteAlBackend(poste);
+            await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(p)
+            });
 
-            // marcar como sincronizado dentro de "postes"
-            const idx = postes.findIndex(p => p.id_local === poste.id_local);
-            if (idx !== -1) {
-                postes[idx].sincronizado = true;
-            }
+            p.synced = true;
 
-            console.log("Sincronizado:", poste.id_local);
-
-        } catch (error) {
-            console.error("No se pudo sincronizar:", poste.id_local, error);
-            pendientesNoEnviados.push(poste);
+        } catch {
+            nuevos.push(p);
         }
     }
 
-    postesPendientes = pendientesNoEnviados;
-    guardarStorage();
-    actualizarEstado();
+    pendientes = nuevos;
+    saveStorage();
+    updateStatus();
 }
 
 // =============================
 // SERVICE WORKER
 // =============================
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js")
-        .then(() => console.log("Service Worker registrado"))
-        .catch(err => console.error("SW error:", err));
+    navigator.serviceWorker.register("service-worker.js");
 }
 
-actualizarEstado();
+// =============================
+// INIT
+// =============================
+updateStatus();
 initMap();
+syncData();
 
-// intenta sincronizar al abrir
-if (navigator.onLine) {
-    sincronizarPendientes();
-}
 </script>
+
+</body>
+</html>
