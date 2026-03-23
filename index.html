@@ -3,57 +3,170 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GIS Campo - Inventario de Postes</title>
+  <title>GIS Campo - Inventario</title>
 
   <link rel="manifest" href="manifest.json" />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
+    :root {
+      --primary: #2563eb;
+      --success: #0a8f2d;
+      --danger: #c62828;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe3ee;
+      --bg-soft: #f8fafc;
+      --panel-width: 430px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
       font-family: Arial, sans-serif;
+      color: var(--text);
     }
 
     #map {
-      height: 100vh;
       width: 100vw;
+      height: 100vh;
     }
 
     .status {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
+      top: 12px;
+      right: 12px;
+      z-index: 1200;
       padding: 10px 14px;
-      border-radius: 10px;
+      border-radius: 12px;
+      color: white;
       font-weight: bold;
-      color: #fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      user-select: none;
     }
 
     .online {
-      background: #0a8f2d;
+      background: var(--success);
     }
 
     .offline {
-      background: #c62828;
+      background: var(--danger);
+    }
+
+    .toolbar {
+      position: absolute;
+      top: 12px;
+      left: 56px;
+      z-index: 1200;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tool-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: white;
+      color: #111827;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .tool-btn.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .tool-btn:hover {
+      filter: brightness(0.98);
+    }
+
+    .crosshair {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: 34px;
+      height: 34px;
+      transform: translate(-50%, -50%);
+      z-index: 1100;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .crosshair::before,
+    .crosshair::after {
+      content: "";
+      position: absolute;
+      background: rgba(220, 38, 38, 0.95);
+      box-shadow: 0 0 0 1px white;
+    }
+
+    .crosshair::before {
+      width: 2px;
+      height: 34px;
+    }
+
+    .crosshair::after {
+      width: 34px;
+      height: 2px;
+    }
+
+    .crosshair-center {
+      width: 10px;
+      height: 10px;
+      border: 2px solid white;
+      border-radius: 50%;
+      background: rgba(220, 38, 38, 0.95);
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.95);
+    }
+
+    .crosshair-label {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 26px);
+      transform: translateX(-50%);
+      z-index: 1100;
+      pointer-events: none;
+      background: rgba(255,255,255,0.92);
+      color: #111827;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1900;
+      background: rgba(0,0,0,0.32);
+      display: none;
+    }
+
+    .overlay.show {
+      display: block;
     }
 
     .panel {
       position: fixed;
       top: 0;
-      right: -420px;
-      width: 420px;
-      max-width: 100%;
+      right: calc(-1 * var(--panel-width));
+      width: var(--panel-width);
+      max-width: 100vw;
       height: 100vh;
-      background: #fff;
       z-index: 2000;
-      box-shadow: -4px 0 16px rgba(0,0,0,0.18);
+      background: white;
+      box-shadow: -6px 0 20px rgba(0,0,0,0.18);
       transition: right 0.25s ease;
       overflow-y: auto;
     }
@@ -63,20 +176,20 @@
     }
 
     .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-      background: #2563eb;
-      color: white;
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 5;
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .panel-header h2 {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
     }
 
     .close-btn {
@@ -85,10 +198,12 @@
       color: white;
       font-size: 24px;
       cursor: pointer;
+      line-height: 1;
     }
 
     .panel-body {
       padding: 16px;
+      background: #fff;
     }
 
     .field {
@@ -97,37 +212,48 @@
 
     .field label {
       display: block;
-      font-weight: bold;
       margin-bottom: 6px;
-      color: #222;
+      font-weight: bold;
     }
 
     .field input,
     .field select {
       width: 100%;
-      box-sizing: border-box;
-      padding: 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
       font-size: 14px;
+      outline: none;
     }
 
     .field input[readonly] {
-      background: #f8fafc;
+      background: var(--bg-soft);
       color: #475569;
+    }
+
+    .field small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
     }
 
     .photo-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 12px;
     }
 
     .photo-box {
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
       padding: 10px;
-      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-soft);
+    }
+
+    .photo-box label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
 
     .photo-preview {
@@ -135,25 +261,30 @@
       height: 120px;
       object-fit: cover;
       margin-top: 8px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid #cbd5e1;
       background: #e5e7eb;
+      display: block;
     }
 
     .actions {
       display: flex;
       gap: 10px;
       margin-top: 18px;
+      position: sticky;
+      bottom: 0;
+      background: white;
+      padding-top: 8px;
     }
 
     .btn {
       flex: 1;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 12px;
+      font-weight: bold;
       cursor: pointer;
       font-size: 15px;
-      font-weight: bold;
     }
 
     .btn-primary {
@@ -168,26 +299,91 @@
 
     .hint {
       font-size: 12px;
-      color: #64748b;
-      margin-top: 4px;
+      color: var(--muted);
+      margin-top: 6px;
     }
 
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.35);
-      z-index: 1900;
-      display: none;
+    .leaflet-popup-content {
+      font-size: 13px;
+      line-height: 1.45;
     }
 
-    .overlay.show {
-      display: block;
+    .pin-wrap {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pin-number {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #2563eb;
+      color: white;
+      border: 2px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.30);
+    }
+
+    .pin-number.tipo-POSTE {
+      background: #2563eb;
+    }
+
+    .pin-number.tipo-CANALIZADO {
+      background: #059669;
+    }
+
+    .pin-number.tipo-C-AMERICANO {
+      background: #d97706;
+    }
+
+    .pin-number.tipo-CERCHA {
+      background: #dc2626;
+    }
+
+    .leaflet-div-icon {
+      background: transparent;
+      border: none;
+    }
+
+    @media (max-width: 640px) {
+      .toolbar {
+        left: 52px;
+        right: 12px;
+      }
+
+      .tool-btn {
+        padding: 9px 12px;
+        font-size: 13px;
+      }
+
+      .photo-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
+
   <div id="status" class="status">Cargando...</div>
+
+  <div class="toolbar">
+    <button id="btnMarkCenter" class="tool-btn primary" type="button">Marcar en la mira</button>
+    <button id="btnCenterMap" class="tool-btn" type="button">Centrar mapa</button>
+  </div>
+
+  <div class="crosshair" aria-hidden="true">
+    <div class="crosshair-center"></div>
+  </div>
+  <div class="crosshair-label">Mira de precisión</div>
 
   <div id="overlay" class="overlay"></div>
 
@@ -244,6 +440,7 @@
 
         <div class="field">
           <label>Fotografías obligatorias</label>
+
           <div class="photo-grid">
             <div class="photo-box">
               <label for="foto1">Foto 1</label>
@@ -269,6 +466,7 @@
               <img id="preview4" class="photo-preview" alt="Vista previa foto 4" />
             </div>
           </div>
+
           <div class="hint">Las 4 fotos son obligatorias para guardar el registro.</div>
         </div>
 
@@ -284,10 +482,9 @@
 
   <script>
     let map;
-    let baseLayer;
-    let geoJsonLayer;
+    let geoJsonLayer = null;
     let tempMarker = null;
-    let clickedLatLng = null;
+    let selectedLatLng = null;
 
     const STORAGE_KEY = "registrosPostes";
     const registros = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -298,6 +495,8 @@
 
     const fechaInput = document.getElementById("fecha");
     const consecutivoInput = document.getElementById("consecutivo");
+    const tipoInput = document.getElementById("tipo");
+    const alturaInput = document.getElementById("altura");
     const latitudeInput = document.getElementById("latitude");
     const longitudeInput = document.getElementById("longitude");
 
@@ -315,8 +514,12 @@
       document.getElementById("preview4")
     ];
 
+    const btnMarkCenter = document.getElementById("btnMarkCenter");
+    const btnCenterMap = document.getElementById("btnCenterMap");
+
     function actualizarEstado() {
       const estado = document.getElementById("status");
+
       if (navigator.onLine) {
         estado.textContent = "🟢 Online";
         estado.className = "status online";
@@ -338,16 +541,58 @@
     }
 
     function siguienteConsecutivo() {
-      return registros.length + 1;
+      if (registros.length === 0) return 1;
+      return Math.max(...registros.map(r => Number(r.consecutivo) || 0)) + 1;
     }
 
     function guardarRegistros() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
     }
 
+    function normalizarTipoParaClase(tipo) {
+      return String(tipo)
+        .replace(/\./g, "")
+        .replace(/\s+/g, "-")
+        .toUpperCase();
+    }
+
+    function crearIconoConsecutivo(consecutivo, tipo) {
+      const tipoClase = `tipo-${normalizarTipoParaClase(tipo || "POSTE")}`;
+
+      return L.divIcon({
+        html: `
+          <div class="pin-wrap">
+            <div class="pin-number ${tipoClase}">${consecutivo}</div>
+          </div>
+        `,
+        className: "custom-div-icon",
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        popupAnchor: [0, -18]
+      });
+    }
+
+    function popupHtmlRegistro(registro) {
+      return `
+        <div>
+          <b>Consecutivo:</b> ${registro.consecutivo}<br>
+          <b>Fecha:</b> ${registro.fecha}<br>
+          <b>Tipo:</b> ${registro.tipo}<br>
+          <b>Altura:</b> ${registro.altura}<br>
+          <b>Latitude:</b> ${registro.latitude}<br>
+          <b>Longitude:</b> ${registro.longitude}
+        </div>
+      `;
+    }
+
     function abrirPanel() {
       formPanel.classList.add("open");
       overlay.classList.add("show");
+    }
+
+    function limpiarFormularioVisual() {
+      posteForm.reset();
+      previewImgs.forEach(img => img.removeAttribute("src"));
     }
 
     function cerrarPanel() {
@@ -359,9 +604,8 @@
         tempMarker = null;
       }
 
-      clickedLatLng = null;
-      posteForm.reset();
-      previewImgs.forEach(img => img.removeAttribute("src"));
+      selectedLatLng = null;
+      limpiarFormularioVisual();
     }
 
     function cargarGeoJSON() {
@@ -392,50 +636,68 @@
 
     function pintarRegistrosGuardados() {
       registros.forEach(reg => {
-        const marker = L.marker([reg.latitude, reg.longitude]).addTo(map);
-        marker.bindPopup(`
-          <b>Consecutivo:</b> ${reg.consecutivo}<br>
-          <b>Tipo:</b> ${reg.tipo}<br>
-          <b>Altura:</b> ${reg.altura}<br>
-          <b>Fecha:</b> ${reg.fecha}
-        `);
+        const marker = L.marker(
+          [Number(reg.latitude), Number(reg.longitude)],
+          { icon: crearIconoConsecutivo(reg.consecutivo, reg.tipo) }
+        ).addTo(map);
+
+        marker.bindPopup(popupHtmlRegistro(reg));
       });
     }
 
-    function initMap() {
-      map = L.map("map").setView([4.1420, -73.6266], 16);
+    function prepararFormularioConCoordenadas(latlng) {
+      selectedLatLng = latlng;
 
-      baseLayer = L.tileLayer(
+      if (tempMarker) {
+        map.removeLayer(tempMarker);
+      }
+
+      tempMarker = L.marker([latlng.lat, latlng.lng], {
+        opacity: 0.65,
+        icon: crearIconoConsecutivo(siguienteConsecutivo(), "POSTE")
+      }).addTo(map);
+
+      limpiarFormularioVisual();
+
+      fechaInput.value = formatoFechaActual();
+      consecutivoInput.value = siguienteConsecutivo();
+      latitudeInput.value = latlng.lat.toFixed(8);
+      longitudeInput.value = latlng.lng.toFixed(8);
+
+      abrirPanel();
+    }
+
+    function marcarDesdeMira() {
+      const center = map.getCenter();
+      prepararFormularioConCoordenadas(center);
+    }
+
+    function centrarMapaEnUltimoRegistro() {
+      if (registros.length === 0) return;
+      const ultimo = registros[registros.length - 1];
+      map.setView([Number(ultimo.latitude), Number(ultimo.longitude)], 19);
+    }
+
+    function initMap() {
+      map = L.map("map", {
+        zoomControl: true
+      }).setView([4.1420, -73.6266], 16);
+
+      const osm = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { maxZoom: 22, attribution: "&copy; OpenStreetMap contributors" }
-      ).addTo(map);
+        {
+          maxZoom: 22,
+          attribution: "&copy; OpenStreetMap contributors"
+        }
+      );
+
+      osm.addTo(map);
 
       cargarGeoJSON();
       pintarRegistrosGuardados();
 
       map.on("click", function(e) {
-        clickedLatLng = e.latlng;
-
-        if (tempMarker) {
-          map.removeLayer(tempMarker);
-        }
-
-        tempMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
-
-        fechaInput.value = formatoFechaActual();
-        consecutivoInput.value = siguienteConsecutivo();
-        latitudeInput.value = e.latlng.lat.toFixed(8);
-        longitudeInput.value = e.latlng.lng.toFixed(8);
-
-        posteForm.reset();
-        fechaInput.value = formatoFechaActual();
-        consecutivoInput.value = siguienteConsecutivo();
-        latitudeInput.value = e.latlng.lat.toFixed(8);
-        longitudeInput.value = e.latlng.lng.toFixed(8);
-
-        previewImgs.forEach(img => img.removeAttribute("src"));
-
-        abrirPanel();
+        prepararFormularioConCoordenadas(e.latlng);
       });
     }
 
@@ -452,6 +714,7 @@
       fotoInputs.forEach((input, index) => {
         input.addEventListener("change", function() {
           const file = this.files && this.files[0];
+
           if (!file) {
             previewImgs[index].removeAttribute("src");
             return;
@@ -469,8 +732,8 @@
     posteForm.addEventListener("submit", async function(e) {
       e.preventDefault();
 
-      if (!clickedLatLng) {
-        alert("Primero debes marcar un punto en el mapa.");
+      if (!selectedLatLng) {
+        alert("Primero debes marcar un punto en el mapa o usar la mira.");
         return;
       }
 
@@ -480,21 +743,19 @@
         return;
       }
 
-      const tipo = document.getElementById("tipo").value;
-      const altura = document.getElementById("altura").value;
-
-      if (!tipo) {
+      if (!tipoInput.value) {
         alert("Debes seleccionar el tipo.");
         return;
       }
 
-      if (!altura) {
+      if (!alturaInput.value) {
         alert("Debes seleccionar la altura.");
         return;
       }
 
       try {
         const fotosBase64 = [];
+
         for (const input of fotoInputs) {
           const base64 = await fileToBase64(input.files[0]);
           fotosBase64.push(base64);
@@ -504,8 +765,8 @@
           id: Date.now(),
           consecutivo: Number(consecutivoInput.value),
           fecha: fechaInput.value,
-          tipo,
-          altura,
+          tipo: tipoInput.value,
+          altura: alturaInput.value,
           latitude: Number(latitudeInput.value),
           longitude: Number(longitudeInput.value),
           fotos: fotosBase64
@@ -515,22 +776,23 @@
         guardarRegistros();
 
         if (tempMarker) {
-          tempMarker.bindPopup(`
-            <b>Consecutivo:</b> ${registro.consecutivo}<br>
-            <b>Tipo:</b> ${registro.tipo}<br>
-            <b>Altura:</b> ${registro.altura}<br>
-            <b>Fecha:</b> ${registro.fecha}
-          `).openPopup();
-
+          map.removeLayer(tempMarker);
           tempMarker = null;
         }
 
+        const marker = L.marker(
+          [registro.latitude, registro.longitude],
+          { icon: crearIconoConsecutivo(registro.consecutivo, registro.tipo) }
+        ).addTo(map);
+
+        marker.bindPopup(popupHtmlRegistro(registro)).openPopup();
+
         alert("Registro guardado correctamente.");
-        posteForm.reset();
-        previewImgs.forEach(img => img.removeAttribute("src"));
-        clickedLatLng = null;
+
+        selectedLatLng = null;
         formPanel.classList.remove("open");
         overlay.classList.remove("show");
+        limpiarFormularioVisual();
       } catch (error) {
         console.error(error);
         alert("Ocurrió un error guardando el registro.");
@@ -540,6 +802,9 @@
     document.getElementById("cancelBtn").addEventListener("click", cerrarPanel);
     document.getElementById("closePanelBtn").addEventListener("click", cerrarPanel);
     overlay.addEventListener("click", cerrarPanel);
+
+    btnMarkCenter.addEventListener("click", marcarDesdeMira);
+    btnCenterMap.addEventListener("click", centrarMapaEnUltimoRegistro);
 
     window.addEventListener("online", actualizarEstado);
     window.addEventListener("offline", actualizarEstado);
