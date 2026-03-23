@@ -233,7 +233,7 @@
     const SUPABASE_URL = "https://hqvxtynigoxxuscmwjde.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhxdnh0eW5pZ294eHVzY213amRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4OTMwNTYsImV4cCI6MjA4NTQ2OTA1Nn0.B78Tz0Vvb3EvGUXEvpLCPEHM55mRTYsd_sPDSLBof1I";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+   window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const nombreEl = document.getElementById("nombre");
     const ciudadEl = document.getElementById("ciudad");
