@@ -746,28 +746,43 @@ document.getElementById("poligono").value = poligono || "Fuera de polígono";
       map.setView([Number(ultimo.latitude), Number(ultimo.longitude)], 19);
     }
 
-    function initMap() {
-      map = L.map("map", {
-        zoomControl: true
-      }).setView([4.1420, -73.6266], 16);
+   function initMap() {
+  map = L.map("map", {
+    zoomControl: true
+  }).setView([4.1420, -73.6266], 16);
 
-      const osm = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          maxZoom: 22,
-          attribution: "&copy; OpenStreetMap contributors"
-        }
-      );
-
-      osm.addTo(map);
-
-      cargarCapas();
-      pintarRegistrosGuardados();
-
-      map.on("click", function(e) {
-        prepararFormularioConCoordenadas(e.latlng);
-      });
+  const osm = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 22,
+      attribution: "OpenStreetMap"
     }
+  );
+
+  const sat = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxZoom: 22,
+      attribution: "Esri Satellite"
+    }
+  );
+
+  const baseMaps = {
+    "Calles": osm,
+    "Satelital": sat
+  };
+
+  L.control.layers(baseMaps, null).addTo(map);
+
+  sat.addTo(map);
+
+  cargarCapas();
+  pintarRegistrosGuardados();
+
+  map.on("click", function(e) {
+    prepararFormularioConCoordenadas(e.latlng);
+  });
+}
 
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
