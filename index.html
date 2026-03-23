@@ -608,91 +608,58 @@
       limpiarFormularioVisual();
     }
 
-   function cargarCapas() {
+  function cargarCapas() {
 
   const overlays = {};
 
-  Promise.all([
-    fetch("capas/base.geojson").then(r => r.json()),
-    fetch("capas/loteo.geojson").then(r => r.json()),
-    fetch("capas/poligonos.geojson").then(r => r.json())
-  ])
-  .then(([baseData, loteoData, poligonosData]) => {
+  function cargar(url, nombre, estilo, popupFn) {
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(url);
+        return res.json();
+      })
+      .then(data => {
 
-    // =========================
-    // BASE
-    // =========================
-    const capaBase = L.geoJSON(baseData, {
-      style: function(feature) {
+        const capa = L.geoJSON(data, {
+          style: estilo,
+          onEachFeature: popupFn
+        }).addTo(map);
 
-        if (!feature.geometry) return {};
+        overlays[nombre] = capa;
 
-        const type = feature.geometry.type;
+        L.control.layers(null, overlays).addTo(map);
 
-        if (type.includes("Line")) {
-          return { color: "blue", weight: 3 };
-        }
+      })
+      .catch(err => {
+        console.error("Error cargando:", err);
+      });
+  }
 
-        if (type.includes("Polygon")) {
-          return { color: "green", weight: 2, fillOpacity: 0.2 };
-        }
+  // BASE
+  cargar(
+    "capas/base.geojson",
+    "Base",
+    (f) => ({ color: "blue", weight: 2 })
+  );
 
-        return {};
-      }
-    }).addTo(map);
+  // LOTEO
+  cargar(
+    "capas/loteo.geojson",
+    "Loteo",
+    () => ({ color: "green", fillOpacity: 0.3 }),
+    (f, l) => l.bindPopup(`Lote`)
+  );
 
-    overlays["Base"] = capaBase;
-
-    // =========================
-    // LOTEO
-    // =========================
-    const capaLoteo = L.geoJSON(loteoData, {
-      style: {
-        color: "#16a34a",
-        weight: 2,
-        fillOpacity: 0.3
-      },
-      onEachFeature: function(feature, layer) {
-        layer.bindPopup(`
-          <b>Lote:</b> ${feature.properties?.nombre || "Sin nombre"}
-        `);
-      }
-    }).addTo(map);
-
-    overlays["Loteo"] = capaLoteo;
-
-    // =========================
-    // POLIGONOS
-    // =========================
-    const capaPoligonos = L.geoJSON(poligonosData, {
-      style: {
-        color: "#9333ea",
-        weight: 2,
-        fillOpacity: 0.25
-      },
-      onEachFeature: function(feature, layer) {
-        layer.bindPopup(`
-          <b>Polígono:</b> ${feature.properties?.nombre || "Sin nombre"}
-        `);
-      }
-    }).addTo(map);
-
-    overlays["Polígonos"] = capaPoligonos;
-
-    // =========================
-    // CONTROL DE CAPAS (CORRECTO)
-    // =========================
-    L.control.layers(null, overlays).addTo(map);
-
-    // OPCIONAL: zoom automático
-    // map.fitBounds(capaPoligonos.getBounds());
-
-  })
-  .catch(err => {
-    console.error("Error cargando capas:", err);
-  });
+  // POLIGONOS (OJO MAYÚSCULAS)
+  cargar(
+    "capas/POLIGONOS.geojson",
+    "Polígonos",
+    () => ({ color: "purple", fillOpacity: 0.2 }),
+    (f, l) => l.bindPopup(`Polígono`)
+  );
 
 }
+    
     function pintarRegistrosGuardados() {
       registros.forEach(reg => {
         const marker = L.marker(
