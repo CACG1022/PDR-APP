@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDR APP - Crear proyectos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg1: #041f23;
+      --bg2: #093c41;
+      --bg3: #0b3a53;
+      --card: rgba(255, 255, 255, 0.06);
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #e8fdf9;
+      --muted: #8db4b1;
+      --green: #3ddc97;
+      --green2: #1fa67a;
+      --danger: #ff6b6b;
+      --ok: #7df0bc;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(12,92,94,.18), transparent 28%),
+        linear-gradient(135deg, var(--bg1), var(--bg2) 52%, var(--bg3));
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      padding: 28px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 70px rgba(0,0,0,.38);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .sub {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline: none;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: rgba(255,255,255,.50);
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(61,220,151,.45);
+      box-shadow: 0 0 0 3px rgba(61,220,151,.09);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      height: 46px;
+      border: none;
+      border-radius: 12px;
+      padding: 0 18px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .primary {
+      flex: 1;
+      background: linear-gradient(90deg, var(--green2), var(--green));
+      color: #03261f;
+    }
+
+    .secondary {
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+    }
+
+    .msg {
+      min-height: 22px;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    .msg.ok { color: var(--ok); }
+    .msg.err { color: var(--danger); }
+
+    .preview {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+    }
+
+    .preview strong {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(61,220,151,.12);
+      border: 1px solid rgba(61,220,151,.18);
+      font-size: 12px;
+      color: #d6fff0;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+      .card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Crear proyecto</h1>
+    <p class="sub">
+      Guarda un proyecto en Supabase y crea automáticamente la cantidad de polígonos indicada
+      con nombres como POLIGONO1, POLIGONO2, POLIGONO3...
+    </p>
+
+    <div class="grid">
+      <div class="field full">
+        <label for="nombre">Nombre del proyecto</label>
+        <input id="nombre" type="text" placeholder="Ej. Villavicencio Zona Norte" />
+      </div>
+
+      <div class="field">
+        <label for="ciudad">Ciudad</label>
+        <input id="ciudad" type="text" placeholder="Ej. Villavicencio" />
+      </div>
+
+      <div class="field">
+        <label for="cantidad">Cantidad de polígonos</label>
+        <input id="cantidad" type="number" min="1" step="1" placeholder="Ej. 5" />
+      </div>
+
+      <div class="field full">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" placeholder="Descripción del proyecto"></textarea>
+      </div>
+    </div>
+
+    <div class="preview">
+      <strong>Vista previa de polígonos a crear</strong>
+      <div id="previewPoligonos" class="chips"></div>
+      <div class="hint">Se crearán en la tabla <code>poligonos</code> vinculados al proyecto.</div>
+    </div>
+
+    <div class="actions">
+      <button id="limpiarBtn" class="secondary" type="button">Limpiar</button>
+      <button id="guardarBtn" class="primary" type="button">Guardar proyecto</button>
+    </div>
+
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://hqvxtynigoxxuscmwjde.supabase.co";
+    const SUPABASE_ANON_KEY = "REEMPLAZA_AQUI_TU_ANON_KEY_COMPLETA";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const nombreEl = document.getElementById("nombre");
+    const ciudadEl = document.getElementById("ciudad");
+    const cantidadEl = document.getElementById("cantidad");
+    const descripcionEl = document.getElementById("descripcion");
+    const guardarBtn = document.getElementById("guardarBtn");
+    const limpiarBtn = document.getElementById("limpiarBtn");
+    const msgEl = document.getElementById("msg");
+    const previewPoligonosEl = document.getElementById("previewPoligonos");
+
+    function setMsg(text, type = "") {
+      msgEl.className = "msg";
+      if (type) msgEl.classList.add(type);
+      msgEl.textContent = text;
+    }
+
+    function limpiarFormulario() {
+      nombreEl.value = "";
+      ciudadEl.value = "";
+      cantidadEl.value = "";
+      descripcionEl.value = "";
+      previewPoligonosEl.innerHTML = "";
+      setMsg("");
+    }
+
+    function renderPreviewPoligonos() {
+      const cantidad = Number(cantidadEl.value || 0);
+      previewPoligonosEl.innerHTML = "";
+
+      if (!cantidad || cantidad < 1) return;
+
+      for (let i = 1; i <= cantidad; i++) {
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.textContent = `POLIGONO${i}`;
+        previewPoligonosEl.appendChild(chip);
+      }
+    }
+
+    async function validarSesion() {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        setMsg("No hay sesión iniciada. Abre este archivo desde tu app con login.", "err");
+        return false;
+      }
+      return true;
+    }
+
+    async function crearProyectoYPoligonos() {
+      const nombre = nombreEl.value.trim();
+      const ciudad = ciudadEl.value.trim();
+      const descripcion = descripcionEl.value.trim();
+      const cantidad = Number(cantidadEl.value);
+
+      if (!nombre) {
+        setMsg("Debes escribir el nombre del proyecto.", "err");
+        return;
+      }
+
+      if (!ciudad) {
+        setMsg("Debes escribir la ciudad.", "err");
+        return;
+      }
+
+      if (!cantidad || cantidad < 1) {
+        setMsg("La cantidad de polígonos debe ser mayor o igual a 1.", "err");
+        return;
+      }
+
+      const sesionOk = await validarSesion();
+      if (!sesionOk) return;
+
+      guardarBtn.disabled = true;
+      guardarBtn.textContent = "Guardando...";
+      setMsg("Creando proyecto...", "");
+
+      try {
+        const { data: proyecto, error: proyectoError } = await supabase
+          .from("proyectos")
+          .insert([{ nombre, descripcion, ciudad }])
+          .select()
+          .single();
+
+        if (proyectoError) {
+          throw new Error("Error creando proyecto: " + proyectoError.message);
+        }
+
+        const poligonos = [];
+        for (let i = 1; i <= cantidad; i++) {
+          poligonos.push({
+            proyecto_id: proyecto.id,
+            nombre: `POLIGONO${i}`,
+            ciudad: ciudad
+          });
+        }
+
+        const { error: poligonosError } = await supabase
+          .from("poligonos")
+          .insert(poligonos);
+
+        if (poligonosError) {
+          throw new Error("Proyecto creado, pero falló la creación de polígonos: " + poligonosError.message);
+        }
+
+        setMsg(`Proyecto creado correctamente. Se registraron ${cantidad} polígonos automáticos.`, "ok");
+        limpiarFormulario();
+      } catch (err) {
+        setMsg(err.message || "Ocurrió un error inesperado.", "err");
+      } finally {
+        guardarBtn.disabled = false;
+        guardarBtn.textContent = "Guardar proyecto";
+      }
+    }
+
+    cantidadEl.addEventListener("input", renderPreviewPoligonos);
+    guardarBtn.addEventListener("click", crearProyectoYPoligonos);
+    limpiarBtn.addEventListener("click", limpiarFormulario);
+  </script>
+</body>
+</html>
