@@ -437,6 +437,10 @@
           <label for="longitude">Longitude</label>
           <input type="text" id="longitude" name="longitude" readonly />
         </div>
+        <div class="field">
+  <label for="poligono">Polígono</label>
+  <input type="text" id="poligono" readonly />
+</div>
 
         <div class="field">
           <label>Fotografías obligatorias</label>
@@ -479,12 +483,14 @@
   </aside>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <script>
     let map;
     let geoJsonLayer = null;
     let tempMarker = null;
     let selectedLatLng = null;
+    let capaPoligonosGlobal = null;
 
     const STORAGE_KEY = "registrosPostes";
     const registros = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -576,6 +582,7 @@
       return `
         <div>
           <b>Consecutivo:</b> ${registro.consecutivo}<br>
+          <b>Polígono:</b> ${registro.poligono}<br>
           <b>Fecha:</b> ${registro.fecha}<br>
           <b>Tipo:</b> ${registro.tipo}<br>
           <b>Altura:</b> ${registro.altura}<br>
@@ -651,12 +658,28 @@
   );
 
   // POLIGONOS (OJO MAYÚSCULAS)
-  cargar(
-    "capas/POLIGONOS.geojson",
-    "Polígonos",
-    () => ({ color: "purple", fillOpacity: 0.2 }),
-    (f, l) => l.bindPopup(`Polígono`)
-  );
+fetch("capas/POLIGONOS.geojson")
+  .then(res => res.json())
+  .then(data => {
+
+    const capaPoligonos = L.geoJSON(data, {
+      style: () => ({
+        color: "purple",
+        fillOpacity: 0.2
+      }),
+      onEachFeature: (feature, layer) => {
+        layer.bindPopup(`Polígono`);
+      }
+    }).addTo(map);
+
+    // 👇 GUARDAMOS REFERENCIA GLOBAL
+    capaPoligonosGlobal = capaPoligonos;
+
+    overlays["Polígonos"] = capaPoligonos;
+
+    L.control.layers(null, overlays).addTo(map);
+
+  });
 
 }
     
@@ -670,6 +693,22 @@
         marker.bindPopup(popupHtmlRegistro(reg));
       });
     }
+
+    function obtenerPoligonoEnPunto(lat, lng) {
+  if (!capaPoligonosGlobal) return null;
+  const punto = turf.point([lng, lat]);
+  let nombre = null;
+  capaPoligonosGlobal.eachLayer(layer => {
+
+    const geojson = layer.toGeoJSON();
+    const dentro = turf.booleanPointInPolygon(punto, geojson);
+
+    if (dentro) {
+      nombre = layer.feature.properties?.NOMBRE || "Sin nombre";
+    }
+  });
+  return nombre;
+}
 
     function prepararFormularioConCoordenadas(latlng) {
       selectedLatLng = latlng;
@@ -689,6 +728,9 @@
       consecutivoInput.value = siguienteConsecutivo();
       latitudeInput.value = latlng.lat.toFixed(8);
       longitudeInput.value = latlng.lng.toFixed(8);
+
+      const poligono = obtenerPoligonoEnPunto(latlng.lat, latlng.lng);
+document.getElementById("poligono").value = poligono || "Fuera de polígono";
 
       abrirPanel();
     }
@@ -795,6 +837,7 @@
           altura: alturaInput.value,
           latitude: Number(latitudeInput.value),
           longitude: Number(longitudeInput.value),
+          poligono: document.getElementById("poligono").value,
           fotos: fotosBase64
         };
 
