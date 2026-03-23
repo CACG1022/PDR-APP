@@ -1,202 +1,558 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GIS Campo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GIS Campo - Inventario de Postes</title>
 
-<link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<style>
-html, body {
-    margin: 0;
-    padding: 0;
-}
-
-#map {
-    height: 100vh;
-    width: 100vw;
-}
-
-.status {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-weight: bold;
-    color: white;
-    font-family: Arial;
-}
-
-.online { background: green; }
-.offline { background: red; }
-</style>
-</head>
-
-<body>
-
-<div id="map"></div>
-<div id="status" class="status">Cargando...</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-// =============================
-// VARIABLES
-// =============================
-let map;
-
-let postes = JSON.parse(localStorage.getItem("postes")) || [];
-let pendientes = JSON.parse(localStorage.getItem("pendientes")) || [];
-
-// ⚠️ Dejar vacío si no tienes backend aún
-const API_URL = "";
-
-// =============================
-// GUARDAR STORAGE
-// =============================
-function saveStorage() {
-    localStorage.setItem("postes", JSON.stringify(postes));
-    localStorage.setItem("pendientes", JSON.stringify(pendientes));
-}
-
-// =============================
-// ESTADO ONLINE/OFFLINE
-// =============================
-function updateStatus() {
-    const el = document.getElementById("status");
-
-    if (navigator.onLine) {
-        el.textContent = `🟢 Online (${pendientes.length} pendientes)`;
-        el.className = "status online";
-    } else {
-        el.textContent = `🔴 Offline (${pendientes.length} pendientes)`;
-        el.className = "status offline";
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
     }
-}
 
-window.addEventListener("online", syncData);
-window.addEventListener("offline", updateStatus);
+    #map {
+      height: 100vh;
+      width: 100vw;
+    }
 
-// =============================
-// MAPA
-// =============================
-function initMap() {
+    .status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
 
-    map = L.map("map").setView([4.1420, -73.6266], 14);
+    .online {
+      background: #0a8f2d;
+    }
 
-    const osm = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { maxZoom: 19 }
-    );
+    .offline {
+      background: #c62828;
+    }
 
-    osm.addTo(map);
+    .panel {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 420px;
+      max-width: 100%;
+      height: 100vh;
+      background: #fff;
+      z-index: 2000;
+      box-shadow: -4px 0 16px rgba(0,0,0,0.18);
+      transition: right 0.25s ease;
+      overflow-y: auto;
+    }
 
-    // cargar capa base
-    fetch("capas/base.geojson")
-        .then(r => r.json())
+    .panel.open {
+      right: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #2563eb;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .close-btn {
+      border: none;
+      background: transparent;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #222;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .field input[readonly] {
+      background: #f8fafc;
+      color: #475569;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .photo-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fafc;
+    }
+
+    .photo-preview {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #e5e7eb;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .btn-primary {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 1900;
+      display: none;
+    }
+
+    .overlay.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="status" class="status">Cargando...</div>
+
+  <div id="overlay" class="overlay"></div>
+
+  <aside id="formPanel" class="panel">
+    <div class="panel-header">
+      <h2>Nuevo registro</h2>
+      <button id="closePanelBtn" class="close-btn" type="button">&times;</button>
+    </div>
+
+    <div class="panel-body">
+      <form id="posteForm">
+        <div class="field">
+          <label for="fecha">Fecha</label>
+          <input type="text" id="fecha" name="fecha" readonly />
+        </div>
+
+        <div class="field">
+          <label for="consecutivo">Consecutivo</label>
+          <input type="number" id="consecutivo" name="consecutivo" readonly />
+        </div>
+
+        <div class="field">
+          <label for="tipo">Tipo</label>
+          <select id="tipo" name="tipo" required>
+            <option value="">Seleccione una opción</option>
+            <option value="POSTE">POSTE</option>
+            <option value="CANALIZADO">CANALIZADO</option>
+            <option value="C. AMERICANO">C. AMERICANO</option>
+            <option value="CERCHA">CERCHA</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="altura">Altura del poste</label>
+          <select id="altura" name="altura" required>
+            <option value="">Seleccione altura</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="latitude">Latitude</label>
+          <input type="text" id="latitude" name="latitude" readonly />
+        </div>
+
+        <div class="field">
+          <label for="longitude">Longitude</label>
+          <input type="text" id="longitude" name="longitude" readonly />
+        </div>
+
+        <div class="field">
+          <label>Fotografías obligatorias</label>
+          <div class="photo-grid">
+            <div class="photo-box">
+              <label for="foto1">Foto 1</label>
+              <input type="file" id="foto1" accept="image/*" capture="environment" required />
+              <img id="preview1" class="photo-preview" alt="Vista previa foto 1" />
+            </div>
+
+            <div class="photo-box">
+              <label for="foto2">Foto 2</label>
+              <input type="file" id="foto2" accept="image/*" capture="environment" required />
+              <img id="preview2" class="photo-preview" alt="Vista previa foto 2" />
+            </div>
+
+            <div class="photo-box">
+              <label for="foto3">Foto 3</label>
+              <input type="file" id="foto3" accept="image/*" capture="environment" required />
+              <img id="preview3" class="photo-preview" alt="Vista previa foto 3" />
+            </div>
+
+            <div class="photo-box">
+              <label for="foto4">Foto 4</label>
+              <input type="file" id="foto4" accept="image/*" capture="environment" required />
+              <img id="preview4" class="photo-preview" alt="Vista previa foto 4" />
+            </div>
+          </div>
+          <div class="hint">Las 4 fotos son obligatorias para guardar el registro.</div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="cancelBtn" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar registro</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    let map;
+    let baseLayer;
+    let geoJsonLayer;
+    let tempMarker = null;
+    let clickedLatLng = null;
+
+    const STORAGE_KEY = "registrosPostes";
+    const registros = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    const formPanel = document.getElementById("formPanel");
+    const overlay = document.getElementById("overlay");
+    const posteForm = document.getElementById("posteForm");
+
+    const fechaInput = document.getElementById("fecha");
+    const consecutivoInput = document.getElementById("consecutivo");
+    const latitudeInput = document.getElementById("latitude");
+    const longitudeInput = document.getElementById("longitude");
+
+    const fotoInputs = [
+      document.getElementById("foto1"),
+      document.getElementById("foto2"),
+      document.getElementById("foto3"),
+      document.getElementById("foto4")
+    ];
+
+    const previewImgs = [
+      document.getElementById("preview1"),
+      document.getElementById("preview2"),
+      document.getElementById("preview3"),
+      document.getElementById("preview4")
+    ];
+
+    function actualizarEstado() {
+      const estado = document.getElementById("status");
+      if (navigator.onLine) {
+        estado.textContent = "🟢 Online";
+        estado.className = "status online";
+      } else {
+        estado.textContent = "🔴 Offline";
+        estado.className = "status offline";
+      }
+    }
+
+    function formatoFechaActual() {
+      const ahora = new Date();
+      const yyyy = ahora.getFullYear();
+      const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+      const dd = String(ahora.getDate()).padStart(2, "0");
+      const hh = String(ahora.getHours()).padStart(2, "0");
+      const mi = String(ahora.getMinutes()).padStart(2, "0");
+      const ss = String(ahora.getSeconds()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function siguienteConsecutivo() {
+      return registros.length + 1;
+    }
+
+    function guardarRegistros() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+    }
+
+    function abrirPanel() {
+      formPanel.classList.add("open");
+      overlay.classList.add("show");
+    }
+
+    function cerrarPanel() {
+      formPanel.classList.remove("open");
+      overlay.classList.remove("show");
+
+      if (tempMarker) {
+        map.removeLayer(tempMarker);
+        tempMarker = null;
+      }
+
+      clickedLatLng = null;
+      posteForm.reset();
+      previewImgs.forEach(img => img.removeAttribute("src"));
+    }
+
+    function cargarGeoJSON() {
+      fetch("capas/base.geojson")
+        .then(res => res.json())
         .then(data => {
-            L.geoJSON(data).addTo(map);
+          geoJsonLayer = L.geoJSON(data, {
+            style: function(feature) {
+              if (!feature.geometry) return {};
+              const type = feature.geometry.type;
+
+              if (type.includes("Line")) {
+                return { color: "blue", weight: 3 };
+              }
+
+              if (type.includes("Polygon")) {
+                return { color: "green", weight: 2, fillOpacity: 0.2 };
+              }
+
+              return {};
+            }
+          }).addTo(map);
         })
         .catch(() => {
-            console.log("GeoJSON no disponible (offline)");
+          console.log("No se pudo cargar capas/base.geojson");
         });
+    }
 
-    // cargar postes guardados
-    postes.forEach(p => {
-        L.marker([p.lat, p.lng]).addTo(map);
+    function pintarRegistrosGuardados() {
+      registros.forEach(reg => {
+        const marker = L.marker([reg.latitude, reg.longitude]).addTo(map);
+        marker.bindPopup(`
+          <b>Consecutivo:</b> ${reg.consecutivo}<br>
+          <b>Tipo:</b> ${reg.tipo}<br>
+          <b>Altura:</b> ${reg.altura}<br>
+          <b>Fecha:</b> ${reg.fecha}
+        `);
+      });
+    }
+
+    function initMap() {
+      map = L.map("map").setView([4.1420, -73.6266], 16);
+
+      baseLayer = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { maxZoom: 22, attribution: "&copy; OpenStreetMap contributors" }
+      ).addTo(map);
+
+      cargarGeoJSON();
+      pintarRegistrosGuardados();
+
+      map.on("click", function(e) {
+        clickedLatLng = e.latlng;
+
+        if (tempMarker) {
+          map.removeLayer(tempMarker);
+        }
+
+        tempMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
+
+        fechaInput.value = formatoFechaActual();
+        consecutivoInput.value = siguienteConsecutivo();
+        latitudeInput.value = e.latlng.lat.toFixed(8);
+        longitudeInput.value = e.latlng.lng.toFixed(8);
+
+        posteForm.reset();
+        fechaInput.value = formatoFechaActual();
+        consecutivoInput.value = siguienteConsecutivo();
+        latitudeInput.value = e.latlng.lat.toFixed(8);
+        longitudeInput.value = e.latlng.lng.toFixed(8);
+
+        previewImgs.forEach(img => img.removeAttribute("src"));
+
+        abrirPanel();
+      });
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function configurarPreviews() {
+      fotoInputs.forEach((input, index) => {
+        input.addEventListener("change", function() {
+          const file = this.files && this.files[0];
+          if (!file) {
+            previewImgs[index].removeAttribute("src");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            previewImgs[index].src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+    }
+
+    posteForm.addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      if (!clickedLatLng) {
+        alert("Primero debes marcar un punto en el mapa.");
+        return;
+      }
+
+      const faltanFotos = fotoInputs.some(input => !input.files || input.files.length === 0);
+      if (faltanFotos) {
+        alert("Debes cargar las 4 fotografías obligatorias.");
+        return;
+      }
+
+      const tipo = document.getElementById("tipo").value;
+      const altura = document.getElementById("altura").value;
+
+      if (!tipo) {
+        alert("Debes seleccionar el tipo.");
+        return;
+      }
+
+      if (!altura) {
+        alert("Debes seleccionar la altura.");
+        return;
+      }
+
+      try {
+        const fotosBase64 = [];
+        for (const input of fotoInputs) {
+          const base64 = await fileToBase64(input.files[0]);
+          fotosBase64.push(base64);
+        }
+
+        const registro = {
+          id: Date.now(),
+          consecutivo: Number(consecutivoInput.value),
+          fecha: fechaInput.value,
+          tipo,
+          altura,
+          latitude: Number(latitudeInput.value),
+          longitude: Number(longitudeInput.value),
+          fotos: fotosBase64
+        };
+
+        registros.push(registro);
+        guardarRegistros();
+
+        if (tempMarker) {
+          tempMarker.bindPopup(`
+            <b>Consecutivo:</b> ${registro.consecutivo}<br>
+            <b>Tipo:</b> ${registro.tipo}<br>
+            <b>Altura:</b> ${registro.altura}<br>
+            <b>Fecha:</b> ${registro.fecha}
+          `).openPopup();
+
+          tempMarker = null;
+        }
+
+        alert("Registro guardado correctamente.");
+        posteForm.reset();
+        previewImgs.forEach(img => img.removeAttribute("src"));
+        clickedLatLng = null;
+        formPanel.classList.remove("open");
+        overlay.classList.remove("show");
+      } catch (error) {
+        console.error(error);
+        alert("Ocurrió un error guardando el registro.");
+      }
     });
 
-    // evento click
-    map.on("click", addPoint);
-}
+    document.getElementById("cancelBtn").addEventListener("click", cerrarPanel);
+    document.getElementById("closePanelBtn").addEventListener("click", cerrarPanel);
+    overlay.addEventListener("click", cerrarPanel);
 
-// =============================
-// AGREGAR PUNTO
-// =============================
-function addPoint(e) {
+    window.addEventListener("online", actualizarEstado);
+    window.addEventListener("offline", actualizarEstado);
 
-    const p = {
-        id: Date.now(),
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-        synced: false
-    };
-
-    postes.push(p);
-    pendientes.push(p);
-
-    saveStorage();
-
-    L.marker([p.lat, p.lng])
-        .addTo(map)
-        .bindPopup("Guardado");
-
-    updateStatus();
-
-    if (navigator.onLine) {
-        syncData();
-    }
-}
-
-// =============================
-// SINCRONIZACIÓN
-// =============================
-async function syncData() {
-
-    updateStatus();
-
-    if (!navigator.onLine || pendientes.length === 0) return;
-
-    // si no hay backend, solo limpia pendientes
-    if (!API_URL) {
-        pendientes = [];
-        saveStorage();
-        updateStatus();
-        return;
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js").catch(err => {
+        console.log("Service worker no registrado:", err);
+      });
     }
 
-    const nuevos = [];
-
-    for (let p of pendientes) {
-        try {
-            await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(p)
-            });
-
-            p.synced = true;
-
-        } catch {
-            nuevos.push(p);
-        }
-    }
-
-    pendientes = nuevos;
-    saveStorage();
-    updateStatus();
-}
-
-// =============================
-// SERVICE WORKER
-// =============================
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-}
-
-// =============================
-// INIT
-// =============================
-updateStatus();
-initMap();
-syncData();
-
-</script>
-
+    actualizarEstado();
+    initMap();
+    configurarPreviews();
+  </script>
 </body>
 </html>
