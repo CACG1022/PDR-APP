@@ -667,6 +667,37 @@
     });
 
   // =========================
+// CAPA POLIGONOS
+// =========================
+fetch("capas/poligonos.geojson")
+  .then(res => res.json())
+  .then(data => {
+
+    const capaPoligonos = L.geoJSON(data, {
+
+      style: function(feature) {
+        return {
+          color: "#9333ea",       // morado
+          weight: 2,
+          fillOpacity: 0.25
+        };
+      },
+
+      onEachFeature: function(feature, layer) {
+
+        layer.bindPopup(`
+          <b>Polígono:</b> ${feature.properties?.nombre || "Sin nombre"}
+        `);
+
+      }
+
+    }).addTo(map);
+
+    overlays["Polígonos"] = capaPoligonos;
+
+  });
+
+  // =========================
   // CONTROL DE CAPAS
   // =========================
   setTimeout(() => {
