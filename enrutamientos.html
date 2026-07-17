@@ -174,6 +174,498 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
   margin-top:8px;
 }
 
+
+
+/* =========================================================
+   INTERFAZ MÓVIL OYM — TEMA OSCURO / TEMA CLARO
+   ========================================================= */
+:root{
+  --app-bg:#07111f;
+  --app-surface:#0b1728;
+  --app-surface-2:#101f32;
+  --app-card:rgba(5,17,31,.94);
+  --app-text:#f8fafc;
+  --app-muted:#9fb0c4;
+  --app-border:rgba(148,163,184,.22);
+  --app-primary:#16b8b0;
+  --app-primary-strong:#089f99;
+  --app-map-filter:none;
+  --app-shadow:0 14px 38px rgba(0,0,0,.38);
+  --bottom-nav-bg:rgba(5,17,31,.96);
+}
+
+body[data-theme="light"]{
+  --bg:#eef5f3;
+  --panel:#ffffff;
+  --text:#132238;
+  --muted:#6b7b8f;
+  --app-bg:#edf5f2;
+  --app-surface:#ffffff;
+  --app-surface-2:#f5f9f8;
+  --app-card:rgba(255,255,255,.95);
+  --app-text:#142238;
+  --app-muted:#64748b;
+  --app-border:rgba(15,118,110,.16);
+  --app-primary:#16b8b0;
+  --app-primary-strong:#0f9f99;
+  --app-map-filter:brightness(1.18) saturate(.62) contrast(.88) opacity(.72);
+  --app-shadow:0 12px 34px rgba(15,23,42,.14);
+  --bottom-nav-bg:rgba(255,255,255,.96);
+  color-scheme:light;
+}
+
+body{
+  background:var(--app-bg)!important;
+  color:var(--app-text)!important;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;
+}
+
+header{
+  height:70px!important;
+  padding:10px 14px!important;
+  background:var(--app-card)!important;
+  border-bottom:1px solid var(--app-border)!important;
+  box-shadow:0 6px 24px rgba(0,0,0,.15)!important;
+  backdrop-filter:blur(16px)!important;
+}
+header h1{font-size:15px!important;letter-spacing:.1px}
+header span{color:var(--app-muted)!important}
+.mapWrap{inset:70px 0 64px 0!important}
+#map{filter:var(--app-map-filter);transition:filter .3s ease}
+
+.oymBrand{display:flex;align-items:center;gap:9px;min-width:0}
+.oymBrandMark{
+  width:26px;height:26px;border-radius:50%;position:relative;flex:0 0 auto;
+  border:5px solid var(--app-primary);box-shadow:inset 0 0 0 3px var(--app-card);
+}
+.oymBrandText{font-weight:900;font-size:18px;letter-spacing:.5px}
+.oymHeaderData{display:flex;align-items:center;gap:9px;min-width:0}
+.oymHeaderMain{min-width:0}
+.oymHeaderMain h1,.oymHeaderMain span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.themeQuickButton{
+  width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:50%!important;
+  background:var(--app-surface-2)!important;color:var(--app-primary)!important;
+  border:1px solid var(--app-border)!important;box-shadow:none!important;font-size:18px!important;
+}
+
+.floatButtons{
+  top:auto!important;right:14px!important;bottom:84px!important;width:195px!important;gap:7px!important;
+  padding:9px!important;background:var(--app-card)!important;border:1px solid var(--app-border)!important;
+  border-radius:18px!important;box-shadow:var(--app-shadow)!important;backdrop-filter:blur(16px)!important;
+}
+.floatButtons.oculto{transform:translateX(225px)!important;opacity:0!important}
+.floatButtons button{
+  background:var(--app-surface-2)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important;
+  border-radius:11px!important;padding:9px 11px!important;box-shadow:none!important;text-align:left!important;
+  font-size:12px!important;display:flex!important;align-items:center!important;gap:9px!important;
+}
+.floatButtons button::after{content:"›";margin-left:auto;color:var(--app-muted);font-size:18px;line-height:1}
+.floatButtons button:hover{background:color-mix(in srgb,var(--app-primary) 12%,var(--app-surface-2))!important}
+.toggleButtons{
+  right:14px!important;top:auto!important;bottom:78px!important;width:48px!important;height:48px!important;
+  background:var(--app-primary)!important;color:white!important;border:0!important;box-shadow:0 10px 24px rgba(15,159,153,.35)!important;
+}
+
+.bottomLeft{left:14px!important;bottom:82px!important;width:auto!important;flex-direction:row!important;gap:6px!important}
+.bottomLeft button{width:auto!important;padding:8px 11px!important;border-radius:999px!important;font-size:11px!important;box-shadow:var(--app-shadow)!important}
+.bottomLeft .warning{background:var(--app-primary)!important;color:white!important}
+.bottomLeft .purple{background:var(--app-card)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important}
+
+.centerInfo{
+  left:14px!important;right:14px!important;bottom:18px!important;transform:none!important;width:auto!important;
+  background:var(--app-card)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important;
+  border-radius:14px!important;box-shadow:var(--app-shadow)!important;text-align:left!important;padding:10px 12px!important;
+  backdrop-filter:blur(15px)!important;
+}
+
+.fabMarcar{
+  width:58px!important;height:58px!important;right:16px!important;bottom:142px!important;font-size:38px!important;
+  background:var(--app-primary)!important;border:3px solid var(--app-surface)!important;
+  box-shadow:0 12px 28px rgba(15,159,153,.4)!important;
+}
+
+.modalOverlay,.panelOverlay{background:rgba(2,8,23,.66)!important;backdrop-filter:blur(8px)!important}
+.modal,.panel,.authCard{
+  background:var(--app-surface)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important;
+  box-shadow:var(--app-shadow)!important;
+}
+.modalHeader,.panelHeader{
+  background:var(--app-surface)!important;border-bottom:1px solid var(--app-border)!important;
+}
+.modalBody,.panelBody{background:var(--app-surface)!important}
+label{color:var(--app-muted)!important}
+input,select,textarea{
+  background:var(--app-surface-2)!important;color:var(--app-text)!important;border-color:var(--app-border)!important;
+}
+.gpsBox,.hint,.photoCard,.listItem,.clienteCard,.serverPhotoBox,.serverPhotoCard{
+  background:var(--app-surface-2)!important;color:var(--app-text)!important;border-color:var(--app-border)!important;
+}
+.sectionTitle{color:var(--app-primary)!important;border-color:var(--app-border)!important}
+.closeBtn{background:#ef4444!important;color:#fff!important}
+button:not(.themeQuickButton):not(.toggleButtons){border-radius:11px}
+button.secondary{background:var(--app-primary)!important;color:white!important}
+.gponBox{background:color-mix(in srgb,var(--app-primary) 7%,var(--app-surface))!important;border-color:var(--app-primary)!important}
+
+/* Barra inferior similar a la referencia */
+.oymBottomNav{
+  position:fixed;left:0;right:0;bottom:0;height:64px;z-index:8500;
+  display:grid;grid-template-columns:repeat(4,1fr);background:var(--bottom-nav-bg);
+  border-top:1px solid var(--app-border);box-shadow:0 -8px 25px rgba(0,0,0,.12);backdrop-filter:blur(16px);
+}
+.oymBottomNav button{
+  width:auto!important;height:64px!important;padding:6px 4px!important;background:transparent!important;color:var(--app-muted)!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;font-size:10px!important;font-weight:700!important;
+}
+.oymBottomNav button .navIcon{font-size:18px;line-height:1;color:var(--app-primary)}
+.oymBottomNav button.active{color:var(--app-primary)!important}
+
+/* Selector de tema */
+.themeSheet{display:none;position:fixed;inset:0;z-index:40000;background:rgba(2,8,23,.58);backdrop-filter:blur(7px);padding:14px}
+.themeSheet.open{display:flex;align-items:flex-end;justify-content:center}
+.themeSheetCard{width:min(480px,100%);background:var(--app-surface);border:1px solid var(--app-border);border-radius:22px;padding:16px;box-shadow:var(--app-shadow);color:var(--app-text)}
+.themeSheetCard h3{margin:0 0 5px}.themeSheetCard p{margin:0 0 14px;color:var(--app-muted);font-size:13px}
+.themeOption{display:grid;grid-template-columns:58px 1fr 24px;align-items:center;gap:12px;padding:12px;border:1px solid var(--app-border);border-radius:14px;margin-top:9px;cursor:pointer;background:var(--app-surface-2)}
+.themeOption.active{border-color:var(--app-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--app-primary) 22%,transparent)}
+.themePreview{height:42px;border-radius:9px;border:1px solid rgba(148,163,184,.3);position:relative;overflow:hidden}
+.themePreview.dark{background:linear-gradient(145deg,#07111f 0 42%,#1f3449 42%)}
+.themePreview.light{background:linear-gradient(145deg,#fff 0 42%,#dcebe7 42%)}
+.themeCheck{font-size:19px;color:var(--app-primary)}
+.themeClose{margin-top:12px;background:var(--app-primary)!important;color:#fff!important}
+
+body[data-theme="light"] .leaflet-control-zoom a,
+body[data-theme="light"] .leaflet-control-layers-toggle{background-color:#fff!important;color:#162238!important}
+body[data-theme="light"] .labelEmpalme{background:#fff;color:#132238;border-color:var(--app-primary)}
+body[data-theme="light"] .leaflet-popup-content-wrapper,
+body[data-theme="light"] .leaflet-popup-tip{background:#fff;color:#132238}
+
+@media(max-width:700px){
+  header{height:70px!important;padding:8px 10px!important}
+  .mapWrap{inset:70px 0 64px 0!important}
+  .floatButtons{width:188px!important;bottom:82px!important;right:10px!important}
+  .floatButtons.oculto{transform:translateX(215px)!important}
+  .toggleButtons{right:10px!important;bottom:76px!important}
+  .centerInfo{bottom:16px!important;left:10px!important;right:10px!important;font-size:11px!important}
+  .bottomLeft{left:10px!important;bottom:80px!important}
+  .fabMarcar{right:12px!important;bottom:140px!important}
+  .oymBrandText{font-size:16px}
+  .oymHeaderMain h1{font-size:12px!important}
+  .oymHeaderMain span{font-size:10px!important;max-width:210px}
+}
+
+
+/* Corrección del botón flotante principal del menú */
+#oymMenuToggle,
+.oym-menu-toggle,
+.menu-toggle-oym,
+.floating-menu-toggle{
+  position:fixed!important;
+  right:18px!important;
+  bottom:92px!important;
+  width:58px!important;
+  height:58px!important;
+  min-width:58px!important;
+  min-height:58px!important;
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#0891b2!important;
+  color:#ffffff!important;
+  font-size:25px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  cursor:pointer!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.38)!important;
+  z-index:2147483000!important;
+  transform:none!important;
+  overflow:visible!important;
+}
+
+#oymMenuToggle:hover,
+.oym-menu-toggle:hover,
+.menu-toggle-oym:hover,
+.floating-menu-toggle:hover{
+  background:#0e7490!important;
+}
+
+/* Menú desplegable: queda encima del mapa y de la barra inferior */
+#oymFloatingMenu,
+.oym-floating-menu,
+.floating-actions-oym{
+  position:fixed!important;
+  right:18px!important;
+  bottom:160px!important;
+  z-index:2147482999!important;
+  max-height:calc(100vh - 220px)!important;
+  overflow-y:auto!important;
+}
+
+/* El botón + de marcar permanece separado */
+#btnMarcar,
+.btn-marcar,
+.fab-add{
+  right:18px!important;
+  bottom:168px!important;
+  z-index:2147482000!important;
+}
+
+/* En pantallas pequeñas se conserva por encima de la navegación inferior */
+@media(max-width:768px){
+  #oymMenuToggle,
+  .oym-menu-toggle,
+  .menu-toggle-oym,
+  .floating-menu-toggle{
+    right:16px!important;
+    bottom:84px!important;
+    width:56px!important;
+    height:56px!important;
+  }
+
+  #oymFloatingMenu,
+  .oym-floating-menu,
+  .floating-actions-oym{
+    right:16px!important;
+    bottom:150px!important;
+    max-height:calc(100vh - 210px)!important;
+  }
+}
+
+
+/* ===== MENÚ LATERAL DERECHO OYM ===== */
+#oymSideMenuToggle{
+  position:fixed!important;
+  right:18px!important;
+  bottom:92px!important;
+  width:58px!important;
+  height:58px!important;
+  border:none!important;
+  border-radius:50%!important;
+  background:#0f9aa8!important;
+  color:#fff!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:26px!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.32)!important;
+  z-index:2147483000!important;
+}
+
+#oymSideMenuToggle:hover{
+  background:#0b7f8a!important;
+}
+
+#oymRightSideMenu{
+  position:fixed!important;
+  right:18px!important;
+  top:50%!important;
+  transform:translateY(-50%) translateX(calc(100% + 40px))!important;
+  width:270px!important;
+  max-height:calc(100vh - 130px)!important;
+  overflow-y:auto!important;
+  background:#ffffff!important;
+  border:1px solid #dbe3ea!important;
+  border-radius:14px!important;
+  box-shadow:0 18px 50px rgba(15,23,42,.28)!important;
+  z-index:2147482999!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  transition:transform .25s ease, opacity .25s ease!important;
+}
+
+#oymRightSideMenu.oym-open{
+  transform:translateY(-50%) translateX(0)!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+
+.oymSideMenuItem{
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  min-height:54px!important;
+  padding:0 15px!important;
+  border:0!important;
+  border-bottom:1px solid #edf1f5!important;
+  background:#fff!important;
+  color:#1f2937!important;
+  font-size:15px!important;
+  font-weight:700!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+
+.oymSideMenuItem:last-child{
+  border-bottom:0!important;
+}
+
+.oymSideMenuItem:hover{
+  background:#f5f8fa!important;
+}
+
+.oymSideMenuIcon{
+  width:25px!important;
+  min-width:25px!important;
+  text-align:center!important;
+  font-size:20px!important;
+}
+
+.oymSideMenuLabel{
+  flex:1!important;
+}
+
+.oymSideMenuArrow{
+  color:#64748b!important;
+  font-size:22px!important;
+  font-weight:400!important;
+}
+
+.oym-color-gps{color:#0f9aa8!important;}
+.oym-color-clientes{color:#0f9aa8!important;}
+.oym-color-empalmes{color:#3b82f6!important;}
+.oym-color-storage{color:#8b5cf6!important;}
+.oym-color-send{color:#f59e0b!important;}
+.oym-color-resend{color:#ef4444!important;}
+.oym-color-finish{color:#0f9aa8!important;}
+.oym-color-assigned{color:#6366f1!important;}
+.oym-color-logout{color:#ef4444!important;}
+
+body[data-theme="dark"] #oymRightSideMenu{
+  background:#0f172a!important;
+  border-color:#334155!important;
+}
+body[data-theme="dark"] .oymSideMenuItem{
+  background:#0f172a!important;
+  color:#f8fafc!important;
+  border-bottom-color:#243244!important;
+}
+body[data-theme="dark"] .oymSideMenuItem:hover{
+  background:#172033!important;
+}
+body[data-theme="dark"] .oymSideMenuArrow{
+  color:#94a3b8!important;
+}
+
+@media(max-width:768px){
+  #oymRightSideMenu{
+    right:14px!important;
+    width:min(270px,calc(100vw - 28px))!important;
+    max-height:calc(100vh - 170px)!important;
+  }
+  #oymSideMenuToggle{
+    right:16px!important;
+    bottom:84px!important;
+  }
+}
+
+/* Oculta menús flotantes anteriores para evitar duplicados */
+#oymFloatingMenu,
+.oym-floating-menu,
+.floating-actions-oym,
+#oymMenuToggle,
+.oym-menu-toggle,
+.menu-toggle-oym,
+.floating-menu-toggle{
+  display:none!important;
+}
+
+
+/* Posición final del botón del menú: debajo del selector de mapa base */
+#oymSideMenuToggle{
+  position:fixed!important;
+  top:132px!important;
+  right:18px!important;
+  bottom:auto!important;
+  width:52px!important;
+  height:52px!important;
+  min-width:52px!important;
+  min-height:52px!important;
+  z-index:2147483000!important;
+}
+
+/* El panel se abre debajo del botón y alineado al lateral derecho */
+#oymRightSideMenu{
+  top:194px!important;
+  right:18px!important;
+  bottom:auto!important;
+  transform:translateX(calc(100% + 40px))!important;
+  max-height:calc(100vh - 215px)!important;
+}
+
+#oymRightSideMenu.oym-open{
+  transform:translateX(0)!important;
+}
+
+/* El botón + permanece abajo y separado del menú */
+#btnMarcar,
+.btn-marcar,
+.fab-add{
+  position:fixed!important;
+  right:18px!important;
+  bottom:78px!important;
+  top:auto!important;
+  z-index:2147482000!important;
+}
+
+@media(max-width:768px){
+  #oymSideMenuToggle{
+    top:126px!important;
+    right:14px!important;
+    width:50px!important;
+    height:50px!important;
+  }
+
+  #oymRightSideMenu{
+    top:186px!important;
+    right:14px!important;
+    width:min(270px,calc(100vw - 28px))!important;
+    max-height:calc(100vh - 200px)!important;
+  }
+
+  #btnMarcar,
+  .btn-marcar,
+  .fab-add{
+    right:14px!important;
+    bottom:82px!important;
+  }
+}
+
+
+/* Ocultar controles del mapa durante autenticación */
+body:has(#authOverlay[style*="display: flex"]) #oymSideMenuToggle,
+body:has(#authOverlay[style*="display: flex"]) #oymRightSideMenu,
+body:has(#authOverlay[style*="display: flex"]) #fabMarcar{
+  display:none!important;
+}
+
+
+/* Corrección definitiva del botón Marcar */
+#fabMarcar,
+#btnMarcar,
+.fab-add,
+.btn-marcar{
+  right:18px!important;
+  bottom:86px!important;
+  top:auto!important;
+  z-index:2147482500!important;
+}
+
+@media(max-width:768px){
+  #fabMarcar,
+  #btnMarcar,
+  .fab-add,
+  .btn-marcar{
+    right:14px!important;
+    bottom:84px!important;
+  }
+}
+
 </style>
 </head>
 
@@ -207,11 +699,20 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 </div>
 
 <header>
-  <div>
-    <h1 id="tituloApp">Enrutamiento OYM</h1>
-    <span id="clienteHeader">Sin enrutamiento activo</span>
+  <div class="oymHeaderData">
+    <div class="oymBrand">
+      <span class="oymBrandMark" aria-hidden="true"></span>
+      <span class="oymBrandText">OYM</span>
+    </div>
+    <div class="oymHeaderMain">
+      <h1 id="tituloApp">Enrutamiento OYM</h1>
+      <span id="clienteHeader">Sin enrutamiento activo</span>
+    </div>
   </div>
-  <span id="syncStatus">Pendientes: 0</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="syncStatus">Pendientes: 0</span>
+    <button class="themeQuickButton" type="button" onclick="alternarTemaRapido()" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  </div>
 </header>
 
 <section class="mapWrap">
@@ -221,16 +722,16 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
   <button id="toggleBotones" class="toggleButtons" onclick="toggleBotonesLaterales()" title="Mostrar botones">☰</button>
 
   <div class="floatButtons oculto" id="floatButtons">
-    <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
+    <button class="secondary" onclick="iniciarGPSRealtime()">📍 <span>Ir a mi GPS</span></button>
     <button onclick="marcarCentro()" style="display:none">Marcar</button>
-    <button class="gray" onclick="abrirPanelClientesAsignados()">Mis clientes</button>
-    <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
-    <button class="purple" onclick="abrirPanelAlmacenamiento()">Almacenamiento</button>
-    <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
-    <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
-    <button class="danger" onclick="finalizarEnrutamiento()">Finalizar enrutamiento</button>
-    <button class="purple" onclick="abrirPanelClientesAsignados()">Mis clientes asignados</button>
-    <button class="danger" onclick="logoutTecnico()">Cerrar sesión</button>
+    <button class="gray" onclick="abrirPanelClientesAsignados()">👥 <span>Mis clientes</span></button>
+    <button class="gray" onclick="abrirPanelRegistros()">🧵 <span>Empalmes</span></button>
+    <button class="purple" onclick="abrirPanelAlmacenamiento()">📦 <span>Almacenamiento</span></button>
+    <button class="warning" onclick="sincronizarPendientes()">➤ <span>Enviar datos</span></button>
+    <button class="danger" onclick="reenviarTodo()">⟳ <span>Reenviar todo</span></button>
+    <button class="danger" onclick="finalizarEnrutamiento()">✓ <span>Finalizar enrutamiento</span></button>
+    <button class="purple" onclick="abrirPanelClientesAsignados()">♟ <span>Mis clientes asignados</span></button>
+    <button class="danger" onclick="logoutTecnico()">⏻ <span>Cerrar sesión</span></button>
   </div>
 
   <div class="bottomLeft">
@@ -240,6 +741,32 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 
   <div class="centerInfo" id="centerInfo">Centro del mapa: --</div>
 </section>
+
+
+<nav class="oymBottomNav" aria-label="Navegación principal">
+  <button type="button" class="active" onclick="cerrarTodosLosPanelesTema()"><span class="navIcon">⌂</span><span>Mapa</span></button>
+  <button type="button" onclick="abrirPanelClientesAsignados()"><span class="navIcon">▣</span><span>Clientes</span></button>
+  <button type="button" onclick="abrirPanelRegistros()"><span class="navIcon">▥</span><span>Registros</span></button>
+  <button type="button" onclick="abrirSelectorTema()"><span class="navIcon">⚙</span><span>Ajustes</span></button>
+</nav>
+
+<div class="themeSheet" id="themeSheet" onclick="cerrarSelectorTema(event)">
+  <div class="themeSheetCard" role="dialog" aria-modal="true" aria-labelledby="themeTitle" onclick="event.stopPropagation()">
+    <h3 id="themeTitle">Apariencia</h3>
+    <p>Selecciona el estilo que utilizará el técnico.</p>
+    <div class="themeOption" id="themeOptionDark" onclick="aplicarTemaOym('dark')">
+      <div class="themePreview dark"></div>
+      <div><b>Oscuro profesional</b><br><small style="color:var(--app-muted)">Moderno y tecnológico</small></div>
+      <span class="themeCheck"></span>
+    </div>
+    <div class="themeOption" id="themeOptionLight" onclick="aplicarTemaOym('light')">
+      <div class="themePreview light"></div>
+      <div><b>Claro minimalista</b><br><small style="color:var(--app-muted)">Limpio y fácil de leer</small></div>
+      <span class="themeCheck"></span>
+    </div>
+    <button type="button" class="themeClose" onclick="cerrarSelectorTema()">Listo</button>
+  </div>
+</div>
 
 <!-- MODAL ENRUTAMIENTO -->
 <div class="modalOverlay" id="modalEnrutamiento">
@@ -3407,6 +3934,59 @@ window.addEventListener("pagehide", function(){
 });
 
 migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos(); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); }).catch(err => { console.error(err); inicializarBotonesLateralesOcultos(); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); });
+
+
+/* ===== CONTROL DE APARIENCIA OYM ===== */
+function aplicarTemaOym(tema){
+  const valor = tema === "light" ? "light" : "dark";
+  document.body.setAttribute("data-theme",valor);
+  localStorage.setItem("oym_tecnico_tema",valor);
+
+  const oscuro = document.getElementById("themeOptionDark");
+  const claro = document.getElementById("themeOptionLight");
+  if(oscuro){
+    oscuro.classList.toggle("active",valor === "dark");
+    const check = oscuro.querySelector(".themeCheck");
+    if(check) check.textContent = valor === "dark" ? "✓" : "";
+  }
+  if(claro){
+    claro.classList.toggle("active",valor === "light");
+    const check = claro.querySelector(".themeCheck");
+    if(check) check.textContent = valor === "light" ? "✓" : "";
+  }
+
+  setTimeout(()=>{
+    try{ map?.invalidateSize?.(); }catch(e){}
+  },160);
+}
+
+function alternarTemaRapido(){
+  const actual = document.body.getAttribute("data-theme") || "dark";
+  aplicarTemaOym(actual === "dark" ? "light" : "dark");
+}
+
+function abrirSelectorTema(){
+  const sheet = document.getElementById("themeSheet");
+  if(sheet) sheet.classList.add("open");
+  aplicarTemaOym(document.body.getAttribute("data-theme") || "dark");
+}
+
+function cerrarSelectorTema(evento){
+  if(evento && evento.target !== evento.currentTarget) return;
+  document.getElementById("themeSheet")?.classList.remove("open");
+}
+
+function cerrarTodosLosPanelesTema(){
+  document.querySelectorAll(".modalOverlay,.panelOverlay").forEach(el=>el.style.display="none");
+  document.getElementById("themeSheet")?.classList.remove("open");
+  setTimeout(()=>{ try{map?.invalidateSize?.();}catch(e){} },100);
+}
+
+(function iniciarTemaOym(){
+  const guardado = localStorage.getItem("oym_tecnico_tema") || "dark";
+  aplicarTemaOym(guardado);
+})();
+
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
@@ -3428,8 +4008,613 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
   </div>
 </div>
 
+
+<script>
+(function(){
+  function asegurarBotonMenuVisible(){
+    const candidatos = [
+      document.getElementById("oymMenuToggle"),
+      document.querySelector(".oym-menu-toggle"),
+      document.querySelector(".menu-toggle-oym"),
+      document.querySelector(".floating-menu-toggle")
+    ].filter(Boolean);
+
+    const boton = candidatos[0];
+    if(!boton) return;
+
+    if(!boton.id) boton.id = "oymMenuToggle";
+
+    Object.assign(boton.style,{
+      position:"fixed",
+      right:"18px",
+      bottom: window.innerWidth <= 768 ? "84px" : "92px",
+      width:"58px",
+      height:"58px",
+      display:"flex",
+      visibility:"visible",
+      opacity:"1",
+      alignItems:"center",
+      justifyContent:"center",
+      borderRadius:"50%",
+      zIndex:"2147483000",
+      transform:"none"
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", asegurarBotonMenuVisible);
+  window.addEventListener("resize", asegurarBotonMenuVisible);
+
+  const observer = new MutationObserver(asegurarBotonMenuVisible);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  setTimeout(asegurarBotonMenuVisible,300);
+  setTimeout(asegurarBotonMenuVisible,1200);
+})();
+</script>
+
+
+<div id="oymRightSideMenu" aria-hidden="true">
+  <button class="oymSideMenuItem" type="button" data-action="gps">
+    <span class="oymSideMenuIcon oym-color-gps">📍</span>
+    <span class="oymSideMenuLabel">Ir a mi GPS</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="clientes">
+    <span class="oymSideMenuIcon oym-color-clientes">👥</span>
+    <span class="oymSideMenuLabel">Mis clientes</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="empalmes">
+    <span class="oymSideMenuIcon oym-color-empalmes">🧵</span>
+    <span class="oymSideMenuLabel">Empalmes</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="almacenamiento">
+    <span class="oymSideMenuIcon oym-color-storage">📦</span>
+    <span class="oymSideMenuLabel">Almacenamiento</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="enviar">
+    <span class="oymSideMenuIcon oym-color-send">➤</span>
+    <span class="oymSideMenuLabel">Enviar datos</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="reenviar">
+    <span class="oymSideMenuIcon oym-color-resend">⟳</span>
+    <span class="oymSideMenuLabel">Reenviar todo</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="finalizar">
+    <span class="oymSideMenuIcon oym-color-finish">✓</span>
+    <span class="oymSideMenuLabel">Finalizar enrutamiento</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="asignados">
+    <span class="oymSideMenuIcon oym-color-assigned">👥</span>
+    <span class="oymSideMenuLabel">Mis clientes asignados</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="logout">
+    <span class="oymSideMenuIcon oym-color-logout">⏻</span>
+    <span class="oymSideMenuLabel">Cerrar sesión</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+</div>
+
+<button id="oymSideMenuToggle" type="button" aria-label="Mostrar menú" aria-expanded="false">☰</button>
+
+
+<script>
+(function(){
+  "use strict";
+
+  const menu = document.getElementById("oymRightSideMenu");
+  const toggle = document.getElementById("oymSideMenuToggle");
+
+  function setMenu(abierto){
+    if(!menu || !toggle) return;
+    menu.classList.toggle("oym-open",abierto);
+    menu.setAttribute("aria-hidden",abierto ? "false" : "true");
+    toggle.setAttribute("aria-expanded",abierto ? "true" : "false");
+    toggle.textContent = abierto ? "×" : "☰";
+  }
+
+  function buscarYClick(selectores){
+    for(const selector of selectores){
+      const el = document.querySelector(selector);
+      if(el && el.offsetParent !== null){
+        el.click();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function ejecutarAccion(accion){
+    const acciones = {
+      gps: () => {
+        if(typeof window.irAMiGPS === "function") return window.irAMiGPS();
+        if(typeof window.centrarEnGPS === "function") return window.centrarEnGPS();
+        buscarYClick(['#btnGPS','#btnIrGPS','[data-action="gps"]','.btn-gps']);
+      },
+
+      clientes: () => {
+        if(typeof window.abrirMisClientes === "function") return window.abrirMisClientes();
+        buscarYClick(['#btnMisClientes','#btnClientes','.btn-clientes']);
+      },
+
+      empalmes: () => {
+        if(typeof window.abrirListaRegistros === "function") return window.abrirListaRegistros();
+        if(typeof window.abrirEmpalmes === "function") return window.abrirEmpalmes();
+        buscarYClick(['#btnEmpalmes','#btnRegistros','.btn-empalmes']);
+      },
+
+      almacenamiento: () => {
+        if(typeof window.abrirAlmacenamiento === "function") return window.abrirAlmacenamiento();
+        if(typeof window.mostrarAlmacenamiento === "function") return window.mostrarAlmacenamiento();
+        buscarYClick(['#btnAlmacenamiento','.btn-almacenamiento']);
+      },
+
+      enviar: () => {
+        if(typeof window.enviarDatos === "function") return window.enviarDatos();
+        if(typeof window.enviarPendientes === "function") return window.enviarPendientes();
+        buscarYClick(['#btnEnviarDatos','.btn-enviar']);
+      },
+
+      reenviar: () => {
+        if(typeof window.reenviarTodo === "function") return window.reenviarTodo();
+        buscarYClick(['#btnReenviarTodo','.btn-reenviar']);
+      },
+
+      finalizar: () => {
+        if(typeof window.finalizarEnrutamiento === "function") return window.finalizarEnrutamiento();
+        buscarYClick(['#btnFinalizarEnrutamiento','.btn-finalizar']);
+      },
+
+      asignados: () => {
+        if(typeof window.abrirMisClientesAsignados === "function") return window.abrirMisClientesAsignados();
+        if(typeof window.abrirModalClientesAsignados === "function") return window.abrirModalClientesAsignados();
+        buscarYClick(['#btnMisClientesAsignados','.btn-asignados']);
+      },
+
+      logout: () => {
+        if(typeof window.cerrarSesion === "function") return window.cerrarSesion();
+        if(typeof window.logout === "function") return window.logout();
+        buscarYClick(['#btnCerrarSesion','.btn-logout']);
+      }
+    };
+
+    const fn = acciones[accion];
+    if(fn) fn();
+  }
+
+  toggle?.addEventListener("click",function(e){
+    e.stopPropagation();
+    setMenu(!menu.classList.contains("oym-open"));
+  });
+
+  menu?.addEventListener("click",function(e){
+    const item = e.target.closest(".oymSideMenuItem");
+    if(!item) return;
+    ejecutarAccion(item.dataset.action);
+    setMenu(false);
+  });
+
+  document.addEventListener("click",function(e){
+    if(!menu?.classList.contains("oym-open")) return;
+    if(menu.contains(e.target) || toggle.contains(e.target)) return;
+    setMenu(false);
+  });
+
+  document.addEventListener("keydown",function(e){
+    if(e.key === "Escape") setMenu(false);
+  });
+
+  setMenu(false);
+})();
+</script>
+
+
+<script>
+(function(){
+  function posicionarMenuOym(){
+    const boton = document.getElementById("oymSideMenuToggle");
+    const menu = document.getElementById("oymRightSideMenu");
+    const marcar =
+      document.getElementById("btnMarcar") ||
+      document.querySelector(".btn-marcar") ||
+      document.querySelector(".fab-add");
+
+    const mobile = window.innerWidth <= 768;
+
+    if(boton){
+      Object.assign(boton.style,{
+        position:"fixed",
+        top: mobile ? "126px" : "132px",
+        right: mobile ? "14px" : "18px",
+        bottom:"auto",
+        width: mobile ? "50px" : "52px",
+        height: mobile ? "50px" : "52px",
+        zIndex:"2147483000"
+      });
+    }
+
+    if(menu){
+      Object.assign(menu.style,{
+        position:"fixed",
+        top: mobile ? "186px" : "194px",
+        right: mobile ? "14px" : "18px",
+        bottom:"auto",
+        maxHeight: mobile ? "calc(100vh - 200px)" : "calc(100vh - 215px)"
+      });
+    }
+
+    if(marcar){
+      Object.assign(marcar.style,{
+        position:"fixed",
+        right: mobile ? "14px" : "18px",
+        bottom: mobile ? "82px" : "78px",
+        top:"auto"
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded",posicionarMenuOym);
+  window.addEventListener("resize",posicionarMenuOym);
+
+  const observer = new MutationObserver(posicionarMenuOym);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  setTimeout(posicionarMenuOym,300);
+  setTimeout(posicionarMenuOym,1000);
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  function obtenerControlesOym(){
+    return {
+      auth: document.getElementById("authOverlay"),
+      menu: document.getElementById("oymRightSideMenu"),
+      toggle: document.getElementById("oymSideMenuToggle"),
+      fab: document.getElementById("fabMarcar"),
+      toggleOriginal: document.getElementById("toggleBotones"),
+      botonesOriginales: document.getElementById("floatButtons")
+    };
+  }
+
+  function sesionTecnicoVisible(){
+    const {auth} = obtenerControlesOym();
+    if(!auth) return true;
+
+    const estilo = window.getComputedStyle(auth);
+    return estilo.display === "none" ||
+           estilo.visibility === "hidden" ||
+           estilo.opacity === "0";
+  }
+
+  function actualizarControlesSegunSesion(){
+    const {
+      menu,
+      toggle,
+      fab,
+      toggleOriginal,
+      botonesOriginales
+    } = obtenerControlesOym();
+
+    const autenticado = sesionTecnicoVisible();
+
+    if(toggle){
+      toggle.style.setProperty(
+        "display",
+        autenticado ? "flex" : "none",
+        "important"
+      );
+    }
+
+    if(fab){
+      const rutaActiva = Boolean(window.enrutamientoActivo);
+      fab.style.setProperty(
+        "display",
+        autenticado && rutaActiva ? "flex" : "none",
+        "important"
+      );
+    }
+
+    if(menu){
+      if(!autenticado){
+        menu.classList.remove("oym-open");
+        menu.setAttribute("aria-hidden","true");
+        menu.style.setProperty("display","none","important");
+      }else{
+        menu.style.removeProperty("display");
+      }
+    }
+
+    // El menú antiguo se mantiene oculto para evitar duplicados.
+    if(toggleOriginal){
+      toggleOriginal.style.setProperty("display","none","important");
+    }
+    if(botonesOriginales){
+      botonesOriginales.classList.add("oculto");
+      botonesOriginales.style.setProperty("display","none","important");
+    }
+  }
+
+  function cerrarMenuOym(){
+    const {menu,toggle} = obtenerControlesOym();
+    if(menu){
+      menu.classList.remove("oym-open");
+      menu.setAttribute("aria-hidden","true");
+    }
+    if(toggle){
+      toggle.setAttribute("aria-expanded","false");
+      toggle.textContent = "☰";
+    }
+  }
+
+  async function ejecutarAccionOym(accion){
+    if(!sesionTecnicoVisible()) return;
+
+    try{
+      switch(accion){
+        case "gps":
+          if(typeof window.iniciarGPSRealtime === "function"){
+            window.iniciarGPSRealtime();
+          }else if(typeof window.activarSeguimiento === "function"){
+            window.activarSeguimiento();
+          }
+          break;
+
+        case "clientes":
+          if(typeof window.abrirPanelClientesAsignados === "function"){
+            await window.abrirPanelClientesAsignados();
+          }
+          break;
+
+        case "empalmes":
+          if(typeof window.abrirPanelRegistros === "function"){
+            window.abrirPanelRegistros();
+          }
+          break;
+
+        case "almacenamiento":
+          if(typeof window.abrirPanelAlmacenamiento === "function"){
+            await window.abrirPanelAlmacenamiento();
+          }
+          break;
+
+        case "enviar":
+          if(typeof window.sincronizarPendientes === "function"){
+            await window.sincronizarPendientes();
+          }
+          break;
+
+        case "reenviar":
+          if(typeof window.reenviarTodo === "function"){
+            await window.reenviarTodo();
+          }
+          break;
+
+        case "finalizar":
+          if(typeof window.finalizarEnrutamiento === "function"){
+            await window.finalizarEnrutamiento();
+          }
+          break;
+
+        case "asignados":
+          if(typeof window.abrirPanelClientesAsignados === "function"){
+            await window.abrirPanelClientesAsignados();
+          }
+          break;
+
+        case "logout":
+          if(typeof window.logoutTecnico === "function"){
+            await window.logoutTecnico();
+          }
+          break;
+
+        default:
+          console.warn("Acción de menú no reconocida:",accion);
+      }
+    }catch(error){
+      console.error("Error ejecutando acción del menú OYM:",error);
+      alert("No se pudo ejecutar la opción seleccionada: " + (error.message || error));
+    }finally{
+      cerrarMenuOym();
+      setTimeout(actualizarControlesSegunSesion,100);
+      setTimeout(actualizarControlesSegunSesion,600);
+    }
+  }
+
+  function reinstalarEventosMenu(){
+    const {menu,toggle} = obtenerControlesOym();
+    if(!menu || !toggle) return;
+
+    // Clonar elimina listeners anteriores que podían llamar funciones incorrectas.
+    if(!toggle.dataset.oymEventosCorregidos){
+      const nuevoToggle = toggle.cloneNode(true);
+      toggle.replaceWith(nuevoToggle);
+      nuevoToggle.dataset.oymEventosCorregidos = "1";
+
+      nuevoToggle.addEventListener("click",function(event){
+        event.preventDefault();
+        event.stopPropagation();
+
+        if(!sesionTecnicoVisible()) return;
+
+        const menuActual = document.getElementById("oymRightSideMenu");
+        const abierto = !menuActual.classList.contains("oym-open");
+
+        menuActual.classList.toggle("oym-open",abierto);
+        menuActual.setAttribute("aria-hidden",abierto ? "false" : "true");
+        nuevoToggle.setAttribute("aria-expanded",abierto ? "true" : "false");
+        nuevoToggle.textContent = abierto ? "×" : "☰";
+      });
+    }
+
+    if(!menu.dataset.oymEventosCorregidos){
+      menu.dataset.oymEventosCorregidos = "1";
+      menu.addEventListener("click",function(event){
+        const item = event.target.closest(".oymSideMenuItem");
+        if(!item) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        ejecutarAccionOym(item.dataset.action);
+      });
+    }
+  }
+
+  function inicializarCorreccionOym(){
+    reinstalarEventosMenu();
+    actualizarControlesSegunSesion();
+
+    const {auth} = obtenerControlesOym();
+    if(auth){
+      const authObserver = new MutationObserver(function(){
+        actualizarControlesSegunSesion();
+      });
+      authObserver.observe(auth,{
+        attributes:true,
+        attributeFilter:["style","class"]
+      });
+    }
+
+    const domObserver = new MutationObserver(function(){
+      reinstalarEventosMenu();
+      actualizarControlesSegunSesion();
+    });
+    domObserver.observe(document.body,{
+      childList:true,
+      subtree:true
+    });
+
+    document.addEventListener("click",function(event){
+      const {menu,toggle} = obtenerControlesOym();
+      if(!menu || !menu.classList.contains("oym-open")) return;
+      if(menu.contains(event.target) || toggle?.contains(event.target)) return;
+      cerrarMenuOym();
+    });
+
+    document.addEventListener("keydown",function(event){
+      if(event.key === "Escape") cerrarMenuOym();
+    });
+
+    if(window.supabaseClient?.auth?.onAuthStateChange){
+      window.supabaseClient.auth.onAuthStateChange(function(){
+        setTimeout(actualizarControlesSegunSesion,100);
+        setTimeout(actualizarControlesSegunSesion,600);
+      });
+    }
+
+    setInterval(actualizarControlesSegunSesion,1200);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",inicializarCorreccionOym);
+  }else{
+    inicializarCorreccionOym();
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  function loginEstaOculto(){
+    const auth = document.getElementById("authOverlay");
+    if(!auth) return true;
+
+    const cs = getComputedStyle(auth);
+    return (
+      cs.display === "none" ||
+      cs.visibility === "hidden" ||
+      cs.opacity === "0"
+    );
+  }
+
+  function forzarVisibilidadFab(){
+    const autenticado = loginEstaOculto();
+
+    const fab =
+      document.getElementById("fabMarcar") ||
+      document.getElementById("btnMarcar") ||
+      document.querySelector(".fab-add") ||
+      document.querySelector(".btn-marcar");
+
+    const menu = document.getElementById("oymSideMenuToggle");
+
+    if(menu){
+      menu.style.setProperty(
+        "display",
+        autenticado ? "flex" : "none",
+        "important"
+      );
+    }
+
+    if(fab){
+      fab.style.setProperty(
+        "display",
+        autenticado ? "flex" : "none",
+        "important"
+      );
+
+      if(autenticado){
+        Object.assign(fab.style,{
+          position:"fixed",
+          right:"18px",
+          bottom:"86px",
+          top:"auto",
+          width:"58px",
+          height:"58px",
+          minWidth:"58px",
+          minHeight:"58px",
+          alignItems:"center",
+          justifyContent:"center",
+          borderRadius:"16px",
+          zIndex:"2147482500",
+          visibility:"visible",
+          opacity:"1",
+          transform:"none"
+        });
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded",forzarVisibilidadFab);
+  window.addEventListener("resize",forzarVisibilidadFab);
+
+  const observer = new MutationObserver(forzarVisibilidadFab);
+  observer.observe(document.documentElement,{
+    childList:true,
+    subtree:true,
+    attributes:true,
+    attributeFilter:["style","class"]
+  });
+
+  setTimeout(forzarVisibilidadFab,200);
+  setTimeout(forzarVisibilidadFab,800);
+  setTimeout(forzarVisibilidadFab,1800);
+})();
+</script>
+
 </body>
 </html>
+
 
 
 
