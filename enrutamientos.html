@@ -666,6 +666,11 @@ body:has(#authOverlay[style*="display: flex"]) #fabMarcar{
   }
 }
 
+
+/* Lógica dinámica Entrada/Salida por tipo de punto y sentido */
+.oym-campo-oculto{display:none!important;}
+.oym-campo-visible{display:block!important;}
+
 </style>
 </head>
 
@@ -901,16 +906,15 @@ body:has(#authOverlay[style*="display: flex"]) #fabMarcar{
 
         <div id="camposGponContenedor">
           <div class="row">
-            <div>
+            <div id="grupoContenedor">
               <label>Contenedor <span class="required">*</span></label>
               <select id="gponContenedor">
                 <option value="">Seleccione...</option>
                 <option value="EMPALME">EMPALME</option>
-                <option value="CTO">CTO</option>
-                <option value="NAP">NAP</option>
+                <option value="CTO/NAP">CTO/NAP</option>
               </select>
             </div>
-            <div>
+            <div id="grupoIdContenedor">
               <label>Nombre o ID de contenedor <span class="required">*</span></label>
               <input id="gponContenedorId" placeholder="Ej: FOC-00052">
             </div>
@@ -4612,9 +4616,811 @@ function cerrarTodosLosPanelesTema(){
 })();
 </script>
 
+
+<script>
+/* ============================================================
+   PROTECCIÓN DE DATOS MÓVILES OYM
+   - Respaldo de empalmes en IndexedDB
+   - Borrador automático del formulario
+   - Compresión de fotos antes de guardarlas
+   - Restauración tras cambio de aplicación o recarga
+   ============================================================ */
+(function(){
+  "use strict";
+
+  const OYM_SAFE_DB = "oym_enrutamiento_respaldo_movil_v1";
+  const OYM_SAFE_VERSION = 1;
+  const STORE_STATE = "estado";
+  const STORE_DRAFT = "borradores";
+  const STATE_KEY = "estado_principal";
+  const DRAFT_PREFIX = "borrador_";
+
+  let guardadoProgramado = null;
+  let restaurandoBorrador = false;
+  let ultimaRutaRestaurada = null;
+
+  function abrirDBSeguro(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(OYM_SAFE_DB,OYM_SAFE_VERSION);
+
+      req.onupgradeneeded = event=>{
+        const db = event.target.result;
+
+        if(!db.objectStoreNames.contains(STORE_STATE)){
+          db.createObjectStore(STORE_STATE,{keyPath:"key"});
+        }
+        if(!db.objectStoreNames.contains(STORE_DRAFT)){
+          db.createObjectStore(STORE_DRAFT,{keyPath:"key"});
+        }
+      };
+
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbPut(storeName,data){
+    const db = await abrirDBSeguro();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(storeName,"readwrite");
+      tx.objectStore(storeName).put(data);
+      tx.oncomplete = ()=>resolve(data);
+      tx.onerror = ()=>reject(tx.error);
+      tx.onabort = ()=>reject(tx.error || new Error("Transacción cancelada"));
+    });
+  }
+
+  async function idbGet(storeName,key){
+    const db = await abrirDBSeguro();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(storeName,"readonly");
+      const req = tx.objectStore(storeName).get(key);
+      req.onsuccess = ()=>resolve(req.result || null);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbDelete(storeName,key){
+    const db = await abrirDBSeguro();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(storeName,"readwrite");
+      tx.objectStore(storeName).delete(key);
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error);
+    });
+  }
+
+  function rutaActualKey(){
+    const ruta = window.enrutamientoActivo || enrutamientoActivo;
+    if(!ruta) return null;
+
+    return DRAFT_PREFIX + [
+      ruta.offline_id || "",
+      ruta.id_cliente || "",
+      ruta.codigo_ruta || ""
+    ].join("_");
+  }
+
+  function clonarSeguro(valor){
+    try{
+      return structuredClone(valor);
+    }catch(e){
+      return JSON.parse(JSON.stringify(valor));
+    }
+  }
+
+  async function guardarEstadoCompletoSeguro(){
+    try{
+      const estado = {
+        key:STATE_KEY,
+        registros:clonarSeguro(window.registros || registros || []),
+        enrutamientos:clonarSeguro(window.enrutamientos || enrutamientos || []),
+        enrutamientoActivo:clonarSeguro(window.enrutamientoActivo || enrutamientoActivo || null),
+        updated_at:new Date().toISOString(),
+        url_location:location.href
+      };
+
+      await idbPut(STORE_STATE,estado);
+      return true;
+    }catch(error){
+      console.error("No se pudo respaldar el estado en IndexedDB:",error);
+      return false;
+    }
+  }
+
+  function obtenerValorCampo(id){
+    const el = document.getElementById(id);
+    if(!el) return "";
+    if(el.type === "checkbox") return Boolean(el.checked);
+    return el.value ?? "";
+  }
+
+  function construirBorradorFormulario(){
+    const ruta = window.enrutamientoActivo || enrutamientoActivo;
+    if(!ruta) return null;
+
+    const ids = [
+      "editOfflineId","tipoRedActivo","ambiente","tipoPunto",
+      "zonaInterna","pisoNivel","torreBloque","cuartoRack",
+      "referenciaVisual","accesoRequerido","descripcionInterna",
+      "elementoExterno","idElementoExterno","referenciaExterna",
+      "punto","sentido","cableEntrada","hiloEntrada",
+      "cableSalida","hiloSalida","observacion",
+      "gponContenedor","gponContenedorId",
+      "oltNombre","oltMarca","oltFrame","oltSlot","oltTarjeta","oltPuertoPon",
+      "splitterNivel","splitterRelacion","splitterPuertoEntrada","splitterPuertoSalida",
+      "cajaTipo","cajaCapacidad","cajaPuertoUtilizado",
+      "splitterIntegrado","splitterIntegradoRelacion","splitterIntegradoPuertoSalida",
+      "ontSerial","ontModelo","ontPotenciaRx","ontPuertoOrigen",
+      "gponObservacionValidacion","consecutivoEmpalme"
+    ];
+
+    const campos = {};
+    ids.forEach(id=>campos[id] = obtenerValorCampo(id));
+
+    return {
+      key:rutaActualKey(),
+      route_offline_id:ruta.offline_id || null,
+      id_cliente:ruta.id_cliente || null,
+      codigo_ruta:ruta.codigo_ruta || null,
+      campos,
+      selectedLat:Number.isFinite(Number(window.selectedLat ?? selectedLat))
+        ? Number(window.selectedLat ?? selectedLat)
+        : null,
+      selectedLng:Number.isFinite(Number(window.selectedLng ?? selectedLng))
+        ? Number(window.selectedLng ?? selectedLng)
+        : null,
+      currentAccuracy:Number.isFinite(Number(window.currentAccuracy ?? currentAccuracy))
+        ? Number(window.currentAccuracy ?? currentAccuracy)
+        : null,
+      fotoPanoramica:window.fotoPanoramica || fotoPanoramica || null,
+      fotoFusion:window.fotoFusion || fotoFusion || null,
+      updated_at:new Date().toISOString()
+    };
+  }
+
+  async function guardarBorradorFormularioSeguro(){
+    if(restaurandoBorrador) return false;
+
+    const modal = document.getElementById("modalFormulario");
+    const borrador = construirBorradorFormulario();
+
+    if(!borrador?.key) return false;
+
+    // Se guarda aunque el modal esté temporalmente oculto por la cámara,
+    // siempre que tenga datos útiles.
+    const tieneDatos = Object.values(borrador.campos || {}).some(v=>String(v ?? "").trim() !== "") ||
+      borrador.fotoPanoramica ||
+      borrador.fotoFusion ||
+      borrador.selectedLat !== null;
+
+    if(!tieneDatos) return false;
+
+    try{
+      await idbPut(STORE_DRAFT,borrador);
+      return true;
+    }catch(error){
+      console.error("No se pudo guardar el borrador:",error);
+      return false;
+    }
+  }
+
+  function programarGuardadoBorrador(){
+    clearTimeout(guardadoProgramado);
+    guardadoProgramado = setTimeout(()=>{
+      guardarBorradorFormularioSeguro();
+      guardarEstadoCompletoSeguro();
+    },350);
+  }
+
+  async function restaurarBorradorFormulario(forzar=false){
+    const key = rutaActualKey();
+    if(!key) return false;
+
+    if(!forzar && ultimaRutaRestaurada === key) return false;
+
+    const borrador = await idbGet(STORE_DRAFT,key).catch(()=>null);
+    if(!borrador) return false;
+
+    restaurandoBorrador = true;
+
+    try{
+      Object.entries(borrador.campos || {}).forEach(([id,valor])=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+
+        if(el.type === "checkbox"){
+          el.checked = Boolean(valor);
+        }else{
+          el.value = valor ?? "";
+        }
+      });
+
+      if(Number.isFinite(Number(borrador.selectedLat))){
+        selectedLat = Number(borrador.selectedLat);
+        window.selectedLat = selectedLat;
+      }
+      if(Number.isFinite(Number(borrador.selectedLng))){
+        selectedLng = Number(borrador.selectedLng);
+        window.selectedLng = selectedLng;
+      }
+      if(Number.isFinite(Number(borrador.currentAccuracy))){
+        currentAccuracy = Number(borrador.currentAccuracy);
+        window.currentAccuracy = currentAccuracy;
+      }
+
+      if(borrador.fotoPanoramica){
+        fotoPanoramica = borrador.fotoPanoramica;
+        window.fotoPanoramica = fotoPanoramica;
+        const preview = document.getElementById("previewPanoramica");
+        if(preview){
+          preview.src = fotoPanoramica;
+          preview.style.display = "block";
+        }
+      }
+
+      if(borrador.fotoFusion){
+        fotoFusion = borrador.fotoFusion;
+        window.fotoFusion = fotoFusion;
+        const preview = document.getElementById("previewFusion");
+        if(preview){
+          preview.src = fotoFusion;
+          preview.style.display = "block";
+        }
+      }
+
+      if(typeof cambiarAmbiente === "function") cambiarAmbiente();
+      if(typeof actualizarOpcionesTipoPunto === "function") actualizarOpcionesTipoPunto();
+      if(typeof actualizarCamposPorTipoPunto === "function") actualizarCamposPorTipoPunto();
+
+      const tipo = document.getElementById("tipoPunto")?.value;
+      if(typeof mostrarSoloGrupoGpon === "function" && tipo){
+        mostrarSoloGrupoGpon(tipo);
+      }
+      if(typeof actualizarPuertosSplitter === "function") actualizarPuertosSplitter();
+      if(typeof actualizarPuertosCaja === "function") actualizarPuertosCaja();
+
+      ultimaRutaRestaurada = key;
+
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Borrador recuperado automáticamente");
+      }
+
+      return true;
+    }finally{
+      restaurandoBorrador = false;
+    }
+  }
+
+  async function eliminarBorradorRutaActual(){
+    const key = rutaActualKey();
+    if(!key) return;
+
+    await idbDelete(STORE_DRAFT,key).catch(()=>{});
+    ultimaRutaRestaurada = null;
+  }
+
+  async function restaurarEstadoCompletoSeguro(){
+    try{
+      const respaldo = await idbGet(STORE_STATE,STATE_KEY);
+      if(!respaldo) return false;
+
+      const actuales = Array.isArray(window.registros || registros)
+        ? (window.registros || registros)
+        : [];
+
+      const respaldados = Array.isArray(respaldo.registros)
+        ? respaldo.registros
+        : [];
+
+      const mapa = new Map();
+      [...respaldados,...actuales].forEach(registro=>{
+        if(!registro?.offline_id) return;
+
+        const anterior = mapa.get(registro.offline_id);
+        const fechaAnterior = new Date(
+          anterior?.fecha_ultima_edicion_app ||
+          anterior?.fecha_captura_app ||
+          anterior?.created_at ||
+          0
+        ).getTime();
+
+        const fechaNueva = new Date(
+          registro?.fecha_ultima_edicion_app ||
+          registro?.fecha_captura_app ||
+          registro?.created_at ||
+          0
+        ).getTime();
+
+        if(!anterior || fechaNueva >= fechaAnterior){
+          mapa.set(registro.offline_id,registro);
+        }
+      });
+
+      const combinados = [...mapa.values()];
+
+      if(combinados.length > actuales.length){
+        registros = combinados;
+        window.registros = registros;
+
+        try{
+          localStorage.setItem("oym_empalmes_offline_v2",JSON.stringify(registros));
+        }catch(e){
+          console.warn("No se pudo reflejar el respaldo en localStorage:",e);
+        }
+
+        if(typeof pintarRegistros === "function") pintarRegistros();
+        if(typeof actualizarSyncStatus === "function") actualizarSyncStatus();
+
+        if(typeof mostrarToast === "function"){
+          mostrarToast(`Se recuperaron ${combinados.length - actuales.length} registro(s) del respaldo`);
+        }
+      }
+
+      if(!enrutamientoActivo && respaldo.enrutamientoActivo){
+        enrutamientoActivo = respaldo.enrutamientoActivo;
+        window.enrutamientoActivo = enrutamientoActivo;
+      }
+
+      return true;
+    }catch(error){
+      console.error("No se pudo restaurar el respaldo persistente:",error);
+      return false;
+    }
+  }
+
+  function dataUrlDesdeBlob(blob){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=>resolve(reader.result);
+      reader.onerror = ()=>reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function comprimirFotoMovil(file,tipo){
+    if(!file) return null;
+
+    // Guardar el formulario antes de entregar el control a la cámara/galería.
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    const objectUrl = URL.createObjectURL(file);
+
+    try{
+      const img = await new Promise((resolve,reject)=>{
+        const imagen = new Image();
+        imagen.onload = ()=>resolve(imagen);
+        imagen.onerror = ()=>reject(new Error("No se pudo leer la fotografía"));
+        imagen.src = objectUrl;
+      });
+
+      const maxDimension = 1280;
+      const escala = Math.min(
+        1,
+        maxDimension / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height)
+      );
+
+      const ancho = Math.max(1,Math.round((img.naturalWidth || img.width) * escala));
+      const alto = Math.max(1,Math.round((img.naturalHeight || img.height) * escala));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = ancho;
+      canvas.height = alto;
+
+      const ctx = canvas.getContext("2d",{alpha:false});
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,ancho,alto);
+      ctx.drawImage(img,0,0,ancho,alto);
+
+      const titulo = tipo === "panoramica"
+        ? "FOTO 1 PANORÁMICA"
+        : "FOTO 2 EMPALME Y FUSIÓN";
+
+      const ambiente = val("ambiente") || "N/A";
+      const ubicacion = ambiente === "interno"
+        ? `${val("zonaInterna")} ${val("pisoNivel")} ${val("torreBloque")} ${val("cuartoRack")}`.trim()
+        : `${val("elementoExterno")} ${val("idElementoExterno")}`.trim();
+
+      const consecutivoActual = val("consecutivoEmpalme") || obtenerSiguienteConsecutivo();
+      const ruta = enrutamientoActivo || {};
+
+      const etiqueta = [
+        titulo,
+        `Cliente: ${ruta.id_cliente || "N/A"} | Ruta: ${ruta.codigo_ruta || "N/A"}`,
+        `${construirEtiquetaPunto(consecutivoActual)} | Punto: ${val("punto") || "Punto sin nombre"} (${ambiente.toUpperCase()})`,
+        `Ubicación: ${ubicacion || "N/A"}`,
+        `Fusión: Hilo ${val("hiloEntrada") || "N/A"} entrada → Hilo ${val("hiloSalida") || "N/A"} salida`,
+        `GPS: ${Number(selectedLat).toFixed(7)}, ${Number(selectedLng).toFixed(7)}`,
+        `Fecha: ${new Date().toLocaleString()}`
+      ];
+
+      const fontSize = Math.max(14,Math.round(ancho / 58));
+      const lineHeight = Math.round(fontSize * 1.35);
+      const boxH = Math.min(alto,Math.max(130,(etiqueta.length + 1) * lineHeight));
+
+      ctx.fillStyle = "rgba(0,0,0,.76)";
+      ctx.fillRect(0,alto - boxH,ancho,boxH);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `${fontSize}px Arial`;
+
+      etiqueta.forEach((linea,index)=>{
+        ctx.fillText(
+          linea,
+          16,
+          alto - boxH + lineHeight + (index * lineHeight)
+        );
+      });
+
+      const blob = await new Promise((resolve,reject)=>{
+        canvas.toBlob(
+          resultado=>resultado ? resolve(resultado) : reject(new Error("No se pudo comprimir la fotografía")),
+          "image/jpeg",
+          0.72
+        );
+      });
+
+      const dataUrl = await dataUrlDesdeBlob(blob);
+
+      // Liberar memoria inmediatamente.
+      canvas.width = 1;
+      canvas.height = 1;
+      ctx.clearRect(0,0,1,1);
+
+      return dataUrl;
+    }finally{
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  // Reemplaza el procesamiento anterior, que cargaba la foto original completa
+  // en Base64 y podía duplicar varias veces el uso de memoria.
+  window.procesarFoto = procesarFoto = async function(evento,tipo){
+    const input = evento?.target;
+    const file = input?.files?.[0];
+    if(!file) return;
+
+    try{
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Procesando y comprimiendo fotografía...");
+      }
+
+      const data = await comprimirFotoMovil(file,tipo);
+
+      if(tipo === "panoramica"){
+        fotoPanoramica = data;
+        window.fotoPanoramica = data;
+
+        const preview = document.getElementById("previewPanoramica");
+        if(preview){
+          preview.src = data;
+          preview.style.display = "block";
+        }
+      }else{
+        fotoFusion = data;
+        window.fotoFusion = data;
+
+        const preview = document.getElementById("previewFusion");
+        if(preview){
+          preview.src = data;
+          preview.style.display = "block";
+        }
+      }
+
+      await guardarBorradorFormularioSeguro();
+      await guardarEstadoCompletoSeguro();
+
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Fotografía guardada en el borrador");
+      }
+    }catch(error){
+      console.error("Error procesando fotografía:",error);
+      alert(
+        "No fue posible procesar la fotografía. " +
+        "El borrador del formulario quedó guardado. " +
+        "Cierra otras aplicaciones y vuelve a intentarlo."
+      );
+    }finally{
+      if(input) input.value = "";
+    }
+  };
+
+  // Guardar borrador ANTES de abrir la aplicación de cámara.
+  const abrirCamaraAnterior = window.abrirCamara || abrirCamara;
+  window.abrirCamara = abrirCamara = async function(tipo){
+    if(!selectedLat || !selectedLng){
+      alert("Primero fija el empalme con Marcar.");
+      return;
+    }
+
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    const input = document.getElementById(
+      tipo === "panoramica" ? "cameraPanoramica" : "cameraFusion"
+    );
+
+    if(input) input.click();
+    else if(typeof abrirCamaraAnterior === "function") abrirCamaraAnterior(tipo);
+  };
+
+  // Respaldo adicional cada vez que la aplicación guarda registros.
+  const guardarLocalStorageAnterior = window.guardarLocalStorage || guardarLocalStorage;
+  window.guardarLocalStorage = guardarLocalStorage = function(){
+    const resultado = guardarLocalStorageAnterior.apply(this,arguments);
+    guardarEstadoCompletoSeguro();
+    return resultado;
+  };
+
+  // Al abrir el formulario, recuperar borrador de esa ruta.
+  const abrirModalAnterior = window.abrirModal || abrirModal;
+  window.abrirModal = abrirModal = function(){
+    const resultado = abrirModalAnterior.apply(this,arguments);
+
+    setTimeout(()=>{
+      const editId = document.getElementById("editOfflineId")?.value;
+      if(!editId){
+        restaurarBorradorFormulario();
+      }
+    },80);
+
+    return resultado;
+  };
+
+  // Al guardar correctamente un empalme, borrar el borrador de esa ruta.
+  const limpiarDespuesAnterior = window.limpiarDespuesDeGuardar || limpiarDespuesDeGuardar;
+  window.limpiarDespuesDeGuardar = limpiarDespuesDeGuardar = function(){
+    const resultado = limpiarDespuesAnterior.apply(this,arguments);
+    eliminarBorradorRutaActual();
+    guardarEstadoCompletoSeguro();
+    return resultado;
+  };
+
+  function instalarEventosAutoguardado(){
+    const modal = document.getElementById("modalFormulario");
+    if(modal && !modal.dataset.oymAutoguardado){
+      modal.dataset.oymAutoguardado = "1";
+      modal.addEventListener("input",programarGuardadoBorrador,true);
+      modal.addEventListener("change",programarGuardadoBorrador,true);
+    }
+
+    document.addEventListener("visibilitychange",()=>{
+      if(document.hidden){
+        guardarBorradorFormularioSeguro();
+        guardarEstadoCompletoSeguro();
+      }else{
+        restaurarEstadoCompletoSeguro();
+      }
+    });
+
+    window.addEventListener("pagehide",()=>{
+      guardarBorradorFormularioSeguro();
+      guardarEstadoCompletoSeguro();
+    });
+
+    window.addEventListener("pageshow",event=>{
+      restaurarEstadoCompletoSeguro().then(()=>{
+        if(event.persisted){
+          restaurarBorradorFormulario(true);
+        }
+      });
+    });
+
+    window.addEventListener("online",()=>{
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Conexión recuperada. Tus datos locales siguen guardados.");
+      }
+    });
+  }
+
+  async function solicitarPersistencia(){
+    try{
+      if(navigator.storage?.persist){
+        await navigator.storage.persist();
+      }
+    }catch(e){
+      console.warn("No se pudo solicitar almacenamiento persistente:",e);
+    }
+  }
+
+  async function iniciarProteccionMovil(){
+    instalarEventosAutoguardado();
+    await solicitarPersistencia();
+    await restaurarEstadoCompletoSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    // Respaldo periódico por si Android suspende la pestaña sin eventos.
+    setInterval(()=>{
+      guardarBorradorFormularioSeguro();
+      guardarEstadoCompletoSeguro();
+    },15000);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",iniciarProteccionMovil);
+  }else{
+    iniciarProteccionMovil();
+  }
+
+  // Exponer para diagnóstico y recuperación manual.
+  window.oymGuardarRespaldoAhora = async function(){
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+    alert("Respaldo local actualizado correctamente.");
+  };
+
+  window.oymRestaurarRespaldoAhora = async function(){
+    await restaurarEstadoCompletoSeguro();
+    await restaurarBorradorFormulario(true);
+  };
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  function valor(id){
+    return String(document.getElementById(id)?.value || "").trim();
+  }
+
+  function mostrarGrupo(id,mostrar){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.toggle("oym-campo-oculto",!mostrar);
+    el.classList.toggle("oym-campo-visible",mostrar);
+  }
+
+  function convertirCableClienteEnSelect(id,activar){
+    const actual = document.getElementById(id);
+    if(!actual) return;
+
+    const valorActual = actual.value || "";
+
+    if(activar && actual.tagName !== "SELECT"){
+      const select = document.createElement("select");
+      select.id = id;
+      select.name = actual.name || id;
+      select.className = actual.className;
+      select.innerHTML = `
+        <option value="">Seleccione...</option>
+        <option value="CABLE NUEVO">CABLE NUEVO</option>
+        <option value="HABILITACIÓN DE HILOS">HABILITACIÓN DE HILOS</option>
+      `;
+      if(["CABLE NUEVO","HABILITACIÓN DE HILOS"].includes(valorActual)){
+        select.value = valorActual;
+      }
+      actual.replaceWith(select);
+      return;
+    }
+
+    if(!activar && actual.tagName === "SELECT"){
+      const input = document.createElement("input");
+      input.id = id;
+      input.name = actual.name || id;
+      input.className = actual.className;
+      input.type = "text";
+      input.value = actual.value || "";
+      actual.replaceWith(input);
+    }
+  }
+
+  function normalizarContenedor(){
+    const contenedor = document.getElementById("gponContenedor");
+    if(!contenedor) return;
+
+    const actual = String(contenedor.value || "").toUpperCase();
+    if(actual === "CTO" || actual === "NAP"){
+      contenedor.value = "CTO/NAP";
+    }
+
+    if(![...contenedor.options].some(o=>o.value === "CTO/NAP")){
+      const opt = document.createElement("option");
+      opt.value = "CTO/NAP";
+      opt.textContent = "CTO/NAP";
+      contenedor.appendChild(opt);
+    }
+
+    [...contenedor.options].forEach(o=>{
+      if(["CTO","NAP"].includes(String(o.value).toUpperCase())) o.remove();
+    });
+  }
+
+  function aplicarLogicaEntradaSalida(){
+    const tipo = valor("tipoPunto").toLowerCase();
+    const sentido = valor("sentido").replace(/\s+/g,"").toLowerCase();
+
+    const nodoCliente = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentido);
+    const clienteNodo = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentido);
+
+    let mostrarEntrada = true;
+    let mostrarSalida = true;
+
+    if(tipo === "cliente"){
+      if(nodoCliente){
+        mostrarEntrada = true;
+        mostrarSalida = false;
+      }else if(clienteNodo){
+        mostrarEntrada = false;
+        mostrarSalida = true;
+      }
+
+      convertirCableClienteEnSelect("cableEntrada",mostrarEntrada);
+      convertirCableClienteEnSelect("cableSalida",mostrarSalida);
+    }else{
+      convertirCableClienteEnSelect("cableEntrada",false);
+      convertirCableClienteEnSelect("cableSalida",false);
+    }
+
+    if(tipo === "nodo"){
+      if(nodoCliente){
+        mostrarEntrada = false;
+        mostrarSalida = true;
+      }else if(clienteNodo){
+        mostrarEntrada = true;
+        mostrarSalida = false;
+      }
+    }
+
+    mostrarGrupo("grupoCableEntrada",mostrarEntrada);
+    mostrarGrupo("grupoHiloEntrada",mostrarEntrada);
+    mostrarGrupo("grupoCableSalida",mostrarSalida);
+    mostrarGrupo("grupoHiloSalida",mostrarSalida);
+
+    if(!mostrarEntrada){
+      const c = document.getElementById("cableEntrada");
+      const h = document.getElementById("hiloEntrada");
+      if(c) c.value = "";
+      if(h) h.value = "";
+    }
+    if(!mostrarSalida){
+      const c = document.getElementById("cableSalida");
+      const h = document.getElementById("hiloSalida");
+      if(c) c.value = "";
+      if(h) h.value = "";
+    }
+
+    const ocultarContenedor = ["cliente","nodo","olt"].includes(tipo);
+    mostrarGrupo("grupoContenedor", !ocultarContenedor);
+    mostrarGrupo("grupoIdContenedor", !ocultarContenedor);
+
+    if(ocultarContenedor){
+      const c = document.getElementById("gponContenedor");
+      const i = document.getElementById("gponContenedorId") || document.getElementById("nombreContenedor");
+      if(c) c.value = "";
+      if(i) i.value = "";
+    }
+    normalizarContenedor();
+  }
+
+  function instalar(){
+    const tipo = document.getElementById("tipoPunto");
+    const sentido = document.getElementById("sentido");
+
+    if(tipo && !tipo.dataset.oymSentido){
+      tipo.dataset.oymSentido = "1";
+      tipo.addEventListener("change",()=>setTimeout(aplicarLogicaEntradaSalida,0));
+    }
+    if(sentido && !sentido.dataset.oymSentido){
+      sentido.dataset.oymSentido = "1";
+      sentido.addEventListener("change",()=>setTimeout(aplicarLogicaEntradaSalida,0));
+    }
+
+    aplicarLogicaEntradaSalida();
+  }
+
+  document.addEventListener("DOMContentLoaded",instalar);
+
+  const observer = new MutationObserver(instalar);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  window.aplicarLogicaEntradaSalidaOym = aplicarLogicaEntradaSalida;
+})();
+</script>
+
 </body>
 </html>
-
 
 
 
