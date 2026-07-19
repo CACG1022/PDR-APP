@@ -1680,6 +1680,8 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
       }
     });
 
+    // Corrige consecutivos repetidos o separados por tipo dentro del cliente/ruta actual.
+    normalizarConsecutivosRutaActual(true);
     guardarLocalStorage();
     pintarRegistros();
 
@@ -2302,12 +2304,75 @@ function actualizarEtiquetaConsecutivo(){
   actualizarInfoConsecutivo(c);
 }
 
+function registroPerteneceRutaActual(r){
+  if(!enrutamientoActivo || !r) return false;
+
+  const porOffline = r.enrutamiento_offline_id && enrutamientoActivo.offline_id &&
+    String(r.enrutamiento_offline_id) === String(enrutamientoActivo.offline_id);
+
+  const porSupabase = r.enrutamiento_id && enrutamientoActivo.supabase_id &&
+    String(r.enrutamiento_id) === String(enrutamientoActivo.supabase_id);
+
+  const porClienteRuta =
+    String(r.id_cliente || "").trim() === String(enrutamientoActivo.id_cliente || "").trim() &&
+    String(r.codigo_ruta || "").trim() === String(enrutamientoActivo.codigo_ruta || "").trim();
+
+  return Boolean(porOffline || porSupabase || porClienteRuta);
+}
+
 function registrosDeRutaActual(){
   if(!enrutamientoActivo) return [];
-  return registros.filter(r => r.enrutamiento_offline_id === enrutamientoActivo.offline_id);
+  return registros.filter(registroPerteneceRutaActual);
 }
+
+function etiquetaTipoRegistro(r){
+  const tipo = String(r?.tipo_punto || "Empalme").trim();
+  if(tipo.toLowerCase() === "sangria") return "Sangria";
+  return tipo || "Empalme";
+}
+
+function normalizarConsecutivosRutaActual(marcarCambios = true){
+  const lista = registrosDeRutaActual();
+  if(!lista.length) return false;
+
+  lista.sort((a,b) => {
+    const fa = new Date(a.fecha_captura_app || a.created_at || 0).getTime();
+    const fb = new Date(b.fecha_captura_app || b.created_at || 0).getTime();
+    if(fa !== fb) return fa - fb;
+
+    const ca = Number(a.consecutivo_empalme || 0);
+    const cb = Number(b.consecutivo_empalme || 0);
+    if(ca !== cb) return ca - cb;
+
+    return String(a.offline_id || a.supabase_id || "").localeCompare(String(b.offline_id || b.supabase_id || ""));
+  });
+
+  let huboCambios = false;
+  lista.forEach((r,index) => {
+    const nuevo = index + 1;
+    const etiquetaNueva = `${etiquetaTipoRegistro(r)} ${nuevo}`;
+    const cambio = Number(r.consecutivo_empalme) !== nuevo || r.etiqueta_empalme !== etiquetaNueva;
+
+    if(cambio){
+      r.consecutivo_empalme = nuevo;
+      r.etiqueta_empalme = etiquetaNueva;
+      huboCambios = true;
+
+      if(marcarCambios && r.sync_status === "enviado"){
+        r.sync_status = "pendiente_update";
+        r.editado_en_app = true;
+        r.fecha_ultima_edicion_app = new Date().toISOString();
+      }
+    }
+  });
+
+  return huboCambios;
+}
+
 function obtenerSiguienteConsecutivo(){
-  const nums = registrosDeRutaActual().map(r => Number(r.consecutivo_empalme || 0)).filter(n => n > 0);
+  const nums = registrosDeRutaActual()
+    .map(r => Number(r.consecutivo_empalme || 0))
+    .filter(n => Number.isInteger(n) && n > 0);
   return nums.length ? Math.max(...nums) + 1 : 1;
 }
 function actualizarInfoConsecutivo(consecutivo){
@@ -2338,6 +2403,15 @@ async function guardarRegistroLocal(){
 
   const editId = val("editOfflineId");
   const existente = editId ? registros.find(r => r.offline_id === editId) : null;
+
+  // En registros nuevos el consecutivo se recalcula justo antes de guardar.
+  // Así se evita repetir números si durante la captura se cargaron otros puntos desde Supabase.
+  if(!editId){
+    normalizarConsecutivosRutaActual(false);
+    const consecutivoUnico = obtenerSiguienteConsecutivo();
+    setVal("consecutivoEmpalme", consecutivoUnico);
+    actualizarInfoConsecutivo(consecutivoUnico);
+  }
 
   const tipoPuntoActual = val("tipoPunto");
   const requiereFotos = !["Nodo","OLT"].includes(tipoPuntoActual);
@@ -2461,6 +2535,7 @@ async function guardarRegistroLocal(){
     registros.unshift(registroGuardado);
   }
 
+  normalizarConsecutivosRutaActual(true);
   guardarLocalStorage();
 
   const verificacion = JSON.parse(localStorage.getItem("oym_empalmes_offline_v2") || "[]");
@@ -5533,6 +5608,7 @@ function cerrarTodosLosPanelesTema(){
 
 </body>
 </html>
+
 
 
 
