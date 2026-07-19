@@ -2387,7 +2387,19 @@ async function guardarRegistroLocal(){
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
   if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
-  if(val("tipoPunto") === "Cliente" && (!val("cableSalida") || !val("hiloSalida"))){ alert("Para Cliente debes diligenciar cable de salida e hilo de salida."); return; }
+  if(val("tipoPunto") === "Cliente"){
+    const sentidoCliente = val("sentido").replace(/\s+/g,"").toLowerCase();
+    const requiereEntradaCliente = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoCliente);
+    const requiereSalidaCliente = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoCliente);
+    if(requiereEntradaCliente && (!val("cableEntrada") || !val("hiloEntrada"))){
+      alert("Para Cliente en sentido Nodo → Cliente debes diligenciar cable de entrada e hilo de entrada.");
+      return;
+    }
+    if(requiereSalidaCliente && (!val("cableSalida") || !val("hiloSalida"))){
+      alert("Para Cliente en sentido Cliente → Nodo debes diligenciar cable de salida e hilo de salida.");
+      return;
+    }
+  }
   if(val("tipoPunto") === "Nodo" && !val("puertoOdf")){ alert("Para Nodo debes diligenciar el Puerto del ODF."); return; }
   if(!["Nodo","Cliente","OLT","NAP","CTO"].includes(val("tipoPunto")) && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Debes diligenciar hilo de entrada e hilo de salida."); return; }
   if(val("tipoPunto") === "OLT"){
@@ -2430,8 +2442,14 @@ async function guardarRegistroLocal(){
   }
 
   if(tipoPuntoActual === "Cliente"){
-    setVal("cableEntrada", "");
-    setVal("hiloEntrada", "");
+    const sentidoCliente = val("sentido").replace(/\s+/g,"").toLowerCase();
+    if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoCliente)){
+      setVal("cableSalida", "");
+      setVal("hiloSalida", "");
+    }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoCliente)){
+      setVal("cableEntrada", "");
+      setVal("hiloEntrada", "");
+    }
   }
   if(tipoPuntoActual === "Nodo"){
     const sentidoNodo = val("sentido").replace(/\s+/g,"").toLowerCase();
@@ -5518,13 +5536,19 @@ function cerrarTodosLosPanelesTema(){
     let mostrarSalida = true;
 
     if(tipo === "cliente"){
-      // El punto Cliente siempre representa el extremo final del recorrido:
-      // únicamente conserva cable e hilo de salida, sin importar el sentido mostrado.
-      mostrarEntrada = false;
-      mostrarSalida = true;
+      // Para Cliente la cara visible depende del sentido del recorrido.
+      // Nodo → Cliente: cable e hilo de entrada.
+      // Cliente → Nodo: cable e hilo de salida.
+      if(nodoCliente){
+        mostrarEntrada = true;
+        mostrarSalida = false;
+      }else if(clienteNodo){
+        mostrarEntrada = false;
+        mostrarSalida = true;
+      }
 
-      convertirCableClienteEnSelect("cableEntrada",false);
-      convertirCableClienteEnSelect("cableSalida",true);
+      convertirCableClienteEnSelect("cableEntrada",mostrarEntrada);
+      convertirCableClienteEnSelect("cableSalida",mostrarSalida);
     }else{
       convertirCableClienteEnSelect("cableEntrada",false);
       convertirCableClienteEnSelect("cableSalida",false);
