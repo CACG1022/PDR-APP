@@ -208,7 +208,7 @@ body[data-theme="light"]{
   --app-border:rgba(15,118,110,.16);
   --app-primary:#16b8b0;
   --app-primary-strong:#0f9f99;
-  --app-map-filter:brightness(1.18) saturate(.62) contrast(.88) opacity(.72);
+  --app-map-filter:none;
   --app-shadow:0 12px 34px rgba(15,23,42,.14);
   --bottom-nav-bg:rgba(255,255,255,.96);
   color-scheme:light;
@@ -874,7 +874,13 @@ body:has(#authOverlay[style*="display: flex"]) #fabMarcar{
       <div class="sectionTitle">4. Datos de fusión</div>
       <div class="row">
         <div><label id="labelPunto">Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: FOC104532"></div>
-        <div><label>Sentido</label><select id="sentido"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
+        <div><label>Sentido</label><select id="sentido" onchange="actualizarCamposPorTipoPunto()"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
+      </div>
+      <div class="row">
+        <div id="grupoPuertoOdf" class="hidden">
+          <label>Puerto del ODF <span class="required">*</span></label>
+          <input id="puertoOdf" placeholder="Ej: Puerto 12 / Bandeja 2 - Puerto 6">
+        </div>
       </div>
       <div class="row">
         <div id="grupoCableEntrada"><label>Cable entrada</label><input id="cableEntrada"></div>
@@ -1583,6 +1589,7 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
         referencia_externa: e.referencia_externa,
 
         nombre_punto: e.nombre_punto,
+        puerto_odf: e.puerto_odf ?? null,
         sentido: e.sentido,
         cable_entrada: e.cable_entrada,
         cable_salida: e.cable_salida,
@@ -1857,7 +1864,8 @@ function mostrarSoloGrupoGpon(tipo){
 function validarCamposGpon(tipo){
   if(tipoRedActual() !== "GPON") return true;
 
-  if(!val("gponContenedor") || !val("gponContenedorId")){
+  const tiposSinContenedor = ["Nodo","OLT","Cliente"];
+  if(!tiposSinContenedor.includes(tipo) && (!val("gponContenedor") || !val("gponContenedorId"))){
     alert("Debes seleccionar el contenedor y diligenciar el Nombre o ID de contenedor.");
     return false;
   }
@@ -1910,6 +1918,7 @@ function actualizarCamposPorTipoPunto(){
   const labelPunto = document.getElementById("labelPunto");
   const puntoInput = document.getElementById("punto");
   const seccionFotos = document.getElementById("seccionFotosObligatorias");
+  const grupoPuertoOdf = document.getElementById("grupoPuertoOdf");
 
   mostrarSoloGrupoGpon(tipo);
 
@@ -1935,6 +1944,8 @@ function actualizarCamposPorTipoPunto(){
   grupoCableSalida?.classList.remove("hidden");
   grupoHiloSalida?.classList.remove("hidden");
   seccionFotos?.classList.remove("hidden");
+  grupoPuertoOdf?.classList.toggle("hidden", tipo !== "Nodo");
+  if(tipo !== "Nodo") setVal("puertoOdf","");
 
   if(cableSalidaInput && cableSalidaSelect){
     cableSalidaInput.classList.remove("hidden");
@@ -1996,6 +2007,11 @@ function actualizarCamposPorTipoPunto(){
   }
 
   actualizarEtiquetaConsecutivo();
+  setTimeout(()=>{
+    if(typeof window.aplicarLogicaEntradaSalidaOym === "function") {
+      window.aplicarLogicaEntradaSalidaOym();
+    }
+  },0);
 }
 
 function actualizarHeader(){
@@ -2306,9 +2322,16 @@ async function guardarRegistroLocal(){
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
   if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
-  if(val("tipoPunto") === "Cliente" && !val("cableSalida")){ alert("Para Cliente debes seleccionar Cable nuevo o Habilitación de hilos."); return; }
+  if(val("tipoPunto") === "Cliente" && !val("cableSalida") && !val("cableEntrada")){ alert("Para Cliente debes seleccionar el cable correspondiente al sentido."); return; }
+  if(val("tipoPunto") === "Nodo" && !val("puertoOdf")){ alert("Para Nodo debes diligenciar el Puerto del ODF."); return; }
   if(!["Nodo","Cliente","OLT","NAP","CTO"].includes(val("tipoPunto")) && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Debes diligenciar hilo de entrada e hilo de salida."); return; }
-  if(val("tipoPunto") === "OLT" && !val("hiloSalida")){ alert("Para OLT debes diligenciar el hilo de salida."); return; }
+  if(val("tipoPunto") === "OLT"){
+    const sentidoOlt = val("sentido").replace(/\s+/g,"").toLowerCase();
+    const requiereSalida = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoOlt);
+    const requiereEntrada = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoOlt);
+    if(requiereSalida && (!val("cableSalida") || !val("hiloSalida"))){ alert("Para OLT en sentido Nodo → Cliente debes diligenciar cable e hilo de salida."); return; }
+    if(requiereEntrada && (!val("cableEntrada") || !val("hiloEntrada"))){ alert("Para OLT en sentido Cliente → Nodo debes diligenciar cable e hilo de entrada."); return; }
+  }
   if(["NAP","CTO"].includes(val("tipoPunto")) && !val("hiloEntrada")){ alert(`Para ${val("tipoPunto")} debes diligenciar el hilo de entrada.`); return; }
 
   if(!validarCamposGpon(val("tipoPunto"))) return;
@@ -2337,8 +2360,24 @@ async function guardarRegistroLocal(){
     setVal("hiloEntrada", "");
   }
   if(tipoPuntoActual === "Nodo"){
-    setVal("cableSalida", "");
-    setVal("hiloSalida", "");
+    const sentidoNodo = val("sentido").replace(/\s+/g,"").toLowerCase();
+    if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoNodo)){
+      setVal("cableEntrada", "");
+      setVal("hiloEntrada", "");
+    }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoNodo)){
+      setVal("cableSalida", "");
+      setVal("hiloSalida", "");
+    }
+  }
+  if(tipoPuntoActual === "OLT"){
+    const sentidoOlt = val("sentido").replace(/\s+/g,"").toLowerCase();
+    if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoOlt)){
+      setVal("cableEntrada", "");
+      setVal("hiloEntrada", "");
+    }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoOlt)){
+      setVal("cableSalida", "");
+      setVal("hiloSalida", "");
+    }
   }
 
   const base = {
@@ -2392,6 +2431,7 @@ async function guardarRegistroLocal(){
     id_elemento_externo: val("idElementoExterno"),
     referencia_externa: val("referenciaExterna"),
     nombre_punto: val("punto") || "Punto sin nombre",
+    puerto_odf: val("puertoOdf") || null,
     sentido: val("sentido"),
     cable_entrada: val("cableEntrada"),
     cable_salida: val("cableSalida"),
@@ -2472,6 +2512,7 @@ async function editarRegistro(id){
   setVal("idElementoExterno", r.id_elemento_externo);
   setVal("referenciaExterna", r.referencia_externa);
   setVal("punto", r.nombre_punto);
+  setVal("puertoOdf", r.puerto_odf);
   setVal("sentido", r.sentido);
   setVal("cableEntrada", r.cable_entrada);
   setVal("cableSalida", r.cable_salida);
@@ -3106,6 +3147,11 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
     doc.addPage();encabezadoPdf(doc,ruta,titulo);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(30,41,59);doc.text(`${txtPdf(r.etiqueta_empalme||r.tipo_punto)} — ${txtPdf(r.nombre_punto)}`,14,51);
     doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.text(`Tipo: ${txtPdf(r.tipo_punto)} | Ambiente: ${txtPdf(r.ambiente)} | GPS: ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,14,58);
     doc.text(`Fusion: hilo ${txtPdf(r.hilo_entrada)} -> hilo ${txtPdf(r.hilo_salida)}`,14,64);
+    if(String(r.tipo_punto||"").toLowerCase()==="nodo"){
+      doc.setFont("helvetica","bold");
+      doc.text(`Puerto ODF: ${txtPdf(r.puerto_odf)}`,14,69);
+      doc.setFont("helvetica","normal");
+    }
     if(String(r.tipo_red||ruta.tipo_red||"").toUpperCase()==="GPON"){
       doc.setTextColor(3,105,161);
       doc.setFont("helvetica","bold");
@@ -3290,6 +3336,7 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         id_cliente: r.id_cliente,
         codigo_ruta: r.codigo_ruta,
         nombre_punto: r.nombre_punto,
+        puerto_odf: r.puerto_odf || null,
         sentido: r.sentido,
         cable_entrada: r.cable_entrada,
         cable_salida: r.cable_salida,
@@ -3503,6 +3550,7 @@ function pintarListaRegistros(listaDatos){
       <span class="badge ${statusClass}">${(r.sync_status||"pendiente").toUpperCase()}</span>
       ${r.editado_en_app ? `<span class="badge editado">EDITADO</span>` : ""}<br>
       <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b> · ${r.nombre_punto} · ${r.tipo_punto || ""}<br>
+      ${r.tipo_punto === "Nodo" ? `<b>Puerto ODF:</b> ${escapeHtml(r.puerto_odf || "N/A")}<br>` : ""}
       <b>Fusión:</b> Hilo entrada ${r.hilo_entrada || "N/A"} → Hilo salida ${r.hilo_salida || "N/A"}<br>
       <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
       ${r.error_sync ? `<b style="color:#f87171">Error:</b> ${r.error_sync}<br>` : ""}
@@ -3668,7 +3716,7 @@ function limpiarDespuesDeGuardar(){
   limpiarFormulario();
 }
 function limpiarFormulario(){
-  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
+  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","puertoOdf","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
   cambiarAmbiente();
   actualizarCamposPorTipoPunto();
 }
@@ -4744,7 +4792,7 @@ function cerrarTodosLosPanelesTema(){
       "zonaInterna","pisoNivel","torreBloque","cuartoRack",
       "referenciaVisual","accesoRequerido","descripcionInterna",
       "elementoExterno","idElementoExterno","referenciaExterna",
-      "punto","sentido","cableEntrada","hiloEntrada",
+      "punto","puertoOdf","sentido","cableEntrada","hiloEntrada",
       "cableSalida","hiloSalida","observacion",
       "gponContenedor","gponContenedorId",
       "oltNombre","oltMarca","oltFrame","oltSlot","oltTarjeta","oltPuertoPon",
@@ -5353,7 +5401,7 @@ function cerrarTodosLosPanelesTema(){
       convertirCableClienteEnSelect("cableSalida",false);
     }
 
-    if(tipo === "nodo"){
+    if(tipo === "nodo" || tipo === "olt"){
       if(nodoCliente){
         mostrarEntrada = false;
         mostrarSalida = true;
@@ -5381,7 +5429,14 @@ function cerrarTodosLosPanelesTema(){
       if(h) h.value = "";
     }
 
+    mostrarGrupo("grupoPuertoOdf", tipo === "nodo");
+    if(tipo !== "nodo"){
+      const puertoOdf = document.getElementById("puertoOdf");
+      if(puertoOdf) puertoOdf.value = "";
+    }
+
     const ocultarContenedor = ["cliente","nodo","olt"].includes(tipo);
+    mostrarGrupo("camposGponContenedor", !ocultarContenedor);
     mostrarGrupo("grupoContenedor", !ocultarContenedor);
     mostrarGrupo("grupoIdContenedor", !ocultarContenedor);
 
