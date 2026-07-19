@@ -4686,6 +4686,8 @@ function cerrarTodosLosPanelesTema(){
   let guardadoProgramado = null;
   let restaurandoBorrador = false;
   let ultimaRutaRestaurada = null;
+  let omitirRestauracionUnaVez = false;
+  let autoguardadoSuspendido = false;
 
   function abrirDBSeguro(){
     return new Promise((resolve,reject)=>{
@@ -4828,7 +4830,7 @@ function cerrarTodosLosPanelesTema(){
   }
 
   async function guardarBorradorFormularioSeguro(){
-    if(restaurandoBorrador) return false;
+    if(restaurandoBorrador || autoguardadoSuspendido) return false;
 
     const modal = document.getElementById("modalFormulario");
     const borrador = construirBorradorFormulario();
@@ -4854,14 +4856,21 @@ function cerrarTodosLosPanelesTema(){
   }
 
   function programarGuardadoBorrador(){
+    if(autoguardadoSuspendido) return;
     clearTimeout(guardadoProgramado);
     guardadoProgramado = setTimeout(()=>{
+      if(autoguardadoSuspendido) return;
       guardarBorradorFormularioSeguro();
       guardarEstadoCompletoSeguro();
     },350);
   }
 
   async function restaurarBorradorFormulario(forzar=false){
+    if(omitirRestauracionUnaVez && !forzar){
+      omitirRestauracionUnaVez = false;
+      return false;
+    }
+
     const key = rutaActualKey();
     if(!key) return false;
 
@@ -5200,27 +5209,75 @@ function cerrarTodosLosPanelesTema(){
     return resultado;
   };
 
-  // Al abrir el formulario, recuperar borrador de esa ruta.
+  // Cuando el usuario marca deliberadamente un punto nuevo, el formulario debe
+  // abrir completamente limpio. El borrador solo se recupera después de una
+  // interrupción real (cámara, segundo plano, recarga o cierre inesperado).
+  const abrirModalEmpalmeNuevoAnterior = window.abrirModalEmpalmeNuevo || abrirModalEmpalmeNuevo;
+  window.abrirModalEmpalmeNuevo = abrirModalEmpalmeNuevo = async function(){
+    autoguardadoSuspendido = true;
+    omitirRestauracionUnaVez = true;
+    clearTimeout(guardadoProgramado);
+
+    await eliminarBorradorRutaActual();
+
+    fotoPanoramica = null;
+    fotoFusion = null;
+    window.fotoPanoramica = null;
+    window.fotoFusion = null;
+
+    ["previewPanoramica","previewFusion"].forEach(id=>{
+      const preview = document.getElementById(id);
+      if(preview){
+        preview.removeAttribute("src");
+        preview.style.display = "none";
+      }
+    });
+
+    ["cameraPanoramica","cameraFusion"].forEach(id=>{
+      const input = document.getElementById(id);
+      if(input) input.value = "";
+    });
+
+    try{
+      return abrirModalEmpalmeNuevoAnterior.apply(this,arguments);
+    }finally{
+      setTimeout(()=>{ autoguardadoSuspendido = false; },250);
+    }
+  };
+
+  // Al abrir el formulario, recuperar el borrador únicamente cuando no se está
+  // creando deliberadamente un punto nuevo ni editando un registro existente.
   const abrirModalAnterior = window.abrirModal || abrirModal;
   window.abrirModal = abrirModal = function(){
     const resultado = abrirModalAnterior.apply(this,arguments);
 
     setTimeout(()=>{
       const editId = document.getElementById("editOfflineId")?.value;
-      if(!editId){
+      if(!editId && !autoguardadoSuspendido){
         restaurarBorradorFormulario();
+      }else if(omitirRestauracionUnaVez){
+        omitirRestauracionUnaVez = false;
       }
     },80);
 
     return resultado;
   };
 
-  // Al guardar correctamente un empalme, borrar el borrador de esa ruta.
+  // Al guardar correctamente un punto, se cancela cualquier guardado pendiente
+  // antes de limpiar. Así el temporizador no vuelve a crear el borrador anterior.
   const limpiarDespuesAnterior = window.limpiarDespuesDeGuardar || limpiarDespuesDeGuardar;
   window.limpiarDespuesDeGuardar = limpiarDespuesDeGuardar = function(){
+    autoguardadoSuspendido = true;
+    clearTimeout(guardadoProgramado);
+
     const resultado = limpiarDespuesAnterior.apply(this,arguments);
-    eliminarBorradorRutaActual();
-    guardarEstadoCompletoSeguro();
+
+    eliminarBorradorRutaActual()
+      .then(()=>guardarEstadoCompletoSeguro())
+      .finally(()=>{
+        setTimeout(()=>{ autoguardadoSuspendido = false; },250);
+      });
+
     return resultado;
   };
 
