@@ -874,6 +874,68 @@ header > div:last-child{
   }
   .oymSideMenuItem{min-height:45px!important}
 }
+
+
+/* ===== TARJETAS ORGANIZADAS DE ENTRADA Y SALIDA ===== */
+.fusionFlowGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin:14px 0 8px;
+}
+.fusionFlowCard{
+  overflow:hidden;
+  border:1px solid var(--app-border);
+  border-radius:16px;
+  background:var(--app-surface-2);
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+}
+.fusionFlowHeader{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--app-border);
+}
+.fusionFlowHeader h3{
+  margin:0;
+  font-size:14px;
+  line-height:1.25;
+}
+.fusionFlowHeader p{
+  margin:3px 0 0;
+  color:var(--app-muted);
+  font-size:11px;
+  line-height:1.3;
+}
+.fusionFlowIcon{
+  width:34px;
+  height:34px;
+  min-width:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  color:#fff;
+  font-size:19px;
+  font-weight:900;
+}
+.fusionFlowBody{padding:3px 14px 14px}
+.fusionFlowBody label{margin-top:11px}
+.fusionFlowEntrada{border-color:rgba(14,165,233,.5)}
+.fusionFlowEntrada .fusionFlowHeader{background:rgba(14,165,233,.12)}
+.fusionFlowEntrada .fusionFlowIcon{background:#0284c7}
+.fusionFlowSalida{border-color:rgba(34,197,94,.5)}
+.fusionFlowSalida .fusionFlowHeader{background:rgba(34,197,94,.12)}
+.fusionFlowSalida .fusionFlowIcon{background:#16a34a}
+body[data-theme="light"] .fusionFlowCard{box-shadow:0 8px 20px rgba(15,23,42,.08)}
+body[data-theme="light"] .fusionFlowEntrada .fusionFlowHeader{background:#e0f2fe}
+body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
+@media(max-width:700px){
+  .fusionFlowGrid{grid-template-columns:1fr;gap:11px}
+  .fusionFlowHeader{padding:11px 12px}
+  .fusionFlowBody{padding:2px 12px 12px}
+}
 </style>
 
 </head>
@@ -1098,42 +1160,69 @@ header > div:last-child{
           <input id="puertoOdf" placeholder="Ej: Puerto 12 / Bandeja 2 - Puerto 6">
         </div>
       </div>
-      <div class="row">
-        <div id="grupoCableEntrada">
-          <label>Cable entrada</label>
-          <input id="cableEntrada">
-          <label>Capilaridad cable entrada</label>
-          <select id="capilaridadCableEntrada">
-            <option value="">Seleccione...</option>
-            <option value="6 HILOS">6 HILOS</option>
-            <option value="12 HILOS">12 HILOS</option>
-            <option value="24 HILOS">24 HILOS</option>
-            <option value="48 HILOS">48 HILOS</option>
-            <option value="96 HILOS">96 HILOS</option>
-          </select>
-        </div>
-        <div id="grupoCableSalida">
-          <label id="labelCableSalida">Cable salida</label>
-          <input id="cableSalida">
-          <select id="cableSalidaSelect" class="hidden" onchange="document.getElementById('cableSalida').value=this.value">
-            <option value="">Seleccione...</option>
-            <option>CABLE NUEVO</option>
-            <option>HABILITACIÓN DE HILOS</option>
-          </select>
-          <label>Capilaridad cable salida</label>
-          <select id="capilaridadCableSalida">
-            <option value="">Seleccione...</option>
-            <option value="6 HILOS">6 HILOS</option>
-            <option value="12 HILOS">12 HILOS</option>
-            <option value="24 HILOS">24 HILOS</option>
-            <option value="48 HILOS">48 HILOS</option>
-            <option value="96 HILOS">96 HILOS</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div id="grupoHiloEntrada"><label>Hilo entrada</label><input id="hiloEntrada" type="number"></div>
-        <div id="grupoHiloSalida"><label>Hilo salida</label><input id="hiloSalida" type="number"></div>
+      <div class="fusionFlowGrid">
+        <section id="tarjetaEntrada" class="fusionFlowCard fusionFlowEntrada" aria-labelledby="tituloEntradaFusion">
+          <div class="fusionFlowHeader">
+            <span class="fusionFlowIcon" aria-hidden="true">↘</span>
+            <div>
+              <h3 id="tituloEntradaFusion">Datos de entrada</h3>
+              <p>Cable que llega al punto y fibra utilizada.</p>
+            </div>
+          </div>
+          <div class="fusionFlowBody">
+            <div id="grupoCableEntrada">
+              <label>Cable de entrada</label>
+              <input id="cableEntrada" placeholder="Nombre o identificación del cable">
+              <label>Capilaridad del cable de entrada</label>
+              <select id="capilaridadCableEntrada">
+                <option value="">Seleccione...</option>
+                <option value="6 HILOS">6 HILOS</option>
+                <option value="12 HILOS">12 HILOS</option>
+                <option value="24 HILOS">24 HILOS</option>
+                <option value="48 HILOS">48 HILOS</option>
+                <option value="96 HILOS">96 HILOS</option>
+              </select>
+            </div>
+            <div id="grupoHiloEntrada">
+              <label>Hilo de entrada</label>
+              <input id="hiloEntrada" type="number" min="1" placeholder="Número de hilo">
+            </div>
+          </div>
+        </section>
+
+        <section id="tarjetaSalida" class="fusionFlowCard fusionFlowSalida" aria-labelledby="tituloSalidaFusion">
+          <div class="fusionFlowHeader">
+            <span class="fusionFlowIcon" aria-hidden="true">↗</span>
+            <div>
+              <h3 id="tituloSalidaFusion">Datos de salida</h3>
+              <p>Cable que sale del punto y fibra utilizada.</p>
+            </div>
+          </div>
+          <div class="fusionFlowBody">
+            <div id="grupoCableSalida">
+              <label id="labelCableSalida">Cable de salida</label>
+              <input id="cableSalida" placeholder="Nombre o identificación del cable">
+              <select id="cableSalidaSelect" class="hidden" onchange="document.getElementById('cableSalida').value=this.value">
+                <option value="">Seleccione...</option>
+                <option>CABLE NUEVO</option>
+                <option>HABILITACIÓN DE HILOS</option>
+              </select>
+              <label>Capilaridad del cable de salida</label>
+              <select id="capilaridadCableSalida">
+                <option value="">Seleccione...</option>
+                <option value="6 HILOS">6 HILOS</option>
+                <option value="12 HILOS">12 HILOS</option>
+                <option value="24 HILOS">24 HILOS</option>
+                <option value="48 HILOS">48 HILOS</option>
+                <option value="96 HILOS">96 HILOS</option>
+              </select>
+            </div>
+            <div id="grupoHiloSalida">
+              <label>Hilo de salida</label>
+              <input id="hiloSalida" type="number" min="1" placeholder="Número de hilo">
+            </div>
+          </div>
+        </section>
       </div>
       <input id="tuboEntrada" type="hidden" value="">
       <input id="tuboSalida" type="hidden" value="">
@@ -5857,6 +5946,8 @@ function cerrarTodosLosPanelesTema(){
       }
     }
 
+    mostrarGrupo("tarjetaEntrada",mostrarEntrada);
+    mostrarGrupo("tarjetaSalida",mostrarSalida);
     mostrarGrupo("grupoCableEntrada",mostrarEntrada);
     mostrarGrupo("grupoHiloEntrada",mostrarEntrada);
     mostrarGrupo("grupoCableSalida",mostrarSalida);
