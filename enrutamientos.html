@@ -2001,11 +2001,51 @@ function renderFotosServidorRegistro(r){
 
 function iniciarMapa(){
   map = L.map('map',{zoomControl:true}).setView([defaultLat,defaultLng],16);
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
-  const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,attribution:'Tiles © Esri'});
-  const relieve = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap'});
-  satelite.addTo(map);
-  L.control.layers({"Satélite":satelite,"Calles":osm,"Relieve":relieve}).addTo(map);
+
+  const googleSatelital = L.tileLayer(
+    'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    {
+      subdomains:['mt0','mt1','mt2','mt3'],
+      maxNativeZoom:20,
+      maxZoom:22,
+      attribution:'Imágenes © Google'
+    }
+  );
+
+  const googleSatelitalHibrido = L.tileLayer(
+    'https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    {
+      subdomains:['mt0','mt1','mt2','mt3'],
+      maxNativeZoom:20,
+      maxZoom:22,
+      attribution:'Imágenes y etiquetas © Google'
+    }
+  );
+
+  const sateliteEsri = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:22,attribution:'Tiles © Esri'}
+  );
+
+  const osm = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:22,attribution:'© OpenStreetMap'}
+  );
+
+  const relieve = L.tileLayer(
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    {maxZoom:17,attribution:'© OpenTopoMap'}
+  );
+
+  googleSatelitalHibrido.addTo(map);
+
+  L.control.layers({
+    "Google Satélite":googleSatelital,
+    "Google Satélite Híbrido (calles)":googleSatelitalHibrido,
+    "Satélite Esri":sateliteEsri,
+    "Calles":osm,
+    "Relieve":relieve
+  }).addTo(map);
   map.on("move zoom moveend", actualizarCentroInfo);
   actualizarCentroInfo();
   pintarRegistros();
@@ -5947,6 +5987,7 @@ function cerrarTodosLosPanelesTema(){
 
 </body>
 </html>
+
 
 
 
