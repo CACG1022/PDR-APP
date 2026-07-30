@@ -1115,6 +1115,22 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
         <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarCamposPorTipoPunto()"></select></div>
       </div>
 
+      <div id="grupoNombreNodo" class="nodeSelectorCard hidden">
+        <div class="nodeSelectorHeader">
+          <div>
+            <b>Nombre del nodo <span class="required">*</span></b>
+            <small>Selecciona un nodo registrado para la empresa del enrutamiento.</small>
+          </div>
+          <button type="button" class="secondary nodeAddButton" onclick="abrirModalNuevoNodo()">＋ Agregar nodo</button>
+        </div>
+        <select id="nombreNodoSelect" onchange="seleccionarNodoFormulario()">
+          <option value="">Seleccione un nodo...</option>
+        </select>
+        <input id="nodoId" type="hidden">
+        <input id="nombreNodo" type="hidden">
+        <div id="empresaNodoInfo" class="nodeCompanyHint">Empresa: sin identificar</div>
+      </div>
+
       <div id="camposInternos" class="hidden">
         <div class="sectionTitle">3. Ubicación interna</div>
         <div class="row">
@@ -1151,7 +1167,7 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
 
       <div class="sectionTitle">4. Datos de fusión</div>
       <div class="row">
-        <div><label id="labelPunto">Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: FOC104532"></div>
+        <div><label id="labelPunto">Nombre punto / caja / manga <span class="required">*</span></label><input id="punto" required placeholder="Ej: FOC104532"></div>
         <div><label>Sentido</label><select id="sentido" onchange="actualizarCamposPorTipoPunto()"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
       </div>
       <div class="row">
@@ -1171,10 +1187,10 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
           </div>
           <div class="fusionFlowBody">
             <div id="grupoCableEntrada">
-              <label>Cable de entrada</label>
-              <input id="cableEntrada" placeholder="Nombre o identificación del cable">
-              <label>Capilaridad del cable de entrada</label>
-              <select id="capilaridadCableEntrada">
+              <label>Cable de entrada <span class="required">*</span></label>
+              <input id="cableEntrada" required placeholder="Nombre o identificación del cable">
+              <label>Capilaridad del cable de entrada <span class="required">*</span></label>
+              <select id="capilaridadCableEntrada" required>
                 <option value="">Seleccione...</option>
                 <option value="6 HILOS">6 HILOS</option>
                 <option value="12 HILOS">12 HILOS</option>
@@ -1184,8 +1200,8 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
               </select>
             </div>
             <div id="grupoHiloEntrada">
-              <label>Hilo de entrada</label>
-              <input id="hiloEntrada" type="number" min="1" placeholder="Número de hilo">
+              <label>Hilo de entrada <span class="required">*</span></label>
+              <input id="hiloEntrada" type="number" min="1" required placeholder="Número de hilo">
             </div>
           </div>
         </section>
@@ -1200,15 +1216,15 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
           </div>
           <div class="fusionFlowBody">
             <div id="grupoCableSalida">
-              <label id="labelCableSalida">Cable de salida</label>
-              <input id="cableSalida" placeholder="Nombre o identificación del cable">
+              <label id="labelCableSalida">Cable de salida <span class="required">*</span></label>
+              <input id="cableSalida" required placeholder="Nombre o identificación del cable">
               <select id="cableSalidaSelect" class="hidden" onchange="document.getElementById('cableSalida').value=this.value">
                 <option value="">Seleccione...</option>
                 <option>CABLE NUEVO</option>
                 <option>HABILITACIÓN DE HILOS</option>
               </select>
-              <label>Capilaridad del cable de salida</label>
-              <select id="capilaridadCableSalida">
+              <label>Capilaridad del cable de salida <span class="required">*</span></label>
+              <select id="capilaridadCableSalida" required>
                 <option value="">Seleccione...</option>
                 <option value="6 HILOS">6 HILOS</option>
                 <option value="12 HILOS">12 HILOS</option>
@@ -1218,8 +1234,8 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
               </select>
             </div>
             <div id="grupoHiloSalida">
-              <label>Hilo de salida</label>
-              <input id="hiloSalida" type="number" min="1" placeholder="Número de hilo">
+              <label>Hilo de salida <span class="required">*</span></label>
+              <input id="hiloSalida" type="number" min="1" required placeholder="Número de hilo">
             </div>
           </div>
         </section>
@@ -1756,6 +1772,7 @@ async function seleccionarClienteAsignado(id){
     // Supabase es la fuente de verdad para los datos asignados desde el Master.
     Object.assign(localExistente,{
       supabase_id: c.id,
+      empresa_id: c.empresa_id || perfilTecnico?.empresa_id || null,
       id_cliente: c.id_cliente,
       codigo_ruta: c.codigo_ruta,
       nombre_cliente: c.nombre_cliente,
@@ -1774,6 +1791,7 @@ async function seleccionarClienteAsignado(id){
       offline_id: c.offline_id || crypto.randomUUID(),
       sync_status: "enviado",
       supabase_id: c.id,
+      empresa_id: c.empresa_id || perfilTecnico?.empresa_id || null,
       id_cliente: c.id_cliente,
       codigo_ruta: c.codigo_ruta,
       nombre_cliente: c.nombre_cliente,
@@ -1915,6 +1933,9 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
         referencia_externa: e.referencia_externa,
 
         nombre_punto: e.nombre_punto,
+        empresa_id: e.empresa_id ?? enrutamientoActivo?.empresa_id ?? null,
+        nodo_id: e.nodo_id ?? null,
+        nombre_nodo: e.nombre_nodo ?? null,
         puerto_odf: e.puerto_odf ?? null,
         sentido: e.sentido,
         cable_entrada: e.cable_entrada,
@@ -2755,6 +2776,30 @@ async function guardarRegistroLocal(){
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
   if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
+
+  // El nombre o identificación del punto es obligatorio para cualquier tipo de registro.
+  if(!val("punto")){
+    alert("Debes diligenciar el campo Nombre punto / caja / manga.");
+    document.getElementById("punto")?.focus();
+    return;
+  }
+
+  // Los datos de entrada y salida son obligatorios cuando su tarjeta está visible.
+  // Así se respeta la lógica dinámica por tipo de punto y sentido.
+  const tarjetaEntradaVisible = !document.getElementById("tarjetaEntrada")?.classList.contains("hidden");
+  const tarjetaSalidaVisible = !document.getElementById("tarjetaSalida")?.classList.contains("hidden");
+
+  if(tarjetaEntradaVisible){
+    if(!val("cableEntrada")){ alert("Debes diligenciar Cable de entrada."); document.getElementById("cableEntrada")?.focus(); return; }
+    if(!val("capilaridadCableEntrada")){ alert("Debes seleccionar la Capilaridad del cable de entrada."); document.getElementById("capilaridadCableEntrada")?.focus(); return; }
+    if(!val("hiloEntrada")){ alert("Debes diligenciar Hilo de entrada."); document.getElementById("hiloEntrada")?.focus(); return; }
+  }
+
+  if(tarjetaSalidaVisible){
+    if(!val("cableSalida")){ alert("Debes diligenciar Cable de salida."); document.getElementById("cableSalidaSelect")?.classList.contains("hidden") ? document.getElementById("cableSalida")?.focus() : document.getElementById("cableSalidaSelect")?.focus(); return; }
+    if(!val("capilaridadCableSalida")){ alert("Debes seleccionar la Capilaridad del cable de salida."); document.getElementById("capilaridadCableSalida")?.focus(); return; }
+    if(!val("hiloSalida")){ alert("Debes diligenciar Hilo de salida."); document.getElementById("hiloSalida")?.focus(); return; }
+  }
   if(val("tipoPunto") === "Cliente"){
     const sentidoCliente = val("sentido").replace(/\s+/g,"").toLowerCase();
     const requiereEntradaCliente = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoCliente);
@@ -2768,6 +2813,7 @@ async function guardarRegistroLocal(){
       return;
     }
   }
+  if(val("tipoPunto") === "Nodo" && (!val("nodoId") || !val("nombreNodo"))){ alert("Para Nodo debes seleccionar el Nombre del nodo."); return; }
   if(val("tipoPunto") === "Nodo" && !val("puertoOdf")){ alert("Para Nodo debes diligenciar el Puerto del ODF."); return; }
   if(!["Nodo","Cliente","OLT","NAP","CTO"].includes(val("tipoPunto")) && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Debes diligenciar hilo de entrada e hilo de salida."); return; }
   if(val("tipoPunto") === "OLT"){
@@ -2897,6 +2943,9 @@ async function guardarRegistroLocal(){
     id_elemento_externo: val("idElementoExterno"),
     referencia_externa: val("referenciaExterna"),
     nombre_punto: val("punto") || "Punto sin nombre",
+    empresa_id: enrutamientoActivo?.empresa_id || perfilTecnico?.empresa_id || null,
+    nodo_id: val("nodoId") || null,
+    nombre_nodo: val("nombreNodo") || null,
     puerto_odf: val("puertoOdf") || null,
     sentido: val("sentido"),
     cable_entrada: val("cableEntrada"),
@@ -2981,6 +3030,9 @@ async function editarRegistro(id){
   setVal("idElementoExterno", r.id_elemento_externo);
   setVal("referenciaExterna", r.referencia_externa);
   setVal("punto", r.nombre_punto);
+  setVal("nodoId", r.nodo_id);
+  setVal("nombreNodo", r.nombre_nodo);
+  setVal("nombreNodoSelect", r.nodo_id);
   setVal("puertoOdf", r.puerto_odf);
   setVal("sentido", r.sentido);
   setVal("cableEntrada", r.cable_entrada);
@@ -3712,6 +3764,7 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
     try{
       const payload = {
         offline_id: ruta.offline_id,
+        empresa_id: ruta.empresa_id || perfilTecnico?.empresa_id || null,
         id_cliente: ruta.id_cliente,
         codigo_ruta: ruta.codigo_ruta,
         nombre_cliente: ruta.nombre_cliente,
@@ -3807,6 +3860,9 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         id_cliente: r.id_cliente,
         codigo_ruta: r.codigo_ruta,
         nombre_punto: r.nombre_punto,
+        empresa_id: r.empresa_id || ruta.empresa_id || perfilTecnico?.empresa_id || null,
+        nodo_id: r.nodo_id || null,
+        nombre_nodo: r.nombre_nodo || null,
         puerto_odf: r.puerto_odf || null,
         sentido: r.sentido,
         cable_entrada: r.cable_entrada,
@@ -4023,7 +4079,7 @@ function pintarListaRegistros(listaDatos){
       <span class="badge ${statusClass}">${(r.sync_status||"pendiente").toUpperCase()}</span>
       ${r.editado_en_app ? `<span class="badge editado">EDITADO</span>` : ""}<br>
       <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b> · ${r.nombre_punto} · ${r.tipo_punto || ""}<br>
-      ${r.tipo_punto === "Nodo" ? `<b>Puerto ODF:</b> ${escapeHtml(r.puerto_odf || "N/A")}<br>` : ""}
+      ${r.tipo_punto === "Nodo" ? `<b>Nodo:</b> ${escapeHtml(r.nombre_nodo || "N/A")}<br><b>Puerto ODF:</b> ${escapeHtml(r.puerto_odf || "N/A")}<br>` : ""}
       <b>Cable entrada:</b> ${r.cable_entrada || "N/A"} · <b>Capilaridad:</b> ${r.capilaridad_cable_entrada || "N/A"}<br>
       <b>Cable salida:</b> ${r.cable_salida || "N/A"} · <b>Capilaridad:</b> ${r.capilaridad_cable_salida || "N/A"}<br>
       <b>Fusión:</b> Hilo entrada ${r.hilo_entrada || "N/A"} → Hilo salida ${r.hilo_salida || "N/A"}<br>
@@ -4191,7 +4247,7 @@ function limpiarDespuesDeGuardar(){
   limpiarFormulario();
 }
 function limpiarFormulario(){
-  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","puertoOdf","cableEntrada","capilaridadCableEntrada","cableSalida","capilaridadCableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
+  ["editOfflineId","nodoId","nombreNodo","nombreNodoSelect","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","puertoOdf","cableEntrada","capilaridadCableEntrada","cableSalida","capilaridadCableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
   cambiarAmbiente();
   actualizarCamposPorTipoPunto();
 }
@@ -6017,6 +6073,114 @@ function cerrarTodosLosPanelesTema(){
 
 
 
+<style>
+.nodeSelectorCard{margin:12px 0;padding:12px;border:1px solid color-mix(in srgb,var(--app-primary) 42%,var(--app-border));border-radius:14px;background:color-mix(in srgb,var(--app-primary) 7%,var(--app-surface-2));}
+.nodeSelectorHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.nodeSelectorHeader small{display:block;color:var(--app-muted);margin-top:3px}.nodeAddButton{width:auto!important;padding:8px 10px!important;white-space:nowrap}.nodeCompanyHint{font-size:12px;color:var(--app-muted);margin-top:7px}.nodeModalActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:600px){.nodeSelectorHeader{align-items:flex-start;flex-direction:column}.nodeAddButton{width:100%!important}.nodeModalActions{grid-template-columns:1fr}}
+</style>
+
+<div class="modalOverlay" id="modalNuevoNodo">
+  <div class="modal" style="max-width:560px">
+    <div class="modalHeader"><h2>Agregar nodo</h2><button type="button" class="closeBtn" onclick="cerrarModalNuevoNodo()">Cerrar</button></div>
+    <div class="modalBody">
+      <div class="hint">El nodo quedará asociado a la misma empresa del usuario y del enrutamiento activo.</div>
+      <label>Empresa</label><input id="nuevoNodoEmpresa" disabled>
+      <label>Nombre del nodo <span class="required">*</span></label><input id="nuevoNodoNombre" placeholder="Ej: NODO VILLAVICENCIO CENTRO">
+      <label>Código o abreviatura</label><input id="nuevoNodoCodigo" placeholder="Ej: VVC-CENTRO">
+      <label>Dirección o referencia</label><input id="nuevoNodoDireccion" placeholder="Ej: Carrera 33 # 40-20">
+      <div class="nodeModalActions"><button type="button" class="gray" onclick="cerrarModalNuevoNodo()">Cancelar</button><button type="button" onclick="guardarNuevoNodo()">Guardar nodo</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== NODOS Y AISLAMIENTO MULTIEMPRESA ===== */
+let nodosEmpresaOym = [];
+
+function empresaActualId(){
+  return enrutamientoActivo?.empresa_id || perfilTecnico?.empresa_id || null;
+}
+function empresaActualNombre(){
+  return enrutamientoActivo?.empresa_nombre || perfilTecnico?.empresa_nombre || perfilTecnico?.empresa?.nombre || "Empresa asignada";
+}
+async function cargarNodosEmpresa(seleccionarId=null){
+  const select=document.getElementById("nombreNodoSelect");
+  if(!select) return;
+  const empresaId=empresaActualId();
+  document.getElementById("empresaNodoInfo").textContent=`Empresa: ${empresaActualNombre()}`;
+  if(!empresaId){
+    select.innerHTML='<option value="">Usuario o enrutamiento sin empresa asignada</option>';
+    nodosEmpresaOym=[];
+    return;
+  }
+  const {data,error}=await supabaseClient.from("oym_nodos").select("id,nombre,codigo,direccion,empresa_id,activo").eq("empresa_id",empresaId).eq("activo",true).order("nombre",{ascending:true});
+  if(error){alert("No se pudieron cargar los nodos: "+error.message);return;}
+  nodosEmpresaOym=data||[];
+  select.innerHTML='<option value="">Seleccione un nodo...</option>'+nodosEmpresaOym.map(n=>`<option value="${escapeAttr(n.id)}">${escapeHtml(n.nombre)}${n.codigo?` · ${escapeHtml(n.codigo)}`:""}</option>`).join("");
+  const id=seleccionarId||val("nodoId");
+  if(id && nodosEmpresaOym.some(n=>String(n.id)===String(id))){select.value=String(id);seleccionarNodoFormulario();}
+}
+function seleccionarNodoFormulario(){
+  const id=val("nombreNodoSelect");
+  const nodo=nodosEmpresaOym.find(n=>String(n.id)===String(id));
+  setVal("nodoId",nodo?.id||"");
+  setVal("nombreNodo",nodo?.nombre||"");
+}
+function abrirModalNuevoNodo(){
+  const empresaId=empresaActualId();
+  if(!empresaId){alert("Debes asignar una empresa al usuario y al enrutamiento antes de crear nodos.");return;}
+  setVal("nuevoNodoEmpresa",empresaActualNombre());setVal("nuevoNodoNombre","");setVal("nuevoNodoCodigo","");setVal("nuevoNodoDireccion","");
+  document.getElementById("modalNuevoNodo").style.display="block";ocultarFabMarcar?.();
+}
+function cerrarModalNuevoNodo(){document.getElementById("modalNuevoNodo").style.display="none";actualizarVisibilidadFab?.();}
+async function guardarNuevoNodo(){
+  const empresaId=empresaActualId(),nombre=val("nuevoNodoNombre");
+  if(!empresaId){alert("No se identificó la empresa.");return;}
+  if(!nombre){alert("Debes diligenciar el Nombre del nodo.");return;}
+  const payload={empresa_id:empresaId,nombre,codigo:val("nuevoNodoCodigo")||null,direccion:val("nuevoNodoDireccion")||null,activo:true,creado_por:usuarioTecnico?.id||null};
+  const {data,error}=await supabaseClient.from("oym_nodos").insert(payload).select("id,nombre,codigo,direccion,empresa_id,activo").single();
+  if(error){alert(error.code==="23505"?"Ya existe un nodo con ese nombre o código para esta empresa.":"No se pudo guardar el nodo: "+error.message);return;}
+  cerrarModalNuevoNodo();await cargarNodosEmpresa(data.id);alert(`Nodo ${data.nombre} agregado correctamente.`);
+}
+
+(function instalarNodosMultiempresa(){
+  const originalPerfil=window.cargarPerfilTecnico;
+  window.cargarPerfilTecnico=async function(){
+    await originalPerfil.apply(this,arguments);
+    if(perfilTecnico?.empresa_id){
+      const {data}=await supabaseClient.from("oym_empresas").select("nombre").eq("id",perfilTecnico.empresa_id).maybeSingle();
+      perfilTecnico.empresa_nombre=data?.nombre||perfilTecnico.empresa_nombre||"Empresa asignada";
+    }
+    await cargarNodosEmpresa();
+  };
+  const originalCampos=window.actualizarCamposPorTipoPunto;
+  window.actualizarCamposPorTipoPunto=function(){
+    const r=originalCampos.apply(this,arguments);
+    const esNodo=val("tipoPunto")==="Nodo";
+    document.getElementById("grupoNombreNodo")?.classList.toggle("hidden",!esNodo);
+    if(esNodo){cargarNodosEmpresa(val("nodoId"));}
+    else{setVal("nodoId","");setVal("nombreNodo","");setVal("nombreNodoSelect","");}
+    return r;
+  };
+  const originalSeleccion=window.seleccionarClienteAsignado;
+  window.seleccionarClienteAsignado=async function(id){
+    const cliente=clientesAsignados.find(x=>String(x.id)===String(id));
+    await originalSeleccion.apply(this,arguments);
+    if(enrutamientoActivo){
+      enrutamientoActivo.empresa_id=cliente?.empresa_id||perfilTecnico?.empresa_id||enrutamientoActivo.empresa_id||null;
+      enrutamientoActivo.empresa_nombre=perfilTecnico?.empresa_nombre||enrutamientoActivo.empresa_nombre||null;
+      guardarEnrutamientos();
+    }
+    await cargarNodosEmpresa();
+  };
+  document.addEventListener("DOMContentLoaded",()=>{
+    document.getElementById("tipoPunto")?.addEventListener("change",()=>{
+      const esNodo=val("tipoPunto")==="Nodo";document.getElementById("grupoNombreNodo")?.classList.toggle("hidden",!esNodo);
+      if(esNodo)cargarNodosEmpresa();
+    });
+  });
+})();
+</script>
+
 <script>
 /* ===== CONTROL GLOBAL DE ALERTAS PDR APP ===== */
 (function configurarAlertasPdrApp(){
@@ -6078,9 +6242,6 @@ function cerrarTodosLosPanelesTema(){
 
 </body>
 </html>
-
-
-
 
 
 
