@@ -240,154 +240,7 @@ function abrirModalPrecargaJson(idClienteRuta){
   pintarPreviewPrecargaJson([]);
   document.getElementById("modalPrecargaJson").style.display = "block";
 }
-
-function alternarMaximizarPrecargaJson(){
-  const overlay = document.getElementById("modalPrecargaJson");
-  const card = document.getElementById("modalPrecargaJsonCard");
-  const btn = document.getElementById("btnMaximizarPrecarga");
-  const body = card?.querySelector(".preloadModalBody");
-  const grid = card?.querySelector(".preloadGrid");
-  const preview = document.getElementById("preloadPreview");
-
-  if(!overlay || !card) return;
-
-  const activar = card.dataset.maximizado !== "1";
-  card.dataset.maximizado = activar ? "1" : "0";
-
-  if(activar){
-    // Se aplican estilos en línea para no depender de la ubicación del CSS
-    // ni de que el modal esté anidado dentro de otro modal.
-    Object.assign(overlay.style,{
-      position:"fixed",
-      inset:"0",
-      width:"100vw",
-      height:"100vh",
-      display:"flex",
-      alignItems:"center",
-      justifyContent:"center",
-      padding:"8px",
-      boxSizing:"border-box",
-      overflow:"hidden",
-      zIndex:"2147483647",
-      background:"rgba(2,6,23,.92)"
-    });
-
-    Object.assign(card.style,{
-      position:"relative",
-      inset:"auto",
-      transform:"none",
-      width:"calc(100vw - 16px)",
-      maxWidth:"none",
-      height:"calc(100vh - 16px)",
-      maxHeight:"none",
-      margin:"0",
-      display:"flex",
-      flexDirection:"column",
-      overflow:"hidden",
-      borderRadius:"12px"
-    });
-
-    if(body){
-      Object.assign(body.style,{
-        flex:"1 1 auto",
-        minHeight:"0",
-        height:"auto",
-        maxHeight:"none",
-        overflow:"hidden",
-        padding:"14px"
-      });
-    }
-
-    if(grid){
-      Object.assign(grid.style,{
-        display:"grid",
-        gridTemplateColumns:"330px minmax(0, 1fr)",
-        gap:"14px",
-        width:"100%",
-        height:"100%",
-        minHeight:"0",
-        overflow:"hidden"
-      });
-
-      const columnas = grid.children;
-      if(columnas[0]) Object.assign(columnas[0].style,{overflowY:"auto",minHeight:"0"});
-      if(columnas[1]) Object.assign(columnas[1].style,{
-        display:"flex",
-        flexDirection:"column",
-        minWidth:"0",
-        minHeight:"0",
-        overflow:"hidden"
-      });
-    }
-
-    if(preview){
-      Object.assign(preview.style,{
-        flex:"1 1 auto",
-        width:"100%",
-        maxWidth:"none",
-        height:"100%",
-        maxHeight:"none",
-        minHeight:"0",
-        overflow:"auto"
-      });
-
-      const tabla = preview.querySelector("table");
-      if(tabla){
-        Object.assign(tabla.style,{
-          width:"100%",
-          minWidth:"1050px"
-        });
-      }
-    }
-
-    if(btn) btn.textContent = "Restaurar";
-  }else{
-    // Se restauran los estilos originales eliminando las propiedades en línea.
-    [
-      [overlay,["position","inset","width","height","display","alignItems","justifyContent","padding","boxSizing","overflow","zIndex","background"]],
-      [card,["position","inset","transform","width","maxWidth","height","maxHeight","margin","display","flexDirection","overflow","borderRadius"]],
-      [body,["flex","minHeight","height","maxHeight","overflow","padding"]],
-      [grid,["display","gridTemplateColumns","gap","width","height","minHeight","overflow"]],
-      [preview,["flex","width","maxWidth","height","maxHeight","minHeight","overflow"]]
-    ].forEach(([el,props])=>{
-      if(!el) return;
-      props.forEach(p=>el.style[p]="");
-    });
-
-    if(grid){
-      [...grid.children].forEach(el=>{
-        ["overflowY","display","flexDirection","minWidth","minHeight","overflow"].forEach(p=>el.style[p]="");
-      });
-    }
-
-    const tabla = preview?.querySelector("table");
-    if(tabla){
-      tabla.style.width="";
-      tabla.style.minWidth="";
-    }
-
-    overlay.style.display = "block";
-    if(btn) btn.textContent = "Maximizar";
-  }
-
-  setTimeout(()=>{
-    if(preview){
-      preview.scrollLeft = 0;
-      preview.scrollTop = 0;
-    }
-  },80);
-}
-
-function cerrarModalPrecargaJson(){
-  const overlay = document.getElementById("modalPrecargaJson");
-  const card = document.getElementById("modalPrecargaJsonCard");
-
-  if(card?.dataset.maximizado === "1"){
-    alternarMaximizarPrecargaJson();
-  }
-
-  if(overlay) overlay.style.display = "none";
-}
+function cerrarModalPrecargaJson(){ document.getElementById("modalPrecargaJson").style.display = "none"; }
 
 async function analizarArchivoPrecargaJson(){
   const file = document.getElementById("archivoPrecargaJson")?.files?.[0];
@@ -449,161 +302,22 @@ function extraerPuntosPrecargaDesdeMYW(json){
   return puntos.map((p,i) => ({...p, consecutivo_empalme:i+1, etiqueta_empalme:`${p.tipo_punto} ${i+1}`}));
 }
 
-
-function normalizarConsecutivosPrecarga(){
-  precargaJsonActual = (precargaJsonActual || []).map((p,i) => ({
-    ...p,
-    consecutivo_empalme:i+1,
-    etiqueta_empalme:`${p.tipo_punto || "Punto"} ${i+1}`
-  }));
-}
-
-function actualizarCampoPrecargaJson(indice,campo,valor){
-  const punto = precargaJsonActual?.[indice];
-  if(!punto) return;
-
-  // Conserva el valor como texto para aceptar números y referencias como N/A.
-  punto[campo] = String(valor ?? "").trim();
-}
-
-function eliminarPuntoPrecargaJson(indice){
-  const punto = precargaJsonActual?.[indice];
-  if(!punto) return;
-
-  const nombre = punto.nombre_punto || punto.etiqueta_empalme || `Punto ${indice+1}`;
-  if(!confirm(`¿Eliminar "${nombre}" de la precarga?`)) return;
-
-  precargaJsonActual.splice(indice,1);
-  normalizarConsecutivosPrecarga();
-  pintarPreviewPrecargaJson(precargaJsonActual);
-}
-
 function pintarPreviewPrecargaJson(puntos){
-  normalizarConsecutivosPrecarga();
-  puntos = precargaJsonActual;
-
   document.getElementById("preloadTotal").textContent = puntos.length;
   document.getElementById("preloadEmpalmes").textContent = puntos.filter(p => p.tipo_punto === "Empalme").length;
   document.getElementById("preloadClientes").textContent = puntos.filter(p => p.tipo_punto === "Cliente").length;
   document.getElementById("preloadNodos").textContent = puntos.filter(p => p.tipo_punto === "Nodo").length;
-
   const cont = document.getElementById("preloadPreview");
-  if(!puntos.length){
-    cont.innerHTML = `<div class="gpsBox">No hay puntos para guardar. Puedes volver a analizar el archivo JSON.</div>`;
-    return;
-  }
-
-  cont.innerHTML = `
-    <div class="preloadEditHint">
-      Puedes corregir los hilos antes de guardar y eliminar los puntos que no quieras precargar.
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Tipo</th>
-          <th>Nombre</th>
-          <th>Hilo Ent.</th>
-          <th>Hilo Sal.</th>
-          <th>Coordenadas</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${puntos.map((p,indice) => {
-          const tipo = String(p.tipo_punto || "");
-          const permiteHiloEntrada = !["Cliente","OLT"].includes(tipo);
-          const permiteHiloSalida = tipo !== "Nodo";
-
-          return `
-            <tr>
-              <td>${p.consecutivo_empalme}</td>
-              <td>${escapeHtml(p.tipo_punto)}</td>
-              <td>${escapeHtml(p.nombre_punto || "N/A")}</td>
-              <td>
-                <input
-                  class="preloadHiloInput ${permiteHiloEntrada ? "" : "preloadDisabledInput"}"
-                  type="text"
-                  value="${escapeAttr(p.hilo_entrada || "")}"
-                  placeholder="N/A"
-                  ${permiteHiloEntrada ? "" : "disabled"}
-                  oninput="actualizarCampoPrecargaJson(${indice},'hilo_entrada',this.value)"
-                >
-              </td>
-              <td>
-                <input
-                  class="preloadHiloInput ${permiteHiloSalida ? "" : "preloadDisabledInput"}"
-                  type="text"
-                  value="${escapeAttr(p.hilo_salida || "")}"
-                  placeholder="N/A"
-                  ${permiteHiloSalida ? "" : "disabled"}
-                  oninput="actualizarCampoPrecargaJson(${indice},'hilo_salida',this.value)"
-                >
-              </td>
-              <td>${Number(p.latitud).toFixed(7)}, ${Number(p.longitud).toFixed(7)}</td>
-              <td>
-                <button
-                  type="button"
-                  class="preloadDeleteBtn"
-                  onclick="eliminarPuntoPrecargaJson(${indice})"
-                >Eliminar</button>
-              </td>
-            </tr>
-          `;
-        }).join("")}
-      </tbody>
-    </table>
-  `;
-
-  // La tabla puede desplazarse horizontalmente; al abrir se posiciona al inicio.
-  const tabla = cont.querySelector("table");
-  if(tabla){
-    tabla.style.minWidth = "1050px";
-    tabla.style.width = "100%";
-  }
-
-  const filas = cont.querySelectorAll("tbody tr");
-  filas.forEach(fila=>{
-    const celdas = fila.children;
-    if(celdas[5]){
-      celdas[5].style.minWidth = "190px";
-      celdas[5].style.whiteSpace = "nowrap";
-    }
-    if(celdas[6]){
-      celdas[6].style.minWidth = "100px";
-      celdas[6].style.position = "sticky";
-      celdas[6].style.right = "0";
-      celdas[6].style.zIndex = "5";
-      celdas[6].style.background = "#0f172a";
-    }
-  });
-
-  const encabezados = cont.querySelectorAll("thead th");
-  if(encabezados[5]){
-    encabezados[5].style.minWidth = "190px";
-  }
-  if(encabezados[6]){
-    encabezados[6].style.minWidth = "100px";
-    encabezados[6].style.position = "sticky";
-    encabezados[6].style.right = "0";
-    encabezados[6].style.zIndex = "6";
-    encabezados[6].style.background = "#0f172a";
-  }
-
-  cont.scrollLeft = 0;
+  if(!puntos.length){ cont.innerHTML = `<div class="gpsBox">No hay puntos analizados.</div>`; return; }
+  cont.innerHTML = `<table><thead><tr><th>#</th><th>Tipo</th><th>Nombre</th><th>Hilo Ent.</th><th>Hilo Sal.</th><th>Coordenadas</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${p.consecutivo_empalme}</td><td>${escapeHtml(p.tipo_punto)}</td><td>${escapeHtml(p.nombre_punto || "N/A")}</td><td>${escapeHtml(p.hilo_entrada || "N/A")}</td><td>${escapeHtml(p.hilo_salida || "N/A")}</td><td>${Number(p.latitud).toFixed(7)}, ${Number(p.longitud).toFixed(7)}</td></tr>`).join("")}</tbody></table>`;
 }
 
 async function guardarPrecargaJsonSupabase(){
-  normalizarConsecutivosPrecarga();
-
   const clienteId = document.getElementById("precargaClienteId").value;
   const cliente = precargaJsonCliente || (window.__asignacionesCache || []).find(x => String(x.id) === String(clienteId));
   if(!cliente){ alert("No se encontró el cliente de la precarga."); return; }
   if(!precargaJsonActual.length){ alert("Primero analiza un archivo JSON con puntos válidos."); return; }
-  if(!confirm(
-    `¿Guardar ${precargaJsonActual.length} punto(s) precargados para ${cliente.id_cliente} / ${cliente.codigo_ruta}?\n\n` +
-    `Se guardarán los hilos editados y se excluirán los puntos eliminados.`
-  )) return;
+  if(!confirm(`¿Guardar ${precargaJsonActual.length} punto(s) precargados para ${cliente.id_cliente} / ${cliente.codigo_ruta}?`)) return;
 
   const {data:existentes,error:errorExistentes} = await supabaseClient.from("empalmes_enrutamiento").select("consecutivo_empalme").eq("enrutamiento_id", cliente.id);
   if(errorExistentes){ alert("No se pudo consultar consecutivos existentes: " + errorExistentes.message); return; }
@@ -941,169 +655,6 @@ window.accionesClienteAsignadoFix = function(r){
 
 window.accionesClienteAsignado = window.accionesClienteAsignadoFix;
 
-
-window.alternarMaximizarPrecargaJson = function(){
-  const overlay = document.getElementById("modalPrecargaJson");
-  const card = document.getElementById("modalPrecargaJsonCard");
-  const btn = document.getElementById("btnMaximizarPrecarga");
-  const body = card?.querySelector(".preloadModalBody");
-  const grid = card?.querySelector(".preloadGrid");
-  const preview = document.getElementById("preloadPreview");
-
-  if(!overlay || !card){
-    console.error("No se encontró el modal de precarga JSON.");
-    return;
-  }
-
-  const maximizado = card.dataset.maximizado === "1";
-
-  if(!maximizado){
-    card.dataset.maximizado = "1";
-
-    Object.assign(overlay.style,{
-      position:"fixed",
-      inset:"0",
-      width:"100vw",
-      height:"100vh",
-      display:"flex",
-      alignItems:"center",
-      justifyContent:"center",
-      padding:"8px",
-      boxSizing:"border-box",
-      overflow:"hidden",
-      background:"rgba(2,6,23,.96)",
-      zIndex:"2147483647"
-    });
-
-    Object.assign(card.style,{
-      position:"relative",
-      width:"calc(100vw - 16px)",
-      maxWidth:"none",
-      height:"calc(100vh - 16px)",
-      maxHeight:"none",
-      margin:"0",
-      display:"flex",
-      flexDirection:"column",
-      overflow:"hidden",
-      transform:"none",
-      inset:"auto"
-    });
-
-    if(body){
-      Object.assign(body.style,{
-        flex:"1 1 auto",
-        minHeight:"0",
-        maxHeight:"none",
-        height:"auto",
-        overflow:"hidden",
-        padding:"14px"
-      });
-    }
-
-    if(grid){
-      Object.assign(grid.style,{
-        display:"grid",
-        gridTemplateColumns:"340px minmax(0,1fr)",
-        gap:"14px",
-        width:"100%",
-        height:"100%",
-        minHeight:"0",
-        overflow:"hidden"
-      });
-
-      const izquierda = grid.children[0];
-      const derecha = grid.children[1];
-
-      if(izquierda){
-        Object.assign(izquierda.style,{
-          overflowY:"auto",
-          minHeight:"0"
-        });
-      }
-
-      if(derecha){
-        Object.assign(derecha.style,{
-          display:"flex",
-          flexDirection:"column",
-          minWidth:"0",
-          minHeight:"0",
-          overflow:"hidden"
-        });
-      }
-    }
-
-    if(preview){
-      Object.assign(preview.style,{
-        flex:"1 1 auto",
-        width:"100%",
-        maxWidth:"none",
-        height:"100%",
-        maxHeight:"none",
-        minHeight:"0",
-        overflow:"auto"
-      });
-
-      const table = preview.querySelector("table");
-      if(table){
-        Object.assign(table.style,{
-          width:"100%",
-          minWidth:"1050px"
-        });
-      }
-    }
-
-    if(btn) btn.textContent = "Restaurar";
-  }else{
-    card.dataset.maximizado = "0";
-
-    [
-      [overlay,["position","inset","width","height","alignItems","justifyContent","padding","boxSizing","overflow","background","zIndex"]],
-      [card,["position","width","maxWidth","height","maxHeight","margin","display","flexDirection","overflow","transform","inset"]],
-      [body,["flex","minHeight","maxHeight","height","overflow","padding"]],
-      [grid,["display","gridTemplateColumns","gap","width","height","minHeight","overflow"]],
-      [preview,["flex","width","maxWidth","height","maxHeight","minHeight","overflow"]]
-    ].forEach(([elemento,propiedades])=>{
-      if(!elemento) return;
-      propiedades.forEach(propiedad => elemento.style[propiedad] = "");
-    });
-
-    if(grid){
-      [...grid.children].forEach(elemento=>{
-        ["overflowY","minHeight","display","flexDirection","minWidth","overflow"].forEach(
-          propiedad => elemento.style[propiedad] = ""
-        );
-      });
-    }
-
-    const table = preview?.querySelector("table");
-    if(table){
-      table.style.width = "";
-      table.style.minWidth = "";
-    }
-
-    overlay.style.display = "block";
-    if(btn) btn.textContent = "Maximizar";
-  }
-
-  setTimeout(()=>{
-    if(preview){
-      preview.scrollLeft = 0;
-      preview.scrollTop = 0;
-    }
-  },80);
-};
-
-window.cerrarModalPrecargaJson = function(){
-  const overlay = document.getElementById("modalPrecargaJson");
-  const card = document.getElementById("modalPrecargaJsonCard");
-
-  if(card?.dataset.maximizado === "1"){
-    window.alternarMaximizarPrecargaJson();
-  }
-
-  if(overlay) overlay.style.display = "none";
-};
-
 </script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
@@ -1379,96 +930,21 @@ function extraerPuntosPrecargaDesdeMYW(json){
 }
 
 function pintarPreviewPrecargaJson(puntos){
-  normalizarConsecutivosPrecarga();
-  puntos = precargaJsonActual;
-
   document.getElementById("preloadTotal").textContent = puntos.length;
   document.getElementById("preloadEmpalmes").textContent = puntos.filter(p => p.tipo_punto === "Empalme").length;
   document.getElementById("preloadClientes").textContent = puntos.filter(p => p.tipo_punto === "Cliente").length;
   document.getElementById("preloadNodos").textContent = puntos.filter(p => p.tipo_punto === "Nodo").length;
-
   const cont = document.getElementById("preloadPreview");
-  if(!puntos.length){
-    cont.innerHTML = `<div class="gpsBox">No hay puntos para guardar. Puedes volver a analizar el archivo JSON.</div>`;
-    return;
-  }
-
-  cont.innerHTML = `
-    <div class="preloadEditHint">
-      Puedes corregir los hilos antes de guardar. También puedes eliminar cualquier punto que no quieras precargar.
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Tipo</th>
-          <th>Nombre</th>
-          <th>Hilo Ent.</th>
-          <th>Hilo Sal.</th>
-          <th>Coordenadas</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${puntos.map((p,indice) => {
-          const permiteHiloEntrada = !["Cliente","OLT"].includes(String(p.tipo_punto || ""));
-          const permiteHiloSalida = String(p.tipo_punto || "") !== "Nodo";
-
-          return `
-            <tr>
-              <td>${p.consecutivo_empalme}</td>
-              <td>${escapeHtml(p.tipo_punto)}</td>
-              <td>${escapeHtml(p.nombre_punto || "N/A")}</td>
-              <td>
-                <input
-                  class="preloadHiloInput ${permiteHiloEntrada ? "" : "preloadDisabledInput"}"
-                  type="text"
-                  value="${escapeAttr(p.hilo_entrada || "")}"
-                  placeholder="N/A"
-                  ${permiteHiloEntrada ? "" : "disabled"}
-                  onchange="actualizarCampoPrecargaJson(${indice},'hilo_entrada',this.value)"
-                  oninput="actualizarCampoPrecargaJson(${indice},'hilo_entrada',this.value)"
-                >
-              </td>
-              <td>
-                <input
-                  class="preloadHiloInput ${permiteHiloSalida ? "" : "preloadDisabledInput"}"
-                  type="text"
-                  value="${escapeAttr(p.hilo_salida || "")}"
-                  placeholder="N/A"
-                  ${permiteHiloSalida ? "" : "disabled"}
-                  onchange="actualizarCampoPrecargaJson(${indice},'hilo_salida',this.value)"
-                  oninput="actualizarCampoPrecargaJson(${indice},'hilo_salida',this.value)"
-                >
-              </td>
-              <td>${Number(p.latitud).toFixed(7)}, ${Number(p.longitud).toFixed(7)}</td>
-              <td>
-                <button
-                  type="button"
-                  class="preloadDeleteBtn"
-                  onclick="eliminarPuntoPrecargaJson(${indice})"
-                  title="Eliminar punto de la precarga"
-                >Eliminar</button>
-              </td>
-            </tr>
-          `;
-        }).join("")}
-      </tbody>
-    </table>
-  `;
+  if(!puntos.length){ cont.innerHTML = `<div class="gpsBox">No hay puntos analizados.</div>`; return; }
+  cont.innerHTML = `<table><thead><tr><th>#</th><th>Tipo</th><th>Nombre</th><th>Hilo Ent.</th><th>Hilo Sal.</th><th>Coordenadas</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${p.consecutivo_empalme}</td><td>${escapeHtml(p.tipo_punto)}</td><td>${escapeHtml(p.nombre_punto || "N/A")}</td><td>${escapeHtml(p.hilo_entrada || "N/A")}</td><td>${escapeHtml(p.hilo_salida || "N/A")}</td><td>${Number(p.latitud).toFixed(7)}, ${Number(p.longitud).toFixed(7)}</td></tr>`).join("")}</tbody></table>`;
 }
 
 async function guardarPrecargaJsonSupabase(){
-  normalizarConsecutivosPrecarga();
-
   const clienteId = document.getElementById("precargaClienteId").value;
   const cliente = precargaJsonCliente || (window.__asignacionesCache || []).find(x => String(x.id) === String(clienteId));
   if(!cliente){ alert("No se encontró el cliente de la precarga."); return; }
   if(!precargaJsonActual.length){ alert("Primero analiza un archivo JSON con puntos válidos."); return; }
-  if(!confirm(
-    `¿Guardar ${precargaJsonActual.length} punto(s) precargados para ${cliente.id_cliente} / ${cliente.codigo_ruta}?\n\n` +
-    `Se guardarán los hilos editados y se excluirán los puntos eliminados.`
-  )) return;
+  if(!confirm(`¿Guardar ${precargaJsonActual.length} punto(s) precargados para ${cliente.id_cliente} / ${cliente.codigo_ruta}?`)) return;
 
   const {data:existentes,error:errorExistentes} = await supabaseClient.from("empalmes_enrutamiento").select("consecutivo_empalme").eq("enrutamiento_id", cliente.id);
   if(errorExistentes){ alert("No se pudo consultar consecutivos existentes: " + errorExistentes.message); return; }
@@ -2700,235 +2176,6 @@ window.accionesClienteAsignado = window.accionesClienteAsignadoFix;
 .oymKmzBtn{
   background:#7c3aed!important;
   color:#ffffff!important;
-}
-
-
-/* ===== EDICIÓN DE PRECARGA JSON ===== */
-.preloadPreview table{
-  min-width:760px;
-}
-.preloadPreview .preloadHiloInput{
-  width:76px;
-  min-width:76px;
-  padding:6px 7px;
-  border:1px solid #475569;
-  border-radius:7px;
-  background:#020617;
-  color:#fff;
-  font-weight:700;
-  text-align:center;
-}
-.preloadPreview .preloadHiloInput:focus{
-  border-color:#38bdf8;
-  outline:none;
-  box-shadow:0 0 0 2px rgba(56,189,248,.18);
-}
-.preloadPreview .preloadDeleteBtn{
-  border:0;
-  border-radius:7px;
-  padding:6px 9px;
-  background:#ef4444;
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
-}
-.preloadPreview .preloadDeleteBtn:hover{
-  background:#dc2626;
-}
-.preloadPreview .preloadDisabledInput{
-  opacity:.5;
-  cursor:not-allowed;
-}
-.preloadEditHint{
-  margin:7px 0;
-  padding:8px 10px;
-  border-left:4px solid #38bdf8;
-  border-radius:7px;
-  background:#082f49;
-  color:#e0f2fe;
-  font-size:12px;
-}
-
-
-/* Corrección de visibilidad para eliminar puntos en la precarga JSON */
-#preloadPreview{
-  overflow-x:auto!important;
-}
-#preloadPreview table{
-  min-width:900px!important;
-}
-#preloadPreview th:last-child,
-#preloadPreview td:last-child{
-  position:sticky;
-  right:0;
-  z-index:3;
-  background:#0f172a;
-  min-width:92px;
-  text-align:center;
-}
-#preloadPreview th:last-child{
-  z-index:4;
-}
-.preloadDeleteBtn{
-  display:inline-block!important;
-  visibility:visible!important;
-  opacity:1!important;
-  background:#ef4444!important;
-  color:#fff!important;
-  border:none!important;
-  border-radius:7px!important;
-  padding:6px 10px!important;
-  font-weight:800!important;
-  cursor:pointer!important;
-}
-
-
-/* ===== MODAL PRECARGA JSON MAXIMIZABLE ===== */
-#modalPrecargaJsonCard{
-  width:min(96vw,1180px);
-  max-width:1180px!important;
-  max-height:92vh;
-  display:flex;
-  flex-direction:column;
-}
-#modalPrecargaJsonCard .modalBody{
-  overflow:auto;
-  min-height:0;
-}
-#modalPrecargaJsonCard.precargaMaximizada{
-  width:98vw!important;
-  max-width:98vw!important;
-  height:96vh!important;
-  max-height:96vh!important;
-  margin:1vh auto!important;
-}
-#modalPrecargaJsonCard.precargaMaximizada .modalBody{
-  height:calc(96vh - 72px);
-}
-#preloadPreview{
-  overflow:auto!important;
-  max-height:56vh;
-  border:1px solid #334155;
-  border-radius:10px;
-}
-#modalPrecargaJsonCard.precargaMaximizada #preloadPreview{
-  max-height:72vh;
-}
-#preloadPreview table{
-  width:100%!important;
-  min-width:980px!important;
-  border-collapse:collapse;
-}
-#preloadPreview th,
-#preloadPreview td{
-  padding:8px 10px!important;
-  white-space:nowrap;
-}
-#preloadPreview th:nth-child(1),
-#preloadPreview td:nth-child(1){
-  width:50px;
-  min-width:50px;
-}
-#preloadPreview th:nth-child(2),
-#preloadPreview td:nth-child(2){
-  min-width:90px;
-}
-#preloadPreview th:nth-child(3),
-#preloadPreview td:nth-child(3){
-  min-width:250px;
-  white-space:normal;
-}
-#preloadPreview th:nth-child(4),
-#preloadPreview td:nth-child(4),
-#preloadPreview th:nth-child(5),
-#preloadPreview td:nth-child(5){
-  min-width:100px;
-}
-#preloadPreview th:nth-child(6),
-#preloadPreview td:nth-child(6){
-  min-width:190px;
-}
-#preloadPreview th:nth-child(7),
-#preloadPreview td:nth-child(7){
-  width:110px;
-  min-width:110px;
-  position:sticky;
-  right:0;
-  z-index:3;
-  background:#0f172a!important;
-  text-align:center;
-}
-#preloadPreview th:nth-child(7){
-  z-index:4;
-}
-.preloadDeleteBtn{
-  display:inline-flex!important;
-  align-items:center;
-  justify-content:center;
-  visibility:visible!important;
-  opacity:1!important;
-  min-width:82px;
-  background:#ef4444!important;
-  color:#fff!important;
-}
-@media(max-width:900px){
-  #modalPrecargaJsonCard{
-    width:98vw!important;
-    max-width:98vw!important;
-    max-height:96vh!important;
-  }
-  #modalPrecargaJsonCard .modalBody{
-    padding:10px!important;
-  }
-}
-
-
-/* Corrección final del botón Maximizar en precarga JSON */
-#modalPrecargaJson .modalHeader{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  gap:12px!important;
-}
-#modalPrecargaJson .modalHeader > div{
-  display:flex!important;
-  align-items:center!important;
-  gap:8px!important;
-  flex-shrink:0!important;
-}
-#btnMaximizarPrecarga{
-  display:inline-flex!important;
-  visibility:visible!important;
-  opacity:1!important;
-  align-items:center!important;
-  justify-content:center!important;
-  min-width:96px!important;
-  padding:8px 14px!important;
-  border:0!important;
-  border-radius:10px!important;
-  background:#38bdf8!important;
-  color:#00111d!important;
-  font-weight:800!important;
-  cursor:pointer!important;
-  position:relative!important;
-  z-index:20!important;
-}
-#modalPrecargaJsonCard{
-  width:min(96vw,1180px)!important;
-  max-width:1180px!important;
-  max-height:92vh!important;
-  display:flex!important;
-  flex-direction:column!important;
-}
-#modalPrecargaJsonCard.precargaMaximizada{
-  width:98vw!important;
-  max-width:98vw!important;
-  height:96vh!important;
-  max-height:96vh!important;
-}
-#modalPrecargaJsonCard.precargaMaximizada .preloadModalBody{
-  height:calc(96vh - 74px)!important;
-  max-height:none!important;
 }
 
 </style>
@@ -4981,24 +4228,6 @@ async function imprimirUnifilarPDF(){
 }
 
 function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
-  const totalPuntosImpresion = Math.max(
-    1,
-    Array.isArray(window.__unifilarDatos) ? window.__unifilarDatos.length : 1
-  );
-
-  // Ancho aproximado disponible dentro de una hoja A4 horizontal.
-  // La escala disminuye automáticamente cuando hay muchos puntos.
-  const anchoNodoImpresion = 152;
-  const anchoEnlaceImpresion = 72;
-  const anchoNaturalImpresion =
-    (totalPuntosImpresion * anchoNodoImpresion) +
-    (Math.max(0,totalPuntosImpresion - 1) * anchoEnlaceImpresion);
-
-  const escalaUnifilarImpresion = Math.min(
-    1,
-    Math.max(0.28, 1060 / anchoNaturalImpresion)
-  );
-
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5099,38 +4328,23 @@ function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
     overflow:visible;
     page-break-inside:avoid;
     break-inside:avoid;
-    width:100%;
-    box-sizing:border-box;
-  }
-
-  .unifilarCanvas .unifilarTrack{
-    margin-left:auto;
-    margin-right:auto;
-  }
-
-  .spliceInfo{
-    overflow:visible!important;
-    height:auto!important;
-    min-height:0!important;
   }
 
   .unifilarTrack{
     display:flex;
     align-items:flex-start;
-    flex-wrap:nowrap;
-    width:max-content;
     min-width:max-content;
-    zoom:${escalaUnifilarImpresion};
+    transform:scale(.78);
+    transform-origin:top left;
+    width:128%;
     padding:8px 0 0;
-    margin:0 auto;
   }
 
   .spliceNode{
-    width:${anchoNodoImpresion}px;
-    min-width:${anchoNodoImpresion}px;
+    width:160px;
+    min-width:160px;
     text-align:center;
     position:relative;
-    overflow:visible;
   }
 
   .spliceIcon{
@@ -5197,8 +4411,8 @@ function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
   }
 
   .fiberLink{
-    width:${anchoEnlaceImpresion}px;
-    min-width:${anchoEnlaceImpresion}px;
+    width:90px;
+    min-width:90px;
     height:50px;
     position:relative;
   }
@@ -5206,14 +4420,12 @@ function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
   .fiberLink::before{
     content:"";
     position:absolute;
-    left:-5px;
-    right:-5px;
+    left:-8px;
+    right:-8px;
     top:24px;
-    height:0;
-    border-top:4px solid #0f172a;
+    height:4px;
+    background:#0f172a;
     border-radius:999px;
-    print-color-adjust:exact;
-    -webkit-print-color-adjust:exact;
   }
 
   .fiberLabel{
@@ -5355,58 +4567,6 @@ function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
     border:1px dashed #94a3b8;
     border-radius:7px;
     font-size:9px;
-  }
-
-
-
-  .spliceNode .spliceInfo{
-    display:block!important;
-    box-sizing:border-box!important;
-    white-space:normal!important;
-    word-break:break-word!important;
-  }
-
-  .spliceNode .spliceInfo br{
-    display:block!important;
-  }
-
-  .printPage{
-    overflow:visible!important;
-  }
-
-  @media print{
-
-    .unifilarCanvas{
-      display:block!important;
-      width:100%!important;
-      overflow:visible!important;
-    }
-
-    .unifilarTrack{
-      margin-left:auto!important;
-      margin-right:auto!important;
-    }
-
-    .unifilarCanvas,
-    .unifilarTrack,
-    .spliceNode,
-    .fiberLink{
-      page-break-inside:avoid!important;
-      break-inside:avoid!important;
-    }
-
-    .fiberLink::before{
-      border-top-color:#0f172a!important;
-      print-color-adjust:exact!important;
-      -webkit-print-color-adjust:exact!important;
-    }
-
-    .spliceIcon,
-    .fiberLabel,
-    .fiberLabel.mismatch{
-      print-color-adjust:exact!important;
-      -webkit-print-color-adjust:exact!important;
-    }
   }
 
   @media print{
@@ -5587,13 +4747,10 @@ function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
 
 
 <div class="modalOverlay" id="modalPrecargaJson">
-  <div class="preloadModalCard" id="modalPrecargaJsonCard">
+  <div class="preloadModalCard">
     <div class="modalHeader">
       <h2>Precargar enrutamiento desde JSON</h2>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="btnMaximizarPrecarga" class="gray" type="button" onclick="alternarMaximizarPrecargaJson()">Maximizar</button>
-        <button class="closeBtn" onclick="cerrarModalPrecargaJson()">Cerrar</button>
-      </div>
+      <button class="closeBtn" onclick="cerrarModalPrecargaJson()">Cerrar</button>
     </div>
     <div class="preloadModalBody">
       <input type="hidden" id="precargaClienteId">
@@ -6339,155 +5496,22 @@ function extraerPuntosPrecargaDesdeMYW(json){
   return puntos.map((p,i) => ({...p, consecutivo_empalme:i+1, etiqueta_empalme:`${p.tipo_punto} ${i+1}`}));
 }
 
-
-function normalizarConsecutivosPrecarga(){
-  precargaJsonActual = (precargaJsonActual || []).map((p,i) => ({
-    ...p,
-    consecutivo_empalme:i+1,
-    etiqueta_empalme:`${p.tipo_punto || "Punto"} ${i+1}`
-  }));
-}
-
-function actualizarCampoPrecargaJson(indice,campo,valor){
-  const punto = precargaJsonActual?.[indice];
-  if(!punto) return;
-  punto[campo] = String(valor ?? "").trim();
-}
-
-function eliminarPuntoPrecargaJson(indice){
-  const punto = precargaJsonActual?.[indice];
-  if(!punto) return;
-
-  const nombre = punto.nombre_punto || punto.etiqueta_empalme || `Punto ${indice+1}`;
-  if(!confirm(`¿Eliminar "${nombre}" de la precarga?`)) return;
-
-  precargaJsonActual.splice(indice,1);
-  normalizarConsecutivosPrecarga();
-  pintarPreviewPrecargaJson(precargaJsonActual);
-}
-
 function pintarPreviewPrecargaJson(puntos){
-  normalizarConsecutivosPrecarga();
-  puntos = precargaJsonActual;
-
   document.getElementById("preloadTotal").textContent = puntos.length;
   document.getElementById("preloadEmpalmes").textContent = puntos.filter(p => p.tipo_punto === "Empalme").length;
   document.getElementById("preloadClientes").textContent = puntos.filter(p => p.tipo_punto === "Cliente").length;
   document.getElementById("preloadNodos").textContent = puntos.filter(p => p.tipo_punto === "Nodo").length;
-
   const cont = document.getElementById("preloadPreview");
-  if(!puntos.length){
-    cont.innerHTML = `<div class="gpsBox">No hay puntos para guardar. Puedes volver a analizar el archivo JSON.</div>`;
-    return;
-  }
-
-  cont.innerHTML = `
-    <div class="preloadEditHint">
-      Puedes corregir los hilos antes de guardar. También puedes eliminar cualquier punto que no quieras precargar.
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Tipo</th>
-          <th>Nombre</th>
-          <th>Hilo Ent.</th>
-          <th>Hilo Sal.</th>
-          <th>Coordenadas</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${puntos.map((p,indice) => {
-          const permiteHiloEntrada = !["Cliente","OLT"].includes(String(p.tipo_punto || ""));
-          const permiteHiloSalida = String(p.tipo_punto || "") !== "Nodo";
-
-          return `
-            <tr>
-              <td>${p.consecutivo_empalme}</td>
-              <td>${escapeHtml(p.tipo_punto)}</td>
-              <td>${escapeHtml(p.nombre_punto || "N/A")}</td>
-              <td>
-                <input
-                  class="preloadHiloInput ${permiteHiloEntrada ? "" : "preloadDisabledInput"}"
-                  type="text"
-                  value="${escapeAttr(p.hilo_entrada || "")}"
-                  placeholder="N/A"
-                  ${permiteHiloEntrada ? "" : "disabled"}
-                  onchange="actualizarCampoPrecargaJson(${indice},'hilo_entrada',this.value)"
-                  oninput="actualizarCampoPrecargaJson(${indice},'hilo_entrada',this.value)"
-                >
-              </td>
-              <td>
-                <input
-                  class="preloadHiloInput ${permiteHiloSalida ? "" : "preloadDisabledInput"}"
-                  type="text"
-                  value="${escapeAttr(p.hilo_salida || "")}"
-                  placeholder="N/A"
-                  ${permiteHiloSalida ? "" : "disabled"}
-                  onchange="actualizarCampoPrecargaJson(${indice},'hilo_salida',this.value)"
-                  oninput="actualizarCampoPrecargaJson(${indice},'hilo_salida',this.value)"
-                >
-              </td>
-              <td>${Number(p.latitud).toFixed(7)}, ${Number(p.longitud).toFixed(7)}</td>
-              <td>
-                <button
-                  type="button"
-                  class="preloadDeleteBtn"
-                  onclick="eliminarPuntoPrecargaJson(${indice})"
-                  title="Eliminar punto de la precarga"
-                >Eliminar</button>
-              </td>
-            </tr>
-          `;
-        }).join("")}
-      </tbody>
-    </table>
-  `;
-
-  const tabla = cont.querySelector("table");
-  if(tabla){
-    tabla.style.width = "100%";
-    tabla.style.minWidth = "1050px";
-  }
-
-  const encabezados = cont.querySelectorAll("thead th");
-  if(encabezados[5]) encabezados[5].style.minWidth = "190px";
-  if(encabezados[6]){
-    encabezados[6].style.minWidth = "105px";
-    encabezados[6].style.position = "sticky";
-    encabezados[6].style.right = "0";
-    encabezados[6].style.zIndex = "8";
-    encabezados[6].style.background = "#0f172a";
-  }
-
-  cont.querySelectorAll("tbody tr").forEach(fila=>{
-    const celdas = fila.children;
-    if(celdas[5]){
-      celdas[5].style.minWidth = "190px";
-      celdas[5].style.whiteSpace = "nowrap";
-    }
-    if(celdas[6]){
-      celdas[6].style.minWidth = "105px";
-      celdas[6].style.position = "sticky";
-      celdas[6].style.right = "0";
-      celdas[6].style.zIndex = "7";
-      celdas[6].style.background = "#0f172a";
-    }
-  });
+  if(!puntos.length){ cont.innerHTML = `<div class="gpsBox">No hay puntos analizados.</div>`; return; }
+  cont.innerHTML = `<table><thead><tr><th>#</th><th>Tipo</th><th>Nombre</th><th>Hilo Ent.</th><th>Hilo Sal.</th><th>Coordenadas</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${p.consecutivo_empalme}</td><td>${escapeHtml(p.tipo_punto)}</td><td>${escapeHtml(p.nombre_punto || "N/A")}</td><td>${escapeHtml(p.hilo_entrada || "N/A")}</td><td>${escapeHtml(p.hilo_salida || "N/A")}</td><td>${Number(p.latitud).toFixed(7)}, ${Number(p.longitud).toFixed(7)}</td></tr>`).join("")}</tbody></table>`;
 }
 
 async function guardarPrecargaJsonSupabase(){
-  normalizarConsecutivosPrecarga();
-
   const clienteId = document.getElementById("precargaClienteId").value;
   const cliente = precargaJsonCliente || (window.__asignacionesCache || []).find(x => String(x.id) === String(clienteId));
   if(!cliente){ alert("No se encontró el cliente de la precarga."); return; }
   if(!precargaJsonActual.length){ alert("Primero analiza un archivo JSON con puntos válidos."); return; }
-  if(!confirm(
-    `¿Guardar ${precargaJsonActual.length} punto(s) precargados para ${cliente.id_cliente} / ${cliente.codigo_ruta}?\n\n` +
-    `Se guardarán los hilos editados y se excluirán los puntos eliminados.`
-  )) return;
+  if(!confirm(`¿Guardar ${precargaJsonActual.length} punto(s) precargados para ${cliente.id_cliente} / ${cliente.codigo_ruta}?`)) return;
 
   const {data:existentes,error:errorExistentes} = await supabaseClient.from("empalmes_enrutamiento").select("consecutivo_empalme").eq("enrutamiento_id", cliente.id);
   if(errorExistentes){ alert("No se pudo consultar consecutivos existentes: " + errorExistentes.message); return; }
@@ -6867,13 +5891,10 @@ window.accionesClienteAsignado = window.accionesClienteAsignadoFix;
 
 
 <div class="modalOverlay" id="modalPrecargaJson">
-  <div class="preloadModalCard" id="modalPrecargaJsonCard">
+  <div class="preloadModalCard">
     <div class="modalHeader">
       <h2>Precargar enrutamiento desde JSON</h2>
-      <div>
-        <button id="btnMaximizarPrecarga" type="button" onclick="alternarMaximizarPrecargaJson()">Maximizar</button>
-        <button class="closeBtn" onclick="cerrarModalPrecargaJson()">Cerrar</button>
-      </div>
+      <button class="closeBtn" onclick="cerrarModalPrecargaJson()">Cerrar</button>
     </div>
     <div class="preloadModalBody">
       <input type="hidden" id="precargaClienteId">
@@ -6905,256 +5926,6 @@ window.accionesClienteAsignado = window.accionesClienteAsignadoFix;
     </div>
   </div>
 </div>
-
-
-<script>
-(function(){
-  "use strict";
-
-  const STYLE_ID = "oym-precarga-resize-fix";
-
-  function instalarEstilos(){
-    if(document.getElementById(STYLE_ID)) return;
-
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = `
-      #modalPrecargaJson{
-        box-sizing:border-box!important;
-      }
-
-      #modalPrecargaJsonCard{
-        resize:both!important;
-        overflow:auto!important;
-        min-width:720px!important;
-        min-height:480px!important;
-        max-width:calc(100vw - 24px)!important;
-        max-height:calc(100vh - 24px)!important;
-      }
-
-      #modalPrecargaJsonCard .preloadModalBody{
-        min-height:0!important;
-        overflow:auto!important;
-      }
-
-      #modalPrecargaJsonCard .preloadGrid{
-        min-width:0!important;
-      }
-
-      #preloadPreview{
-        overflow:auto!important;
-        min-width:0!important;
-      }
-
-      #preloadPreview table{
-        min-width:1050px!important;
-      }
-
-      #preloadPreview th:nth-child(6),
-      #preloadPreview td:nth-child(6){
-        min-width:190px!important;
-        white-space:nowrap!important;
-      }
-
-      #preloadPreview th:nth-child(7),
-      #preloadPreview td:nth-child(7){
-        min-width:105px!important;
-        position:sticky!important;
-        right:0!important;
-        z-index:8!important;
-        background:#0f172a!important;
-        text-align:center!important;
-      }
-
-      #preloadPreview .preloadDeleteBtn{
-        display:inline-flex!important;
-        visibility:visible!important;
-        opacity:1!important;
-        background:#ef4444!important;
-        color:#fff!important;
-        border:0!important;
-        border-radius:7px!important;
-        padding:7px 10px!important;
-        font-weight:800!important;
-        cursor:pointer!important;
-      }
-
-      #modalPrecargaJsonCard.oym-fullscreen-precarga{
-        resize:none!important;
-        width:calc(100vw - 16px)!important;
-        height:calc(100vh - 16px)!important;
-        max-width:none!important;
-        max-height:none!important;
-        min-width:0!important;
-        min-height:0!important;
-        margin:0!important;
-        border-radius:10px!important;
-        display:flex!important;
-        flex-direction:column!important;
-        overflow:hidden!important;
-      }
-
-      #modalPrecargaJsonCard.oym-fullscreen-precarga .preloadModalBody{
-        flex:1 1 auto!important;
-        height:auto!important;
-        max-height:none!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-
-      #modalPrecargaJsonCard.oym-fullscreen-precarga .preloadGrid{
-        display:grid!important;
-        grid-template-columns:340px minmax(0,1fr)!important;
-        gap:14px!important;
-        height:100%!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-
-      #modalPrecargaJsonCard.oym-fullscreen-precarga .preloadGrid > div:first-child{
-        overflow-y:auto!important;
-        min-height:0!important;
-      }
-
-      #modalPrecargaJsonCard.oym-fullscreen-precarga .preloadGrid > div:last-child{
-        display:flex!important;
-        flex-direction:column!important;
-        min-width:0!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-
-      #modalPrecargaJsonCard.oym-fullscreen-precarga #preloadPreview{
-        flex:1 1 auto!important;
-        width:100%!important;
-        height:100%!important;
-        max-height:none!important;
-        min-height:0!important;
-        overflow:auto!important;
-      }
-
-      @media(max-width:780px){
-        #modalPrecargaJsonCard{
-          min-width:calc(100vw - 16px)!important;
-          width:calc(100vw - 16px)!important;
-        }
-
-        #modalPrecargaJsonCard.oym-fullscreen-precarga .preloadGrid{
-          grid-template-columns:1fr!important;
-          overflow:auto!important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function obtenerElementos(){
-    return {
-      overlay: document.getElementById("modalPrecargaJson"),
-      card: document.getElementById("modalPrecargaJsonCard") ||
-            document.querySelector("#modalPrecargaJson .preloadModalCard"),
-      btn: document.getElementById("btnMaximizarPrecarga"),
-      preview: document.getElementById("preloadPreview")
-    };
-  }
-
-  window.alternarMaximizarPrecargaJson = function(){
-    instalarEstilos();
-
-    const {overlay,card,btn,preview} = obtenerElementos();
-    if(!overlay || !card){
-      alert("No se encontró el modal de precarga JSON.");
-      return;
-    }
-
-    const activar = !card.classList.contains("oym-fullscreen-precarga");
-
-    if(activar){
-      card.dataset.oymPrevStyle = card.getAttribute("style") || "";
-      overlay.dataset.oymPrevStyle = overlay.getAttribute("style") || "";
-
-      Object.assign(overlay.style,{
-        position:"fixed",
-        inset:"0",
-        width:"100vw",
-        height:"100vh",
-        display:"flex",
-        alignItems:"center",
-        justifyContent:"center",
-        padding:"8px",
-        overflow:"hidden",
-        boxSizing:"border-box",
-        background:"rgba(2,6,23,.96)",
-        zIndex:"2147483647"
-      });
-
-      card.classList.add("oym-fullscreen-precarga");
-      if(btn) btn.textContent = "Restaurar";
-    }else{
-      card.classList.remove("oym-fullscreen-precarga");
-
-      const prevCard = card.dataset.oymPrevStyle || "";
-      const prevOverlay = overlay.dataset.oymPrevStyle || "";
-
-      if(prevCard) card.setAttribute("style",prevCard);
-      else card.removeAttribute("style");
-
-      if(prevOverlay) overlay.setAttribute("style",prevOverlay);
-      else{
-        overlay.removeAttribute("style");
-        overlay.style.display = "block";
-      }
-
-      delete card.dataset.oymPrevStyle;
-      delete overlay.dataset.oymPrevStyle;
-
-      if(btn) btn.textContent = "Maximizar";
-    }
-
-    requestAnimationFrame(()=>{
-      if(preview){
-        preview.scrollLeft = 0;
-        preview.scrollTop = 0;
-      }
-    });
-  };
-
-  // Refuerzo del cierre para restaurar primero el tamaño.
-  const cierreAnterior = window.cerrarModalPrecargaJson;
-  window.cerrarModalPrecargaJson = function(){
-    const {overlay,card} = obtenerElementos();
-
-    if(card?.classList.contains("oym-fullscreen-precarga")){
-      window.alternarMaximizarPrecargaJson();
-    }
-
-    if(typeof cierreAnterior === "function"){
-      try{
-        cierreAnterior();
-        return;
-      }catch(error){
-        console.warn("Se usó el cierre alternativo del modal:",error);
-      }
-    }
-
-    if(overlay) overlay.style.display = "none";
-  };
-
-  instalarEstilos();
-
-  // Si el modal se construye después, asegura el ID y la capacidad de redimensionar.
-  const observer = new MutationObserver(()=>{
-    const overlay = document.getElementById("modalPrecargaJson");
-    const card = document.getElementById("modalPrecargaJsonCard") ||
-                 document.querySelector("#modalPrecargaJson .preloadModalCard");
-
-    if(card && !card.id) card.id = "modalPrecargaJsonCard";
-    if(overlay && card) instalarEstilos();
-  });
-
-  observer.observe(document.documentElement,{childList:true,subtree:true});
-})();
-</script>
 
 </body>
 </html>
