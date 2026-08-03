@@ -1187,9 +1187,9 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
           </div>
           <div class="fusionFlowBody">
             <div id="grupoCableEntrada">
-              <label>Cable de entrada <span class="required">*</span></label>
+              <label>Cable de entrada <span id="reqCableEntrada" class="required">*</span></label>
               <input id="cableEntrada" required placeholder="Nombre o identificación del cable">
-              <label>Capilaridad del cable de entrada <span class="required">*</span></label>
+              <label>Capilaridad del cable de entrada <span id="reqCapilaridadEntrada" class="required">*</span></label>
               <select id="capilaridadCableEntrada" required>
                 <option value="">Seleccione...</option>
                 <option value="6 HILOS">6 HILOS</option>
@@ -1200,7 +1200,7 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
               </select>
             </div>
             <div id="grupoHiloEntrada">
-              <label>Hilo de entrada <span class="required">*</span></label>
+              <label>Hilo de entrada <span id="reqHiloEntrada" class="required">*</span></label>
               <input id="hiloEntrada" type="number" min="1" required placeholder="Número de hilo">
             </div>
           </div>
@@ -2789,7 +2789,10 @@ async function guardarRegistroLocal(){
   const tarjetaEntradaVisible = !document.getElementById("tarjetaEntrada")?.classList.contains("hidden");
   const tarjetaSalidaVisible = !document.getElementById("tarjetaSalida")?.classList.contains("hidden");
 
-  if(tarjetaEntradaVisible){
+  const esNodoActual = String(val("tipoPunto") || "").toLowerCase() === "nodo";
+
+  // Para Nodo, los datos de entrada son opcionales aunque la tarjeta esté visible.
+  if(tarjetaEntradaVisible && !esNodoActual){
     if(!val("cableEntrada")){ alert("Debes diligenciar Cable de entrada."); document.getElementById("cableEntrada")?.focus(); return; }
     if(!val("capilaridadCableEntrada")){ alert("Debes seleccionar la Capilaridad del cable de entrada."); document.getElementById("capilaridadCableEntrada")?.focus(); return; }
     if(!val("hiloEntrada")){ alert("Debes diligenciar Hilo de entrada."); document.getElementById("hiloEntrada")?.focus(); return; }
@@ -5969,6 +5972,19 @@ function cerrarTodosLosPanelesTema(){
 
     const nodoCliente = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentido);
     const clienteNodo = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentido);
+
+    // En Nodo, cable, capilaridad e hilo de entrada son opcionales.
+    const entradaObligatoria = tipo !== "nodo";
+    const cableEntrada = document.getElementById("cableEntrada");
+    const capilaridadEntrada = document.getElementById("capilaridadCableEntrada");
+    const hiloEntrada = document.getElementById("hiloEntrada");
+    if(cableEntrada) cableEntrada.required = entradaObligatoria;
+    if(capilaridadEntrada) capilaridadEntrada.required = entradaObligatoria;
+    if(hiloEntrada) hiloEntrada.required = entradaObligatoria;
+    ["reqCableEntrada","reqCapilaridadEntrada","reqHiloEntrada"].forEach(id=>{
+      const marca = document.getElementById(id);
+      if(marca) marca.style.display = entradaObligatoria ? "inline" : "none";
+    });
 
     let mostrarEntrada = true;
     let mostrarSalida = true;
