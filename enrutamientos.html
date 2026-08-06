@@ -741,6 +741,11 @@ body[data-theme="dark"] .pdrAlertDialog{
   color:#f8fafc;
 }
 
+
+    .photoSourceActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .photoSourceActions button{margin-top:0;min-height:44px}
+    .galleryBtn{background:#7c3aed!important;color:#fff!important}
+    @media(max-width:520px){.photoSourceActions{grid-template-columns:1fr}}
 </style>
 
 
@@ -1331,8 +1336,26 @@ body[data-theme="light"] .fusionFlowSalida .fusionFlowHeader{background:#dcfce7}
         <div class="sectionTitle">5. Fotos obligatorias</div>
         <div class="hint" id="hintFotos">Para registros nuevos debes tomar las dos fotos. En edición puedes conservar las fotos existentes.</div>
         <div class="photoGrid">
-          <div class="photoCard"><label>Foto 1 panorámica <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('panoramica')">Tomar / reemplazar foto</button><input id="cameraPanoramica" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewPanoramica" class="photoPreview"></div>
-          <div class="photoCard"><label>Foto 2 empalme y fusión <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('fusion')">Tomar / reemplazar foto</button><input id="cameraFusion" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewFusion" class="photoPreview"></div>
+          <div class="photoCard">
+            <label>Foto 1 panorámica <span class="required">*</span></label>
+            <div class="photoSourceActions">
+              <button type="button" class="secondary" onclick="abrirCamara('panoramica')">📷 Tomar foto</button>
+              <button type="button" class="galleryBtn" onclick="abrirGaleria('panoramica')">🖼️ Adjuntar de galería</button>
+            </div>
+            <input id="cameraPanoramica" type="file" accept="image/*" capture="environment" style="display:none">
+            <input id="galleryPanoramica" type="file" accept="image/*" style="display:none">
+            <img id="previewPanoramica" class="photoPreview">
+          </div>
+          <div class="photoCard">
+            <label>Foto 2 empalme y fusión <span class="required">*</span></label>
+            <div class="photoSourceActions">
+              <button type="button" class="secondary" onclick="abrirCamara('fusion')">📷 Tomar foto</button>
+              <button type="button" class="galleryBtn" onclick="abrirGaleria('fusion')">🖼️ Adjuntar de galería</button>
+            </div>
+            <input id="cameraFusion" type="file" accept="image/*" capture="environment" style="display:none">
+            <input id="galleryFusion" type="file" accept="image/*" style="display:none">
+            <img id="previewFusion" class="photoPreview">
+          </div>
         </div>
       </div>
 
@@ -2641,8 +2664,14 @@ function abrirCamara(tipo){
   if(!selectedLat || !selectedLng){ alert("Primero fija el empalme con Marcar."); return; }
   document.getElementById(tipo==="panoramica"?"cameraPanoramica":"cameraFusion").click();
 }
+function abrirGaleria(tipo){
+  if(!selectedLat || !selectedLng){ alert("Primero fija el empalme con Marcar."); return; }
+  document.getElementById(tipo==="panoramica"?"galleryPanoramica":"galleryFusion").click();
+}
 document.getElementById("cameraPanoramica").addEventListener("change",e=>procesarFoto(e,"panoramica"));
 document.getElementById("cameraFusion").addEventListener("change",e=>procesarFoto(e,"fusion"));
+document.getElementById("galleryPanoramica").addEventListener("change",e=>procesarFoto(e,"panoramica"));
+document.getElementById("galleryFusion").addEventListener("change",e=>procesarFoto(e,"fusion"));
 
 function procesarFoto(e,tipo){
   const file=e.target.files[0]; if(!file) return;
@@ -4289,7 +4318,7 @@ function limpiarFormulario(){
   window.fotoPanoramica = null;
   window.fotoFusion = null;
 
-  ["cameraPanoramica","cameraFusion"].forEach(id=>{
+  ["cameraPanoramica","cameraFusion","galleryPanoramica","galleryFusion"].forEach(id=>{
     const input=document.getElementById(id);
     if(input) input.value="";
   });
@@ -5794,6 +5823,25 @@ function cerrarTodosLosPanelesTema(){
     else if(typeof abrirCamaraAnterior === "function") abrirCamaraAnterior(tipo);
   };
 
+  // Guardar borrador también antes de abrir la galería del celular.
+  const abrirGaleriaAnterior = window.abrirGaleria || abrirGaleria;
+  window.abrirGaleria = abrirGaleria = async function(tipo){
+    if(!selectedLat || !selectedLng){
+      alert("Primero fija el empalme con Marcar.");
+      return;
+    }
+
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    const input = document.getElementById(
+      tipo === "panoramica" ? "galleryPanoramica" : "galleryFusion"
+    );
+
+    if(input) input.click();
+    else if(typeof abrirGaleriaAnterior === "function") abrirGaleriaAnterior(tipo);
+  };
+
   // Respaldo adicional cada vez que la aplicación guarda registros.
   const guardarLocalStorageAnterior = window.guardarLocalStorage || guardarLocalStorage;
   window.guardarLocalStorage = guardarLocalStorage = function(){
@@ -5826,7 +5874,7 @@ function cerrarTodosLosPanelesTema(){
       }
     });
 
-    ["cameraPanoramica","cameraFusion"].forEach(id=>{
+    ["cameraPanoramica","cameraFusion","galleryPanoramica","galleryFusion"].forEach(id=>{
       const input = document.getElementById(id);
       if(input) input.value = "";
     });
@@ -6370,7 +6418,6 @@ async function guardarNuevoNodo(){
 
 </body>
 </html>
-
 
 
 
