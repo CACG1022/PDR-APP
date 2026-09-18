@@ -105,10 +105,18 @@ img[data-remote="1"]{
 .syncProgressPanel.error .syncProgressBar{background:linear-gradient(90deg,#f59e0b,#ef4444)}
 @media(max-width:700px){.syncProgressPanel{left:10px;right:10px;bottom:68px;width:auto}}
 
+
+.customMapMarkerWrapper{background:transparent!important;border:none!important}
+.mapSymbol{position:relative;display:flex;align-items:center;justify-content:center;width:18px;height:18px}
+.mapSymbol.circle{border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.mapSymbol.square{border-radius:2px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.mapSymbol.plus{font-size:26px;font-weight:1000;line-height:18px;text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff}
+.mapSymbol.triangle{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:18px solid currentColor;filter:drop-shadow(0 0 0 #fff) drop-shadow(0 0 1px #fff)}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Sincronización en segundo plano</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · símbolos por tipo</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button><div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav><button onclick="cerrarPaneles()"><span class="ico">⌂</span>Mapa</button><button onclick="abrirRegistros()"><span class="ico">▥</span>Registros</button><button onclick="exportarGeoJSON()"><span class="ico">⇩</span>GeoJSON</button><button onclick="exportarJSON()"><span class="ico">⚙</span>JSON</button></nav>
 <div class="authOverlay" id="authOverlay">
@@ -1669,7 +1677,61 @@ async function cargarPuntosSupabase(mostrar=true){
 }
 
 function indicePuntos(){const idx=new Map();registrosProyectoActual().forEach(r=>idx.set(`${r.POLIGONO}__${Number(r.CONSECUTIV)||0}`,r));return idx}
-pintarRegistros=function(){if(!map)return;if(markerLayer)markerLayer.remove();markerLayer=L.layerGroup().addTo(map);const arr=registrosProyectoActual(),idx=indicePuntos(),lineas=new Set();arr.forEach(r=>obtenerConexionesDelRegistro(r,idx).forEach(c=>{const clave=[r.IDCAMPO,c.destino.IDCAMPO,c.modo].sort().join('|');if(lineas.has(clave))return;lineas.add(clave);const otro=c.modo==='otro';L.polyline([[r.LATITUDE,r.LONGITUDE],[c.destino.LATITUDE,c.destino.LONGITUDE]],{color:otro?'#f59e0b':'#ef4444',weight:4,opacity:.95,dashArray:otro?'10,6':null}).addTo(markerLayer).bindPopup(`<b>${esc(c.slot)}</b><br>${esc(r.IDCAMPO)} ↔ ${esc(c.destino.IDCAMPO)}`)}));arr.forEach(r=>{const color=r.TIPO==='POSTE'?'#22c55e':r.TIPO==='CANALIZADO'?'#38bdf8':r.TIPO==='C. AMERICANO'?'#f97316':'#a855f7';const mk=L.circleMarker([r.LATITUDE,r.LONGITUDE],{radius:8,color:'#fff',weight:2,fillColor:color,fillOpacity:1}).addTo(markerLayer).bindPopup(`<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(r.sync_status||'pendiente')}</span><br>${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br><b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br><button onclick="editarPunto('${r.id}')">Editar</button>`);if(['POSTE','C. AMERICANO','CERCHA'].includes(r.TIPO))mk.bindTooltip(String(r.CONSECUTIV??''),{permanent:true,direction:'right',offset:[9,0],className:'posteConsecutivoTooltip',opacity:1})});actualizarEstadoSync()}
+function colorTipoPunto(tipo){
+  return tipo==='POSTE'?'#22c55e':tipo==='CANALIZADO'?'#38bdf8':tipo==='C. AMERICANO'?'#f97316':'#a855f7';
+}
+function htmlSimboloMapa(tipo,color){
+  if(tipo==='CANALIZADO') return `<div class="mapSymbol square" style="background:${color}"></div>`;
+  if(tipo==='C. AMERICANO') return `<div class="mapSymbol plus" style="color:${color}">+</div>`;
+  if(tipo==='CERCHA') return `<div class="mapSymbol triangle" style="color:${color}"></div>`;
+  return `<div class="mapSymbol circle" style="background:${color}"></div>`;
+}
+function crearMarcadorMapa(r){
+  const color=colorTipoPunto(r.TIPO);
+  return L.marker([r.LATITUDE,r.LONGITUDE],{
+    icon:L.divIcon({
+      className:'customMapMarkerWrapper',
+      html:htmlSimboloMapa(r.TIPO,color),
+      iconSize:[20,20],
+      iconAnchor:[10,10],
+      popupAnchor:[0,-10]
+    })
+  });
+}
+pintarRegistros=function(){
+  if(!map)return;
+  if(markerLayer)markerLayer.remove();
+  markerLayer=L.layerGroup().addTo(map);
+  const arr=registrosProyectoActual(),idx=indicePuntos(),lineas=new Set();
+
+  arr.forEach(r=>obtenerConexionesDelRegistro(r,idx).forEach(c=>{
+    const clave=[r.IDCAMPO,c.destino.IDCAMPO,c.modo].sort().join('|');
+    if(lineas.has(clave))return;
+    lineas.add(clave);
+
+    L.polyline(
+      [[r.LATITUDE,r.LONGITUDE],[c.destino.LATITUDE,c.destino.LONGITUDE]],
+      {
+        color:'#48d1cc',
+        weight:4,
+        opacity:.95,
+        dashArray:'10,6'
+      }
+    ).addTo(markerLayer).bindPopup(`<b>${esc(c.slot)}</b><br>${esc(r.IDCAMPO)} ↔ ${esc(c.destino.IDCAMPO)}`);
+  }));
+
+  arr.forEach(r=>{
+    const mk=crearMarcadorMapa(r)
+      .addTo(markerLayer)
+      .bindPopup(`<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(r.sync_status||'pendiente')}</span><br>${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br><b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br><button onclick="editarPunto('${r.id}')">Editar</button>`);
+
+    if(['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(r.TIPO)){
+      mk.bindTooltip(String(r.CONSECUTIV??''),{permanent:true,direction:'right',offset:[9,0],className:'posteConsecutivoTooltip',opacity:1});
+    }
+  });
+
+  actualizarEstadoSync();
+}
 pintarLista=function(){const arr=registrosProyectoActual(),idx=indicePuntos();recordsList.innerHTML=arr.length?arr.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(r.sync_status||'pendiente')}</span><br>${esc(r.DIRECCION||'')}<br>${Number(r.LATITUDE).toFixed(7)}, ${Number(r.LONGITUDE).toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn danger" onclick="eliminarPunto('${r.id}')">Eliminar</button></div></div>`).join(''):'<div class="hint">No hay puntos en este proyecto.</div>'}
 eliminarPunto=async function(id){
   const r=registros.find(x=>x.id===id);
@@ -1717,5 +1779,4 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 </div>
 
 </body></html>
-
 
