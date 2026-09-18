@@ -94,7 +94,7 @@ img[data-remote="1"]{
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Fotos Drive recuperables · fix Supabase</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · LATCX automático QGIS</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="sincronizarPendientes()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button><div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav><button onclick="cerrarPaneles()"><span class="ico">⌂</span>Mapa</button><button onclick="abrirRegistros()"><span class="ico">▥</span>Registros</button><button onclick="exportarGeoJSON()"><span class="ico">⇩</span>GeoJSON</button><button onclick="exportarJSON()"><span class="ico">⚙</span>JSON</button></nav>
 <div class="authOverlay" id="authOverlay">
@@ -222,7 +222,7 @@ function crearConexiones(){
       <div class="cxRow ${i>1?'cxRowHidden':''}" id="cxRow${i}" data-cx="${i}">
         <div>
           <label>CX${i}${i===1?' <span class="req">*</span>':''}</label>
-          <input id="CX${i}" type="number" min="0" value="${i===1?'':'0'}">
+          <input id="CX${i}" type="number" min="0" value="${i===1?'':'0'}" onchange="precalcularCX(${i})">
         </div>
         <div>
           <label>¿Es cruce telemático?</label>
@@ -292,6 +292,20 @@ function mostrarSiguienteConexion(){
       document.getElementById(`cxRow${conexionesVisibles}`)?.scrollIntoView({behavior:'smooth',block:'nearest'});
       cx.focus();
     },60);
+  }
+}
+
+
+async function precalcularCX(i){
+  const cx=Number(document.getElementById(`CX${i}`)?.value||0);
+  if(!cx || !POLIGONO?.value) return;
+
+  const c=await resolverCoordenadasCX(POLIGONO.value,cx);
+  window[`__LATCX${i}`]=c.latitude;
+  window[`__LONGTCX${i}`]=c.longitude;
+
+  if(c.latitude==null){
+    console.warn(`No se encontró ${POLIGONO.value}-${cx} para LATCX${i}.`);
   }
 }
 
@@ -1055,6 +1069,70 @@ abrirFormulario=function(){
 }
 recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`}
 
+
+async function resolverCoordenadasCX(poligono, consecutivo){
+  const pol=String(poligono||'').trim();
+  const cons=Number(consecutivo||0);
+  if(!pol || !cons) return {latitude:null, longitude:null};
+
+  const idcampo=`${pol}-${cons}`;
+
+  // Equivalente local a:
+  // get_feature('AGREGAR','IDCAMPO', concat(POLIGONO,'-',CXn))
+  const local=registros.find(r =>
+    String(r.proyecto_id||'')===String(proyectoActivo?.proyecto_id||'') &&
+    String(r.IDCAMPO||'').trim()===idcampo
+  );
+
+  if(local){
+    return {
+      latitude:Number.isFinite(Number(local.LATITUDE)) ? Number(local.LATITUDE) : null,
+      longitude:Number.isFinite(Number(local.LONGITUDE)) ? Number(local.LONGITUDE) : null
+    };
+  }
+
+  // Si el punto no está en este dispositivo, se consulta Supabase.
+  if(!navigator.onLine || !proyectoActivo?.proyecto_id){
+    return {latitude:null, longitude:null};
+  }
+
+  const {data,error}=await mappingSb
+    .from('mapping_puntos')
+    .select('latitude,longitude')
+    .eq('proyecto_id',proyectoActivo.proyecto_id)
+    .eq('idcampo',idcampo)
+    .maybeSingle();
+
+  if(error){
+    console.warn(`No se pudo obtener coordenadas de ${idcampo}:`, error.message||error);
+    return {latitude:null, longitude:null};
+  }
+
+  return {
+    latitude:Number.isFinite(Number(data?.latitude)) ? Number(data.latitude) : null,
+    longitude:Number.isFinite(Number(data?.longitude)) ? Number(data.longitude) : null
+  };
+}
+
+async function completarCoordenadasCX(registro){
+  if(!registro) return registro;
+
+  for(let i=1;i<=4;i++){
+    const cx=Number(registro[`CX${i}`]||0);
+
+    if(cx>0){
+      const c=await resolverCoordenadasCX(registro.POLIGONO,cx);
+      registro[`LATCX${i}`]=c.latitude;
+      registro[`LONGTCX${i}`]=c.longitude;
+    }else{
+      registro[`LATCX${i}`]=null;
+      registro[`LONGTCX${i}`]=null;
+    }
+  }
+
+  return registro;
+}
+
 function prepararRegistroLocalBase(){
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
   const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toISOString().slice(0,10),HORA:ahora.toLocaleTimeString('es-CO'),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
@@ -1065,8 +1143,13 @@ guardarPunto=async function(){
   for(const key of ['TIPO','CIUDAD','TECNICO','PROPIETARI','ALTURA','MATERIAL','TENSION','ESTADO','TIPOCAMARA','TIPO_POSTE']){
     actualizarValorPin(key);
   }
-  const r=prepararRegistroLocalBase();
+  let r=prepararRegistroLocalBase();
   if(!r)return;
+
+  // Calcula LATCX1..4 / LONGTCX1..4 igual que las expresiones de QGIS,
+  // buscando el IDCAMPO POLIGONO-CX dentro del mismo proyecto.
+  r=await completarCoordenadasCX(r);
+
   try{
     await guardarFotosCapturadasIDB(r.offline_id||r.id);
   }catch(e){
@@ -1088,7 +1171,7 @@ guardarPunto=async function(){
 
 function filaSupabase(r){
   const q={...r};delete q.fotos;delete q.geometry;delete q.sync_status;delete q.supabase_id;delete q.id;delete q.asignacion_id;
-  return {proyecto_id:r.proyecto_id,tecnico_id:mappingUser.id,tecnico_email:mappingUser.email,tecnico_nombre:mappingProfile?.nombre||mappingUser.email,offline_id:r.offline_id,origen_registro:'APP_MOVIL',tipo:r.TIPO,poligono:r.POLIGONO,consecutiv:r.CONSECUTIV,idcampo:r.IDCAMPO,idglobal:r.IDGLOBAL||null,ciudad:r.CIUDAD||null,barrio:r.BARRIO||null,direccion:r.DIRECCION||null,costado:r.COSTADO||null,latitude:r.LATITUDE,longitude:r.LONGITUDE,precision_gps:null,fecha:r.FECHA||null,hora:r.HORA||null,fecha_captura_app:r.fecha_captura_app||new Date().toISOString(),user_agent:navigator.userAgent,propietari:r.PROPIETARI||null,pacvi:r.PACVI||null,tipo_poste:r['TIPO POSTE']||null,rotura:r.ROTURA,material:r.MATERIAL||null,altura:r.ALTURA,estado:r.ESTADO||null,tension:r.TENSION||null,cables:r.CABLES,reservas:r.RESERVAS,empalmes:r.EMPALMES,electricos:r.ELECTRICOS||null,naps:r.NAPS,bajantes:r.BAJANTES,fuentes:r.FUENTES,proempalme:r.PROEMPALME||null,pronap:r.PRONAP||null,rienda:r.RIENDA||null,amplifi:r.AMPLIFI,finder_ed:r.FINDERED||null,existencia:r.EXISTENCIA,tipo_camara:r.TIPOCAMARA||null,conf_ducto:r['CONF DUCTO']||null,ducto_elec:r['DUCTO ELEC']||null,duct_telco:r['DUCT TELCO']||null,duct_libre:r['DUCT LIBRE']||null,duct_util:r['DUCT UTIL']||null,subida_a_p:r['SUBIDA A P']||null,elem_red:r['ELEM RED']||null,cant_reser:r['CANT RESER'],cx1:r.CX1||0,cx2:r.CX2||0,cx3:r.CX3||0,cx4:r.CX4||0,telcx1:r.TELCX1||0,telcx2:r.TELCX2||0,telcx3:r.TELCX3||0,telcx4:r.TELCX4||0,distodo1:r.DISTODO1,distodo2:r.DISTODO2,distodo3:r.DISTODO3,distodo4:r.DISTODO4,cxotropol:r.CXOTROPOL||'NO',cx1pol:r.CX1POL||null,cx2pol:r.CX2POL||null,cx3pol:r.CX3POL||null,cx4pol:r.CX4POL||null,cx1conse:r.CX1CONSE,cx2conse:r.CX2CONSE,cx3conse:r.CX3CONSE,cx4conse:r.CX4CONSE,distodo5:r.DISTODO5,distodo6:r.DISTODO6,distodo7:r.DISTODO7,distodo8:r.DISTODO8,observacio:r.OBSERVACIO||null,datos_qgis:q,editado_en_app:!!r.supabase_id,fecha_ultima_edicion_app:r.supabase_id?new Date().toISOString():null};
+  return {proyecto_id:r.proyecto_id,tecnico_id:mappingUser.id,tecnico_email:mappingUser.email,tecnico_nombre:mappingProfile?.nombre||mappingUser.email,offline_id:r.offline_id,origen_registro:'APP_MOVIL',tipo:r.TIPO,poligono:r.POLIGONO,consecutiv:r.CONSECUTIV,idcampo:r.IDCAMPO,idglobal:r.IDGLOBAL||null,ciudad:r.CIUDAD||null,barrio:r.BARRIO||null,direccion:r.DIRECCION||null,costado:r.COSTADO||null,latitude:r.LATITUDE,longitude:r.LONGITUDE,precision_gps:null,fecha:r.FECHA||null,hora:r.HORA||null,fecha_captura_app:r.fecha_captura_app||new Date().toISOString(),user_agent:navigator.userAgent,propietari:r.PROPIETARI||null,pacvi:r.PACVI||null,tipo_poste:r['TIPO POSTE']||null,rotura:r.ROTURA,material:r.MATERIAL||null,altura:r.ALTURA,estado:r.ESTADO||null,tension:r.TENSION||null,cables:r.CABLES,reservas:r.RESERVAS,empalmes:r.EMPALMES,electricos:r.ELECTRICOS||null,naps:r.NAPS,bajantes:r.BAJANTES,fuentes:r.FUENTES,proempalme:r.PROEMPALME||null,pronap:r.PRONAP||null,rienda:r.RIENDA||null,amplifi:r.AMPLIFI,finder_ed:r.FINDERED||null,existencia:r.EXISTENCIA,tipo_camara:r.TIPOCAMARA||null,conf_ducto:r['CONF DUCTO']||null,ducto_elec:r['DUCTO ELEC']||null,duct_telco:r['DUCT TELCO']||null,duct_libre:r['DUCT LIBRE']||null,duct_util:r['DUCT UTIL']||null,subida_a_p:r['SUBIDA A P']||null,elem_red:r['ELEM RED']||null,cant_reser:r['CANT RESER'],cx1:r.CX1||0,cx2:r.CX2||0,cx3:r.CX3||0,cx4:r.CX4||0,telcx1:r.TELCX1||0,telcx2:r.TELCX2||0,telcx3:r.TELCX3||0,telcx4:r.TELCX4||0,distodo1:r.DISTODO1,distodo2:r.DISTODO2,distodo3:r.DISTODO3,distodo4:r.DISTODO4,latcx1:r.LATCX1,longtcx1:r.LONGTCX1,latcx2:r.LATCX2,longtcx2:r.LONGTCX2,latcx3:r.LATCX3,longtcx3:r.LONGTCX3,latcx4:r.LATCX4,longtcx4:r.LONGTCX4,cxotropol:r.CXOTROPOL||'NO',cx1pol:r.CX1POL||null,cx2pol:r.CX2POL||null,cx3pol:r.CX3POL||null,cx4pol:r.CX4POL||null,cx1conse:r.CX1CONSE,cx2conse:r.CX2CONSE,cx3conse:r.CX3CONSE,cx4conse:r.CX4CONSE,distodo5:r.DISTODO5,distodo6:r.DISTODO6,distodo7:r.DISTODO7,distodo8:r.DISTODO8,observacio:r.OBSERVACIO||null,datos_qgis:q,editado_en_app:!!r.supabase_id,fecha_ultima_edicion_app:r.supabase_id?new Date().toISOString():null};
 }
 function dataUriBlob(uri){
   const [h,b]=String(uri||'').split(',');
@@ -1408,7 +1491,7 @@ async function sincronizarPendientes(){
   alert(`Sincronización terminada.\nEnviados: ${ok}\nCon error: ${fail}`);
 }
 async function reenviarTodo(){if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
-function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||''}}
+function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
 async function cargarPuntosSupabase(mostrar=true){
   if(!proyectoActivo||!mappingUser)return;
 
@@ -1523,3 +1606,4 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 </script>
 
 </body></html>
+
