@@ -113,11 +113,26 @@ img[data-remote="1"]{
 .mapSymbol.plus{font-size:26px;font-weight:1000;line-height:18px;text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff}
 .mapSymbol.triangle{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:18px solid currentColor;filter:drop-shadow(0 0 0 #fff) drop-shadow(0 0 1px #fff)}
 
+
+.modalHeadActions{display:flex;align-items:center;gap:8px}
+.minBtn{border:1px solid #36526d;background:#13273a;color:#e2e8f0;border-radius:9px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer}
+.minBtn:hover{background:#1c3852}
+.resumeFormFab{position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:2550;border:1px solid #ef4444;background:#7f1d1d;color:#fff;border-radius:999px;padding:11px 16px;font-size:12px;font-weight:900;box-shadow:0 10px 28px rgba(0,0,0,.4);cursor:pointer}
+#map,.leaflet-container{background:#030712!important}
+.leaflet-container.basemapOff{background:#030712!important}
+@media(max-width:700px){
+  .modalHeadActions{gap:5px}
+  .minBtn{padding:6px 8px;font-size:10px}
+  .resumeFormFab{bottom:72px;max-width:calc(100vw - 28px)}
+}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · símbolos por tipo</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
-<div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button><div class="centerInfo" id="centerInfo">Mira central: --</div>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · elementos rojos · fondo oscuro</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
+<button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
+<div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav><button onclick="cerrarPaneles()"><span class="ico">⌂</span>Mapa</button><button onclick="abrirRegistros()"><span class="ico">▥</span>Registros</button><button onclick="exportarGeoJSON()"><span class="ico">⇩</span>GeoJSON</button><button onclick="exportarJSON()"><span class="ico">⚙</span>JSON</button></nav>
 <div class="authOverlay" id="authOverlay">
   <div class="authCard">
@@ -133,6 +148,7 @@ img[data-remote="1"]{
   <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
   <button onclick="reenviarTodo();toggleSideMenu(false)">⟳ Reenviar todo</button>
   <button onclick="cargarPuntosSupabase();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
+  <button id="btnBaseMap" onclick="toggleBaseMap();toggleSideMenu(false)">🌑 Apagar mapa base</button>
   <button onclick="finalizarAsignacion();toggleSideMenu(false)">✓ Finalizar mi asignación</button>
   <button onclick="logoutMapping()">⏻ Cerrar sesión</button>
 </div>
@@ -143,7 +159,7 @@ img[data-remote="1"]{
 </div></div></div>
 
 
-<div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><button class="close" onclick="cerrarFormulario()">Cerrar</button></div><div class="body">
+<div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><div class="modalHeadActions"><button class="minBtn" type="button" onclick="minimizarFormulario()">— Minimizar</button><button class="close" onclick="cerrarFormulario()">Cerrar</button></div></div><div class="body">
 <div class="hint">La coordenada se toma exactamente de la <b>mira central del mapa</b>. Los campos visibles cambian según el valor de <b>TIPO</b>, replicando la lógica del formulario de AGREGAR2.</div>
 <div class="section"><h3>1. Identificación y ubicación</h3><div class="sectionBody"><div class="grid">
 <div><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select></div>
@@ -190,11 +206,69 @@ const photoDefs={
  CANALIZADO:[['FOTO8CAM','Cámara con tapa abierta'],['FOTO9CAM','Panorámica con tapa cerrada y ruta'],['FOTO5CAM','Flecha indicando el costado de la vía'],['FOTO6CAM','Panorámica indicando la ruta del cable'],['FOTO7CAM','Banco de ductos completo'],['FOTO10CAM','Foto cámara anterior']]
 };
 let registros=JSON.parse(localStorage.getItem('mapping_sitesurvey_registros_v1')||'[]');let map,selectedLat,selectedLng,gpsMarker,editingId=null,photos={};
-function init(){document.getElementById('PROPIETARI').innerHTML='<option value="">Seleccione...</option>'+propietarios.map(x=>`<option>${x}</option>`).join('');crearConexiones();instalarChecksFijos();map=L.map('map').setView([4.65,-74.1],17);const hyb=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'});const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});hyb.addTo(map);L.control.layers({'Google Satélite Híbrido':hyb,'OpenStreetMap':osm}).addTo(map);map.on('move moveend zoom',actualizarCentro);actualizarCentro();pintarRegistros();}
+let hyb=null,osm=null,darkBase=null,baseMapApagado=false;
+function init(){
+  document.getElementById('PROPIETARI').innerHTML='<option value="">Seleccione...</option>'+propietarios.map(x=>`<option>${x}</option>`).join('');
+  crearConexiones();
+  instalarChecksFijos();
+  map=L.map('map').setView([4.65,-74.1],17);
+
+  hyb=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
+    subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'
+  });
+  osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:22,attribution:'© OpenStreetMap'
+  });
+  darkBase=L.layerGroup();
+
+  hyb.addTo(map);
+
+  L.control.layers({
+    'Google Satélite Híbrido':hyb,
+    'OpenStreetMap':osm,
+    'Fondo oscuro (sin mapa base)':darkBase
+  }).addTo(map);
+
+  map.on('baselayerchange',e=>{
+    baseMapApagado=(e.layer===darkBase);
+    document.getElementById('map')?.classList.toggle('basemapOff',baseMapApagado);
+    actualizarBotonBaseMap();
+  });
+
+  map.on('move moveend zoom',actualizarCentro);
+  actualizarCentro();
+  pintarRegistros();
+}
 function actualizarCentro(){const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;document.getElementById('centerInfo').innerHTML=`<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)} · ${registros.length} punto(s)`;}
 function irGPS(){if(!navigator.geolocation)return alert('Geolocalización no disponible.');navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude,accuracy}=p.coords;map.setView([latitude,longitude],19);if(gpsMarker)gpsMarker.remove();gpsMarker=L.circleMarker([latitude,longitude],{radius:8,color:'#fff',weight:3,fillColor:'#38bdf8',fillOpacity:1}).addTo(map).bindPopup(`GPS ±${Math.round(accuracy)} m`);},e=>alert('No fue posible obtener GPS: '+e.message),{enableHighAccuracy:true,timeout:15000,maximumAge:2000});}
 function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');}
-function cerrarFormulario(){formOverlay.classList.remove('open')}function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
+let formularioMinimizado=false;
+
+function minimizarFormulario(){
+  if(!formOverlay.classList.contains('open'))return;
+  formularioMinimizado=true;
+  formOverlay.classList.remove('open');
+  const b=document.getElementById('resumeFormFab');
+  if(b)b.style.display='block';
+}
+
+function reanudarFormulario(){
+  if(!formularioMinimizado)return;
+  formularioMinimizado=false;
+  formularioMinimizado=false;
+  const resumeBtn=document.getElementById('resumeFormFab');if(resumeBtn)resumeBtn.style.display='none';
+  formOverlay.classList.add('open');
+  const b=document.getElementById('resumeFormFab');
+  if(b)b.style.display='none';
+}
+
+function cerrarFormulario(){
+  formularioMinimizado=false;
+  formOverlay.classList.remove('open');
+  const b=document.getElementById('resumeFormFab');
+  if(b)b.style.display='none';
+}
+function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
 function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');}
 function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);}
 function renderFotos(t){
@@ -866,6 +940,31 @@ function persist(){
   }
   actualizarEstadoSync();
 }
+
+function actualizarBotonBaseMap(){
+  const b=document.getElementById('btnBaseMap');
+  if(!b)return;
+  b.textContent=baseMapApagado?'🗺️ Encender mapa base':'🌑 Apagar mapa base';
+}
+
+function toggleBaseMap(){
+  if(!map)return;
+
+  if(!baseMapApagado){
+    if(hyb && map.hasLayer(hyb))map.removeLayer(hyb);
+    if(osm && map.hasLayer(osm))map.removeLayer(osm);
+    if(darkBase && !map.hasLayer(darkBase))darkBase.addTo(map);
+    baseMapApagado=true;
+  }else{
+    if(darkBase && map.hasLayer(darkBase))map.removeLayer(darkBase);
+    if(hyb && !map.hasLayer(hyb))hyb.addTo(map);
+    baseMapApagado=false;
+  }
+
+  document.getElementById('map')?.classList.toggle('basemapOff',baseMapApagado);
+  actualizarBotonBaseMap();
+}
+
 function toggleSideMenu(force){const e=document.getElementById('sideMenu');if(!e)return;if(force===false)e.classList.remove('open');else e.classList.toggle('open')}
 function abrirPanelProyectos(){document.getElementById('projectsOverlay').classList.add('open');pintarProyectosAsignados()}
 function cerrarPanelProyectos(){document.getElementById('projectsOverlay').classList.remove('open')}
@@ -1081,6 +1180,14 @@ function desbloquearProyecto(){const b=document.getElementById('fabAgregar');if(
 const _abrirFormularioBase=abrirFormulario;
 abrirFormulario=function(){
   if(!proyectoActivo){abrirPanelProyectos();return}
+
+  // Si existe un formulario minimizado, simplemente vuelve a mostrarlo.
+  // No limpia ni recalcula los datos ya diligenciados.
+  if(formularioMinimizado){
+    reanudarFormulario();
+    return;
+  }
+
   _abrirFormularioBase();
   setNumeroConexiones(1,true);
   PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
@@ -1678,7 +1785,7 @@ async function cargarPuntosSupabase(mostrar=true){
 
 function indicePuntos(){const idx=new Map();registrosProyectoActual().forEach(r=>idx.set(`${r.POLIGONO}__${Number(r.CONSECUTIV)||0}`,r));return idx}
 function colorTipoPunto(tipo){
-  return tipo==='POSTE'?'#22c55e':tipo==='CANALIZADO'?'#38bdf8':tipo==='C. AMERICANO'?'#f97316':'#a855f7';
+  return '#ef4444';
 }
 function htmlSimboloMapa(tipo,color){
   if(tipo==='CANALIZADO') return `<div class="mapSymbol square" style="background:${color}"></div>`;
@@ -1779,4 +1886,5 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 </div>
 
 </body></html>
+
 
