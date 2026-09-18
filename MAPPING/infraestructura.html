@@ -138,7 +138,7 @@ img[data-remote="1"]{
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · estado de sincronización reconciliado</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · métricas de envío corregidas</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1652,9 +1652,14 @@ function actualizarMetricasSync(){
   const seconds=Math.max(elapsed/1000,0.001);
   const speed=syncBytesTransmitidos/seconds;
   const e=document.getElementById('syncElapsed');if(e)e.textContent=formatearTiempo(elapsed);
-  const s=document.getElementById('syncSpeed');if(s)s.textContent=formatearVelocidad(speed);
+  const s=document.getElementById('syncSpeed');
+  if(s)s.textContent=(syncEnCurso && syncBytesTransmitidos===0)
+    ? 'calculando...'
+    : formatearVelocidad(speed);
   const t=document.getElementById('syncTransferred');
-  if(t)t.textContent=syncBytesTotalesEstimados?`${formatearBytes(syncBytesTransmitidos)} / ${formatearBytes(syncBytesTotalesEstimados)}`:formatearBytes(syncBytesTransmitidos);
+  if(t)t.textContent=syncBytesTotalesEstimados
+    ? `${formatearBytes(syncBytesTransmitidos)} / ${formatearBytes(syncBytesTotalesEstimados)}`
+    : (syncEnCurso ? 'calculando...' : formatearBytes(syncBytesTransmitidos));
   const mt=document.getElementById('syncMiniTime');if(mt)mt.textContent=formatearTiempo(elapsed);
 }
 function iniciarCronometroSync(){
@@ -1719,26 +1724,35 @@ async function sincronizarPendientesBackground(){
   syncEnCurso=true;syncOcultoManual=false;
   syncResumen={total:pendientes.length,procesados:0,ok:0,error:0};
   syncInicioMs=Date.now();syncBytesTransmitidos=0;syncBytesTotalesEstimados=0;
-  mostrarPanelSync();actualizarProgresoSync('Calculando tamaño aproximado del envío...');
+
+  // El cronómetro arranca inmediatamente al pulsar Enviar datos.
+  iniciarCronometroSync();
+  mostrarPanelSync();
+  actualizarProgresoSync('Calculando tamaño aproximado del envío...');
 
   const bytesPorPunto=new Map();
   for(const r of pendientes){
-    const b=await estimarBytesPunto(r);
+    const b=await estimarBytesPunto(r); console.debug('SYNC tamaño estimado', r.IDCAMPO||r.offline_id, b, 'bytes');
     bytesPorPunto.set(r.offline_id||r.id,b);
     syncBytesTotalesEstimados+=b;
   }
 
-  iniciarCronometroSync();
   actualizarProgresoSync('Puedes ocultar esta ventana y seguir levantando puntos.');
 
   for(const r of pendientes){
     const etiqueta=r.IDCAMPO||r.offline_id||'punto';
     const bytesEstimados=bytesPorPunto.get(r.offline_id||r.id)||0;
+    const inicioPunto=performance.now();
     try{
       actualizarProgresoSync(`Enviando ${etiqueta}...`);
       await sincronizarUno(r);
       syncResumen.ok++;
       syncBytesTransmitidos+=bytesEstimados;
+
+      const duracionPunto=Math.max((performance.now()-inicioPunto)/1000,0.001);
+      const velocidadPunto=bytesEstimados/duracionPunto;
+      const speedEl=document.getElementById('syncSpeed');
+      if(speedEl) speedEl.textContent=formatearVelocidad(velocidadPunto);
     }catch(e){
       r.sync_status='error';r.sync_error=e?.message||String(e);syncResumen.error++;console.error('Error sincronizando',etiqueta,e);
     }
@@ -1751,45 +1765,6 @@ async function sincronizarPendientesBackground(){
   syncEnCurso=false;actualizarEstadoSync();finalizarPanelSync();
 }
 
-async function sincronizarPendientesBackground(){
-  if(syncEnCurso)return;
-  if(!proyectoActivo){alert('Selecciona un proyecto.');return}
-  if(!navigator.onLine){alert('No hay conexión a Internet. Los datos siguen guardados localmente.');return}
-
-  const pendientes=registrosProyectoActual().filter(r=>r.sync_status!=='enviado'||r.sync_error);
-  if(!pendientes.length){
-    syncResumen={total:0,procesados:0,ok:0,error:0};
-    mostrarPanelSync();actualizarProgresoSync('No hay datos pendientes.');finalizarPanelSync();return;
-  }
-
-  syncEnCurso=true;
-  syncResumen={total:pendientes.length,procesados:0,ok:0,error:0};
-  mostrarPanelSync();
-  actualizarProgresoSync('Puedes seguir agregando y guardando puntos mientras se envía.');
-
-  for(const r of pendientes){
-    const etiqueta=r.IDCAMPO||r.offline_id||'punto';
-    try{
-      actualizarProgresoSync(`Enviando ${etiqueta}...`);
-      await sincronizarUno(r);
-      syncResumen.ok++;
-    }catch(e){
-      r.sync_status='error';
-      r.sync_error=e?.message||String(e);
-      syncResumen.error++;
-      console.error('Error sincronizando',etiqueta,e);
-    }
-    syncResumen.procesados++;
-    persist();
-    pintarRegistros();
-    actualizarProgresoSync(`Procesado ${etiqueta}. Puedes continuar levantando datos.`);
-    await new Promise(res=>setTimeout(res,20));
-  }
-
-  syncEnCurso=false;
-  actualizarEstadoSync();
-  finalizarPanelSync();
-}
 async function sincronizarPendientes(){
   if(!mappingUser||!proyectoActivo){alert('Selecciona un proyecto primero.');return}if(!navigator.onLine){alert('No hay conexión a Internet. Los datos siguen guardados en el celular.');return}
   const pendientes=registrosProyectoActual().filter(r=>r.sync_status!=='enviado');if(!pendientes.length){alert('No hay datos pendientes por enviar.');return}
@@ -2047,6 +2022,7 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 </button>
 
 </body></html>
+
 
 
 
