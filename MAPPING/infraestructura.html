@@ -50,10 +50,51 @@ nav{position:fixed;left:0;right:0;bottom:0;height:64px;z-index:2300;background:r
 .addConnectionBtn{width:100%;margin:10px 0 14px}
 @media(max-width:700px){.cxRow{grid-template-columns:1fr}}
 
+
+img[data-remote="1"]{
+  outline:2px solid #38bdf8;
+  box-shadow:0 0 0 4px rgba(56,189,248,.18);
+}
+
+
+.remotePhotoFrame{
+  width:100%;
+  height:280px;
+  border:1px solid #36526d;
+  border-radius:10px;
+  background:#020617;
+  margin-top:10px;
+}
+.remotePhotoLink{
+  display:inline-block;
+  margin-top:8px;
+  color:#38bdf8;
+  font-size:12px;
+  font-weight:800;
+  text-decoration:none;
+}
+.photoStatus{
+  margin-top:8px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+}
+.photoStatus.local{
+  background:#14532d;
+  color:#bbf7d0;
+  border:1px solid #22c55e;
+}
+.photoStatus.cloud{
+  background:#0c4a6e;
+  color:#bae6fd;
+  border:1px solid #38bdf8;
+}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Campos fijables · Conexiones progresivas corregidas</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Fotos Drive recuperables · fix Supabase</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="sincronizarPendientes()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button><div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav><button onclick="cerrarPaneles()"><span class="ico">⌂</span>Mapa</button><button onclick="abrirRegistros()"><span class="ico">▥</span>Registros</button><button onclick="exportarGeoJSON()"><span class="ico">⇩</span>GeoJSON</button><button onclick="exportarJSON()"><span class="ico">⚙</span>JSON</button></nav>
 <div class="authOverlay" id="authOverlay">
@@ -134,7 +175,34 @@ function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.ge
 function cerrarFormulario(){formOverlay.classList.remove('open')}function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
 function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');}
 function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);}
-function renderFotos(t){photoGrid.innerHTML='';photos={};(photoDefs[t]||[]).forEach(([id,label])=>{photoGrid.insertAdjacentHTML('beforeend',`<div class="photoCard"><label>${label}</label><button class="btn blue" type="button" onclick="document.getElementById('file_${id}').click()">📷 Tomar/adjuntar foto</button><input id="file_${id}" type="file" accept="image/*" capture="environment" style="display:none" onchange="cargarFoto('${id}',this)"><img id="prev_${id}" class="photoPreview"></div>`)});}
+function renderFotos(t){
+  photoGrid.innerHTML='';
+  photos={};
+
+  (photoDefs[t]||[]).forEach(([id,label])=>{
+    photoGrid.insertAdjacentHTML('beforeend',`
+      <div class="photoCard" id="photoCard_${id}">
+        <label>${label}</label>
+        <button class="btn blue" type="button" onclick="document.getElementById('file_${id}').click()">📷 Tomar/adjuntar foto</button>
+        <input id="file_${id}" type="file" accept="image/*" capture="environment" style="display:none" onchange="cargarFoto('${id}',this)">
+
+        <div class="photoStatus" id="status_${id}" style="display:none"></div>
+
+        <img id="prev_${id}" class="photoPreview" style="display:none" alt="${label}">
+
+        <iframe
+          id="remote_${id}"
+          class="remotePhotoFrame"
+          style="display:none"
+          loading="lazy"
+          allow="autoplay"
+          referrerpolicy="no-referrer"
+        ></iframe>
+
+        <a id="remoteLink_${id}" class="remotePhotoLink" href="#" target="_blank" style="display:none">Abrir foto en Google Drive</a>
+      </div>`);
+  });
+}
 function cargarFoto(id,input){
   const f=input.files?.[0];
   if(!f)return;
@@ -413,6 +481,7 @@ async function editarPunto(id){
   LONGITUDE.value=r.LONGITUDE;
   cambiarTipo();
   await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
+  await renderizarFotosRemotasEnFormulario(r);
   toggleOtroPol();
   ajustarConexionesEdicion(r);
   sincronizarChecksPin();
@@ -532,8 +601,163 @@ async function guardarFotosCapturadasIDB(puntoId){
   }
 }
 
+
+async function obtenerFotosRemotasSupabase(puntoIdSupabase){
+  if(!puntoIdSupabase)return [];
+  const {data,error}=await mappingSb
+    .from('mapping_punto_fotos')
+    .select('id,punto_id,tipo_foto,nombre_archivo,url_foto,storage_path,metadata,created_at')
+    .eq('punto_id',puntoIdSupabase)
+    .order('created_at',{ascending:true});
+  if(error){
+    console.warn('No se pudieron cargar fotos remotas desde mapping_punto_fotos:', error?.message || error, error);
+    return [];
+  }
+  return data||[];
+}
+
+function extraerDriveId(valor){
+  if(!valor)return '';
+  const s=String(valor).trim();
+
+  // Si Supabase guardó directamente el ID del archivo.
+  if(/^[a-zA-Z0-9_-]{15,}$/.test(s) && !s.startsWith('http'))return s;
+
+  let m=s.match(/\/file\/d\/([^/?#]+)/);
+  if(!m)m=s.match(/[?&]id=([^&#]+)/);
+  if(!m)m=s.match(/\/d\/([^/?#]+)/);
+
+  return m?.[1]||'';
+}
+
+function urlDrivePreview(url,ruta){
+  const id=extraerDriveId(url)||extraerDriveId(ruta);
+  if(id)return `https://drive.google.com/file/d/${id}/preview`;
+  return url||'';
+}
+
+function urlDriveAbrir(url,ruta){
+  const id=extraerDriveId(url)||extraerDriveId(ruta);
+  if(id)return `https://drive.google.com/file/d/${id}/view`;
+  return url||'';
+}
+
+function urlDriveThumbnail(url,ruta){
+  const id=extraerDriveId(url)||extraerDriveId(ruta);
+  if(id)return `https://drive.google.com/thumbnail?id=${id}&sz=w1200`;
+  return url||'';
+}
+
+async function renderizarFotosRemotasEnFormulario(registro){
+  if(!registro?.supabase_id)return;
+
+  const remotas=await obtenerFotosRemotasSupabase(registro.supabase_id);
+  if(!remotas.length){
+    console.info('El punto no tiene referencias en mapping_punto_fotos:',registro.supabase_id);
+    return;
+  }
+
+  const locales=await obtenerFotosIDB(registro.offline_id||registro.id);
+  const localesPorTipo=new Map(locales.map(f=>[f.tipo_foto,f]));
+
+  registro.fotos_remotas={...(registro.fotos_remotas||{})};
+
+  for(const f of remotas){
+    const tipo=f.tipo_foto;
+    if(!tipo)continue;
+
+    registro.fotos_remotas[tipo]={
+      url_foto:f.url_foto||null,
+      ruta:f.storage_path||null,
+      nombre_archivo:f.nombre_archivo||null,
+      remoto:true
+    };
+
+    const status=document.getElementById('status_'+tipo);
+    const img=document.getElementById('prev_'+tipo);
+    const iframe=document.getElementById('remote_'+tipo);
+    const link=document.getElementById('remoteLink_'+tipo);
+
+    // Si existe foto local en este dispositivo, siempre tiene prioridad.
+    if(localesPorTipo.has(tipo)){
+      if(status){
+        status.textContent='📱 Foto local';
+        status.className='photoStatus local';
+        status.style.display='inline-flex';
+      }
+      continue;
+    }
+
+    const abrirUrl=urlDriveAbrir(f.url_foto,f.storage_path);
+    const previewUrl=urlDrivePreview(f.url_foto,f.storage_path);
+    const thumbUrl=urlDriveThumbnail(f.url_foto,f.storage_path);
+
+    if(status){
+      status.textContent='☁️ Foto sincronizada';
+      status.className='photoStatus cloud';
+      status.style.display='inline-flex';
+    }
+
+    if(link && abrirUrl){
+      link.href=abrirUrl;
+      link.style.display='inline-block';
+    }
+
+    // Primero intentamos mostrar una miniatura como <img>.
+    // Si Google Drive bloquea la carga directa, se oculta la imagen
+    // y queda visible el iframe /preview.
+    if(img && thumbUrl){
+      img.onload=()=>{
+        img.style.display='block';
+        if(iframe)iframe.style.display='none';
+      };
+      img.onerror=()=>{
+        img.style.display='none';
+        if(iframe && previewUrl){
+          iframe.src=previewUrl;
+          iframe.style.display='block';
+        }
+      };
+      img.src=thumbUrl;
+      img.dataset.remote='1';
+      img.title='Foto sincronizada en Google Drive';
+    }
+
+    // Dejamos el iframe listo como respaldo.
+    if(iframe && previewUrl){
+      iframe.src=previewUrl;
+      if(!thumbUrl)iframe.style.display='block';
+    }
+  }
+}
+
 async function cargarFotosFormularioDesdeIDB(puntoId){
   photos={};
+
+  document.querySelectorAll('img[id^="prev_"]').forEach(img=>{
+    img.removeAttribute('src');
+    img.style.display='none';
+    delete img.dataset.remote;
+    img.title='';
+    img.onload=null;
+    img.onerror=null;
+  });
+
+  document.querySelectorAll('iframe[id^="remote_"]').forEach(fr=>{
+    fr.removeAttribute('src');
+    fr.style.display='none';
+  });
+
+  document.querySelectorAll('a[id^="remoteLink_"]').forEach(a=>{
+    a.href='#';
+    a.style.display='none';
+  });
+
+  document.querySelectorAll('[id^="status_"]').forEach(s=>{
+    s.textContent='';
+    s.style.display='none';
+  });
+
   const filas=await obtenerFotosIDB(puntoId);
   for(const f of filas){
     photos[f.tipo_foto]={blob:f.blob,nombre_original:f.nombre_original||''};
@@ -541,6 +765,14 @@ async function cargarFotosFormularioDesdeIDB(puntoId){
     if(img){
       img.src=URL.createObjectURL(f.blob);
       img.style.display='block';
+      img.dataset.remote='0';
+      img.title='Foto local de este dispositivo';
+      const status=document.getElementById('status_'+f.tipo_foto);
+      if(status){
+        status.textContent='📱 Foto local';
+        status.className='photoStatus local';
+        status.style.display='inline-flex';
+      }
     }
   }
 }
@@ -1178,10 +1410,84 @@ async function sincronizarPendientes(){
 async function reenviarTodo(){if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
 function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||''}}
 async function cargarPuntosSupabase(mostrar=true){
-  if(!proyectoActivo||!mappingUser)return;const {data,error}=await mappingSb.from('mapping_puntos').select('*').eq('proyecto_id',proyectoActivo.proyecto_id).order('poligono').order('consecutiv');if(error){if(mostrar)alert('Error cargando puntos: '+error.message);return}
-  const pendientes=new Map(registrosProyectoActual().filter(r=>r.sync_status!=='enviado').map(r=>[r.offline_id,r]));
-  registros=registros.filter(r=>String(r.proyecto_id||'')!==String(proyectoActivo.proyecto_id));
-  for(const e of data||[]){const l=remotoALocal(e);registros.push(pendientes.get(l.offline_id)||l);pendientes.delete(l.offline_id)}for(const r of pendientes.values())registros.push(r);persist();pintarRegistros();if(mostrar&&data?.length){const b=data.map(e=>[Number(e.latitude),Number(e.longitude)]).filter(x=>x.every(Number.isFinite));if(b.length)map.fitBounds(b,{padding:[35,35],maxZoom:19})}
+  if(!proyectoActivo||!mappingUser)return;
+
+  const {data,error}=await mappingSb
+    .from('mapping_puntos')
+    .select('*')
+    .eq('proyecto_id',proyectoActivo.proyecto_id)
+    .order('poligono')
+    .order('consecutiv');
+
+  if(error){
+    if(mostrar)alert('Error cargando puntos: '+error.message);
+    return;
+  }
+
+  const remotos=(data||[]).map(remotoALocal);
+
+  // Descargar referencias de fotos de todos los puntos del proyecto.
+  const ids=remotos.map(r=>r.supabase_id).filter(Boolean);
+  const fotosPorPunto={};
+
+  if(ids.length){
+    const {data:fotosData,error:fotosError}=await mappingSb
+      .from('mapping_punto_fotos')
+      .select('punto_id,tipo_foto,nombre_archivo,url_foto,storage_path,metadata,created_at')
+      .in('punto_id',ids);
+
+    if(fotosError){
+      console.warn('Error cargando referencias fotográficas desde mapping_punto_fotos:', fotosError?.message || fotosError, fotosError);
+    }else{
+      (fotosData||[]).forEach(f=>{
+        if(!fotosPorPunto[f.punto_id])fotosPorPunto[f.punto_id]={};
+        fotosPorPunto[f.punto_id][f.tipo_foto]={
+          url_foto:f.url_foto||null,
+          ruta:f.storage_path||null,
+          nombre_archivo:f.nombre_archivo||null,
+          remoto:true
+        };
+      });
+    }
+  }
+
+  remotos.forEach(r=>{
+    r.fotos_remotas=fotosPorPunto[r.supabase_id]||{};
+  });
+
+  const pendientes=new Map(
+    registrosProyectoActual()
+      .filter(r=>r.sync_status!=='enviado')
+      .map(r=>[r.offline_id,r])
+  );
+
+  registros=registros.filter(
+    r=>String(r.proyecto_id||'')!==String(proyectoActivo.proyecto_id)
+  );
+
+  for(const remoto of remotos){
+    const local=pendientes.get(remoto.offline_id);
+    if(local){
+      local.supabase_id=remoto.supabase_id;
+      local.fotos_remotas=remoto.fotos_remotas||{};
+      registros.push(local);
+      pendientes.delete(remoto.offline_id);
+    }else{
+      registros.push(remoto);
+    }
+  }
+
+  for(const r of pendientes.values())registros.push(r);
+
+  persist();
+  pintarRegistros();
+
+  if(mostrar&&data?.length){
+    const b=data
+      .map(e=>[Number(e.latitude),Number(e.longitude)])
+      .filter(x=>x.every(Number.isFinite));
+    if(b.length)map.fitBounds(b,{padding:[35,35],maxZoom:19});
+  }
 }
 
 function indicePuntos(){const idx=new Map();registrosProyectoActual().forEach(r=>idx.set(`${r.POLIGONO}__${Number(r.CONSECUTIV)||0}`,r));return idx}
