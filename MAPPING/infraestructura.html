@@ -138,7 +138,7 @@ img[data-remote="1"]{
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · envío ocultable con cronómetro</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · estado de sincronización reconciliado</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1603,6 +1603,12 @@ async function sincronizarUno(r){
 
   r.sync_status='enviado';
   r.sync_error=null;
+
+  // Guardar inmediatamente el estado local. Así, si el usuario recarga
+  // justo después de terminar el envío, el punto no vuelve a aparecer pendiente.
+  persist();
+  pintarRegistros();
+
   return r;
 }
 
@@ -1810,6 +1816,39 @@ async function sincronizarPendientes(){
 }
 async function reenviarTodo(){if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
 function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
+
+async function reconciliarEstadoLocalConNube(local,remoto){
+  if(!local || !remoto)return local||remoto;
+
+  local.supabase_id=remoto.supabase_id;
+  local.fotos_remotas=remoto.fotos_remotas||{};
+
+  // Si el punto ya existe en Supabase, revisamos si las fotos locales
+  // también tienen referencia remota. Si todo está en nube, se considera enviado.
+  let fotosLocales=[];
+  try{
+    fotosLocales=await obtenerFotosIDB(local.offline_id||local.id);
+  }catch(e){
+    console.warn('No fue posible revisar fotos locales durante reconciliación:',e);
+  }
+
+  const remotas=local.fotos_remotas||{};
+  const tiposLocales=fotosLocales.map(f=>f.tipo_foto).filter(Boolean);
+  const faltantes=tiposLocales.filter(tipo=>!remotas[tipo]?.url_foto && !remotas[tipo]?.ruta);
+
+  if(faltantes.length===0){
+    local.sync_status='enviado';
+    local.sync_error=null;
+  }else{
+    // El registro principal ya está en Supabase, pero aún faltan fotos.
+    // Se mantiene pendiente para que "Enviar datos" complete solamente lo faltante.
+    local.sync_status='pendiente';
+    local.sync_error=null;
+  }
+
+  return local;
+}
+
 async function cargarPuntosSupabase(mostrar=true){
   if(!proyectoActivo||!mappingUser)return;
 
@@ -1869,9 +1908,8 @@ async function cargarPuntosSupabase(mostrar=true){
   for(const remoto of remotos){
     const local=pendientes.get(remoto.offline_id);
     if(local){
-      local.supabase_id=remoto.supabase_id;
-      local.fotos_remotas=remoto.fotos_remotas||{};
-      registros.push(local);
+      const reconciliado=await reconciliarEstadoLocalConNube(local,remoto);
+      registros.push(reconciliado);
       pendientes.delete(remoto.offline_id);
     }else{
       registros.push(remoto);
