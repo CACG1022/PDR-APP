@@ -91,11 +91,25 @@ img[data-remote="1"]{
   border:1px solid #38bdf8;
 }
 
+
+.syncProgressPanel{position:fixed;right:14px;bottom:76px;z-index:10050;width:min(420px,calc(100vw - 28px));background:rgba(7,20,36,.97);border:1px solid #2d5975;border-radius:14px;padding:12px 14px;box-shadow:0 14px 34px rgba(0,0,0,.42);backdrop-filter:blur(10px)}
+.syncProgressTop{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.syncProgressTitle{color:#e5f7ff;font-size:12px;font-weight:900}
+.syncProgressText{color:#93c5d8;font-size:10px;margin-top:2px}
+.syncProgressPct{color:#22d3ee;font-size:22px;font-weight:1000;min-width:58px;text-align:right}
+.syncProgressTrack{width:100%;height:10px;background:#07111f;border:1px solid #26455f;border-radius:999px;overflow:hidden;margin-top:10px}
+.syncProgressBar{width:0%;height:100%;background:linear-gradient(90deg,#06b6d4,#14b8a6);transition:width .25s ease}
+.syncProgressBottom{margin-top:8px;display:flex;gap:8px;justify-content:space-between;align-items:center;color:#9fb3c8;font-size:9px}
+.syncProgressBottom button{border:0;border-radius:8px;padding:5px 9px;background:#24384e;color:white;font-size:9px;font-weight:800;cursor:pointer}
+.syncProgressPanel.ok .syncProgressBar{background:linear-gradient(90deg,#22c55e,#14b8a6)}
+.syncProgressPanel.error .syncProgressBar{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+@media(max-width:700px){.syncProgressPanel{left:10px;right:10px;bottom:68px;width:auto}}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · LATCX automático QGIS</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
-<div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="sincronizarPendientes()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button><div class="centerInfo" id="centerInfo">Mira central: --</div>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Sincronización en segundo plano</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button><div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav><button onclick="cerrarPaneles()"><span class="ico">⌂</span>Mapa</button><button onclick="abrirRegistros()"><span class="ico">▥</span>Registros</button><button onclick="exportarGeoJSON()"><span class="ico">⇩</span>GeoJSON</button><button onclick="exportarJSON()"><span class="ico">⚙</span>JSON</button></nav>
 <div class="authOverlay" id="authOverlay">
   <div class="authCard">
@@ -108,7 +122,7 @@ img[data-remote="1"]{
 </div>
 <div class="sideMenu" id="sideMenu">
   <button onclick="abrirPanelProyectos();toggleSideMenu(false)">👷 Mis proyectos</button>
-  <button onclick="sincronizarPendientes();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
+  <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
   <button onclick="reenviarTodo();toggleSideMenu(false)">⟳ Reenviar todo</button>
   <button onclick="cargarPuntosSupabase();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
   <button onclick="finalizarAsignacion();toggleSideMenu(false)">✓ Finalizar mi asignación</button>
@@ -1167,6 +1181,7 @@ guardarPunto=async function(){
   photos={};
   pintarRegistros();
   cerrarFormulario();
+  if(syncEnCurso)actualizarProgresoSync('Nuevo punto guardado localmente. Quedará para el próximo envío.');
 }
 
 function filaSupabase(r){
@@ -1466,6 +1481,86 @@ async function sincronizarUno(r){
   r.sync_error=null;
   return r;
 }
+
+let syncEnCurso=false;
+let syncOcultoManual=false;
+let syncResumen={total:0,procesados:0,ok:0,error:0};
+
+function mostrarPanelSync(){
+  const p=document.getElementById('syncProgressPanel');
+  if(!p)return;
+  syncOcultoManual=false;
+  p.style.display='block';
+  p.classList.remove('ok','error');
+  const b=document.getElementById('syncProgressHideBtn');
+  if(b)b.style.display='none';
+}
+function ocultarPanelSync(){
+  const p=document.getElementById('syncProgressPanel');
+  if(p)p.style.display='none';
+  syncOcultoManual=true;
+}
+function actualizarProgresoSync(detalle=''){
+  const total=syncResumen.total, procesados=syncResumen.procesados;
+  const pct=total?Math.round((procesados/total)*100):0;
+  const p=document.getElementById('syncProgressPanel');
+  if(p&&!syncOcultoManual)p.style.display='block';
+  const bar=document.getElementById('syncProgressBar'); if(bar)bar.style.width=pct+'%';
+  const pe=document.getElementById('syncProgressPct'); if(pe)pe.textContent=pct+'%';
+  const txt=document.getElementById('syncProgressText');
+  if(txt)txt.textContent=`${procesados} de ${total} punto(s) · ${syncResumen.ok} enviados · ${syncResumen.error} error(es)`;
+  const det=document.getElementById('syncProgressDetail'); if(det&&detalle)det.textContent=detalle;
+}
+function finalizarPanelSync(){
+  const p=document.getElementById('syncProgressPanel');
+  if(p){p.classList.toggle('ok',syncResumen.error===0);p.classList.toggle('error',syncResumen.error>0)}
+  const d=document.getElementById('syncProgressDetail');
+  if(d)d.textContent=syncResumen.error===0?'Sincronización terminada. Puedes seguir trabajando normalmente.':`Terminó con ${syncResumen.error} error(es). Los datos permanecen guardados para reintentar.`;
+  const b=document.getElementById('syncProgressHideBtn'); if(b)b.style.display='inline-block';
+}
+function iniciarSincronizacionSegundoPlano(){
+  if(syncEnCurso){mostrarPanelSync();return}
+  sincronizarPendientesBackground().catch(e=>{console.error(e);syncEnCurso=false;syncResumen.error++;finalizarPanelSync()});
+}
+async function sincronizarPendientesBackground(){
+  if(syncEnCurso)return;
+  if(!proyectoActivo){alert('Selecciona un proyecto.');return}
+  if(!navigator.onLine){alert('No hay conexión a Internet. Los datos siguen guardados localmente.');return}
+
+  const pendientes=registrosProyectoActual().filter(r=>r.sync_status!=='enviado'||r.sync_error);
+  if(!pendientes.length){
+    syncResumen={total:0,procesados:0,ok:0,error:0};
+    mostrarPanelSync();actualizarProgresoSync('No hay datos pendientes.');finalizarPanelSync();return;
+  }
+
+  syncEnCurso=true;
+  syncResumen={total:pendientes.length,procesados:0,ok:0,error:0};
+  mostrarPanelSync();
+  actualizarProgresoSync('Puedes seguir agregando y guardando puntos mientras se envía.');
+
+  for(const r of pendientes){
+    const etiqueta=r.IDCAMPO||r.offline_id||'punto';
+    try{
+      actualizarProgresoSync(`Enviando ${etiqueta}...`);
+      await sincronizarUno(r);
+      syncResumen.ok++;
+    }catch(e){
+      r.sync_status='error';
+      r.sync_error=e?.message||String(e);
+      syncResumen.error++;
+      console.error('Error sincronizando',etiqueta,e);
+    }
+    syncResumen.procesados++;
+    persist();
+    pintarRegistros();
+    actualizarProgresoSync(`Procesado ${etiqueta}. Puedes continuar levantando datos.`);
+    await new Promise(res=>setTimeout(res,20));
+  }
+
+  syncEnCurso=false;
+  actualizarEstadoSync();
+  finalizarPanelSync();
+}
 async function sincronizarPendientes(){
   if(!mappingUser||!proyectoActivo){alert('Selecciona un proyecto primero.');return}if(!navigator.onLine){alert('No hay conexión a Internet. Los datos siguen guardados en el celular.');return}
   const pendientes=registrosProyectoActual().filter(r=>r.sync_status!=='enviado');if(!pendientes.length){alert('No hay datos pendientes por enviar.');return}
@@ -1605,5 +1700,22 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 });
 </script>
 
+
+<div id="syncProgressPanel" class="syncProgressPanel" style="display:none">
+  <div class="syncProgressTop">
+    <div>
+      <div class="syncProgressTitle">☁️ Enviando datos en segundo plano</div>
+      <div id="syncProgressText" class="syncProgressText">Preparando...</div>
+    </div>
+    <div id="syncProgressPct" class="syncProgressPct">0%</div>
+  </div>
+  <div class="syncProgressTrack"><div id="syncProgressBar" class="syncProgressBar"></div></div>
+  <div class="syncProgressBottom">
+    <span id="syncProgressDetail">Puedes seguir agregando puntos mientras se sincroniza.</span>
+    <button id="syncProgressHideBtn" type="button" onclick="ocultarPanelSync()" style="display:none">Ocultar</button>
+  </div>
+</div>
+
 </body></html>
+
 
