@@ -135,10 +135,47 @@ img[data-remote="1"]{
 .syncMiniButton b{color:#22d3ee;font-size:12px}.syncMiniButton .syncMiniText{color:#94a3b8}
 @media(max-width:700px){.syncMiniButton{left:8px;top:66px}}
 
+
+.conexionesSection{position:relative}
+.conexionesStickyHead{
+  position:sticky;
+  top:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 12px;
+  background:rgba(19,43,67,.98);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(8px);
+}
+.conexionesStickyHead h3{
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.minimizarConexionesBtn{
+  width:auto!important;
+  flex:0 0 auto;
+  background:#7c3aed!important;
+  border-color:#8b5cf6!important;
+  color:#fff!important;
+  padding:7px 10px!important;
+  font-size:10px!important;
+  border-radius:9px!important;
+}
+.minimizarConexionesBtn:hover{background:#6d28d9!important}
+@media(max-width:700px){
+  .conexionesStickyHead{padding:8px 9px}
+  .minimizarConexionesBtn{font-size:9px!important;padding:7px 8px!important}
+}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · métricas de envío corregidas</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · conexiones minimizables</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -168,7 +205,7 @@ img[data-remote="1"]{
 </div></div></div>
 
 
-<div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><div class="modalHeadActions"><button class="minBtn" type="button" onclick="minimizarFormulario()">— Minimizar</button><button class="close" onclick="cerrarFormulario()">Cerrar</button></div></div><div class="body">
+<div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><div class="modalHeadActions"><button class="close" onclick="cerrarFormulario()">Cerrar</button></div></div><div class="body">
 <div class="hint">La coordenada se toma exactamente de la <b>mira central del mapa</b>. Los campos visibles cambian según el valor de <b>TIPO</b>, replicando la lógica del formulario de AGREGAR2.</div>
 <div class="section"><h3>1. Identificación y ubicación</h3><div class="sectionBody"><div class="grid">
 <div><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select></div>
@@ -182,7 +219,7 @@ img[data-remote="1"]{
 
 <div class="section hidden" id="secPoste"><h3>2. Datos del poste</h3><div class="sectionBody"><div class="grid3">
 <div><label>PROPIETARI <span class="req">*</span></label><select id="PROPIETARI"></select></div><div><label>ALTURA <span class="req">*</span></label><select id="ALTURA"><option value="">Seleccione...</option><option>8</option><option>10</option><option>12</option><option>14</option></select></div><div><label>TIPO POSTE <span class="req">*</span></label><select id="TIPO_POSTE"><option value="">Seleccione...</option><option>SENCILLO</option><option>DOBLE</option><option>TRIPLE</option><option>ALUMBRADO PUBLICO</option></select></div>
-<div><label>MATERIAL <span class="req">*</span></label><select id="MATERIAL"><option value="">Seleccione...</option><option>CONCRETO</option><option>METALICO</option><option>MADERA</option><option value="FIBRA">FIBRA DE VIDRIO</option></select></div><div><label>ROTURA <span class="req">*</span></label><input id="ROTURA" type="number" min="0"></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
+<div><label>MATERIAL <span class="req">*</span></label><select id="MATERIAL"><option value="">Seleccione...</option><option>CONCRETO</option><option>METALICO</option><option>MADERA</option><option value="FIBRA">FIBRA DE VIDRIO</option></select></div><div><label>ROTURA <span class="req">*</span></label><select id="ROTURA"><option value="">Seleccione...</option><option value="510">510</option><option value="750">750</option><option value="1050">1050</option><option value="1310">1310</option></select></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
 <div><label>TENSION <span class="req">*</span></label><select id="TENSION"><option value="">Seleccione...</option><option>BAJA TENSION</option><option>MEDIA TENSION</option><option>ALTA TENSION</option><option>MEDIA Y BAJA TENSION</option><option>MEDIA Y ALTA TENSION</option><option>N/A</option></select></div><div><label>RIENDA <span class="req">*</span></label><select id="RIENDA"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select></div><div><label>ELECTRICOS <span class="req">*</span></label><select id="ELECTRICOS"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div>
 <div><label>CABLES EXISTENTES <span class="req">*</span></label><input id="CABLES" type="number" min="0" max="20" value="0"></div><div><label>RESERVAS EXISTENTES <span class="req">*</span></label><input id="RESERVAS" type="number" min="0" max="10" value="0"></div><div><label>EMPALMES EXISTENTES <span class="req">*</span></label><input id="EMPALMES" type="number" min="0" max="10" value="0"></div>
 <div><label>NAPS EXISTENTES <span class="req">*</span></label><input id="NAPS" type="number" min="0" max="10" value="0"></div><div><label>BAJANTES EXISTENTES <span class="req">*</span></label><input id="BAJANTES" type="number" min="0" max="10" value="0"></div><div><label>FUENTES <span class="req">*</span></label><input id="FUENTES" type="number" min="0" max="10" value="0"></div>
@@ -194,7 +231,20 @@ img[data-remote="1"]{
 <div><label>CONFIGURACION DE DUCTOS <span class="req">*</span></label><input id="CONF_DUCTO" placeholder="Ej: 4x4;2x2;"></div><div><label>DUCTO ELECTRICO <span class="req">*</span></label><input id="DUCTO_ELEC" placeholder="Sin guiones"></div><div><label>DUCT TELCO <span class="req">*</span></label><input id="DUCT_TELCO" placeholder="Sin guiones"></div><div><label>DUCTOS LIBRES <span class="req">*</span></label><input id="DUCT_LIBRE" placeholder="Sin guiones"></div><div><label>DUCTO A UTILIZAR <span class="req">*</span></label><input id="DUCT_UTIL" placeholder="Sin guiones"></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO_CAM"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
 </div></div></div>
 
-<div class="section"><h3>3. Conexiones</h3><div class="sectionBody"><div class="hint">CX1 se muestra inicialmente. CX2, CX3 y CX4 permanecen ocultos. Cada vez que pulses <b>+ Agregar otra conexión</b> aparecerá una fila completa con CX, ¿Es cruce telemático? y Distancia odómetro. Las filas ocultas permanecen en 0.</div><div id="conexionesMismo"></div><button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button><label>CONEXION A POSTE DE OTRO POLIGONO?</label><select id="CXOTROPOL" onchange="toggleOtroPol()"><option>NO</option><option>SI</option></select><div id="otroPol" class="hidden"><div class="grid" id="conexionesOtro"></div></div></div></div>
+<div class="section conexionesSection">
+  <div class="conexionesStickyHead">
+    <h3>3. Conexiones</h3>
+    <button type="button" class="btn minimizarConexionesBtn" onclick="minimizarFormularioDesdeConexiones()">🗺️ Minimizar y ver mapa</button>
+  </div>
+  <div class="sectionBody">
+    <div class="hint">CX1 se muestra inicialmente. CX2, CX3 y CX4 permanecen ocultos. Cada vez que pulses <b>+ Agregar otra conexión</b> aparecerá una fila completa con CX, ¿Es cruce telemático? y Distancia odómetro. Las filas ocultas permanecen en 0. Puedes minimizar el formulario desde esta sección para revisar el mapa sin perder lo diligenciado.</div>
+    <div id="conexionesMismo"></div>
+    <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button>
+    <label>CONEXION A POSTE DE OTRO POLIGONO?</label>
+    <select id="CXOTROPOL" onchange="toggleOtroPol()"><option>NO</option><option>SI</option></select>
+    <div id="otroPol" class="hidden"><div class="grid" id="conexionesOtro"></div></div>
+  </div>
+</div>
 
 <div class="section"><h3>4. Inventario / proyección</h3><div class="sectionBody"><div class="grid">
 <div><label>ELEMENTOS ELECTRICOS EXISTENTES</label><select id="ELECTRICOS_GEN"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div><div><label>ELEMENTOS DE RED</label><input id="ELEM_RED"></div><div><label>PROYECCION DE EMPALME</label><select id="PROEMPALME"><option value="NO">NO</option><option value="EMPALME">SI</option></select></div><div><label>PROYECCION DE NAP</label><select id="PRONAP"><option value="0">NO</option><option value="NAP">SI</option></select></div><div><label>EXISTENCIA</label><input id="EXISTENCIA" type="number"></div><div><label>CANT RESER</label><input id="CANT_RESER" type="number"></div>
@@ -252,6 +302,12 @@ function actualizarCentro(){const c=map.getCenter();selectedLat=c.lat;selectedLn
 function irGPS(){if(!navigator.geolocation)return alert('Geolocalización no disponible.');navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude,accuracy}=p.coords;map.setView([latitude,longitude],19);if(gpsMarker)gpsMarker.remove();gpsMarker=L.circleMarker([latitude,longitude],{radius:8,color:'#fff',weight:3,fillColor:'#38bdf8',fillOpacity:1}).addTo(map).bindPopup(`GPS ±${Math.round(accuracy)} m`);},e=>alert('No fue posible obtener GPS: '+e.message),{enableHighAccuracy:true,timeout:15000,maximumAge:2000});}
 function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');}
 let formularioMinimizado=false;
+
+function minimizarFormularioDesdeConexiones(){
+  // Mismo comportamiento de minimización, pero el control se ofrece
+  // exclusivamente dentro de la sección 3. Conexiones.
+  minimizarFormulario();
+}
 
 function minimizarFormulario(){
   if(!formOverlay.classList.contains('open'))return;
@@ -2022,7 +2078,6 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 </button>
 
 </body></html>
-
 
 
 
