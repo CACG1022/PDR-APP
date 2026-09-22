@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Mapping Site Survey - Levantamiento de Infraestructura</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">document.addEventListener('DOMContentLoaded',instalarAvisosObligatorios);
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#07111f;--surface:#0d1b2a;--surface2:#14263a;--border:#29415d;--text:#f8fafc;--muted:#9fb0c4;--primary:#12b8ae;--danger:#ef4444;--warn:#f59e0b;--blue:#38bdf8}
@@ -172,10 +173,45 @@ img[data-remote="1"]{
   .minimizarConexionesBtn{font-size:9px!important;padding:7px 8px!important}
 }
 
+
+@keyframes obligatorioPulse{
+  0%,100%{
+    border-color:#3a536f;
+    box-shadow:0 0 0 0 rgba(251,191,36,0);
+  }
+  50%{
+    border-color:#fbbf24;
+    box-shadow:0 0 0 4px rgba(251,191,36,.20),0 0 18px rgba(251,191,36,.30);
+  }
+}
+@keyframes obligatorioErrorPulse{
+  0%,100%{
+    border-color:#ef4444;
+    box-shadow:0 0 0 0 rgba(239,68,68,0);
+  }
+  50%{
+    border-color:#fb7185;
+    box-shadow:0 0 0 5px rgba(239,68,68,.24),0 0 22px rgba(239,68,68,.45);
+  }
+}
+.campoObligatorioPendiente{
+  animation:obligatorioPulse 1.35s ease-in-out infinite;
+}
+.campoObligatorioFaltante{
+  animation:obligatorioErrorPulse .72s ease-in-out infinite!important;
+  border-color:#ef4444!important;
+}
+label.labelObligatorioPendiente{
+  color:#fde68a!important;
+}
+label.labelObligatorioFaltante{
+  color:#fecaca!important;
+}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · conexiones minimizables</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · obligatorios resaltados</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -332,10 +368,11 @@ function cerrarFormulario(){
   formOverlay.classList.remove('open');
   const b=document.getElementById('resumeFormFab');
   if(b)b.style.display='none';
+  limpiarMarcasObligatorias();
 }
 function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
 function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');}
-function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);}
+function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);setTimeout(actualizarResaltadoObligatorios,0);}
 function renderFotos(t){
   photoGrid.innerHTML='';
   photos={};
@@ -489,6 +526,150 @@ function ajustarConexionesEdicion(r){
 function toggleOtroPol(){otroPol.classList.toggle('hidden',CXOTROPOL.value!=='SI')}
 function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;}
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
+
+function obtenerCamposObligatoriosActivos(){
+  const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','COSTADO'];
+  const t=TIPO?.value||'';
+
+  if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
+    ids.push(
+      'PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA',
+      'ESTADO','TENSION','RIENDA','ELECTRICOS','FINDERED'
+    );
+  }
+
+  if(t==='CANALIZADO'){
+    ids.push(
+      'TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC',
+      'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL','ESTADO_CAM'
+    );
+  }
+
+  // CX1 siempre es obligatorio. CX2-CX4 solamente cuando están visibles.
+  for(let i=1;i<=conexionesVisibles;i++)ids.push(`CX${i}`);
+
+  return [...new Set(ids)];
+}
+
+function campoEstaVacio(id){
+  const el=document.getElementById(id);
+  if(!el)return false;
+
+  // Los CX visibles deben ser mayores que cero.
+  if(/^CX[1-4]$/.test(id)){
+    return Number(el.value||0)<=0;
+  }
+
+  return String(el.value??'').trim()==='';
+}
+
+function labelDeCampo(el){
+  if(!el)return null;
+  const cont=el.closest('div');
+  return cont?.querySelector(':scope > label') || el.previousElementSibling?.tagName==='LABEL'
+    ? (cont?.querySelector(':scope > label') || el.previousElementSibling)
+    : null;
+}
+
+function limpiarMarcasObligatorias(){
+  document.querySelectorAll('.campoObligatorioPendiente,.campoObligatorioFaltante').forEach(el=>{
+    el.classList.remove('campoObligatorioPendiente','campoObligatorioFaltante');
+  });
+  document.querySelectorAll('.labelObligatorioPendiente,.labelObligatorioFaltante').forEach(el=>{
+    el.classList.remove('labelObligatorioPendiente','labelObligatorioFaltante');
+  });
+}
+
+function actualizarResaltadoObligatorios(){
+  const activos=new Set(obtenerCamposObligatoriosActivos());
+
+  // Limpia campos que dejaron de ser obligatorios por cambio de TIPO/sección.
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(!activos.has(el.id)){
+      el.classList.remove('campoObligatorioPendiente','campoObligatorioFaltante');
+      const lab=labelDeCampo(el);
+      if(lab)lab.classList.remove('labelObligatorioPendiente','labelObligatorioFaltante');
+    }
+  });
+
+  activos.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+
+    const vacio=campoEstaVacio(id);
+    const lab=labelDeCampo(el);
+
+    if(vacio){
+      // Si aún no fue marcado como error de guardado, usa el pulso amarillo.
+      if(!el.classList.contains('campoObligatorioFaltante')){
+        el.classList.add('campoObligatorioPendiente');
+      }
+      if(lab && !lab.classList.contains('labelObligatorioFaltante')){
+        lab.classList.add('labelObligatorioPendiente');
+      }
+    }else{
+      el.classList.remove('campoObligatorioPendiente','campoObligatorioFaltante');
+      if(lab)lab.classList.remove('labelObligatorioPendiente','labelObligatorioFaltante');
+    }
+  });
+}
+
+function marcarObligatoriosFaltantes(ids){
+  const unicos=[...new Set(ids)];
+  unicos.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.classList.remove('campoObligatorioPendiente');
+    el.classList.add('campoObligatorioFaltante');
+    const lab=labelDeCampo(el);
+    if(lab){
+      lab.classList.remove('labelObligatorioPendiente');
+      lab.classList.add('labelObligatorioFaltante');
+    }
+  });
+}
+
+function enfocarPrimerObligatorioFaltante(ids){
+  const primero=[...new Set(ids)]
+    .map(id=>document.getElementById(id))
+    .find(Boolean);
+
+  if(!primero)return;
+
+  // Si el formulario estaba minimizado, lo vuelve a abrir.
+  if(formularioMinimizado)reanudarFormulario();
+
+  // Si corresponde a una conexión que estaba oculta, muestra las necesarias.
+  const m=primero.id?.match(/^CX([1-4])$/);
+  if(m){
+    const n=Number(m[1]);
+    if(n>conexionesVisibles)setNumeroConexiones(n,false);
+  }
+
+  requestAnimationFrame(()=>{
+    primero.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+    setTimeout(()=>{
+      try{primero.focus({preventScroll:true});}catch(_){primero.focus();}
+    },420);
+  });
+}
+
+function instalarAvisosObligatorios(){
+  if(document.body.dataset.requiredUxInstalled==='1')return;
+  document.body.dataset.requiredUxInstalled='1';
+
+  document.addEventListener('input',e=>{
+    if(e.target?.matches('input,select,textarea'))actualizarResaltadoObligatorios();
+  });
+  document.addEventListener('change',e=>{
+    if(e.target?.matches('input,select,textarea')){
+      setTimeout(actualizarResaltadoObligatorios,0);
+    }
+  });
+
+  setTimeout(actualizarResaltadoObligatorios,250);
+}
+
 function validar(){
   const falt=[];
   ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','COSTADO'].forEach(id=>{
@@ -508,6 +689,8 @@ function validar(){
     });
     for(const id of ['CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL']){
       if(val(id).includes('-')){
+        marcarObligatoriosFaltantes([id]);
+        enfocarPrimerObligatorioFaltante([id]);
         alert(`El campo ${id} no puede contener guiones (-), según la restricción de QGIS.`);
         return false;
       }
@@ -521,6 +704,8 @@ function validar(){
     const x=Number(val('CX'+i)||0);
     if(!x || x<=0)falt.push(`CX${i}`);
     else if(x>=cons){
+      marcarObligatoriosFaltantes([`CX${i}`]);
+      enfocarPrimerObligatorioFaltante([`CX${i}`]);
       alert(`CX${i} debe ser menor que CONSECUTIV (${cons}).`);
       return false;
     }
@@ -547,9 +732,14 @@ function validar(){
   }
 
   if(falt.length){
-    alert('Completa los campos obligatorios: '+[...new Set(falt)].join(', '));
+    const unicos=[...new Set(falt)];
+    marcarObligatoriosFaltantes(unicos);
+    enfocarPrimerObligatorioFaltante(unicos);
+    alert('Faltan campos obligatorios por diligenciar. Te llevaré al primero pendiente: '+unicos[0]);
     return false;
   }
+
+  actualizarResaltadoObligatorios();
   return true;
 }
 
@@ -1260,6 +1450,7 @@ abrirFormulario=function(){
   if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
   aplicarCamposFijos();
   recalcularIds();
+  setTimeout(actualizarResaltadoObligatorios,100);
 }
 recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`}
 
@@ -2078,6 +2269,7 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
 </button>
 
 </body></html>
+
 
 
 
