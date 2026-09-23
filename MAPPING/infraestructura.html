@@ -677,10 +677,187 @@ body.lightTheme .filterTipoOption small{color:#475569!important}
   nav .ico{font-size:18px!important}
 }
 
+
+.filterAdvancedSection{
+  margin:10px 0;
+  padding:10px;
+  background:#0b1928;
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.filterAdvancedSection h3{
+  margin:0 0 8px;
+  font-size:11px;
+  color:#bae6fd;
+}
+.filterAdvancedGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.filterAdvancedGrid.oneCol{grid-template-columns:1fr}
+.filterAdvancedGrid label{
+  margin:0 0 4px;
+  font-size:9px;
+  color:#94a3b8;
+}
+.filterAdvancedGrid select{
+  padding:9px;
+  font-size:12px;
+}
+body.lightTheme .filterAdvancedSection{
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border-color:#94a3b8!important;
+}
+body.lightTheme .filterAdvancedSection h3{
+  color:#b91c1c!important;
+}
+body.lightTheme .filterAdvancedGrid label{
+  color:#475569!important;
+}
+
+/* Modo claro: obligatorios y texto pendiente en rojo, no amarillo */
+@keyframes obligatorioPulseLight{
+  0%,100%{
+    border-color:#b91c1c;
+    box-shadow:0 0 0 0 rgba(220,38,38,0);
+  }
+  50%{
+    border-color:#ef4444;
+    box-shadow:0 0 0 4px rgba(220,38,38,.18),0 0 16px rgba(220,38,38,.28);
+  }
+}
+body.lightTheme #formOverlay .campoObligatorioPendiente{
+  animation:obligatorioPulseLight 1.15s ease-in-out infinite!important;
+  border-color:#dc2626!important;
+}
+body.lightTheme #formOverlay label.labelObligatorioPendiente{
+  color:#b91c1c!important;
+  font-weight:900!important;
+}
+body.lightTheme #formOverlay .campoObligatorioFaltante{
+  animation:obligatorioErrorPulse .72s ease-in-out infinite!important;
+  border-color:#dc2626!important;
+}
+body.lightTheme #formOverlay label.labelObligatorioFaltante{
+  color:#991b1b!important;
+  font-weight:900!important;
+}
+body.lightTheme #formOverlay .req{
+  color:#dc2626!important;
+}
+@media(max-width:520px){
+  .filterAdvancedGrid{grid-template-columns:1fr}
+}
+
+
+/* ===== Correcciones visuales Dashboard / Almacenamiento en tema claro ===== */
+body.lightTheme .techDashBody{
+  background:#f1f5f9!important;
+  color:#0f172a!important;
+}
+body.lightTheme .techDashSub{
+  color:#475569!important;
+}
+body.lightTheme .techKpi span,
+body.lightTheme .techTypeKpis span{
+  color:#475569!important;
+}
+body.lightTheme .techKpi b,
+body.lightTheme .techTypeKpis b{
+  color:#0f172a!important;
+}
+body.lightTheme .techKpi small{
+  color:#0369a1!important;
+}
+body.lightTheme .techChartCard h3{
+  color:#075985!important;
+}
+body.lightTheme .techDashTableWrap,
+body.lightTheme .techDashTableWrap table,
+body.lightTheme .techDashTableWrap td{
+  color:#0f172a!important;
+}
+body.lightTheme .techDashTableWrap th{
+  background:#e2e8f0!important;
+  color:#0f172a!important;
+}
+
+/* Almacenamiento local */
+body.lightTheme .storageCard span{
+  color:#475569!important;
+}
+body.lightTheme .storageCard b{
+  color:#0f172a!important;
+}
+body.lightTheme .storageCard small{
+  color:#0369a1!important;
+}
+body.lightTheme .storageBarLabel{
+  color:#0f172a!important;
+}
+body.lightTheme .storageBar{
+  background:#cbd5e1!important;
+}
+body.lightTheme .storageInfo b{
+  color:#0f172a!important;
+}
+body.lightTheme .storageInfo span{
+  color:#475569!important;
+}
+body.lightTheme .storageTableWrap,
+body.lightTheme .storageTableWrap table,
+body.lightTheme .storageTableWrap td{
+  color:#0f172a!important;
+}
+body.lightTheme .storageTableWrap th{
+  background:#e2e8f0!important;
+  color:#0f172a!important;
+}
+body.lightTheme #stHint{
+  background:#f8fafc!important;
+  color:#334155!important;
+  border-left-color:#0284c7!important;
+}
+
+
+/* ===== Polígonos asignados ===== */
+.leaflet-poligonos-pane{z-index:330!important}
+.poligonoAsignadoTooltip{
+  background:rgba(15,23,42,.88)!important;
+  border:1px solid #facc15!important;
+  color:#fde047!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  box-shadow:none!important;
+}
+.poligonoAsignadoTooltip:before{border-top-color:#facc15!important}
+body.lightTheme .poligonoAsignadoTooltip{
+  background:rgba(255,255,255,.94)!important;
+  color:#a16207!important;
+}
+
+
+.poligonoAutoEstado{
+  display:block;
+  margin-top:4px;
+  font-size:9px;
+  color:#94a3b8;
+  font-weight:800;
+}
+.poligonoAutoEstado.ok{color:#22c55e!important}
+.poligonoAutoEstado.warn{color:#f59e0b!important}
+.poligonoAutoEstado.error{color:#ef4444!important}
+body.lightTheme .poligonoAutoEstado{color:#475569}
+body.lightTheme .poligonoAutoEstado.ok{color:#15803d!important}
+body.lightTheme .poligonoAutoEstado.warn{color:#b45309!important}
+body.lightTheme .poligonoAutoEstado.error{color:#b91c1c!important}
+
 </style>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · filtro por tipo</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · detección automática de polígono</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -725,7 +902,7 @@ body.lightTheme .filterTipoOption small{color:#475569!important}
 <div class="hint">La coordenada se toma exactamente de la <b>mira central del mapa</b>. Los campos visibles cambian según el valor de <b>TIPO</b>, replicando la lógica del formulario de AGREGAR2.</div>
 <div class="section"><h3>1. Identificación y ubicación</h3><div class="sectionBody"><div class="grid">
 <div><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select></div>
-<div><label>POLIGONO <span class="req">*</span></label><select id="POLIGONO" onchange="recalcularIds()"><option value="">Seleccione...</option><option>POLIGONO1</option><option>POLIGONO2</option><option>POLIGONO3</option><option>POLIGONO4</option><option>POLIGONO5</option><option>POLIGONO6</option><option>POLIGONO7</option><option>POLIGONO8</option><option>POLIGONO9</option></select></div>
+<div><label>POLIGONO <span class="req">*</span></label><select id="POLIGONO" onchange="recalcularIds()"><option value="">Seleccione...</option><option>POLIGONO1</option><option>POLIGONO2</option><option>POLIGONO3</option><option>POLIGONO4</option><option>POLIGONO5</option><option>POLIGONO6</option><option>POLIGONO7</option><option>POLIGONO8</option><option>POLIGONO9</option></select><small id="poligonoAutoEstado" class="poligonoAutoEstado">Detección automática por ubicación</small></div>
 <div><label>CONSECUTIV</label><input id="CONSECUTIV" readonly></div><div><label>IDCAMPO</label><input id="IDCAMPO" readonly></div>
 <div><label>CIUDAD <span class="req">*</span></label><input id="CIUDAD" value="Bogota D.C"></div><div><label>BARRIO <span class="req">*</span></label><input id="BARRIO" placeholder="Barrio"></div>
 <div><label>TECNICO <span class="req">*</span></label><input id="TECNICO" placeholder="Nombre del técnico"></div><div><label>PROYECTO</label><input id="PROYECTO" readonly title="Proyecto asignado desde el Master"></div>
@@ -782,6 +959,11 @@ const photoDefs={
 };
 let registros=JSON.parse(localStorage.getItem('mapping_sitesurvey_registros_v1')||'[]');let map,selectedLat,selectedLng,gpsMarker,editingId=null,photos={};
 let hyb=null,osm=null,darkBase=null,baseMapApagado=false;
+let poligonosAsignados=[];
+let poligonosAsignadosSet=new Set();
+let poligonosGeoJSON=null;
+let poligonoLayer=null;
+const POLIGONO_SELECT_HTML_INICIAL=document.getElementById('POLIGONO')?.innerHTML||'';
 function init(){
   document.getElementById('PROPIETARI').innerHTML='<option value="">Seleccione...</option>'+propietarios.map(x=>`<option>${x}</option>`).join('');
   crearConexiones();
@@ -799,6 +981,10 @@ function init(){
       closeOnZeroBearing:false
     }
   }).setView([4.65,-74.1],17);
+
+  const panePoligonos=map.createPane('poligonosPane');
+  panePoligonos.classList.add('leaflet-poligonos-pane');
+  panePoligonos.style.zIndex='330';
 
   hyb=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
     subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'
@@ -840,30 +1026,96 @@ function orientarMapaNorte(){
 
 const TIPOS_FILTRO_MAPA=['POSTE','CANALIZADO','C. AMERICANO','CERCHA'];
 
-function cargarFiltroTipoGuardado(){
-  try{
-    const raw=localStorage.getItem('mapping_filtro_tipo_v1');
-    if(!raw)return new Set(TIPOS_FILTRO_MAPA);
-    const arr=JSON.parse(raw);
-    if(!Array.isArray(arr) || !arr.length)return new Set(TIPOS_FILTRO_MAPA);
-    return new Set(arr.filter(x=>TIPOS_FILTRO_MAPA.includes(x)));
-  }catch(_){
-    return new Set(TIPOS_FILTRO_MAPA);
-  }
+function normalizarValorFiltro(v){
+  return String(v??'')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase();
 }
 
-let tiposFiltroMapa=cargarFiltroTipoGuardado();
+function cargarConfigFiltroGuardado(){
+  const defecto={
+    tipos:[...TIPOS_FILTRO_MAPA],
+    poste:{altura:'',rotura:'',material:'',electricos:''},
+    canalizado:{tipocamara:''}
+  };
+
+  try{
+    const rawNuevo=localStorage.getItem('mapping_filtro_avanzado_v1');
+    if(rawNuevo){
+      const cfg=JSON.parse(rawNuevo);
+      return {
+        tipos:Array.isArray(cfg?.tipos)&&cfg.tipos.length
+          ? cfg.tipos.filter(x=>TIPOS_FILTRO_MAPA.includes(x))
+          : [...TIPOS_FILTRO_MAPA],
+        poste:{
+          altura:String(cfg?.poste?.altura??''),
+          rotura:String(cfg?.poste?.rotura??''),
+          material:String(cfg?.poste?.material??''),
+          electricos:String(cfg?.poste?.electricos??'')
+        },
+        canalizado:{
+          tipocamara:String(cfg?.canalizado?.tipocamara??'')
+        }
+      };
+    }
+
+    // Compatibilidad con la versión anterior del filtro.
+    const rawAnterior=localStorage.getItem('mapping_filtro_tipo_v1');
+    if(rawAnterior){
+      const tipos=JSON.parse(rawAnterior);
+      if(Array.isArray(tipos)&&tipos.length){
+        defecto.tipos=tipos.filter(x=>TIPOS_FILTRO_MAPA.includes(x));
+      }
+    }
+  }catch(_){}
+
+  return defecto;
+}
+
+let configFiltroMapa=cargarConfigFiltroGuardado();
+let tiposFiltroMapa=new Set(configFiltroMapa.tipos);
 
 function normalizarTipoFiltro(v){
-  return String(v??'').trim().toUpperCase();
+  return normalizarValorFiltro(v);
+}
+
+function coincideValorFiltro(valorRegistro,valorFiltro){
+  if(!valorFiltro)return true;
+  return normalizarValorFiltro(valorRegistro)===normalizarValorFiltro(valorFiltro);
 }
 
 function registroCumpleFiltroTipo(r){
-  return tiposFiltroMapa.has(normalizarTipoFiltro(r?.TIPO));
+  const tipo=normalizarTipoFiltro(r?.TIPO);
+  if(!tiposFiltroMapa.has(tipo))return false;
+
+  if(tipo==='POSTE'){
+    const f=configFiltroMapa.poste;
+    if(!coincideValorFiltro(r?.ALTURA,f.altura))return false;
+    if(!coincideValorFiltro(r?.ROTURA,f.rotura))return false;
+    if(!coincideValorFiltro(r?.MATERIAL,f.material))return false;
+    if(!coincideValorFiltro(r?.ELECTRICOS,f.electricos))return false;
+  }
+
+  if(tipo==='CANALIZADO'){
+    const f=configFiltroMapa.canalizado;
+    if(!coincideValorFiltro(r?.TIPOCAMARA,f.tipocamara))return false;
+  }
+
+  return true;
 }
 
 function registrosVisiblesPorTipo(){
   return registrosProyectoActual().filter(registroCumpleFiltroTipo);
+}
+
+function filtrosAvanzadosActivos(){
+  const p=configFiltroMapa.poste;
+  const c=configFiltroMapa.canalizado;
+  return Boolean(
+    p.altura||p.rotura||p.material||p.electricos||c.tipocamara
+  );
 }
 
 function actualizarBotonFiltroTipo(){
@@ -871,11 +1123,40 @@ function actualizarBotonFiltroTipo(){
   if(!b)return;
 
   const activos=TIPOS_FILTRO_MAPA.filter(t=>tiposFiltroMapa.has(t));
-  b.classList.toggle('filterActive',activos.length<TIPOS_FILTRO_MAPA.length);
+  const hayFiltro=
+    activos.length<TIPOS_FILTRO_MAPA.length ||
+    filtrosAvanzadosActivos();
 
-  b.innerHTML=activos.length===TIPOS_FILTRO_MAPA.length
-    ? '<span class="ico">🔎</span>Filtro'
-    : `<span class="ico">🔎</span>Filtro ${activos.length}`;
+  b.classList.toggle('filterActive',hayFiltro);
+  b.innerHTML=hayFiltro
+    ? '<span class="ico">🔎</span>Filtro •'
+    : '<span class="ico">🔎</span>Filtro';
+}
+
+function valoresUnicosFiltro(arr,campo){
+  const map=new Map();
+  arr.forEach(r=>{
+    const raw=r?.[campo];
+    if(raw===null||raw===undefined||String(raw).trim()==='')return;
+    const key=normalizarValorFiltro(raw);
+    if(!map.has(key))map.set(key,String(raw));
+  });
+  return [...map.values()].sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true}));
+}
+
+function llenarSelectFiltro(id,valores,seleccionado,etiquetaTodos='Todos'){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML=`<option value="">${etiquetaTodos}</option>`+
+    valores.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  el.value=seleccionado||'';
+}
+
+function actualizarVisibilidadFiltrosAvanzados(){
+  const posteActivo=document.getElementById('filtroTipo_POSTE')?.checked;
+  const canalActivo=document.getElementById('filtroTipo_CANALIZADO')?.checked;
+  filterPosteAdvanced.style.display=posteActivo?'block':'none';
+  filterCanalizadoAdvanced.style.display=canalActivo?'block':'none';
 }
 
 function abrirFiltroTipo(){
@@ -893,9 +1174,12 @@ function abrirFiltroTipo(){
     if(el)el.checked=tiposFiltroMapa.has(tipo);
   });
 
+  const postes=arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='POSTE');
+  const canalizados=arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='CANALIZADO');
+
   const counts={
-    'POSTE':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='POSTE').length,
-    'CANALIZADO':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='CANALIZADO').length,
+    'POSTE':postes.length,
+    'CANALIZADO':canalizados.length,
     'C. AMERICANO':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='C. AMERICANO').length,
     'CERCHA':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='CERCHA').length
   };
@@ -905,21 +1189,44 @@ function abrirFiltroTipo(){
   countTipo_CAMERICANO.textContent=`${counts['C. AMERICANO']} elemento(s)`;
   countTipo_CERCHA.textContent=`${counts['CERCHA']} elemento(s)`;
 
+  llenarSelectFiltro(
+    'filtroPosteAltura',
+    valoresUnicosFiltro(postes,'ALTURA'),
+    configFiltroMapa.poste.altura,
+    'Todas'
+  );
+  llenarSelectFiltro(
+    'filtroPosteRotura',
+    valoresUnicosFiltro(postes,'ROTURA'),
+    configFiltroMapa.poste.rotura,
+    'Todas'
+  );
+  llenarSelectFiltro(
+    'filtroPosteMaterial',
+    valoresUnicosFiltro(postes,'MATERIAL'),
+    configFiltroMapa.poste.material,
+    'Todos'
+  );
+  llenarSelectFiltro(
+    'filtroPosteElectricos',
+    valoresUnicosFiltro(postes,'ELECTRICOS'),
+    configFiltroMapa.poste.electricos,
+    'Todos'
+  );
+  llenarSelectFiltro(
+    'filtroCanalizadoTipoCamara',
+    valoresUnicosFiltro(canalizados,'TIPOCAMARA'),
+    configFiltroMapa.canalizado.tipocamara,
+    'Todas'
+  );
+
+  actualizarVisibilidadFiltrosAvanzados();
   actualizarResumenFiltroTipo();
   filterTipoOverlay.classList.add('open');
 }
 
 function cerrarFiltroTipo(){
   filterTipoOverlay.classList.remove('open');
-}
-
-function seleccionarTodosFiltroTipo(){
-  ['filtroTipo_POSTE','filtroTipo_CANALIZADO','filtroTipo_CAMERICANO','filtroTipo_CERCHA']
-    .forEach(id=>{
-      const el=document.getElementById(id);
-      if(el)el.checked=true;
-    });
-  actualizarResumenFiltroTipoDesdeFormulario();
 }
 
 function tiposSeleccionadosFormularioFiltro(){
@@ -929,33 +1236,98 @@ function tiposSeleccionadosFormularioFiltro(){
     ['C. AMERICANO','filtroTipo_CAMERICANO'],
     ['CERCHA','filtroTipo_CERCHA']
   ];
-  return pares.filter(([,id])=>document.getElementById(id)?.checked).map(([tipo])=>tipo);
+  return pares
+    .filter(([,id])=>document.getElementById(id)?.checked)
+    .map(([tipo])=>tipo);
+}
+
+function leerConfigFiltroFormulario(){
+  return {
+    tipos:tiposSeleccionadosFormularioFiltro(),
+    poste:{
+      altura:document.getElementById('filtroPosteAltura')?.value||'',
+      rotura:document.getElementById('filtroPosteRotura')?.value||'',
+      material:document.getElementById('filtroPosteMaterial')?.value||'',
+      electricos:document.getElementById('filtroPosteElectricos')?.value||''
+    },
+    canalizado:{
+      tipocamara:document.getElementById('filtroCanalizadoTipoCamara')?.value||''
+    }
+  };
+}
+
+function descripcionFiltrosAvanzados(cfg){
+  const d=[];
+  if(cfg.poste.altura)d.push(`Altura ${cfg.poste.altura}`);
+  if(cfg.poste.rotura)d.push(`Rotura ${cfg.poste.rotura}`);
+  if(cfg.poste.material)d.push(`Material ${cfg.poste.material}`);
+  if(cfg.poste.electricos)d.push(`Eléctricos ${cfg.poste.electricos}`);
+  if(cfg.canalizado.tipocamara)d.push(`Cámara ${cfg.canalizado.tipocamara}`);
+  return d;
 }
 
 function actualizarResumenFiltroTipoDesdeFormulario(){
-  const sel=tiposSeleccionadosFormularioFiltro();
-  filterTipoResumen.textContent=sel.length
-    ? `Se mostrarán ${sel.length} tipo(s): ${sel.join(', ')}.`
-    : 'Debes seleccionar al menos un tipo.';
+  const cfg=leerConfigFiltroFormulario();
+  actualizarVisibilidadFiltrosAvanzados();
+
+  if(!cfg.tipos.length){
+    filterTipoResumen.textContent='Debes seleccionar al menos un tipo.';
+    return;
+  }
+
+  const extra=descripcionFiltrosAvanzados(cfg);
+  filterTipoResumen.textContent=
+    `Tipos: ${cfg.tipos.join(', ')}`+
+    (extra.length?` · ${extra.join(' · ')}`:'');
 }
 
 function actualizarResumenFiltroTipo(){
-  const sel=TIPOS_FILTRO_MAPA.filter(t=>tiposFiltroMapa.has(t));
-  filterTipoResumen.textContent=sel.length===TIPOS_FILTRO_MAPA.length
-    ? 'Actualmente se muestran todos los tipos.'
-    : `Filtro activo: ${sel.join(', ')}.`;
+  const extra=descripcionFiltrosAvanzados(configFiltroMapa);
+  const todosTipos=configFiltroMapa.tipos.length===TIPOS_FILTRO_MAPA.length;
+
+  filterTipoResumen.textContent=
+    (todosTipos?'Tipos: todos':`Tipos: ${configFiltroMapa.tipos.join(', ')}`)+
+    (extra.length?` · ${extra.join(' · ')}`:'');
+}
+
+function limpiarFiltroTipo(){
+  ['filtroTipo_POSTE','filtroTipo_CANALIZADO','filtroTipo_CAMERICANO','filtroTipo_CERCHA']
+    .forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.checked=true;
+    });
+
+  ['filtroPosteAltura','filtroPosteRotura','filtroPosteMaterial','filtroPosteElectricos','filtroCanalizadoTipoCamara']
+    .forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.value='';
+    });
+
+  actualizarVisibilidadFiltrosAvanzados();
+  actualizarResumenFiltroTipoDesdeFormulario();
 }
 
 function aplicarFiltroTipo(){
-  const sel=tiposSeleccionadosFormularioFiltro();
+  const cfg=leerConfigFiltroFormulario();
 
-  if(!sel.length){
+  if(!cfg.tipos.length){
     filterTipoResumen.textContent='Selecciona al menos un tipo antes de aplicar.';
     return;
   }
 
-  tiposFiltroMapa=new Set(sel);
-  localStorage.setItem('mapping_filtro_tipo_v1',JSON.stringify(sel));
+  // Si POSTE o CANALIZADO están ocultos, sus subfiltros no deben afectar.
+  if(!cfg.tipos.includes('POSTE')){
+    cfg.poste={altura:'',rotura:'',material:'',electricos:''};
+  }
+  if(!cfg.tipos.includes('CANALIZADO')){
+    cfg.canalizado={tipocamara:''};
+  }
+
+  configFiltroMapa=cfg;
+  tiposFiltroMapa=new Set(cfg.tipos);
+
+  localStorage.setItem('mapping_filtro_avanzado_v1',JSON.stringify(cfg));
+  localStorage.setItem('mapping_filtro_tipo_v1',JSON.stringify(cfg.tipos));
 
   actualizarBotonFiltroTipo();
   pintarRegistros();
@@ -967,9 +1339,8 @@ function aplicarFiltroTipo(){
   cerrarFiltroTipo();
 }
 
-// Actualiza el texto mientras el usuario marca/desmarca opciones.
 document.addEventListener('change',e=>{
-  if(e.target?.closest?.('#filterTipoOverlay') && e.target.matches('input[type="checkbox"]')){
+  if(e.target?.closest?.('#filterTipoOverlay')){
     actualizarResumenFiltroTipoDesdeFormulario();
   }
 });
@@ -1189,7 +1560,7 @@ function cerrarFormulario(){
   limpiarMarcasObligatorias();
 }
 function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
-function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');}
+function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');actualizarEstadoDeteccionPoligono('', 'Detección automática por ubicación');}
 function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);setTimeout(actualizarResaltadoObligatorios,0);}
 function renderFotos(t){
   photoGrid.innerHTML='';
@@ -1741,6 +2112,15 @@ function aplicarTemaApp(){
   if(b)b.innerHTML=claro
     ? '<span class="ico">🌙</span>Tema oscuro'
     : '<span class="ico">☀</span>Tema claro';
+
+  // Si el dashboard está abierto, se vuelve a dibujar para adaptar
+  // ejes, leyendas y etiquetas al fondo claro/oscuro.
+  if(
+    typeof renderDashboardTecnico==='function' &&
+    document.getElementById('techDashOverlay')?.classList.contains('open')
+  ){
+    setTimeout(renderDashboardTecnico,0);
+  }
 }
 
 function toggleTemaApp(){
@@ -1852,6 +2232,12 @@ function renderDashboardTecnico(){
     Chart.register(ChartDataLabels);
   }
 
+  const esClaro=document.body.classList.contains('lightTheme');
+  const colorTextoGrafica=esClaro?'#334155':'#94a3b8';
+  const colorLeyenda=esClaro?'#334155':'#cbd5e1';
+  const colorEtiquetaSuperior=esClaro?'#0f172a':'#f8fafc';
+  const colorGrid=esClaro?'rgba(100,116,139,.22)':'rgba(148,163,184,.16)';
+
   const arr=datosAvanceTecnico();
   const porDia=new Map();
 
@@ -1890,7 +2276,14 @@ function renderDashboardTecnico(){
   const labels=diasValidos.map(d=>fechaCortaAvance(d.fecha));
   const labelCfg={
     display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
-    color:'#f8fafc',
+    color:colorEtiquetaSuperior,
+    font:{weight:'bold',size:10},
+    formatter:v=>v||''
+  };
+
+  const labelCfgInterior={
+    display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+    color:'#ffffff',
     font:{weight:'bold',size:10},
     formatter:v=>v||''
   };
@@ -1912,8 +2305,15 @@ function renderDashboardTecnico(){
       responsive:true,maintainAspectRatio:false,
       layout:{padding:{top:20}},
       scales:{
-        x:{ticks:{color:'#94a3b8'}},
-        y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}}
+        x:{
+          ticks:{color:colorTextoGrafica},
+          grid:{color:colorGrid}
+        },
+        y:{
+          beginAtZero:true,
+          ticks:{precision:0,color:colorTextoGrafica},
+          grid:{color:colorGrid}
+        }
       },
       plugins:{
         legend:{display:false},
@@ -1936,12 +2336,21 @@ function renderDashboardTecnico(){
     options:{
       responsive:true,maintainAspectRatio:false,
       scales:{
-        x:{stacked:true,ticks:{color:'#94a3b8'}},
-        y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}}
+        x:{
+          stacked:true,
+          ticks:{color:colorTextoGrafica},
+          grid:{color:colorGrid}
+        },
+        y:{
+          stacked:true,
+          beginAtZero:true,
+          ticks:{precision:0,color:colorTextoGrafica},
+          grid:{color:colorGrid}
+        }
       },
       plugins:{
-        legend:{labels:{color:'#cbd5e1',boxWidth:10}},
-        datalabels:{...labelCfg,anchor:'center',align:'center'}
+        legend:{labels:{color:colorLeyenda,boxWidth:10}},
+        datalabels:{...labelCfgInterior,anchor:'center',align:'center'}
       }
     }
   });
@@ -1958,8 +2367,8 @@ function renderDashboardTecnico(){
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
-        legend:{position:'bottom',labels:{color:'#cbd5e1',boxWidth:10}},
-        datalabels:{...labelCfg,anchor:'center',align:'center'}
+        legend:{position:'bottom',labels:{color:colorLeyenda,boxWidth:10}},
+        datalabels:{...labelCfgInterior,anchor:'center',align:'center'}
       }
     }
   });
@@ -1979,6 +2388,11 @@ function renderDashboardTecnico(){
 
 
 function validar(){
+  if((proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url) && !poligonosAsignados.length){
+    alert('Este proyecto tiene GeoJSON, pero no tienes polígonos asignados. Solicita al Master que te asigne al menos uno.');
+    return false;
+  }
+
   const falt=[];
   ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','COSTADO'].forEach(id=>{
     if(!val(id))falt.push(id);
@@ -2253,7 +2667,12 @@ function ubicarEnUltimoElementoRegistrado(){
   if(!map)return;
 
   const ultimo=obtenerUltimoRegistroProyecto();
-  if(!ultimo)return;
+  if(!ultimo){
+    if(poligonoLayer?.getBounds?.().isValid()){
+      map.fitBounds(poligonoLayer.getBounds(),{padding:[30,30],maxZoom:19});
+    }
+    return;
+  }
 
   const lat=Number(ultimo.LATITUDE);
   const lon=Number(ultimo.LONGITUDE);
@@ -2354,6 +2773,7 @@ async function editarPunto(id){
   if(!r)return;
   editingId=id;
   limpiarForm();
+  aplicarOpcionesPoligonosAsignados(r.POLIGONO);
   for(const [k,v] of Object.entries(r)){
     const mapId={
       'TIPO POSTE':'TIPO_POSTE','CONF DUCTO':'CONF_DUCTO',
@@ -2375,6 +2795,10 @@ async function editarPunto(id){
   toggleOtroPol();
   ajustarConexionesEdicion(r);
   sincronizarChecksPin();
+  actualizarEstadoDeteccionPoligono(
+    'ok',
+    `Registro existente: ${r.POLIGONO||'sin polígono'}`
+  );
   formOverlay.classList.add('open');
   llevarFormularioAlInicio();
 }
@@ -2399,6 +2823,51 @@ const LOCAL_KEY='mapping_sitesurvey_registros_v1';
 const FOTO_DB_NAME='mapping_sitesurvey_fotos_v1';
 const FOTO_DB_VERSION=1;
 const FOTO_STORE='fotos';
+
+const POLY_DB_NAME='mapping_sitesurvey_poligonos_v1';
+const POLY_DB_VERSION=1;
+const POLY_STORE='proyectos';
+
+function abrirDBPoligonos(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(POLY_DB_NAME,POLY_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(POLY_STORE)){
+        db.createObjectStore(POLY_STORE,{keyPath:'proyecto_id'});
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+async function guardarCachePoligonos(proyectoId,version,geojson){
+  const db=await abrirDBPoligonos();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(POLY_STORE,'readwrite');
+    tx.objectStore(POLY_STORE).put({
+      proyecto_id:String(proyectoId),
+      version:Number(version)||0,
+      geojson,
+      updated_at:new Date().toISOString()
+    });
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+async function obtenerCachePoligonos(proyectoId){
+  const db=await abrirDBPoligonos();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(POLY_STORE,'readonly');
+    const req=tx.objectStore(POLY_STORE).get(String(proyectoId));
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
 
 function abrirDBFotos(){
   return new Promise((resolve,reject)=>{
@@ -2704,7 +3173,339 @@ async function migrarFotosLegacyLocalStorage(){
 
 function uuidValido(v){return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v||''))}
 function localId(r){return r.offline_id||r.id||crypto.randomUUID()}
-function registrosProyectoActual(){return proyectoActivo?registros.filter(r=>String(r.proyecto_id||'')===String(proyectoActivo.proyecto_id||proyectoActivo.id||'')):[]}
+
+function normalizarCodigoPoligonoApp(v){
+  return String(v??'').trim().toUpperCase();
+}
+
+function nombreFeaturePoligonoApp(feature,index){
+  const p=feature?.properties||{};
+  const candidatos=[
+    p.POLIGONO,p.poligono,p.Poligono,
+    p.NOMBRE,p.nombre,p.Nombre,
+    p.NAME,p.name,p.Name,
+    p.CODIGO,p.codigo,p.Codigo,
+    feature?.id
+  ];
+  const valor=candidatos.find(v=>v!==null&&v!==undefined&&String(v).trim()!=='');
+  return normalizarCodigoPoligonoApp(valor||`POLIGONO${index+1}`);
+}
+
+
+function puntoSobreSegmentoGeoJSON(px,py,ax,ay,bx,by){
+  const eps=1e-10;
+  const cross=(px-ax)*(by-ay)-(py-ay)*(bx-ax);
+  if(Math.abs(cross)>eps)return false;
+  const dot=(px-ax)*(bx-ax)+(py-ay)*(by-ay);
+  if(dot<-eps)return false;
+  const len2=(bx-ax)*(bx-ax)+(by-ay)*(by-ay);
+  if(dot-len2>eps)return false;
+  return true;
+}
+
+function puntoEnAnilloGeoJSON(lon,lat,ring){
+  if(!Array.isArray(ring)||ring.length<3)return false;
+
+  // Un punto exactamente sobre el límite se considera dentro.
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const a=ring[j],b=ring[i];
+    if(
+      Array.isArray(a)&&Array.isArray(b)&&
+      puntoSobreSegmentoGeoJSON(
+        lon,lat,
+        Number(a[0]),Number(a[1]),
+        Number(b[0]),Number(b[1])
+      )
+    ){
+      return true;
+    }
+  }
+
+  let dentro=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=Number(ring[i][0]), yi=Number(ring[i][1]);
+    const xj=Number(ring[j][0]), yj=Number(ring[j][1]);
+
+    const cruza=((yi>lat)!==(yj>lat)) &&
+      (lon < (xj-xi)*(lat-yi)/((yj-yi)||Number.EPSILON)+xi);
+
+    if(cruza)dentro=!dentro;
+  }
+  return dentro;
+}
+
+function puntoEnPolygonGeoJSON(lon,lat,coords){
+  if(!Array.isArray(coords)||!coords.length)return false;
+
+  // Primer anillo = exterior.
+  if(!puntoEnAnilloGeoJSON(lon,lat,coords[0]))return false;
+
+  // Los demás anillos son huecos. Si cae dentro de uno, no pertenece.
+  for(let i=1;i<coords.length;i++){
+    if(puntoEnAnilloGeoJSON(lon,lat,coords[i]))return false;
+  }
+  return true;
+}
+
+function puntoEnFeaturePoligono(feature,lat,lon){
+  const g=feature?.geometry;
+  if(!g)return false;
+
+  if(g.type==='Polygon'){
+    return puntoEnPolygonGeoJSON(lon,lat,g.coordinates);
+  }
+
+  if(g.type==='MultiPolygon'){
+    return (g.coordinates||[]).some(poly=>
+      puntoEnPolygonGeoJSON(lon,lat,poly)
+    );
+  }
+
+  return false;
+}
+
+function detectarPoligonoPorCoordenada(lat,lon){
+  const y=Number(lat),x=Number(lon);
+  if(!Number.isFinite(y)||!Number.isFinite(x))return null;
+  if(!poligonosGeoJSON?.features?.length)return null;
+
+  for(let i=0;i<poligonosGeoJSON.features.length;i++){
+    const feature=poligonosGeoJSON.features[i];
+    if(puntoEnFeaturePoligono(feature,y,x)){
+      const codigo=nombreFeaturePoligonoApp(feature,i);
+      if(!poligonosAsignadosSet.size || poligonosAsignadosSet.has(codigo)){
+        return {
+          codigo,
+          feature,
+          index:i
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function actualizarEstadoDeteccionPoligono(tipo,texto){
+  const el=document.getElementById('poligonoAutoEstado');
+  if(!el)return;
+  el.classList.remove('ok','warn','error');
+  if(tipo)el.classList.add(tipo);
+  el.textContent=texto;
+}
+
+function detectarYAsignarPoligonoPorCoordenada(lat,lon,{limpiarSiFuera=true}={}){
+  const encontrado=detectarPoligonoPorCoordenada(lat,lon);
+  const select=document.getElementById('POLIGONO');
+
+  if(!select)return null;
+
+  if(encontrado){
+    const existe=[...select.options].some(o=>
+      normalizarCodigoPoligonoApp(o.value)===encontrado.codigo
+    );
+
+    if(existe){
+      select.value=encontrado.codigo;
+      recalcularIds();
+      actualizarEstadoDeteccionPoligono(
+        'ok',
+        `✓ Detectado automáticamente: ${encontrado.codigo}`
+      );
+      actualizarResaltadoObligatorios();
+      return encontrado;
+    }
+  }
+
+  if(limpiarSiFuera){
+    select.value='';
+    recalcularIds();
+  }
+
+  if(poligonosGeoJSON?.features?.length){
+    actualizarEstadoDeteccionPoligono(
+      'error',
+      '⚠ La ubicación está fuera de los polígonos asignados'
+    );
+  }else{
+    actualizarEstadoDeteccionPoligono(
+      'warn',
+      'No hay geometría de polígonos disponible para detectar'
+    );
+  }
+
+  actualizarResaltadoObligatorios();
+  return null;
+}
+
+function registroEstaEnPoligonoAsignado(r){
+  if(!poligonosAsignadosSet.size)return true;
+  return poligonosAsignadosSet.has(normalizarCodigoPoligonoApp(r?.POLIGONO));
+}
+
+function aplicarOpcionesPoligonosAsignados(valorPreferido=''){
+  const select=document.getElementById('POLIGONO');
+  if(!select)return;
+
+  const previo=valorPreferido||select.value||'';
+
+  if(poligonosAsignados.length){
+    select.disabled=false;
+    select.innerHTML='<option value="">Seleccione...</option>'+
+      poligonosAsignados.map(p=>`<option value="${esc(p.codigo)}">${esc(p.codigo)}</option>`).join('');
+
+    if(previo && poligonosAsignadosSet.has(normalizarCodigoPoligonoApp(previo))){
+      select.value=normalizarCodigoPoligonoApp(previo);
+    }else if(poligonosAsignados.length===1){
+      select.value=poligonosAsignados[0].codigo;
+    }else{
+      select.value='';
+    }
+  }else if((proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url)){
+    select.innerHTML='<option value="">Sin polígonos asignados</option>';
+    select.value='';
+    select.disabled=true;
+  }else{
+    select.disabled=false;
+    select.innerHTML=POLIGONO_SELECT_HTML_INICIAL;
+    if(previo && [...select.options].some(o=>o.value===previo))select.value=previo;
+  }
+
+  recalcularIds();
+}
+
+function limpiarCapaPoligonos(){
+  if(poligonoLayer){
+    try{map.removeLayer(poligonoLayer)}catch(_){}
+    poligonoLayer=null;
+  }
+  poligonosGeoJSON=null;
+}
+
+function filtrarGeoJSONAsignado(obj){
+  if(!obj||obj.type!=='FeatureCollection'||!Array.isArray(obj.features)){
+    throw new Error('POLIGONOS.geojson no es un FeatureCollection válido.');
+  }
+
+  if(!poligonosAsignadosSet.size){
+    return {type:'FeatureCollection',features:[]};
+  }
+
+  return {
+    type:'FeatureCollection',
+    features:obj.features.filter((f,i)=>
+      poligonosAsignadosSet.has(nombreFeaturePoligonoApp(f,i))
+    )
+  };
+}
+
+function pintarPoligonosAsignados(obj){
+  limpiarCapaPoligonos();
+  poligonosGeoJSON=obj;
+  if(!obj?.features?.length)return;
+
+  poligonoLayer=L.geoJSON(obj,{
+    pane:'poligonosPane',
+    style:{
+      color:'#facc15',
+      weight:3,
+      opacity:.98,
+      fillColor:'#facc15',
+      fillOpacity:.055
+    },
+    onEachFeature:(feature,layer)=>{
+      const nombre=nombreFeaturePoligonoApp(feature,0);
+      layer.bindTooltip(nombre,{
+        sticky:true,
+        className:'poligonoAsignadoTooltip'
+      });
+    }
+  }).addTo(map);
+}
+
+async function descargarGeoJSONProyecto(){
+  const url=proyectoActivo?.poligonos_url||(proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url);
+  const proyectoId=proyectoActivo?.proyecto_id||proyectoActivo?.id;
+  const version=Number(proyectoActivo?.poligonos_version)||0;
+
+  if(!url||!proyectoId)return null;
+
+  const cache=await obtenerCachePoligonos(proyectoId).catch(()=>null);
+
+  if(cache?.geojson && (!navigator.onLine || Number(cache.version)===version)){
+    return cache.geojson;
+  }
+
+  if(navigator.onLine){
+    try{
+      const resp=await fetch(url,{cache:'no-store'});
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+
+      const text=await resp.text();
+      if(/^\s*</.test(text)){
+        throw new Error('La URL devolvió HTML en vez de GeoJSON.');
+      }
+
+      const obj=JSON.parse(text);
+      await guardarCachePoligonos(proyectoId,version,obj);
+      return obj;
+    }catch(e){
+      console.warn('No se pudo descargar POLIGONOS.geojson desde la URL pública:',e);
+    }
+  }
+
+  return cache?.geojson||null;
+}
+
+
+async function cargarPoligonosAsignadosTecnico(){
+  limpiarCapaPoligonos();
+  poligonosAsignados=[];
+  poligonosAsignadosSet=new Set();
+
+  if(!proyectoActivo||!mappingUser){
+    aplicarOpcionesPoligonosAsignados();
+    return;
+  }
+
+  const {data,error}=await mappingSb
+    .from('mapping_tecnico_poligonos')
+    .select('poligono_id,mapping_poligonos(id,codigo,nombre,feature_index,activo)')
+    .eq('proyecto_id',proyectoActivo.proyecto_id)
+    .eq('tecnico_id',mappingUser.id);
+
+  if(error){
+    console.warn('No se pudieron cargar polígonos asignados:',error.message);
+    aplicarOpcionesPoligonosAsignados();
+    return;
+  }
+
+  poligonosAsignados=(data||[])
+    .map(x=>x.mapping_poligonos)
+    .filter(Boolean)
+    .filter(x=>x.activo!==false)
+    .sort((a,b)=>(Number(a.feature_index)||0)-(Number(b.feature_index)||0))
+    .map(x=>({...x,codigo:normalizarCodigoPoligonoApp(x.codigo)}));
+
+  poligonosAsignadosSet=new Set(poligonosAsignados.map(x=>x.codigo));
+  aplicarOpcionesPoligonosAsignados();
+
+  const completo=await descargarGeoJSONProyecto();
+  if(completo){
+    try{
+      pintarPoligonosAsignados(filtrarGeoJSONAsignado(completo));
+    }catch(e){
+      console.warn('No fue posible pintar polígonos:',e);
+    }
+  }
+}
+
+function registrosProyectoActual(){
+  if(!proyectoActivo)return [];
+  return registros
+    .filter(r=>String(r.proyecto_id||'')===String(proyectoActivo.proyecto_id||proyectoActivo.id||''))
+    .filter(registroEstaEnPoligonoAsignado);
+}
 function actualizarEstadoSync(){
   const arr=registrosProyectoActual();
   const pend=arr.filter(r=>r.sync_status!=='enviado').length;
@@ -2949,7 +3750,7 @@ async function cargarProyectosAsignados(){
   pintarProyectosAsignados();
   if(proyectoActivo){
     const a=proyectosAsignados.find(x=>String(x.proyecto_id)===String(proyectoActivo.proyecto_id));
-    if(a){proyectoActivo={...a,...a.mapping_proyectos,empresa:a.mapping_proyectos?.mapping_empresas||null,proyecto_id:a.proyecto_id,asignacion_id:a.id};localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));await cargarPuntosSupabase(false);ubicarEnUltimoElementoRegistrado();return}
+    if(a){proyectoActivo={...a,...a.mapping_proyectos,empresa:a.mapping_proyectos?.mapping_empresas||null,proyecto_id:a.proyecto_id,asignacion_id:a.id};localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));await cargarPoligonosAsignadosTecnico();await cargarPuntosSupabase(false);ubicarEnUltimoElementoRegistrado();return}
   }
   if(proyectosAsignados.length===1)await seleccionarProyecto(proyectosAsignados[0].id);
   else{bloquearSinProyecto();if(proyectosAsignados.length)abrirPanelProyectos()}
@@ -2964,7 +3765,7 @@ async function seleccionarProyecto(asignacionId){
   const p=a.mapping_proyectos||{};proyectoActivo={...a,...p,empresa:p.mapping_empresas||null,proyecto_id:a.proyecto_id,asignacion_id:a.id};localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));
   if(PROYECTO)PROYECTO.value=p.nombre||p.codigo||'';if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
   await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'en_proceso',fecha_inicio:a.fecha_inicio||new Date().toISOString()}).eq('id',a.id);
-  cerrarPanelProyectos();desbloquearProyecto();sincronizarChecksPin();await cargarPuntosSupabase();ubicarEnUltimoElementoRegistrado();actualizarEstadoSync();
+  cerrarPanelProyectos();desbloquearProyecto();sincronizarChecksPin();await cargarPoligonosAsignadosTecnico();await cargarPuntosSupabase();ubicarEnUltimoElementoRegistrado();actualizarEstadoSync();
 }
 function bloquearSinProyecto(){const b=document.getElementById('fabAgregar');if(b)b.classList.add('disabledMapControl');actualizarEstadoSync()}
 function desbloquearProyecto(){const b=document.getElementById('fabAgregar');if(b)b.classList.remove('disabledMapControl')}
@@ -2982,6 +3783,16 @@ abrirFormulario=function(){
 
   _abrirFormularioBase();
   setNumeroConexiones(1,true);
+  aplicarOpcionesPoligonosAsignados();
+
+  // Detecta automáticamente el polígono usando la coordenada exacta
+  // tomada de la mira central al abrir el formulario.
+  detectarYAsignarPoligonoPorCoordenada(
+    Number(LATITUDE.value),
+    Number(LONGITUDE.value),
+    {limpiarSiFuera:true}
+  );
+
   PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
   TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
   if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
@@ -3057,6 +3868,18 @@ async function completarCoordenadasCX(registro){
 }
 
 function prepararRegistroLocalBase(){
+  if(!editingId && poligonosGeoJSON?.features?.length){
+    const auto=detectarYAsignarPoligonoPorCoordenada(
+      Number(LATITUDE.value),
+      Number(LONGITUDE.value),
+      {limpiarSiFuera:true}
+    );
+    if(!auto){
+      alert('La ubicación del nuevo elemento está fuera de los polígonos asignados. Mueve la mira central dentro del polígono y vuelve a abrir el formulario.');
+      return null;
+    }
+  }
+
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
   const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toISOString().slice(0,10),HORA:ahora.toLocaleTimeString('es-CO'),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
   for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=val(`CX${i}POL`)||'N/A';r[`CX${i}CONSE`]=num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=num(`DISTODO${i+4}`)}return r;
@@ -4042,13 +4865,13 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div class="overlay" id="filterTipoOverlay">
   <div class="modal filterTipoModal">
     <div class="modalHead">
-      <h2>🔎 Filtrar por tipo</h2>
+      <h2>🔎 Filtros del mapa</h2>
       <button class="close" onclick="cerrarFiltroTipo()">Cerrar</button>
     </div>
     <div class="body">
       <div class="hint">
-        Selecciona los tipos de elementos que quieres visualizar en el mapa y en Registros.
-        El filtro solo cambia la visualización; no modifica ni elimina datos.
+        Selecciona los tipos que quieres visualizar. Para <b>POSTE</b> y <b>CANALIZADO</b>
+        puedes aplicar filtros adicionales. Solo cambia la visualización; no modifica datos.
       </div>
 
       <div class="filterTipoGrid">
@@ -4077,8 +4900,40 @@ document.addEventListener('DOMContentLoaded',()=>{
         </label>
       </div>
 
+      <div class="filterAdvancedSection" id="filterPosteAdvanced">
+        <h3>🟠 Filtros para POSTE</h3>
+        <div class="filterAdvancedGrid">
+          <div>
+            <label>ALTURA</label>
+            <select id="filtroPosteAltura"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label>ROTURA</label>
+            <select id="filtroPosteRotura"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label>MATERIAL</label>
+            <select id="filtroPosteMaterial"><option value="">Todos</option></select>
+          </div>
+          <div>
+            <label>ELEMENTOS ELÉCTRICOS</label>
+            <select id="filtroPosteElectricos"><option value="">Todos</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="filterAdvancedSection" id="filterCanalizadoAdvanced">
+        <h3>🔵 Filtros para CANALIZADO</h3>
+        <div class="filterAdvancedGrid oneCol">
+          <div>
+            <label>TIPOCAMARA</label>
+            <select id="filtroCanalizadoTipoCamara"><option value="">Todas</option></select>
+          </div>
+        </div>
+      </div>
+
       <div class="filterTipoActions">
-        <button class="btn" type="button" onclick="seleccionarTodosFiltroTipo()">✓ Todos</button>
+        <button class="btn" type="button" onclick="limpiarFiltroTipo()">Limpiar filtros</button>
         <button class="btn blue" type="button" onclick="aplicarFiltroTipo()">Aplicar filtro</button>
       </div>
 
@@ -4086,7 +4941,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 </div>
-
 <div class="overlay" id="searchConsecutivoOverlay">
   <div class="modal searchConsecutivoModal">
     <div class="modalHead">
@@ -4280,6 +5134,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
+
 
 
 
