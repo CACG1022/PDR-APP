@@ -3,17 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - Dashboard Avances V8</title>
+<title>Master Mapping & Site Survey - Dashboard Avances V14 - PDF Sin Solapamientos</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{--bg:#06101d;--panel:#0d1b2a;--card:#13263a;--line:#29415d;--text:#f8fafc;--muted:#94a3b8;--teal:#12b8ae;--blue:#38bdf8;--warn:#f59e0b;--danger:#ef4444;--green:#22c55e;--purple:#8b5cf6}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}button,input,select,textarea{font:inherit}button{cursor:pointer}
-header{height:62px;background:#07111f;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:8px 14px;gap:12px}.brand{display:flex;align-items:center;gap:10px}.mark{width:30px;height:30px;border:5px solid var(--teal);border-radius:50%;box-shadow:inset 0 0 0 3px #07111f}.brand h1{margin:0;font-size:16px}.brand small{display:block;color:var(--muted);font-size:10px}.userBox{display:flex;align-items:center;gap:8px;color:#cbd5e1;font-size:11px}.logout{border:0;border-radius:9px;background:#dc2626;color:white;padding:8px 10px;font-weight:800}
+header{height:62px;background:#07111f;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:8px 14px;gap:12px}.brand{display:flex;align-items:center;gap:10px}.mark{width:30px;height:30px;border:5px solid var(--teal);border-radius:50%;box-shadow:inset 0 0 0 3px #07111f}.brand h1{margin:0;font-size:16px}.brand small{display:block;color:var(--muted);font-size:10px}.userBox{display:flex;align-items:center;gap:8px;color:#cbd5e1;font-size:11px}
+.topHeaderActions{display:flex;align-items:center;gap:8px;color:#cbd5e1;font-size:11px;min-width:0}
+.topActionBtn{border:1px solid #1f8ead;border-radius:9px;background:#0c7ea0;color:#fff;padding:8px 11px;font-weight:900;white-space:nowrap}
+.topActionBtn:hover{background:#13B9D1;border-color:#13B9D1}
+.logout{border:0;border-radius:9px;background:#dc2626;color:white;padding:8px 10px;font-weight:800}
 .layout{display:grid;grid-template-columns:365px 1fr;height:calc(100vh - 62px)}aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:12px}.mapPanel{position:relative;min-width:0}#map{width:100%;height:100%}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:10px}.card h3{margin:0 0 8px;font-size:13px;color:#baf7f2}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kpi{background:#07111f;border:1px solid var(--line);border-radius:11px;padding:9px}.kpi span{display:block;color:var(--muted);font-size:10px}.kpi b{font-size:19px}
 label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px 0 4px}input,select,textarea{width:100%;background:#07111f;color:var(--text);border:1px solid #3a536f;border-radius:9px;padding:9px;outline:none}textarea{min-height:62px;resize:vertical}.btn{width:100%;border:0;border-radius:10px;padding:9px 10px;margin-top:8px;font-weight:900;background:var(--teal);color:white}.btn.blue{background:#0284c7}.btn.warn{background:var(--warn);color:#111827}.btn.gray{background:#64748b}.btn.danger{background:#dc2626}.btn.purple{background:var(--purple)}.btn.small{width:auto;margin:0;padding:6px 8px;font-size:10px}.actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -23,7 +28,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 
 /* ===== MASTER ADMINISTRATIVO V3 ===== */
 .adminOnly{}.summary4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.summary4 .kpi{min-height:60px}.filtersGrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end}.modal.wide{width:min(1320px,98vw)}.table.assign{min-width:1180px}.miniActions{display:flex;gap:5px;flex-wrap:wrap}.historyItem{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:#07111f}.historyItem small{color:var(--blue);font-weight:800}.historyItem b{display:block;margin:4px 0}.userTable{max-height:220px}.roleBadge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:900;background:#334155}.roleBadge.admin{background:#7c3aed}.roleBadge.coordinador{background:#0284c7}.roleBadge.tecnico{background:#166534}@media(max-width:900px){.summary4{grid-template-columns:1fr 1fr}.filtersGrid{grid-template-columns:1fr}.modal.wide{width:100%}}
-@media(max-width:900px){body{overflow:auto}.layout{grid-template-columns:1fr;height:auto}aside{height:auto}.mapPanel{height:65vh}.mapToolbar{grid-template-columns:1fr 1fr}.mapToolbar button{grid-column:1/-1}}
+@media(max-width:900px){.topHeaderActions{gap:5px}.topActionBtn{padding:7px 8px;font-size:10px}body{overflow:auto}.layout{grid-template-columns:1fr;height:auto}aside{height:auto}.mapPanel{height:65vh}.mapToolbar{grid-template-columns:1fr 1fr}.mapToolbar button{grid-column:1/-1}}
 
 /* ===== DASHBOARD AVANCES V6 ===== */
 .dashboardModal{width:min(1450px,98vw);margin:1.2vh auto}
@@ -44,6 +49,49 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 .dashTables{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .dashTableWrap{max-height:320px}
 .dashPrintHeader{display:none}
+.reportBanner{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;background:#0C6BA8;border-radius:14px;padding:16px 18px;margin-bottom:10px;color:#fff}
+.reportBanner h1{margin:0;font-size:40px;line-height:1;font-weight:1000;letter-spacing:1px}
+.reportBanner .rbMetaTitle{font-size:13px;opacity:.95;text-transform:uppercase;font-weight:800;letter-spacing:.5px}
+.reportBanner .rbDate{font-size:22px;font-weight:900;line-height:1.2;margin-top:4px}
+.reportBanner .rbContext{font-size:12px;opacity:.95;margin-top:8px;line-height:1.45}
+.reportBanner .rbLogo{font-size:72px;font-weight:1000;line-height:1;color:#fff;letter-spacing:2px;opacity:.95}
+.reportTopGrid{display:grid;grid-template-columns:1.15fr .85fr .95fr;gap:10px;margin-bottom:12px;align-items:start}
+.filterCardReport,.cityCardReport,.rightSummaryReport{background:#0d1b2a;border:1px solid var(--line);border-radius:13px;padding:10px}
+.filterCardReport{display:flex;flex-direction:column;gap:10px}
+.reportFiltersMini{display:grid;grid-template-columns:1fr;gap:8px}
+.reportFilterRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.typeMiniGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.typeMiniCard{background:#e7f1fa;border-radius:10px;padding:10px;text-align:center;color:#334155}
+.typeMiniCard span{display:block;font-size:11px;text-transform:uppercase;color:#64748b}
+.typeMiniCard b{display:block;font-size:18px;color:#0f172a;line-height:1.15;margin-top:3px}
+.distanceCard{background:#b8d6f1;border-radius:10px;padding:11px;text-align:center;color:#35506c}
+.distanceCard span{display:block;font-size:11px;font-weight:700}
+.distanceCard b{display:block;font-size:20px;color:#22384d;margin:0}
+.distanceKmLabel{display:block!important;font-size:18px!important;font-weight:900!important;color:#29465f!important}
+.distanceKmLine{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:7px!important;margin-top:5px!important}
+.distanceKmNumber{font-size:40px!important;line-height:1!important;font-weight:1000!important;color:#172f45!important}
+.distanceKmUnit{font-size:18px!important;line-height:1!important;font-weight:900!important;color:#172f45!important}
+.cityCardReport h3,.chartCard h3{margin:0 0 8px;font-size:12px;color:#baf7f2}
+.citySummaryList{display:flex;flex-direction:column;gap:8px;min-height:220px}
+.cityRow{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;font-size:12px;color:#e2e8f0}
+.cityRow .cityRank{color:#94a3b8;font-weight:800}
+.cityRow .cityName{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cityRow .cityValue{font-weight:900;color:#fff}
+.cityBar{grid-column:2/-1;height:10px;background:#102236;border-radius:999px;overflow:hidden}
+.cityBarFill{height:100%;background:#8cc0ea;border-radius:999px}
+.rightSummaryReport{display:grid;grid-template-columns:1fr;gap:8px}
+.rightKpiCard{background:#b8d6f1;border-radius:10px;padding:10px;text-align:center;color:#35506c;min-height:72px;display:flex;flex-direction:column;justify-content:center}
+.rightKpiCard.primary{background:#eef2f7}
+.rightKpiCard span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.rightKpiCard b{display:block;font-size:18px;color:#1e293b;line-height:1.15;margin:3px 0}
+.rightKpiCard small{font-size:11px;color:#4b5563}
+.chartsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chartCard{background:#0d1b2a;border:1px solid var(--line);border-radius:13px;padding:10px;min-width:0}
+.chartCard.span2{grid-column:1/-1}
+.chartBox{height:280px;position:relative}
+.chartCard.span2 .chartBox{height:310px}
+.chartMap{height:360px;border-radius:12px;overflow:hidden;border:1px solid #26374a}
+#dashMap{width:100%;height:100%;background:#e8eef4}
 .readonlyModal{width:min(1180px,98vw)}
 .readonlyBanner{background:#082f49;border:1px solid #0ea5e9;border-radius:11px;padding:9px 11px;color:#bae6fd;font-size:11px;font-weight:800;margin-bottom:10px}
 .readonlySection{background:#102236;border:1px solid var(--line);border-radius:13px;margin-bottom:10px;overflow:hidden}
@@ -58,33 +106,187 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 .roPhoto img{display:block;width:100%;height:190px;object-fit:cover;border-radius:8px;background:#020617}
 .roPhoto a{display:inline-block;margin-top:6px;font-size:9px;color:#38bdf8}
 .clickablePoint{cursor:pointer}
-@media(max-width:1100px){.dashKpis{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:1100px){.dashKpis{grid-template-columns:repeat(4,1fr)}.reportTopGrid{grid-template-columns:1fr}.typeMiniGrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px){
   .dashFilters{grid-template-columns:1fr 1fr}.dashFilters button{grid-column:1/-1}
   .dashKpis{grid-template-columns:repeat(2,1fr)}
   .chartsGrid,.dashTables{grid-template-columns:1fr}.chartCard.span2{grid-column:auto}
   .readonlyGrid{grid-template-columns:1fr 1fr}.readonlyPhotos{grid-template-columns:1fr 1fr}
+  .reportFilterRow,.typeMiniGrid{grid-template-columns:1fr 1fr}
+  .reportBanner{flex-direction:column}
+  .reportBanner .rbLogo{font-size:44px}
 }
-@media(max-width:520px){.readonlyGrid,.readonlyPhotos{grid-template-columns:1fr}}
+@media(max-width:520px){.readonlyGrid,.readonlyPhotos{grid-template-columns:1fr}.reportFilterRow,.typeMiniGrid{grid-template-columns:1fr}}
 
 @media print{
-  @page{size:A4 landscape;margin:8mm}
-  body{overflow:visible!important;background:#fff!important;color:#111!important}
-  body>*{display:none!important}
-  #avanceModal{display:block!important;position:static!important;background:#fff!important;padding:0!important;overflow:visible!important}
-  #avanceModal .dashboardModal{display:block!important;width:100%!important;margin:0!important;border:0!important;box-shadow:none!important;background:#fff!important;color:#111!important}
-  #dashboardPrintArea{display:block!important;background:#fff!important;color:#111!important;padding:0!important}
+  @page{size:A4 landscape;margin:5mm}
+  html,body{overflow:visible!important;background:#fff!important;color:#111!important;height:auto!important}
+  body *{visibility:hidden!important}
+  #avanceModal,#avanceModal *{visibility:visible!important}
+  #avanceModal{display:block!important;position:absolute!important;inset:0 auto auto 0!important;width:100%!important;height:auto!important;background:#fff!important;padding:0!important;overflow:visible!important;z-index:999999!important}
+  #avanceModal .dashboardModal{display:block!important;width:100%!important;max-width:none!important;margin:0!important;border:0!important;box-shadow:none!important;background:#fff!important;color:#111!important;max-height:none!important;overflow:visible!important}
+  #dashboardPrintArea{display:block!important;background:#fff!important;color:#111!important;padding:0!important;overflow:visible!important}
   .noPrint{display:none!important}
-  .dashPrintHeader{display:flex!important;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:8px}
-  .dashPrintHeader h1{font-size:17px;margin:0 0 4px}
-  .dashKpis{grid-template-columns:repeat(8,1fr)!important;gap:4px!important}
-  .dashKpi,.chartCard{background:#fff!important;color:#111!important;border:1px solid #bbb!important;break-inside:avoid}
-  .dashKpi b,.dashKpi small,.chartCard h3{color:#111!important}
-  .chartBox{height:220px!important}
-  .chartCard.span2 .chartBox{height:245px!important}
-  .chartsGrid{gap:6px!important}.dashTables{gap:6px!important}
-  .tableWrap{max-height:none!important;overflow:visible!important;border-color:#bbb!important}
-  .table{color:#111!important}.table th{position:static!important;background:#eee!important;color:#111!important}.table td{border-color:#ddd!important}
+
+  /* Evita duplicar encabezados y deja más espacio útil en la primera página. */
+  .dashPrintHeader{display:none!important}
+  .reportBanner{background:#0C6BA8!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;padding:7px 11px!important;margin:0 0 5px!important;border-radius:7px!important;min-height:0!important}
+  .reportBanner h1{font-size:23px!important;margin:1px 0!important;line-height:1!important}
+  .reportBanner .rbMetaTitle{font-size:7px!important}
+  .reportBanner .rbDate{font-size:11px!important;margin-top:1px!important}
+  .reportBanner .rbContext{font-size:7px!important;margin-top:2px!important}
+  .distanceKmLabel{font-size:8px!important}.distanceKmLine{margin-top:1px!important}.distanceKmNumber{font-size:19px!important}.distanceKmUnit{font-size:9px!important}
+
+  /* El bloque superior sí cabe en la primera hoja. */
+  .reportTopGrid{display:grid!important;grid-template-columns:1.05fr .85fr 1fr!important;gap:5px!important;margin:0 0 5px!important;break-inside:auto!important;page-break-inside:auto!important}
+  .filterCardReport,.cityCardReport,.rightSummaryReport{padding:6px!important;margin:0!important;min-height:0!important;break-inside:avoid!important;page-break-inside:avoid!important}
+  .citySummaryList{min-height:0!important;gap:3px!important}
+  .cityRow{font-size:7px!important;gap:4px!important;grid-template-columns:14px 1fr auto!important}
+  .cityBar{height:5px!important}
+  .typeMiniGrid{grid-template-columns:repeat(4,1fr)!important;gap:4px!important}
+  .typeMiniCard{padding:5px!important;min-height:0!important}
+  .typeMiniCard span{font-size:6px!important}.typeMiniCard b{font-size:11px!important}
+  .distanceCard{padding:5px!important;min-height:0!important}.distanceCard span{font-size:6px!important}.distanceCard b{font-size:11px!important}.distanceCard small{font-size:6px!important}
+  .rightSummaryReport{grid-template-columns:repeat(2,1fr)!important;gap:4px!important}
+  .rightKpiCard{padding:4px!important;min-height:36px!important}
+  .rightKpiCard.primary{grid-column:1/-1!important}
+  .rightKpiCard span{font-size:6px!important}.rightKpiCard b{font-size:11px!important;margin:1px!important}.rightKpiCard small{font-size:6px!important}
+
+  /* 
+     IMPRESIÓN SEGURA:
+     se usa flex en lugar de CSS Grid porque el motor de impresión de Chrome
+     puede paginar mal los grids y hacer que los canvas de Chart.js se monten
+     unos sobre otros.
+  */
+  .chartsGrid{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    align-items:flex-start!important;
+    gap:5px!important;
+    margin:0!important;
+  }
+
+  .chartCard,.rightKpiCard,.typeMiniCard,.distanceCard,.cityCardReport,.filterCardReport{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+
+  .chartsGrid>.chartCard{
+    flex:0 0 calc(50% - 3px)!important;
+    width:calc(50% - 3px)!important;
+    max-width:calc(50% - 3px)!important;
+    height:177px!important;
+    min-height:177px!important;
+    max-height:177px!important;
+    padding:5px!important;
+    margin:0!important;
+    overflow:hidden!important;
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+    position:relative!important;
+  }
+
+  .chartsGrid>.chartCard.span2{
+    flex-basis:calc(50% - 3px)!important;
+    width:calc(50% - 3px)!important;
+    max-width:calc(50% - 3px)!important;
+  }
+
+  .chartsGrid>.chartCard h3{
+    height:13px!important;
+    line-height:11px!important;
+    font-size:7.5px!important;
+    margin:0 0 3px!important;
+    overflow:hidden!important;
+  }
+
+  .chartsGrid .chartBox,
+  .chartsGrid .chartCard.span2 .chartBox{
+    position:relative!important;
+    width:100%!important;
+    height:151px!important;
+    min-height:151px!important;
+    max-height:151px!important;
+    overflow:hidden!important;
+  }
+
+  .chartsGrid .chartBox canvas{
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    max-width:100%!important;
+    max-height:151px!important;
+  }
+
+  .chartsGrid .chartMap{
+    width:100%!important;
+    height:151px!important;
+    min-height:151px!important;
+    max-height:151px!important;
+    overflow:hidden!important;
+  }
+
+  #dashMap{
+    width:100%!important;
+    height:151px!important;
+    min-height:151px!important;
+    max-height:151px!important;
+  }
+
+  /* Fuerza un corte limpio antes de las tablas si no caben completas. */
+  .dashTables{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    gap:5px!important;
+    margin-top:5px!important;
+    clear:both!important;
+    break-before:auto!important;
+    page-break-before:auto!important;
+  }
+
+  .dashTables>.chartCard{
+    flex:1 1 50%!important;
+    width:50%!important;
+    max-width:50%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:hidden!important;
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+
+  .tableWrap{
+    max-height:none!important;
+    overflow:hidden!important;
+    border-color:#bbb!important;
+  }
+
+  .table{
+    color:#111!important;
+    font-size:6.2px!important;
+    min-width:0!important;
+    width:100%!important;
+    table-layout:fixed!important;
+  }
+
+  .table th{
+    position:static!important;
+    background:#eee!important;
+    color:#111!important;
+    padding:2px!important;
+    white-space:normal!important;
+  }
+
+  .table td{
+    border-color:#ddd!important;
+    padding:2px!important;
+    white-space:normal!important;
+    word-break:break-word!important;
+  }
+
+  /* Leaflet: controles innecesarios fuera del PDF. */
+  #dashMap .leaflet-control-zoom,#dashMap .leaflet-control-layers{display:none!important}
 }
 
 
@@ -126,11 +328,52 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   font-weight:900!important;
 }
 
+
+/* ===== REPORTE CLARO V19 ===== */
+#avanceModal .dashboardModal{background:#fff!important;color:#0f172a!important;border:1px solid #cbd5e1!important}
+#avanceModal .dashboardBody{background:#fff!important;color:#0f172a!important}
+#avanceModal .reportBanner{background:#0C6BA8!important;color:#fff!important;border-radius:12px!important}
+#avanceModal .reportBanner h1,#avanceModal .reportBanner .rbMetaTitle,#avanceModal .reportBanner .rbDate,#avanceModal .reportBanner .rbContext{color:#fff!important}
+#avanceModal .filterCardReport,#avanceModal .cityCardReport,#avanceModal .rightSummaryReport,#avanceModal .chartCard{background:#fff!important;border:1px solid #d7e0e8!important;color:#0f172a!important;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+#avanceModal .filterCardReport label{color:#475569!important}
+#avanceModal .filterCardReport input,#avanceModal .filterCardReport select{background:#fff!important;color:#0f172a!important;border-color:#b8c5d3!important}
+#avanceModal .cityCardReport h3,#avanceModal .chartCard h3{color:#0f172a!important;font-size:14px!important;text-align:center}
+#avanceModal .cityRow{color:#334155!important}
+#avanceModal .cityRow .cityRank{color:#64748b!important}
+#avanceModal .cityRow .cityValue{color:#0f172a!important}
+#avanceModal .cityBar{background:#e2e8f0!important}
+#avanceModal .cityBarFill{background:#8ccae0!important}
+#avanceModal .typeMiniGrid{grid-template-columns:repeat(4,1fr)!important}
+#avanceModal .typeMiniCard{background:#f1f5f9!important;border:1px solid #e2e8f0!important}
+#avanceModal .distanceCard{background:#d9f2f6!important;border:1px solid #b9e4eb!important}
+#avanceModal .rightSummaryReport{grid-template-columns:repeat(2,1fr)!important;align-content:start}
+#avanceModal .rightKpiCard{background:#d9f2f6!important;border:1px solid #b9e4eb!important;min-height:86px!important}
+#avanceModal .rightKpiCard.primary{background:#f1f5f9!important;border-color:#dbe3ec!important;grid-column:1/-1}
+#avanceModal .rightKpiCard span{color:#64748b!important}
+#avanceModal .rightKpiCard b{color:#0f172a!important;font-size:22px!important}
+#avanceModal .rightKpiCard small{color:#64748b!important}
+#avanceModal .tableWrap{background:#fff!important;border-color:#dbe3ec!important}
+#avanceModal .table{color:#0f172a!important}
+#avanceModal .table th{background:#f1f5f9!important;color:#334155!important}
+#avanceModal .table td{border-bottom-color:#e2e8f0!important;color:#334155!important}
+#avanceModal .dashHeadActions .btn{background:#0c8fab!important}
+#avanceModal .chartMap{border-color:#dbe3ec!important}
+@media(max-width:1000px){#avanceModal .typeMiniGrid{grid-template-columns:repeat(2,1fr)!important}#avanceModal .rightSummaryReport{grid-template-columns:1fr!important}#avanceModal .rightKpiCard.primary{grid-column:auto}}
+
 </style>
 </head>
 <body>
 <div class="authOverlay" id="authOverlay"><div class="authCard"><h2>Master - Mapping & Site Survey</h2><div class="hint">Ingresa con un usuario cuyo rol sea <b>admin</b> o <b>coordinador</b> en <code>mapping_usuarios</code>.</div><label>Correo</label><input id="loginEmail" type="email"><label>Contraseña</label><input id="loginPassword" type="password"><button class="btn" onclick="loginMaster()">Ingresar</button><div class="hint" id="loginMsg">Esperando inicio de sesión.</div></div></div>
-<header><div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · levantamiento de infraestructura</small></div></div><div class="userBox"><span id="userTop">Sin sesión</span><button class="logout" onclick="logoutMaster()">Salir</button></div></header>
+<header>
+  <div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · levantamiento de infraestructura</small></div></div>
+  <div class="topHeaderActions">
+    <button class="topActionBtn" onclick="abrirDashboardAvances()">📊 Reporte de avances</button>
+    <button class="topActionBtn" onclick="abrirModalAsignaciones()">👷 Ver / filtrar asignaciones</button>
+    <button class="topActionBtn" onclick="exportarKMZProyecto(this)">🌐 Exportar KMZ</button>
+    <span id="userTop">Sin sesión</span>
+    <button class="logout" onclick="logoutMaster()">Salir</button>
+  </div>
+</header>
 <div class="layout">
 <aside>
   <div class="card"><h3>Empresas</h3>
@@ -177,8 +420,11 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
     <button class="btn blue" onclick="asignarProyecto()">Asignar técnico + polígonos</button>
     <div class="hint">El técnico podrá ver y seleccionar únicamente los polígonos asignados.</div>
   </div>
-  <div class="card"><h3>Resumen</h3><div class="kpis"><div class="kpi"><span>Proyectos</span><b id="kProyectos">0</b></div><div class="kpi"><span>Técnicos</span><b id="kTecnicos">0</b></div><div class="kpi"><span>Asignaciones</span><b id="kAsignaciones">0</b></div><div class="kpi"><span>Puntos</span><b id="kPuntos">0</b></div></div><button class="btn blue" onclick="abrirDashboardAvances()">📊 Reporte de avances</button></div>
-  <div class="card"><h3>Asignaciones</h3><div class="hint" id="resumenAsignacionesMini">Consulta, filtra, reasigna, finaliza y revisa el historial de los proyectos.</div><button class="btn blue" onclick="abrirModalAsignaciones()">Ver / filtrar asignaciones</button><button class="btn gray" onclick="cargarTodo()">Actualizar todo</button><div class="tableWrap" style="margin-top:8px"><table class="table"><thead><tr><th>Proyecto</th><th>Técnico</th><th>Estado</th><th>Puntos</th><th>Acciones</th></tr></thead><tbody id="tablaAsignaciones"></tbody></table></div></div>
+  <div class="card"><h3>Resumen</h3><div class="kpis"><div class="kpi"><span>Proyectos</span><b id="kProyectos">0</b></div><div class="kpi"><span>Técnicos</span><b id="kTecnicos">0</b></div><div class="kpi"><span>Asignaciones</span><b id="kAsignaciones">0</b></div><div class="kpi"><span>Puntos</span><b id="kPuntos">0</b></div></div></div>
+  <div style="display:none" aria-hidden="true">
+    <div id="resumenAsignacionesMini"></div>
+    <table><tbody id="tablaAsignaciones"></tbody></table>
+  </div>
 </aside>
 <section class="mapPanel"><div id="map"></div><div class="mapToolbar"><select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select><select id="fProyecto" onchange="cargarProyectoMapa()"></select><select id="fTipo" onchange="pintarMapa()"><option value="">Todos los tipos</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select><button onclick="cargarProyectoMapa()">Actualizar mapa</button></div><div class="mapLegend"><div><span class="dot" style="background:#22c55e"></span>Poste</div><div><span class="dot" style="background:#38bdf8"></span>Canalizado</div><div><span class="dot" style="background:#f97316"></span>C. Americano</div><div><span class="dot" style="background:#a855f7"></span>Cercha</div><div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div><div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div></div></section>
 </div>
@@ -236,43 +482,79 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
     <div class="modalBody dashboardBody" id="dashboardPrintArea">
       <div class="dashPrintHeader">
         <div>
-          <h1>REPORTE DE AVANCES</h1>
+          <h1>INFORME MAPPING</h1>
           <div id="dashPrintProyecto"></div>
         </div>
         <div id="dashPrintFecha"></div>
       </div>
 
-      <div class="dashFilters noPrint">
-        <div><label>Proyecto</label><select id="dashProyecto" onchange="cargarDashboardAvances()"></select></div>
-        <div><label>Técnico</label><select id="dashTecnico" onchange="renderDashboardAvances()"></select></div>
-        <div><label>Desde</label><input id="dashDesde" type="date" onchange="renderDashboardAvances()"></div>
-        <div><label>Hasta</label><input id="dashHasta" type="date" onchange="renderDashboardAvances()"></div>
-        <button class="btn blue" onclick="cargarDashboardAvances()">Actualizar</button>
+      <div class="reportBanner">
+        <div>
+          <div class="rbMetaTitle">INFORME MAPPING</div>
+          <h1>INFORME MAPPING</h1>
+          <div class="rbMetaTitle" style="margin-top:8px">FECHA DE REPORTE</div>
+          <div class="rbDate" id="dashFechaReporte">—</div>
+          <div class="rbContext" id="dashContextoReporte">Proyecto: Todos · Ciudad: Todas · Técnico: Todos</div>
+        </div>
+        
       </div>
 
-      <div class="dashKpis">
-        <div class="dashKpi"><span>Total elementos</span><b id="dTotal">0</b><small>levantados</small></div>
-        <div class="dashKpi"><span>Postes</span><b id="dPostes">0</b><small>POSTE</small></div>
-        <div class="dashKpi"><span>Cámaras</span><b id="dCamaras">0</b><small>CANALIZADO</small></div>
-        <div class="dashKpi"><span>C. Americano</span><b id="dAmericano">0</b><small>elementos</small></div>
-        <div class="dashKpi"><span>Cerchas</span><b id="dCerchas">0</b><small>elementos</small></div>
-        <div class="dashKpi"><span>Promedio diario</span><b id="dPromedio">0</b><small>elementos/día activo</small></div>
-        <div class="dashKpi"><span>Mejor día</span><b id="dMejorDia">0</b><small id="dMejorDiaFecha">—</small></div>
-        <div class="dashKpi"><span>Técnicos activos</span><b id="dTecnicos">0</b><small>con producción</small></div>
+      <div class="reportTopGrid">
+        <div class="filterCardReport">
+          <div class="reportFiltersMini noPrint">
+            <div><label>Proyecto</label><select id="dashProyecto" onchange="cargarDashboardAvances()"></select></div>
+            <div class="reportFilterRow">
+              <div><label>Ciudad</label><select id="dashCiudad" onchange="cargarDashboardAvances()"></select></div>
+              <div><label>Técnico</label><select id="dashTecnico" onchange="renderDashboardAvances()"></select></div>
+            </div>
+            <div class="reportFilterRow">
+              <div><label>Desde</label><input id="dashDesde" type="date" onchange="renderDashboardAvances()"></div>
+              <div><label>Hasta</label><input id="dashHasta" type="date" onchange="renderDashboardAvances()"></div>
+            </div>
+            <button class="btn blue" onclick="cargarDashboardAvances()">Actualizar</button>
+          </div>
+          <div class="typeMiniGrid">
+            <div class="typeMiniCard"><span>Postes</span><b id="dPostes">0</b></div>
+            <div class="typeMiniCard"><span>Cámaras</span><b id="dCamaras">0</b></div>
+            <div class="typeMiniCard"><span>C. Americanos</span><b id="dAmericano">0</b></div>
+            <div class="typeMiniCard"><span>Cerchas</span><b id="dCerchas">0</b></div>
+          </div>
+          <div class="distanceCard">
+  <span class="distanceKmLabel">Distancia aproximada:</span>
+  <div class="distanceKmLine">
+    <span id="dDistanciaKm" class="distanceKmNumber">0.0</span>
+    <span class="distanceKmUnit">km</span>
+  </div>
+</div>
+        </div>
+
+        <div class="cityCardReport">
+          <h3>Infraestructura por ciudad</h3>
+          <div id="dashResumenCiudades" class="citySummaryList"></div>
+        </div>
+
+        <div class="rightSummaryReport">
+          <div class="rightKpiCard primary"><span>Total infraestructura</span><b id="dTotal">0</b><small>elementos levantados</small></div>
+          <div class="rightKpiCard"><span>Promedio x técnico x día</span><b id="dPromTecnicoDia">0</b><small>rendimiento general</small></div>
+          <div class="rightKpiCard"><span>Días de levantamiento</span><b id="dDiasActivos">0</b><small>con producción</small></div>
+          <div class="rightKpiCard"><span>Mejor día</span><b id="dMejorDia">0</b><small id="dMejorDiaFecha">—</small></div>
+          <div class="rightKpiCard"><span>Técnicos activos</span><b id="dTecnicos">0</b><small>con producción</small></div>
+        </div>
       </div>
 
       <div class="chartsGrid">
-        <div class="chartCard span2"><h3>Cantidad total de elementos levantados por día</h3><div class="chartBox"><canvas id="chTotalDia"></canvas></div></div>
+        <div class="chartCard span2"><h3>Cantidad de infraestructura por día</h3><div class="chartBox"><canvas id="chTotalDia"></canvas></div></div>
         <div class="chartCard span2"><h3>Producción diaria por tipo</h3><div class="chartBox"><canvas id="chDiario"></canvas></div></div>
-        <div class="chartCard"><h3>Distribución por tipo</h3><div class="chartBox"><canvas id="chTipos"></canvas></div></div>
-        <div class="chartCard"><h3>Rendimiento por técnico</h3><div class="chartBox"><canvas id="chTecnicos"></canvas></div></div>
-        <div class="chartCard span2"><h3>Avance acumulado</h3><div class="chartBox"><canvas id="chAcumulado"></canvas></div></div>
+        <div class="chartCard"><h3>Cantidad de infraestructura por polígono</h3><div class="chartBox"><canvas id="chPoligonos"></canvas></div></div>
+        <div class="chartCard"><h3>Histórico cantidad de infraestructura x técnico</h3><div class="chartBox"><canvas id="chTecnicos"></canvas></div></div>
+        <div class="chartCard span2"><h3>Cant de infraestructura levantada x técnico x día</h3><div class="chartBox"><canvas id="chTecnicoDia"></canvas></div></div>
+        <div class="chartCard span2"><h3>Mapa de referencia</h3><div class="chartMap"><div id="dashMap"></div></div></div>
       </div>
 
       <div class="dashTables">
         <div class="chartCard">
           <h3>Resumen por técnico</h3>
-          <div class="tableWrap dashTableWrap"><table class="table"><thead><tr><th>Técnico</th><th>Total</th><th>Días activos</th><th>Promedio/día</th><th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th></tr></thead><tbody id="dashTablaTecnicos"></tbody></table></div>
+          <div class="tableWrap dashTableWrap"><table class="table"><thead><tr><th>Técnico</th><th>Total</th><th>Días activos</th><th>Prom./día</th><th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th></tr></thead><tbody id="dashTablaTecnicos"></tbody></table></div>
         </div>
         <div class="chartCard">
           <h3>Detalle diario</h3>
@@ -308,7 +590,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 const SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];let map,layer=null,polygonMasterLayer=null;let geojsonProyectoPreview=null;let passwordSesionActual='';let dashboardPuntos=[];let dashboardCharts={};
+let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];let map,layer=null,polygonMasterLayer=null;let geojsonProyectoPreview=null;let passwordSesionActual='';let dashboardPuntos=[];let dashboardCharts={};let dashboardMap=null,dashboardMapLayer=null;
 Chart.register(ChartDataLabels);
 Chart.defaults.plugins.datalabels = {
   color:'#f8fafc',
@@ -1329,6 +1611,419 @@ function pintarMapa(){
 }
 async function abrirPuntos(proyectoId){const p=proyectos.find(x=>x.id===proyectoId);const emp=empresas.find(e=>e.id===p?.empresa_id);puntosTitle.textContent=`Puntos · ${emp?.nombre||'Sin empresa'} · ${p?.codigo||''}`;const {data,error}=await sb.from('mapping_puntos').select('*').eq('proyecto_id',proyectoId).order('poligono').order('consecutiv');if(error)return alert(error.message);const list=data||[],idx=idxPuntos(list);tablaPuntos.innerHTML=list.map(r=>`<tr class="clickablePoint" onclick="abrirDetallePunto('${r.id}')"><td><b>${esc(r.idcampo)}</b></td><td><span class="badge ${String(r.tipo).replace('. ','').replace(' ','')}">${esc(r.tipo)}</span></td><td>${esc(r.poligono)}</td><td>${conexiones(r,idx).map(c=>esc(c.d.idcampo)).join(', ')||'—'}</td><td>${esc(r.tecnico_nombre||r.tecnico_email||'')}</td><td>${esc(r.direccion||'')}</td></tr>`).join('');puntosModal.classList.add('open')}
 
+
+function xmlEscKMZ(v){
+  return String(v??'').replace(/[<>&'"]/g,ch=>({
+    '<':'&lt;',
+    '>':'&gt;',
+    '&':'&amp;',
+    "'":'&apos;',
+    '"':'&quot;'
+  }[ch]));
+}
+
+function cdataKMZ(v){
+  return String(v??'').replace(/\]\]>/g,']]]]><![CDATA[>');
+}
+
+function nombreArchivoSeguro(v){
+  return String(v||'MAPPING')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\\/:*?"<>|]+/g,'_')
+    .replace(/\s+/g,'_')
+    .replace(/_+/g,'_')
+    .replace(/^_+|_+$/g,'') || 'MAPPING';
+}
+
+function estiloKMZTipo(tipo){
+  const t=String(tipo||'').trim().toUpperCase();
+  if(t==='CANALIZADO')return 'canalizado';
+  if(t==='C. AMERICANO')return 'americano';
+  if(t==='CERCHA')return 'cercha';
+  return 'poste';
+}
+
+
+function prioridadFotosKMZ(tipo){
+  const t=String(tipo||'').trim().toUpperCase();
+
+  if(t==='CANALIZADO'){
+    return [
+      'FOTO8CAM','FOTO9CAM','FOTO5CAM',
+      'FOTO6CAM','FOTO7CAM','FOTO10CAM'
+    ];
+  }
+
+  return ['FOTO','FOTO2','FOTO3','FOTO4','FOTO11'];
+}
+
+function urlFotoKMZ(foto){
+  if(!foto)return '';
+
+  const id=driveId(foto.url_foto,foto.storage_path);
+
+  if(id){
+    // URL que ya utiliza el Master para mostrar las fotografías.
+    return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1400`;
+  }
+
+  return String(foto.url_foto||'').trim();
+}
+
+function linkFotoKMZ(foto){
+  if(!foto)return '';
+
+  const id=driveId(foto.url_foto,foto.storage_path);
+
+  if(id){
+    return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
+  }
+
+  return String(foto.url_foto||'').trim();
+}
+
+function seleccionarFotoPrincipalKMZ(p){
+  const fotos=Array.isArray(p?.__fotos_kmz) ? p.__fotos_kmz : [];
+  if(!fotos.length)return null;
+
+  const prioridades=prioridadFotosKMZ(p.tipo);
+
+  for(const tipo of prioridades){
+    const foto=fotos.find(f=>
+      String(f.tipo_foto||'').trim().toUpperCase()===tipo
+    );
+    if(foto)return foto;
+  }
+
+  return fotos[0];
+}
+
+async function cargarFotosKMZ(lista){
+  const ids=lista.map(p=>p.id).filter(Boolean);
+  if(!ids.length)return;
+
+  const mapa=new Map(lista.map(p=>[String(p.id),p]));
+  lista.forEach(p=>p.__fotos_kmz=[]);
+
+  const batch=200;
+
+  for(let i=0;i<ids.length;i+=batch){
+    const parte=ids.slice(i,i+batch);
+
+    const {data,error}=await sb
+      .from('mapping_punto_fotos')
+      .select('punto_id,tipo_foto,nombre_archivo,url_foto,storage_path,created_at')
+      .in('punto_id',parte)
+      .order('created_at',{ascending:true});
+
+    if(error){
+      console.warn('No se pudieron consultar fotografías para el KMZ:',error);
+      continue;
+    }
+
+    (data||[]).forEach(f=>{
+      const p=mapa.get(String(f.punto_id));
+      if(!p)return;
+      p.__fotos_kmz.push(f);
+    });
+  }
+}
+
+function descripcionElementoKMZ(p){
+  const foto=seleccionarFotoPrincipalKMZ(p);
+  const img=urlFotoKMZ(foto);
+  const link=linkFotoKMZ(foto);
+
+  const filas=[
+    ['ÍTEM',p.tipo||''],
+    ['N° ELEMENTO EN PLANO',p.consecutiv??''],
+    ['IDCAMPO',p.idcampo||''],
+    ['POLÍGONO',p.poligono||''],
+    ['TÉCNICO',p.tecnico_nombre||p.tecnico_email||''],
+    ['CIUDAD',p.ciudad||''],
+    ['BARRIO',p.barrio||''],
+    ['DIRECCIÓN',p.direccion||''],
+    ['LATITUDE',p.latitude??''],
+    ['LONGITUDE',p.longitude??''],
+    ['PROPIETARIO',p.propietari||''],
+    ['MATERIAL',p.material||''],
+    ['ALTURA (m)',p.altura??''],
+    ['ROTURA / RESISTENCIA',p.rotura??''],
+    ['ESTADO',p.estado||''],
+    ['TENSIÓN',p.tension||''],
+    ['RIENDA',p.rienda||''],
+    ['CABLES',p.cables??''],
+    ['EMPALMES',p.empalmes??''],
+    ['RESERVAS',p.reservas??''],
+    ['NAP',p.naps??''],
+    ['BAJANTES',p.bajantes??''],
+    ['AMPLIFICADORES',p.amplifi??''],
+    ['FUENTES',p.fuentes??''],
+    ['OBSERVACIONES',p.observacio||'']
+  ];
+
+  const tabla=filas.map(([k,v],i)=>`
+    <tr class="${i%2===0?'trb':''}">
+      <td class="ch"><b>${xmlEscKMZ(k)}</b></td>
+      <td class="${String(v??'').length>45?'cw':'cv'}">${xmlEscKMZ(v??'')}</td>
+    </tr>
+  `).join('');
+
+  const fotoHtml=img ? `
+    <div style="text-align:center;margin:8px 0 10px">
+      <a href="${xmlEscKMZ(link||img)}" target="_blank">
+        <img
+          src="${xmlEscKMZ(img)}"
+          style="max-width:520px;max-height:620px;width:auto;height:auto;border:1px solid #cbd5e1;border-radius:5px"
+        >
+      </a>
+      <div style="font-size:10px;color:#64748b;margin-top:4px">
+        ${xmlEscKMZ(foto?.tipo_foto||'FOTO')}
+      </div>
+    </div>
+  ` : `
+    <div style="text-align:center;color:#777;margin:10px 0">
+      Sin fotografía sincronizada
+    </div>
+  `;
+
+  return `
+    <style type="text/css">
+      *{font-family:Verdana,Arial,Helvetica,Sans-Serif;box-sizing:border-box}
+      table{border-collapse:collapse;border-spacing:0;margin:4px auto;font-size:11px}
+      .trb{background-color:#eef9fb}
+      .ch{vertical-align:top;padding:5px 10px;white-space:nowrap;color:#17425c}
+      .cv{vertical-align:top;padding:5px 10px;white-space:nowrap}
+      .cw{vertical-align:top;padding:5px 10px;max-width:430px;white-space:normal}
+      .titulo{font-size:20px;font-weight:bold;color:#0C6BA8;text-align:center;margin-bottom:2px}
+      .subtitulo{font-size:12px;font-weight:bold;text-align:center;color:#334155;margin-bottom:6px}
+    </style>
+
+    <div class="titulo">MAPPING</div>
+    <div class="subtitulo">${xmlEscKMZ(p.idcampo||'')}</div>
+
+    ${fotoHtml}
+
+    <table>
+      ${tabla}
+    </table>
+  `;
+}
+
+function crearKMLProyecto(proyecto,listado){
+  const idx=idxPuntos(listado);
+  const conexionesVistas=new Set();
+  const placemarksPuntos=[];
+  const placemarksLineas=[];
+
+  listado.forEach(p=>{
+    const lat=Number(p.latitude);
+    const lon=Number(p.longitude);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+
+    const nombre=p.idcampo || `${p.poligono||''}-${p.consecutiv||''}` || `Elemento ${p.id||''}`;
+
+    placemarksPuntos.push(`
+      <Placemark>
+        <name>${xmlEscKMZ(nombre)}</name>
+        <styleUrl>#${estiloKMZTipo(p.tipo)}</styleUrl>
+        <description><![CDATA[${cdataKMZ(descripcionElementoKMZ(p))}]]></description>
+        <ExtendedData>
+          <Data name="TIPO"><value>${xmlEscKMZ(p.tipo||'')}</value></Data>
+          <Data name="POLIGONO"><value>${xmlEscKMZ(p.poligono||'')}</value></Data>
+          <Data name="CONSECUTIV"><value>${xmlEscKMZ(p.consecutiv??'')}</value></Data>
+          <Data name="TECNICO"><value>${xmlEscKMZ(p.tecnico_nombre||p.tecnico_email||'')}</value></Data>
+          <Data name="FOTO"><value>${xmlEscKMZ(linkFotoKMZ(seleccionarFotoPrincipalKMZ(p))||'')}</value></Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>${lon},${lat},0</coordinates>
+        </Point>
+      </Placemark>
+    `);
+
+    conexiones(p,idx).forEach(c=>{
+      const lat2=Number(c.d?.latitude);
+      const lon2=Number(c.d?.longitude);
+      if(!Number.isFinite(lat2)||!Number.isFinite(lon2))return;
+
+      const origen=p.idcampo||`${p.poligono||''}-${p.consecutiv||''}`;
+      const destino=c.d.idcampo||`${c.d.poligono||''}-${c.d.consecutiv||''}`;
+      const clave=[String(origen),String(destino)].sort().join('↔')+'|'+(c.otro?'OTRO':'MISMO');
+
+      if(conexionesVistas.has(clave))return;
+      conexionesVistas.add(clave);
+
+      placemarksLineas.push(`
+        <Placemark>
+          <name>${xmlEscKMZ(`${origen} ↔ ${destino}`)}</name>
+          <styleUrl>#${c.otro?'lineaOtro':'lineaMismo'}</styleUrl>
+          <description><![CDATA[
+            <b>Conexión:</b> ${cdataKMZ(c.slot||'')}<br>
+            <b>Origen:</b> ${cdataKMZ(origen)}<br>
+            <b>Destino:</b> ${cdataKMZ(destino)}<br>
+            <b>Tipo:</b> ${c.otro?'Otro polígono':'Mismo polígono'}
+          ]]></description>
+          <LineString>
+            <tessellate>1</tessellate>
+            <altitudeMode>clampToGround</altitudeMode>
+            <coordinates>
+              ${lon},${lat},0
+              ${lon2},${lat2},0
+            </coordinates>
+          </LineString>
+        </Placemark>
+      `);
+    });
+  });
+
+  const nombreProyecto=proyecto?.nombre||proyecto?.codigo||'Proyecto Mapping';
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>${xmlEscKMZ(nombreProyecto)}</name>
+  <description>Exportación MAPPING Y SITE SURVEY</description>
+
+  <Style id="poste">
+    <IconStyle>
+      <color>ff5ec522</color>
+      <scale>0.9</scale>
+      <Icon><href>https://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+    </IconStyle>
+    <LabelStyle><scale>0.75</scale></LabelStyle>
+  </Style>
+
+  <Style id="canalizado">
+    <IconStyle>
+      <color>fff8bd38</color>
+      <scale>0.9</scale>
+      <Icon><href>https://maps.google.com/mapfiles/kml/shapes/square.png</href></Icon>
+    </IconStyle>
+    <LabelStyle><scale>0.75</scale></LabelStyle>
+  </Style>
+
+  <Style id="americano">
+    <IconStyle>
+      <color>ff1673f9</color>
+      <scale>0.9</scale>
+      <Icon><href>https://maps.google.com/mapfiles/kml/shapes/cross-hairs.png</href></Icon>
+    </IconStyle>
+    <LabelStyle><scale>0.75</scale></LabelStyle>
+  </Style>
+
+  <Style id="cercha">
+    <IconStyle>
+      <color>fff755a8</color>
+      <scale>0.9</scale>
+      <Icon><href>https://maps.google.com/mapfiles/kml/shapes/triangle.png</href></Icon>
+    </IconStyle>
+    <LabelStyle><scale>0.75</scale></LabelStyle>
+  </Style>
+
+  <Style id="lineaMismo">
+    <LineStyle>
+      <color>ffccd148</color>
+      <width>4</width>
+    </LineStyle>
+  </Style>
+
+  <Style id="lineaOtro">
+    <LineStyle>
+      <color>ff0b9ef5</color>
+      <width>4</width>
+    </LineStyle>
+  </Style>
+
+  <Folder>
+    <name>Elementos levantados</name>
+    ${placemarksPuntos.join('\n')}
+  </Folder>
+
+  <Folder>
+    <name>Conexiones</name>
+    ${placemarksLineas.join('\n')}
+  </Folder>
+</Document>
+</kml>`;
+}
+
+async function exportarKMZProyecto(btn=null){
+  const proyectoId=document.getElementById('fProyecto')?.value||'';
+
+  if(!proyectoId){
+    alert('Selecciona un proyecto en el mapa antes de exportar el KMZ.');
+    return;
+  }
+
+  if(typeof JSZip==='undefined'){
+    alert('No se pudo cargar el componente para generar KMZ. Verifica la conexión a Internet y vuelve a intentarlo.');
+    return;
+  }
+
+  const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
+  const textoOriginal=btn?.textContent||'🌐 Exportar KMZ';
+
+  try{
+    if(btn){
+      btn.disabled=true;
+      btn.textContent='Generando KMZ...';
+    }
+
+    const {data,error}=await sb
+      .from('mapping_puntos')
+      .select('*')
+      .eq('proyecto_id',proyectoId)
+      .order('poligono')
+      .order('consecutiv');
+
+    if(error)throw error;
+
+    const lista=(data||[]).map(p=>({...p,__fotos_kmz:[]}));
+
+    if(!lista.length){
+      alert('El proyecto seleccionado todavía no tiene elementos levantados.');
+      return;
+    }
+
+    if(btn)btn.textContent='Consultando fotos...';
+    await cargarFotosKMZ(lista);
+
+    if(btn)btn.textContent='Generando KMZ...';
+    const kml=crearKMLProyecto(proyecto,lista);
+    const zip=new JSZip();
+    zip.file('doc.kml',kml);
+
+    const blob=await zip.generateAsync({
+      type:'blob',
+      compression:'DEFLATE',
+      compressionOptions:{level:6}
+    });
+
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const base=nombreArchivoSeguro(
+      proyecto?.codigo || proyecto?.nombre || 'MAPPING'
+    );
+
+    a.href=url;
+    a.download=`${base}_ELEMENTOS_CONEXIONES.kmz`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }catch(e){
+    console.error('Error exportando KMZ:',e);
+    alert('No fue posible generar el KMZ: '+(e?.message||e));
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=textoOriginal;
+    }
+  }
+}
+
 function fechaPunto(p){
   const raw=p.fecha_captura_app||p.fecha||p.created_at||'';
   if(!raw)return '';
@@ -1349,6 +2044,7 @@ async function abrirDashboardAvances(){
   if(fProyecto?.value)dashProyecto.value=fProyecto.value;
   avanceModal.classList.add('open');
   await cargarDashboardAvances();
+  setTimeout(()=>{if(dashboardMap)dashboardMap.invalidateSize()},180);
 }
 function cerrarDashboardAvances(){
   avanceModal.classList.remove('open');
@@ -1361,9 +2057,16 @@ async function cargarDashboardAvances(){
   if(error)return alert('Error cargando dashboard: '+error.message);
   dashboardPuntos=data||[];
 
+  const ciudadActual=dashCiudad.value;
+  const ciudades=[...new Set(dashboardPuntos.map(p=>String(p.ciudad||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  dashCiudad.innerHTML='<option value="">Todas</option>'+ciudades.map(c=>`<option>${esc(c)}</option>`).join('');
+  if(ciudades.includes(ciudadActual))dashCiudad.value=ciudadActual;
+
+  const baseCiudad=dashCiudad.value;
+  const puntosBase=dashboardPuntos.filter(p=>!baseCiudad || String(p.ciudad||'').trim()===baseCiudad);
   const tecActual=dashTecnico.value;
-  const tecs=[...new Set(dashboardPuntos.map(nombreTecnicoPunto))].sort((a,b)=>a.localeCompare(b));
-  dashTecnico.innerHTML='<option value="">Todos los técnicos</option>'+tecs.map(t=>`<option>${esc(t)}</option>`).join('');
+  const tecs=[...new Set(puntosBase.map(nombreTecnicoPunto))].sort((a,b)=>a.localeCompare(b));
+  dashTecnico.innerHTML='<option value="">Todos</option>'+tecs.map(t=>`<option>${esc(t)}</option>`).join('');
   if(tecs.includes(tecActual))dashTecnico.value=tecActual;
 
   const fechas=dashboardPuntos.map(fechaPunto).filter(Boolean).sort();
@@ -1375,10 +2078,12 @@ async function cargarDashboardAvances(){
   renderDashboardAvances();
 }
 function datosDashboardFiltrados(){
-  const tec=dashTecnico.value,desde=dashDesde.value,hasta=dashHasta.value;
+  const ciudad=dashCiudad.value,tec=dashTecnico.value,desde=dashDesde.value,hasta=dashHasta.value;
   return dashboardPuntos.filter(p=>{
     const f=fechaPunto(p);
-    return (!tec||nombreTecnicoPunto(p)===tec)&&(!desde||f>=desde)&&(!hasta||f<=hasta);
+    const okCiudad=!ciudad || String(p.ciudad||'').trim()===ciudad;
+    const okTec=!tec || nombreTecnicoPunto(p)===tec;
+    return okCiudad && okTec && (!desde||f>=desde) && (!hasta||f<=hasta);
   });
 }
 function destruirChart(id){
@@ -1390,143 +2095,312 @@ function crearChart(id,config){
   if(!el)return;
   dashboardCharts[id]=new Chart(el.getContext('2d'),config);
 }
-function renderDashboardAvances(){
-  const arr=datosDashboardFiltrados();
-  const porDia=new Map(),porTec=new Map();
-  const tipos=['POSTE','CANALIZADO','C. AMERICANO','CERCHA'];
+function textoProyectoDashboard(){
+  const psel=proyectos.find(p=>String(p.id)===String(dashProyecto.value));
+  return psel?`${psel.codigo} · ${psel.nombre}`:'Todos los proyectos';
+}
+function fmtFechaCorta(fechaISO){
+  if(!fechaISO)return '—';
+  const dt=new Date(`${fechaISO}T00:00:00`);
+  if(Number.isNaN(dt.getTime()))return fechaISO;
+  return dt.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'});
+}
+function valorQgisODb(p,qKey,dbKey){
+  const q=(p?.datos_qgis && typeof p.datos_qgis==='object') ? p.datos_qgis : {};
+  const v=q[qKey];
+  if(v!==undefined && v!==null && v!=='')return v;
+  return p?.[dbKey];
+}
+function numeroFlexible(v){
+  if(v===null||v===undefined||v==='')return NaN;
+  if(typeof v==='number')return Number.isFinite(v)?v:NaN;
+  let s=String(v).trim();
+  if(!s)return NaN;
+  s=s.replace(/\s+/g,'');
+  s=s.replace(/[^0-9,.-]/g,'');
+  if(!s)return NaN;
+  if(/^[-]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)){
+    s=s.replace(/\./g,'').replace(',', '.');
+  }else if(/^[-]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)){
+    s=s.replace(/,/g,'');
+  }else if(/^[-]?\d+,\d+$/.test(s)){
+    s=s.replace(',', '.');
+  }
+  const n=Number(s);
+  return Number.isFinite(n)?n:NaN;
+}
+function formatearMetros(v){
+  return new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(v||0);
+}
+function formatearKm(v){
+  return new Intl.NumberFormat('es-CO',{minimumFractionDigits:3,maximumFractionDigits:3}).format((v||0)/1000);
+}
+function verdadSi(v){
+  const s=String(v??'').trim().toUpperCase();
+  return ['SI','S','YES','TRUE','1','X'].includes(s);
+}
+function clavePuntoDistancia(p){
+  const proyecto=String(p?.proyecto_id||'');
+  const pol=String(p?.poligono||valorQgisODb(p,'POLIGONO','poligono')||'').trim().toUpperCase();
+  const cons=Number(p?.consecutiv ?? valorQgisODb(p,'CONSECUTIV','consecutiv') ?? 0);
+  return `${proyecto}||${pol}||${cons}`;
+}
+function distanciaHaversineMetros(a,b){
+  const lat1=Number(a?.latitude),lon1=Number(a?.longitude);
+  const lat2=Number(b?.latitude),lon2=Number(b?.longitude);
+  if(![lat1,lon1,lat2,lon2].every(Number.isFinite))return 0;
+  const R=6371000;
+  const rad=x=>x*Math.PI/180;
+  const dLat=rad(lat2-lat1),dLon=rad(lon2-lon1);
+  const q=Math.sin(dLat/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+function distanciaRegistradaSlot(p,slot){
+  const n=numeroFlexible(valorQgisODb(p,`DISTODO${slot}`,`distodo${slot}`));
+  return Number.isFinite(n)&&n>0?n:0;
+}
+function calcularDistanciaRedPorConexiones(arr){
+  // Índice completo del proyecto cargado en el dashboard. Se usa solo como
+  // respaldo para calcular distancia geográfica si DISTODO no fue diligenciado.
+  const indice=new Map();
+  (dashboardPuntos||[]).forEach(p=>{
+    const k=clavePuntoDistancia(p);
+    if(k)indice.set(k,p);
+  });
+
+  let metros=0;
+  let conexiones=0;
+  const aristas=new Set();
+
+  const sumarConexion=(origen,destPol,destCons,slotDist)=>{
+    const proyecto=String(origen?.proyecto_id||'');
+    const polOrigen=String(origen?.poligono||valorQgisODb(origen,'POLIGONO','poligono')||'').trim().toUpperCase();
+    const consOrigen=Number(origen?.consecutiv ?? valorQgisODb(origen,'CONSECUTIV','consecutiv') ?? 0);
+    const polDestino=String(destPol||'').trim().toUpperCase();
+    const consDestino=Number(destCons||0);
+    if(!polOrigen||!consOrigen||!polDestino||!consDestino)return;
+
+    const a=`${proyecto}||${polOrigen}||${consOrigen}`;
+    const b=`${proyecto}||${polDestino}||${consDestino}`;
+    // Evita doble conteo si una conexión llegara a estar declarada en ambos extremos.
+    const edge=[a,b].sort().join(' <-> ');
+    if(aristas.has(edge))return;
+    aristas.add(edge);
+
+    let d=distanciaRegistradaSlot(origen,slotDist);
+    if(!(d>0)){
+      const destino=indice.get(b);
+      if(destino)d=distanciaHaversineMetros(origen,destino);
+    }
+
+    if(Number.isFinite(d)&&d>0){
+      metros+=d;
+      conexiones++;
+    }
+  };
 
   for(const p of arr){
-    const f=fechaPunto(p)||'Sin fecha',t=p.tipo||'SIN TIPO',tec=nombreTecnicoPunto(p);
+    const polActual=String(p?.poligono||valorQgisODb(p,'POLIGONO','poligono')||'').trim().toUpperCase();
+
+    // CX1..CX4 dentro del mismo polígono. 0 = sin conexión.
+    for(let i=1;i<=4;i++){
+      const cx=numeroFlexible(valorQgisODb(p,`CX${i}`,`cx${i}`));
+      if(Number.isFinite(cx)&&cx>0){
+        sumarConexion(p,polActual,cx,i);
+      }
+    }
+
+    // Conexiones hacia otro polígono: CX1POL/CX1CONSE ... CX4POL/CX4CONSE.
+    // DISTODO5..8 corresponden a esas cuatro conexiones.
+    const cruza=verdadSi(valorQgisODb(p,'CXOTROPOL','cxotropol'));
+    if(cruza){
+      for(let i=1;i<=4;i++){
+        const pol=valorQgisODb(p,`CX${i}POL`,`cx${i}pol`);
+        const conse=numeroFlexible(valorQgisODb(p,`CX${i}CONSE`,`cx${i}conse`));
+        if(String(pol||'').trim() && Number.isFinite(conse) && conse>0){
+          sumarConexion(p,pol,conse,i+4);
+        }
+      }
+    }
+  }
+
+  return {metros,km:metros/1000,conexiones};
+}
+function asegurarDashboardMap(){
+  if(dashboardMap)return;
+
+  dashboardMap=L.map('dashMap',{
+    zoomControl:true,
+    attributionControl:true
+  });
+
+  // ESRI World Street Map:
+  // no usa las teselas públicas de tile.openstreetmap.org,
+  // por lo que evita el bloqueo 403 mostrado por OSM.
+  const esriCalles=L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom:19,
+      attribution:'Tiles &copy; Esri'
+    }
+  );
+
+  const esriSatelite=L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom:19,
+      attribution:'Tiles &copy; Esri'
+    }
+  );
+
+  esriCalles.addTo(dashboardMap);
+
+  L.control.layers(
+    {
+      'Mapa calles':esriCalles,
+      'Satélite':esriSatelite
+    },
+    null,
+    {
+      position:'topright',
+      collapsed:true
+    }
+  ).addTo(dashboardMap);
+
+  dashboardMapLayer=L.layerGroup().addTo(dashboardMap);
+  dashboardMap.setView([4.65,-74.1],11);
+}
+function renderResumenCiudades(ciudades){
+  const box=document.getElementById('dashResumenCiudades');
+  if(!box)return;
+  if(!ciudades.length){
+    box.innerHTML='<div class="hint">Sin información para los filtros seleccionados.</div>';
+    return;
+  }
+  const max=Math.max(...ciudades.map(c=>c.total),1);
+  box.innerHTML=ciudades.map((c,i)=>`<div class="cityRow"><div class="cityRank">${i+1}.</div><div class="cityName">${esc(c.ciudad)}</div><div class="cityValue">${numeroFmt(c.total,0)}</div><div class="cityBar"><div class="cityBarFill" style="width:${(c.total/max)*100}%"></div></div></div>`).join('');
+}
+function renderDashboardAvances(){
+  const arr=datosDashboardFiltrados();
+  const porDia=new Map(),porTec=new Map(),porPoligono=new Map(),porCiudad=new Map(),porTecDia=new Map();
+  for(const p of arr){
+    const f=fechaPunto(p)||'Sin fecha';
+    const t=(p.tipo||'SIN TIPO').toUpperCase();
+    const tec=nombreTecnicoPunto(p);
+    const pol=String(p.poligono||'SIN POLÍGONO').trim()||'SIN POLÍGONO';
+    const ciudad=String(p.ciudad||'Sin ciudad').trim()||'Sin ciudad';
+
     if(!porDia.has(f))porDia.set(f,{fecha:f,total:0,POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
     const d=porDia.get(f);d.total++;if(d[t]!=null)d[t]++;
 
     if(!porTec.has(tec))porTec.set(tec,{tecnico:tec,total:0,dias:new Set(),POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
     const x=porTec.get(tec);x.total++;x.dias.add(f);if(x[t]!=null)x[t]++;
+
+    if(!porPoligono.has(pol))porPoligono.set(pol,0);
+    porPoligono.set(pol,porPoligono.get(pol)+1);
+
+    if(!porCiudad.has(ciudad))porCiudad.set(ciudad,0);
+    porCiudad.set(ciudad,porCiudad.get(ciudad)+1);
+
+    const k=`${tec}||${f}`;
+    if(!porTecDia.has(k))porTecDia.set(k,{tecnico:tec,fecha:f,total:0});
+    porTecDia.get(k).total++;
+
+
   }
+
+  const distanciaRed=calcularDistanciaRedPorConexiones(arr);
 
   const dias=[...porDia.values()].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const tecnicos=[...porTec.values()].sort((a,b)=>b.total-a.total);
+  const poligonos=[...porPoligono.entries()].map(([poligono,total])=>({poligono,total})).sort((a,b)=>b.total-a.total);
+  const ciudades=[...porCiudad.entries()].map(([ciudad,total])=>({ciudad,total})).sort((a,b)=>b.total-a.total);
+  const fechas=[...new Set(dias.map(d=>d.fecha))].filter(f=>f && f!=='Sin fecha').sort();
   const total=arr.length;
-  const cuenta=tipo=>arr.filter(p=>p.tipo===tipo).length;
-  const activos=dias.filter(d=>d.fecha!=='Sin fecha');
-  const promedio=activos.length?total/activos.length:0;
-  const mejor=activos.reduce((m,d)=>!m||d.total>m.total?d:m,null);
+  const cuenta=tipo=>arr.filter(p=>(p.tipo||'').toUpperCase()===tipo).length;
+  const diasActivos=fechas.length;
+  const tecnicosActivos=tecnicos.length;
+  const promedioTecDia=(tecnicosActivos && diasActivos)? total/(tecnicosActivos*diasActivos):0;
+  const mejor=dias.reduce((m,d)=>!m||d.total>m.total?d:m,null);
 
   dTotal.textContent=numeroFmt(total,0);
   dPostes.textContent=numeroFmt(cuenta('POSTE'),0);
   dCamaras.textContent=numeroFmt(cuenta('CANALIZADO'),0);
   dAmericano.textContent=numeroFmt(cuenta('C. AMERICANO'),0);
   dCerchas.textContent=numeroFmt(cuenta('CERCHA'),0);
-  dPromedio.textContent=numeroFmt(promedio,1);
+  dDistanciaKm.textContent=(distanciaRed.metros/1000).toFixed(1);
+  dPromTecnicoDia.textContent=numeroFmt(promedioTecDia,2);
+  dDiasActivos.textContent=numeroFmt(diasActivos,0);
   dMejorDia.textContent=numeroFmt(mejor?.total||0,0);
-  dMejorDiaFecha.textContent=mejor?.fecha||'—';
-  dTecnicos.textContent=tecnicos.length;
+  dMejorDiaFecha.textContent=mejor?.fecha?fmtFechaCorta(mejor.fecha):'—';
+  dTecnicos.textContent=numeroFmt(tecnicosActivos,0);
 
-  const psel=proyectos.find(p=>p.id===dashProyecto.value);
-  avanceSubtitulo.textContent=psel?`${psel.codigo} · ${psel.nombre}`:'Todos los proyectos';
-  dashPrintProyecto.textContent=avanceSubtitulo.textContent+(dashTecnico.value?` · Técnico: ${dashTecnico.value}`:'');
-  dashPrintFecha.textContent=`Generado: ${new Date().toLocaleString('es-CO')}`;
+  const proyectoTxt=textoProyectoDashboard();
+  const ciudadTxt=dashCiudad.value||'Todas';
+  const tecnicoTxt=dashTecnico.value||'Todos';
+  const fechaGeneracion=new Date().toLocaleString('es-CO');
+  avanceSubtitulo.textContent=proyectoTxt;
+  dashPrintProyecto.textContent=`${proyectoTxt} · Ciudad: ${ciudadTxt} · Técnico: ${tecnicoTxt}`;
+  dashPrintFecha.textContent=`Generado: ${fechaGeneracion}`;
+  dashFechaReporte.textContent=fechaGeneracion;
+  dashContextoReporte.textContent=`Proyecto: ${proyectoTxt} · Ciudad: ${ciudadTxt} · Técnico: ${tecnicoTxt}`;
 
-  const labels=dias.map(d=>d.fecha);
+  renderResumenCiudades(ciudades);
+
+  const labels=dias.map(d=>fmtFechaCorta(d.fecha));
+  const chartText='#334155';
 
   crearChart('chTotalDia',{
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Elementos levantados',
-        data:dias.map(d=>d.total),
-        backgroundColor:'#14b8a6',
-        borderColor:'#5eead4',
-        borderWidth:1,
-        borderRadius:5
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{padding:{top:20}},
-      scales:{
-        x:{ticks:{color:'#94a3b8'}},
-        y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'},suggestedMax:Math.max(5,...dias.map(d=>d.total))+2}
-      },
-      plugins:{
-        legend:{display:false},
-        datalabels:{display:true,color:'#f8fafc',anchor:'end',align:'top',formatter:(v)=>v||''}
-      }
-    }
+    type:'line',
+    data:{labels,datasets:[{label:'Infraestructura',data:dias.map(d=>d.total),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.16)',fill:true,tension:.25,pointRadius:4,pointHoverRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{display:false},datalabels:{display:true,color:'#60a5fa',anchor:'end',align:'top',formatter:(v)=>v||''}}}
   });
 
   crearChart('chDiario',{
     type:'bar',
     data:{labels,datasets:[
-      {label:'Postes',data:dias.map(d=>d.POSTE),backgroundColor:'#ef4444'},
-      {label:'Cámaras',data:dias.map(d=>d.CANALIZADO),backgroundColor:'#38bdf8'},
-      {label:'C. Americano',data:dias.map(d=>d['C. AMERICANO']),backgroundColor:'#f59e0b'},
-      {label:'Cerchas',data:dias.map(d=>d.CERCHA),backgroundColor:'#8b5cf6'}
+      {label:'Postes',data:dias.map(d=>d.POSTE),backgroundColor:'#3b82f6'},
+      {label:'Cámaras',data:dias.map(d=>d.CANALIZADO),backgroundColor:'#f59e0b'},
+      {label:'C. Americano',data:dias.map(d=>d['C. AMERICANO']),backgroundColor:'#a855f7'},
+      {label:'Cerchas',data:dias.map(d=>d.CERCHA),backgroundColor:'#84cc16'}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,ticks:{color:'#94a3b8'}},y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}}},plugins:{
-      legend:{labels:{color:'#cbd5e1'}},
-      datalabels:{
-        display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
-        color:'#f8fafc',
-        anchor:'center',
-        align:'center',
-        formatter:(v)=>v||''
-      }
-    }}
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,ticks:{color:'#64748b'}},y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{labels:{color:chartText}},datalabels:{display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,color:'#fff',anchor:'center',align:'center',formatter:(v)=>v||''}}}
   });
 
-  crearChart('chTipos',{
-    type:'doughnut',
-    data:{labels:['Postes','Cámaras','C. Americano','Cerchas'],datasets:[{data:[cuenta('POSTE'),cuenta('CANALIZADO'),cuenta('C. AMERICANO'),cuenta('CERCHA')],backgroundColor:['#ef4444','#38bdf8','#f59e0b','#8b5cf6']}]},
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'bottom',labels:{color:'#cbd5e1'}},
-        datalabels:{
-          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
-          color:'#fff',
-          anchor:'center',
-          align:'center',
-          formatter:(v)=>v||''
-        }
-      }
-    }
+  crearChart('chPoligonos',{
+    type:'bar',
+    data:{labels:poligonos.map(p=>p.poligono),datasets:[{label:'CONSECUTIV',data:poligonos.map(p=>p.total),backgroundColor:'#facc15',borderColor:'#eab308',borderWidth:1,maxBarThickness:42}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{display:false},datalabels:{display:true,color:'#111827',anchor:'end',align:'start',offset:-2,formatter:(v)=>v||''}}}
   });
 
   crearChart('chTecnicos',{
     type:'bar',
-    data:{labels:tecnicos.map(t=>t.tecnico),datasets:[{label:'Elementos',data:tecnicos.map(t=>t.total),backgroundColor:'#12b8ae'}]},
-    options:{
-      indexAxis:'y',
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{padding:{right:28}},
-      scales:{x:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}},y:{ticks:{color:'#94a3b8'}}},
-      plugins:{
-        legend:{display:false},
-        datalabels:{display:true,color:'#f8fafc',anchor:'end',align:'right',formatter:(v)=>v||''}
-      }
-    }
+    data:{labels:tecnicos.map(t=>t.tecnico),datasets:[{label:'CONSECUTIV',data:tecnicos.map(t=>t.total),backgroundColor:'#4a82e2'}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{position:'top',align:'start',labels:{color:chartText,boxWidth:18}},datalabels:{display:true,color:'#0f172a',anchor:'end',align:'start',offset:-2,formatter:(v)=>v||''}}}
   });
 
-  let ac=0;
-  crearChart('chAcumulado',{
-    type:'line',
-    data:{labels,datasets:[{label:'Elementos acumulados',data:dias.map(d=>ac+=d.total),borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,.15)',fill:true,tension:.25}]},
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{padding:{top:20}},
-      scales:{x:{ticks:{color:'#94a3b8'}},y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}}},
-      plugins:{
-        legend:{labels:{color:'#cbd5e1'}},
-        datalabels:{display:true,color:'#f8fafc',anchor:'end',align:'top',formatter:(v)=>v||''}
-      }
-    }
+  const tecColors=['#3b82f6','#f59e0b','#a855f7','#84cc16','#ef4444','#06b6d4','#f97316','#14b8a6'];
+  crearChart('chTecnicoDia',{
+    type:'bar',
+    data:{labels:fechas.map(fmtFechaCorta),datasets:tecnicos.map((t,i)=>({label:t.tecnico,data:fechas.map(f=>porTecDia.get(`${t.tecnico}||${f}`)?.total||0),backgroundColor:tecColors[i%tecColors.length]}))},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{position:'top',align:'start',labels:{color:chartText}},datalabels:{display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,color:(ctx)=>ctx?.dataset?.backgroundColor||'#334155',anchor:'end',align:'top',formatter:(v)=>v||''}}}
   });
+
+  asegurarDashboardMap();
+  if(dashboardMapLayer)dashboardMapLayer.clearLayers();
+  const bounds=[];
+  arr.forEach(p=>{
+    const lat=Number(p.latitude),lng=Number(p.longitude);
+    if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+    const tipo=(p.tipo||'').toUpperCase();
+    const color=tipo==='POSTE'?'#3b82f6':tipo==='CANALIZADO'?'#f59e0b':tipo==='CERCHA'?'#84cc16':'#a855f7';
+    const mk=L.circleMarker([lat,lng],{radius:5,color:'#fff',weight:1,fillColor:color,fillOpacity:.95}).bindPopup(`<b>${esc(p.idcampo||p.consecutiv||p.id||'Elemento')}</b><br>${esc(p.tipo||'')}<br>${esc(p.poligono||'')}<br>${esc(nombreTecnicoPunto(p))}`);
+    dashboardMapLayer.addLayer(mk);
+    bounds.push([lat,lng]);
+  });
+  if(bounds.length)dashboardMap.fitBounds(bounds,{padding:[20,20]});
+  else dashboardMap.setView([4.65,-74.1],11);
+  setTimeout(()=>dashboardMap.invalidateSize(),120);
 
   dashTablaTecnicos.innerHTML=tecnicos.length?tecnicos.map(t=>`<tr>
     <td><b>${esc(t.tecnico)}</b></td><td>${t.total}</td><td>${t.dias.size}</td><td>${numeroFmt(t.total/Math.max(t.dias.size,1),1)}</td>
@@ -1534,7 +2408,7 @@ function renderDashboardAvances(){
   </tr>`).join(''):'<tr><td colspan="8">Sin información para los filtros seleccionados.</td></tr>';
 
   dashTablaDias.innerHTML=dias.length?dias.slice().reverse().map(d=>`<tr>
-    <td>${esc(d.fecha)}</td><td><b>${d.total}</b></td><td>${d.POSTE}</td><td>${d.CANALIZADO}</td><td>${d.CERCHA}</td><td>${d['C. AMERICANO']}</td>
+    <td>${esc(fmtFechaCorta(d.fecha))}</td><td><b>${d.total}</b></td><td>${d.POSTE}</td><td>${d.CANALIZADO}</td><td>${d.CERCHA}</td><td>${d['C. AMERICANO']}</td>
   </tr>`).join(''):'<tr><td colspan="6">Sin información para los filtros seleccionados.</td></tr>';
 }
 
@@ -1754,26 +2628,60 @@ async function exportarReporteExcel(){
   }
 }
 
+
 function aplicarTemaImpresionCharts(imprimir){
-  Object.values(dashboardCharts).forEach(ch=>{
-    const c=imprimir?'#111827':'#94a3b8';
-    const dc=imprimir?'#111827':'#f8fafc';
-    if(ch.options?.scales){
-      Object.values(ch.options.scales).forEach(sc=>{if(sc?.ticks)sc.ticks.color=c;});
-    }
-    if(ch.options?.plugins?.legend?.labels)ch.options.plugins.legend.labels.color=imprimir?'#111827':'#cbd5e1';
-    if(ch.options?.plugins?.datalabels)ch.options.plugins.datalabels.color=dc;
-    ch.update('none');
-  });
+  // El dashboard ya está diseñado con fondo claro y colores aptos para impresión.
+  // No se vuelve a ejecutar chart.update() durante print porque Chart.js +
+  // chartjs-plugin-datalabels puede resolver contextos parciales al entrar
+  // en modo impresión y provocar errores como:
+  // "Cannot read properties of undefined (reading 'backgroundColor')".
+  return;
 }
-window.addEventListener('beforeprint',()=>aplicarTemaImpresionCharts(true));
-window.addEventListener('afterprint',()=>aplicarTemaImpresionCharts(false));
+
+function prepararDashboardParaImpresion(){
+  try{
+    // Resize no modifica los datos ni la configuración del chart;
+    // solamente recalcula el canvas para el ancho real de impresión.
+    Object.values(dashboardCharts).forEach(ch=>{
+      try{ch.resize()}catch(_){}
+    });
+
+    if(dashboardMap){
+      dashboardMap.invalidateSize(true);
+    }
+  }catch(e){
+    console.warn('No fue posible reajustar el dashboard antes de imprimir:',e);
+  }
+}
 
 function imprimirDashboard(){
-  renderDashboardAvances();
-  aplicarTemaImpresionCharts(true);
-  setTimeout(()=>window.print(),350);
+  try{
+    prepararDashboardParaImpresion();
+    window.print();
+  }catch(e){
+    console.error('Error al abrir impresión/PDF:',e);
+    alert('No fue posible abrir la ventana de impresión/PDF: '+(e?.message||e));
+  }
 }
+
+
+window.addEventListener('beforeprint',()=>{
+  requestAnimationFrame(()=>{
+    Object.values(dashboardCharts).forEach(ch=>{
+      try{ch.resize()}catch(_){}
+    });
+    try{dashboardMap?.invalidateSize(true)}catch(_){}
+  });
+});
+
+window.addEventListener('afterprint',()=>{
+  requestAnimationFrame(()=>{
+    Object.values(dashboardCharts).forEach(ch=>{
+      try{ch.resize()}catch(_){}
+    });
+    try{dashboardMap?.invalidateSize(true)}catch(_){}
+  });
+});
 
 function roCampo(label,value,largo=false){
   const v=(value===null||value===undefined||value==='')?'—':value;
@@ -1860,4 +2768,5 @@ window.addEventListener('load',()=>{initMap();verificar()});
 </script>
 </body>
 </html>
+
 
