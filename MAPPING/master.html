@@ -142,18 +142,18 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   <div class="grid2"><div><label>Código *</label><input id="pCodigo" placeholder="EYCO-2026-BTA-01"></div><div><label>Ciudad</label><input id="pCiudad" placeholder="Bogotá D.C"></div></div>
   <label>Nombre *</label><input id="pNombre" placeholder="Mapping Bogotá Veracruz">
   <label>Descripción</label><textarea id="pDescripcion"></textarea>
-  <label>URL de Google Drive - POLIGONOS.geojson *</label>
-  <input id="pGeojsonUrl" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing">
+  <label>URL pública de POLIGONOS.geojson *</label>
+  <input id="pGeojsonUrl" placeholder="https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/POLIGONOS-BTA.geojson">
   <div class="actions" style="grid-template-columns:1fr 1fr">
     <button class="btn gray" onclick="leerPoligonosDesdeDriveCrear()">Leer polígonos</button>
     <button class="btn" onclick="crearProyecto()">Crear proyecto</button>
   </div>
-  <div id="pGeojsonInfo" class="hint">El archivo debe estar compartido como <b>Cualquier persona con el enlace → Lector</b>.</div>
+  <div id="pGeojsonInfo" class="hint">La URL debe abrir directamente el archivo GeoJSON en el navegador.</div>
 
   <div class="geoDivider"></div>
   <h4>Actualizar GeoJSON de proyecto existente</h4>
   <label>Proyecto</label><select id="geoProyectoExistente"></select>
-  <label>Nueva URL de Drive</label><input id="geoUrlActualiza" placeholder="https://drive.google.com/file/d/FILE_ID/view">
+  <label>Nueva URL pública de GeoJSON</label><input id="geoUrlActualiza" placeholder="https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/POLIGONOS-BTA.geojson">
   <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer URL / actualizar versión</button>
 </div>
   <div class="card"><h3>Asignar proyecto</h3>
@@ -504,53 +504,35 @@ function analizarGeoJSONPoligonos(obj){
   return {geojson:obj,poligonos};
 }
 
-function extraerDriveFileId(url){
+async function descargarGeoJSONPublico(url){
   const s=String(url||'').trim();
-  if(!s)return '';
+  if(!s)throw new Error('Pega la URL pública del GeoJSON.');
 
-  const patrones=[
-    /\/file\/d\/([a-zA-Z0-9_-]+)/,
-    /[?&]id=([a-zA-Z0-9_-]+)/,
-    /\/d\/([a-zA-Z0-9_-]+)/
-  ];
-
-  for(const p of patrones){
-    const m=s.match(p);
-    if(m?.[1])return m[1];
+  let resp;
+  try{
+    resp=await fetch(s,{cache:'no-store'});
+  }catch(e){
+    throw new Error('No se pudo acceder a la URL. Verifica que sea pública y permita CORS.');
   }
 
-  // Permitir pegar directamente el file_id.
-  if(/^[a-zA-Z0-9_-]{20,}$/.test(s))return s;
-  return '';
-}
-
-function urlDescargaDriveGeoJSON(fileId){
-  // Endpoint de contenido público de Google Drive.
-  return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
-}
-
-async function descargarGeoJSONDrive(url){
-  const fileId=extraerDriveFileId(url);
-  if(!fileId)throw new Error('No se pudo obtener el FILE_ID de la URL de Drive.');
-
-  const resp=await fetch(urlDescargaDriveGeoJSON(fileId),{cache:'no-store'});
-  if(!resp.ok)throw new Error(`Drive respondió HTTP ${resp.status}. Verifica que el archivo sea público.`);
+  if(!resp.ok){
+    throw new Error(`La URL respondió HTTP ${resp.status}.`);
+  }
 
   const text=await resp.text();
 
-  // Si Drive devuelve HTML, normalmente es una pantalla de permisos/confirmación.
   if(/^\s*</.test(text)){
-    throw new Error('Drive devolvió una página HTML en vez del GeoJSON. Verifica: "Cualquier persona con el enlace → Lector".');
+    throw new Error('La URL devolvió HTML en vez de GeoJSON. Usa la URL pública directa del archivo.');
   }
 
   let obj;
   try{obj=JSON.parse(text)}
-  catch(_){throw new Error('El contenido descargado desde Drive no es JSON válido.');}
+  catch(_){throw new Error('El contenido de la URL no es JSON válido.');}
 
   return {
     ...analizarGeoJSONPoligonos(obj),
     text,
-    fileId
+    url:s
   };
 }
 
@@ -560,15 +542,15 @@ async function leerPoligonosDesdeDriveCrear(){
 
   if(!url){
     pGeojsonInfo.className='hint geoError';
-    pGeojsonInfo.textContent='❌ Pega la URL de Drive.';
+    pGeojsonInfo.textContent='❌ Pega la URL pública del GeoJSON.';
     return;
   }
 
   pGeojsonInfo.className='hint';
-  pGeojsonInfo.textContent='Leyendo POLIGONOS.geojson desde Drive...';
+  pGeojsonInfo.textContent='Leyendo POLIGONOS.geojson...';
 
   try{
-    const a=await descargarGeoJSONDrive(url);
+    const a=await descargarGeoJSONPublico(url);
     geojsonProyectoPreview=a;
     pGeojsonInfo.className='hint geoOk';
     pGeojsonInfo.innerHTML=`✅ ${a.poligonos.length} polígonos detectados: <b>${a.poligonos.map(x=>esc(x.codigo)).join(', ')}</b>`;
@@ -605,13 +587,13 @@ async function actualizarGeoJSONProyectoExistente(){
   const url=geoUrlActualiza.value.trim();
 
   if(!proyectoId)return alert('Selecciona el proyecto.');
-  if(!url)return alert('Pega la nueva URL de Drive.');
+  if(!url)return alert('Pega la nueva URL pública del GeoJSON.');
 
   const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
   if(!proyecto)return;
 
   try{
-    const a=await descargarGeoJSONDrive(url);
+    const a=await descargarGeoJSONPublico(url);
     const version=(Number(proyecto.poligonos_version)||0)+1;
 
     await registrarCatalogoPoligonos(proyecto.id,a.poligonos);
@@ -619,8 +601,8 @@ async function actualizarGeoJSONProyectoExistente(){
     const {error}=await sb
       .from('mapping_proyectos')
       .update({
+        poligonos_url:url,
         poligonos_drive_url:url,
-        poligonos_drive_file_id:a.fileId,
         poligonos_version:version,
         poligonos_actualizados_at:new Date().toISOString()
       })
@@ -719,16 +701,16 @@ async function crearProyecto(){
   const url=pGeojsonUrl.value.trim();
 
   if(!empresa_id||!codigo||!nombre)return alert('Empresa, código y nombre son obligatorios.');
-  if(!url)return alert('Pega la URL de Google Drive de POLIGONOS.geojson.');
+  if(!url)return alert('Pega la URL pública de POLIGONOS.geojson.');
 
   let analisis=geojsonProyectoPreview;
 
   try{
-    if(!analisis || analisis.fileId!==extraerDriveFileId(url)){
-      analisis=await descargarGeoJSONDrive(url);
+    if(!analisis || analisis.url!==url){
+      analisis=await descargarGeoJSONPublico(url);
     }
   }catch(e){
-    return alert('No se pudo leer el GeoJSON desde Drive: '+(e?.message||e));
+    return alert('No se pudo leer el GeoJSON: '+(e?.message||e));
   }
 
   const {data:proyecto,error}=await sb
@@ -740,8 +722,8 @@ async function crearProyecto(){
       estado:'activo',
       creado_por:user.id,
       creado_por_email:user.email,
+      poligonos_url:url,
       poligonos_drive_url:url,
-      poligonos_drive_file_id:analisis.fileId,
       poligonos_version:1,
       poligonos_actualizados_at:new Date().toISOString()
     })
@@ -764,7 +746,7 @@ async function crearProyecto(){
   pGeojsonUrl.value='';
   geojsonProyectoPreview=null;
   pGeojsonInfo.className='hint';
-  pGeojsonInfo.innerHTML='El archivo debe estar compartido como <b>Cualquier persona con el enlace → Lector</b>.';
+  pGeojsonInfo.innerHTML='La URL debe abrir directamente el archivo GeoJSON en el navegador.';
 
   await cargarTodo();
   alert(`Proyecto creado con ${analisis.poligonos.length} polígonos.`);
@@ -914,10 +896,11 @@ async function cargarGeoJSONProyectoMaster(proyecto){
     polygonMasterLayer=null;
   }
 
-  if(!proyecto?.poligonos_drive_url)return null;
+  const url=proyecto?.poligonos_url||proyecto?.poligonos_drive_url;
+  if(!url)return null;
 
   try{
-    const a=await descargarGeoJSONDrive(proyecto.poligonos_drive_url);
+    const a=await descargarGeoJSONPublico(url);
     polygonMasterLayer=L.geoJSON(a.geojson,{
       style:{
         color:'#facc15',
@@ -932,7 +915,7 @@ async function cargarGeoJSONProyectoMaster(proyecto){
     }).addTo(map);
     return polygonMasterLayer;
   }catch(e){
-    console.warn('No se pudo cargar GeoJSON de Drive en Master:',e);
+    console.warn('No se pudo cargar GeoJSON público en Master:',e);
     return null;
   }
 }
@@ -1528,3 +1511,4 @@ window.addEventListener('load',()=>{initMap();verificar()});
 </script>
 </body>
 </html>
+
