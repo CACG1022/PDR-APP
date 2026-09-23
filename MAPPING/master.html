@@ -113,6 +113,19 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 .geoOk{color:#86efac!important}
 .geoError{color:#fca5a5!important}
 
+
+.polyCheck.polyOccupied{
+  opacity:.62;
+  cursor:not-allowed!important;
+  background:rgba(239,68,68,.08)!important;
+  border-left:3px solid #ef4444!important;
+}
+.polyCheck.polyOccupied input{cursor:not-allowed!important}
+.polyOccupiedText{
+  color:#fca5a5!important;
+  font-weight:900!important;
+}
+
 </style>
 </head>
 <body>
@@ -636,23 +649,127 @@ async function obtenerPoligonosProyecto(proyectoId){
   return data||[];
 }
 
-function htmlChecksPoligonos(lista,seleccionados=new Set(),prefix='asigPoly'){
+function htmlChecksPoligonos(lista,seleccionados=new Set(),prefix='asigPoly',ocupacion=new Map()){
   if(!lista.length)return '<div class="hint">Este proyecto todavía no tiene polígonos activos.</div>';
+
+  const libres=lista.filter(p=>!ocupacion.has(String(p.id))).length;
+
   return `
     <label class="polyCheck" style="border-bottom:1px solid #475569">
       <input type="checkbox" onchange="toggleTodosChecksPoligonos('${prefix}',this.checked)">
-      <div><b>Seleccionar todos</b><div class="polyMeta">${lista.length} polígonos disponibles</div></div>
+      <div>
+        <b>Seleccionar todos los disponibles</b>
+        <div class="polyMeta">${libres} libres · ${lista.length-libres} asignados a otros técnicos</div>
+      </div>
     </label>`+
-    lista.map(p=>`
-      <label class="polyCheck">
-        <input type="checkbox" data-poly-prefix="${prefix}" value="${p.id}" ${seleccionados.has(String(p.id))?'checked':''}>
-        <div><b>${esc(p.codigo)}</b><div class="polyMeta">Feature #${Number(p.feature_index)+1}</div></div>
-      </label>
-    `).join('');
+    lista.map(p=>{
+      const id=String(p.id);
+      const ocupado=ocupacion.get(id);
+      const checked=seleccionados.has(id);
+      const bloqueado=!!ocupado && !checked;
+
+      return `
+        <label class="polyCheck ${bloqueado?'polyOccupied':''}">
+          <input
+            type="checkbox"
+            data-poly-prefix="${prefix}"
+            value="${p.id}"
+            ${checked?'checked':''}
+            ${bloqueado?'disabled':''}
+          >
+          <div>
+            <b>${esc(p.codigo)}</b>
+            <div class="polyMeta">
+              Feature #${Number(p.feature_index)+1}
+              ${bloqueado?` · <span class="polyOccupiedText">Asignado a ${esc(ocupado.tecnico_nombre||ocupado.tecnico_email||'otro técnico')}</span>`:''}
+            </div>
+          </div>
+        </label>
+      `;
+    }).join('');
 }
 
 function toggleTodosChecksPoligonos(prefix,checked){
-  document.querySelectorAll(`input[data-poly-prefix="${prefix}"]`).forEach(el=>el.checked=checked);
+  document.querySelectorAll(`input[data-poly-prefix="${prefix}"]:not(:disabled)`)
+    .forEach(el=>el.checked=checked);
+}
+
+function nombreTecnicoAsignacion(row){
+  const a=asignaciones.find(x=>String(x.asignacion_id)===String(row.asignacion_id));
+  if(a){
+    return {
+      tecnico_nombre:a.tecnico_nombre||a.tecnico_email||'otro técnico',
+      tecnico_email:a.tecnico_email||''
+    };
+  }
+
+  const u=usuarios.find(x=>String(x.id)===String(row.tecnico_id));
+  return {
+    tecnico_nombre:u?.nombre||u?.email||'otro técnico',
+    tecnico_email:u?.email||''
+  };
+}
+
+async function obtenerOcupacionPoligonos(proyectoId,excluirAsignacionId=''){
+  if(!proyectoId)return new Map();
+
+  let q=sb
+    .from('mapping_tecnico_poligonos')
+    .select('poligono_id,tecnico_id,asignacion_id')
+    .eq('proyecto_id',proyectoId);
+
+  const {data,error}=await q;
+  if(error){
+    console.warn('No se pudo consultar ocupación de polígonos:',error.message);
+    return new Map();
+  }
+
+  const mapa=new Map();
+
+  (data||[]).forEach(row=>{
+    if(
+      excluirAsignacionId &&
+      String(row.asignacion_id)===String(excluirAsignacionId)
+    )return;
+
+    const info=nombreTecnicoAsignacion(row);
+    mapa.set(String(row.poligono_id),{
+      ...row,
+      ...info
+    });
+  });
+
+  return mapa;
+}
+
+async function conflictosPoligonosSeleccionados(proyectoId,poligonoIds,excluirAsignacionId=''){
+  if(!poligonoIds?.length)return [];
+
+  const {data,error}=await sb
+    .from('mapping_tecnico_poligonos')
+    .select('poligono_id,tecnico_id,asignacion_id')
+    .eq('proyecto_id',proyectoId)
+    .in('poligono_id',poligonoIds);
+
+  if(error)throw error;
+
+  return (data||[])
+    .filter(row=>
+      !excluirAsignacionId ||
+      String(row.asignacion_id)!==String(excluirAsignacionId)
+    )
+    .map(row=>({
+      ...row,
+      ...nombreTecnicoAsignacion(row)
+    }));
+}
+
+function mensajeConflictosPoligonos(conflictos,poligonos){
+  const porId=new Map((poligonos||[]).map(p=>[String(p.id),p]));
+  return conflictos.map(c=>{
+    const p=porId.get(String(c.poligono_id));
+    return `• ${p?.codigo||'Polígono'} → ${c.tecnico_nombre||c.tecnico_email||'otro técnico'}`;
+  }).join('\n');
 }
 
 async function cargarPoligonosAsignacion(){
@@ -661,14 +778,17 @@ async function cargarPoligonosAsignacion(){
 
   const proyectoId=asigProyecto.value;
   const tecnicoId=asigTecnico.value;
+
   if(!proyectoId){
     box.innerHTML='<div class="hint">Selecciona un proyecto.</div>';
     return;
   }
 
-  box.innerHTML='<div class="hint">Cargando polígonos...</div>';
+  box.innerHTML='<div class="hint">Cargando polígonos y disponibilidad...</div>';
+
   const poligonos=await obtenerPoligonosProyecto(proyectoId);
   const seleccionados=new Set();
+  let asignacionActualId='';
 
   if(tecnicoId){
     const {data:asg}=await sb
@@ -679,15 +799,25 @@ async function cargarPoligonosAsignacion(){
       .maybeSingle();
 
     if(asg?.id){
+      asignacionActualId=asg.id;
+
       const {data:rows}=await sb
         .from('mapping_tecnico_poligonos')
         .select('poligono_id')
         .eq('asignacion_id',asg.id);
+
       (rows||[]).forEach(x=>seleccionados.add(String(x.poligono_id)));
     }
   }
 
-  box.innerHTML=htmlChecksPoligonos(poligonos,seleccionados,'asigPoly');
+  const ocupacion=await obtenerOcupacionPoligonos(proyectoId,asignacionActualId);
+
+  box.innerHTML=htmlChecksPoligonos(
+    poligonos,
+    seleccionados,
+    'asigPoly',
+    ocupacion
+  );
 }
 
 function poligonosSeleccionados(prefix){
@@ -769,14 +899,49 @@ function filtrarTecnicosPorProyecto(){
 async function asignarProyecto(){
   const proyecto_id=asigProyecto.value;
   const tecnico_id=asigTecnico.value;
-  if(!proyecto_id||!tecnico_id)return alert('Selecciona proyecto y técnico.');
+
+  if(!proyecto_id||!tecnico_id){
+    return alert('Selecciona proyecto y técnico.');
+  }
 
   const t=usuarios.find(u=>String(u.id)===String(tecnico_id));
   const disponibles=await obtenerPoligonosProyecto(proyecto_id);
   const seleccionados=poligonosSeleccionados('asigPoly');
 
   if(disponibles.length && !seleccionados.length){
-    return alert('Selecciona al menos un polígono para el técnico.');
+    return alert('Selecciona al menos un polígono libre para el técnico.');
+  }
+
+  // Averigua si este técnico ya tenía una asignación del mismo proyecto.
+  const {data:existente,error:errorExistente}=await sb
+    .from('mapping_proyecto_tecnicos')
+    .select('id')
+    .eq('proyecto_id',proyecto_id)
+    .eq('tecnico_id',tecnico_id)
+    .maybeSingle();
+
+  if(errorExistente)return alert(errorExistente.message);
+
+  // Regla dura: ningún polígono puede pertenecer simultáneamente
+  // a dos técnicos.
+  let conflictos=[];
+  try{
+    conflictos=await conflictosPoligonosSeleccionados(
+      proyecto_id,
+      seleccionados,
+      existente?.id||''
+    );
+  }catch(e){
+    return alert('No se pudo validar la disponibilidad de los polígonos: '+(e?.message||e));
+  }
+
+  if(conflictos.length){
+    return alert(
+      'No se puede realizar la asignación.\n\n'+
+      'Los siguientes polígonos ya están asignados a otro técnico:\n'+
+      mensajeConflictosPoligonos(conflictos,disponibles)+
+      '\n\nPrimero debes des-asignarlos del técnico actual y luego asignarlos al nuevo técnico.'
+    );
   }
 
   const hist=[{
@@ -806,7 +971,10 @@ async function asignarProyecto(){
     .from('mapping_tecnico_poligonos')
     .delete()
     .eq('asignacion_id',asg.id);
-  if(delError)return alert('Proyecto asignado, pero no se pudieron actualizar polígonos: '+delError.message);
+
+  if(delError){
+    return alert('Proyecto asignado, pero no se pudieron actualizar polígonos: '+delError.message);
+  }
 
   if(seleccionados.length){
     const filas=seleccionados.map(poligono_id=>({
@@ -815,12 +983,24 @@ async function asignarProyecto(){
       tecnico_id,
       poligono_id
     }));
-    const {error:polyError}=await sb.from('mapping_tecnico_poligonos').insert(filas);
-    if(polyError)return alert('Proyecto asignado, pero falló la asignación de polígonos: '+polyError.message);
+
+    const {error:polyError}=await sb
+      .from('mapping_tecnico_poligonos')
+      .insert(filas);
+
+    if(polyError){
+      return alert(
+        'Proyecto asignado, pero falló la asignación de polígonos: '+
+        polyError.message+
+        '\n\nVerifica que el polígono no haya sido asignado a otro técnico.'
+      );
+    }
   }
 
   await cargarAsignaciones();
   actualizarKpis();
+  await cargarPoligonosAsignacion();
+
   alert(`Proyecto asignado con ${seleccionados.length} polígono(s).`);
 }
 
@@ -835,10 +1015,15 @@ async function abrirEditarPoligonos(asignacionId){
   if(!a)return;
 
   polyAsigId.value=asignacionId;
-  polyAsigInfo.innerHTML=`<b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}`;
-  polyAsigChecks.innerHTML='<div class="hint">Cargando...</div>';
+  polyAsigInfo.innerHTML=
+    `<b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br>`+
+    `<b>Técnico:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}<br>`+
+    `<span style="color:#fbbf24">Para transferir un polígono a otro técnico, primero desmárcalo aquí y guarda. Después podrás asignarlo al otro técnico.</span>`;
+
+  polyAsigChecks.innerHTML='<div class="hint">Cargando disponibilidad...</div>';
 
   const poligonos=await obtenerPoligonosProyecto(a.proyecto_id);
+
   const {data,error}=await sb
     .from('mapping_tecnico_poligonos')
     .select('poligono_id')
@@ -850,7 +1035,15 @@ async function abrirEditarPoligonos(asignacionId){
   }
 
   const seleccionados=new Set((data||[]).map(x=>String(x.poligono_id)));
-  polyAsigChecks.innerHTML=htmlChecksPoligonos(poligonos,seleccionados,'editPoly');
+  const ocupacion=await obtenerOcupacionPoligonos(a.proyecto_id,asignacionId);
+
+  polyAsigChecks.innerHTML=htmlChecksPoligonos(
+    poligonos,
+    seleccionados,
+    'editPoly',
+    ocupacion
+  );
+
   poligonosAsignacionModal.classList.add('open');
 }
 
@@ -861,12 +1054,32 @@ async function guardarPoligonosAsignacion(){
 
   const seleccionados=poligonosSeleccionados('editPoly');
   const disponibles=await obtenerPoligonosProyecto(a.proyecto_id);
-  if(disponibles.length&&!seleccionados.length)return alert('Selecciona al menos un polígono.');
+
+  // Aquí SÍ se permite dejar 0 polígonos para poder liberar el último
+  // polígono antes de transferirlo a otro técnico.
+  let conflictos=[];
+  try{
+    conflictos=await conflictosPoligonosSeleccionados(
+      a.proyecto_id,
+      seleccionados,
+      asignacionId
+    );
+  }catch(e){
+    return alert('No se pudo validar la disponibilidad: '+(e?.message||e));
+  }
+
+  if(conflictos.length){
+    return alert(
+      'No se pueden guardar los cambios porque hay polígonos asignados a otro técnico:\n\n'+
+      mensajeConflictosPoligonos(conflictos,disponibles)
+    );
+  }
 
   const {error:delError}=await sb
     .from('mapping_tecnico_poligonos')
     .delete()
     .eq('asignacion_id',asignacionId);
+
   if(delError)return alert(delError.message);
 
   if(seleccionados.length){
@@ -876,20 +1089,102 @@ async function guardarPoligonosAsignacion(){
       tecnico_id:a.tecnico_id,
       poligono_id
     }));
-    const {error}=await sb.from('mapping_tecnico_poligonos').insert(filas);
-    if(error)return alert(error.message);
+
+    const {error}=await sb
+      .from('mapping_tecnico_poligonos')
+      .insert(filas);
+
+    if(error){
+      return alert(
+        'No se pudieron guardar los polígonos: '+error.message+
+        '\n\nSi otro técnico tomó uno de estos polígonos, actualiza la ventana y vuelve a intentarlo.'
+      );
+    }
   }
 
   poligonosAsignacionModal.classList.remove('open');
-  alert(`Polígonos actualizados: ${seleccionados.length}.`);
+  await cargarAsignaciones();
+  await cargarPoligonosAsignacion();
+
+  alert(
+    seleccionados.length
+      ? `Polígonos actualizados: ${seleccionados.length}.`
+      : 'Todos los polígonos fueron des-asignados de este técnico. Ahora están disponibles para otro técnico.'
+  );
 }
 
 function abrirReasignar(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;reasigId.value=id;reasigInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}`;const tecs=usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false);reasigTecnico.innerHTML='<option value="">Seleccione...</option>'+tecs.map(t=>`<option value="${t.id}" ${t.id===a.tecnico_id?'selected':''}>${esc(t.nombre||t.email)} · ${esc(t.email)}</option>`).join('');reasigObs.value='';const hist=Array.isArray(a.historial)?a.historial:[];reasigHistorial.innerHTML=hist.length?'<b>Historial reciente:</b><br>'+hist.slice(-4).map(h=>`• ${formatoFecha(h.fecha)} · ${esc(h.accion||h.evento||'')}`).join('<br>'):'Sin historial previo.';reasignarModal.classList.add('open')}
 function cerrarReasignar(){reasignarModal.classList.remove('open')}
 async function confirmarReasignacion(){const id=reasigId.value,a=asignaciones.find(x=>x.asignacion_id===id),nuevoId=reasigTecnico.value;if(!a||!nuevoId)return alert('Selecciona nuevo técnico.');if(nuevoId===a.tecnico_id)return alert('Ese técnico ya tiene esta asignación.');const nuevo=usuarios.find(u=>u.id===nuevoId);const choque=asignaciones.find(x=>x.proyecto_id===a.proyecto_id&&x.tecnico_id===nuevoId);if(choque)return alert('El técnico seleccionado ya está asignado a este proyecto.');if(!confirm(`¿Reasignar ${a.proyecto_nombre} de ${a.tecnico_nombre||a.tecnico_email} a ${nuevo?.nombre||nuevo?.email}?`))return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:'reasignado',evento:`Reasignado de ${a.tecnico_nombre||a.tecnico_email||'N/A'} a ${nuevo?.nombre||nuevo?.email}`,tecnico_anterior_id:a.tecnico_id,tecnico_anterior_email:a.tecnico_email,tecnico_nuevo_id:nuevoId,tecnico_nuevo_email:nuevo?.email,observacion:reasigObs.value.trim(),usuario_master:user.email};const {error}=await sb.from('mapping_proyecto_tecnicos').update({tecnico_id:nuevoId,tecnico_email:nuevo?.email,tecnico_nombre:nuevo?.nombre||nuevo?.email,estado_asignacion:'asignado',fecha_asignacion:new Date().toISOString(),fecha_finalizacion:null,historial:[...hist,evento]}).eq('id',id);if(error)return alert('Error reasignando: '+error.message);const {error:polyMoveError}=await sb.from('mapping_tecnico_poligonos').update({tecnico_id:nuevoId}).eq('asignacion_id',id);if(polyMoveError)return alert('La asignación cambió, pero no se pudieron transferir sus polígonos: '+polyMoveError.message);cerrarReasignar();await cargarAsignaciones();alert('Proyecto reasignado correctamente, conservando los polígonos asignados.')}
 function abrirHistorial(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;historialInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}<br><b>Estado:</b> ${estadoBadge(a.estado_asignacion)}`;const hist=Array.isArray(a.historial)?a.historial:[];const base=[{fecha:a.fecha_asignacion,accion:'asignación',evento:'Asignación registrada',tecnico:a.tecnico_nombre||a.tecnico_email}];const eventos=[...base,...hist].sort((x,y)=>new Date(x.fecha||0)-new Date(y.fecha||0));historialLista.innerHTML=eventos.length?eventos.map(h=>`<div class="historyItem"><small>${formatoFecha(h.fecha)}</small><b>${esc(h.accion||'Evento')}</b><div>${esc(h.evento||'')}</div>${h.tecnico?`<div><b>Técnico:</b> ${esc(h.tecnico)}</div>`:''}${h.observacion?`<div><b>Observación:</b> ${esc(h.observacion)}</div>`:''}${h.usuario_master?`<div><b>Master:</b> ${esc(h.usuario_master)}</div>`:''}</div>`).join(''):'<div class="hint">Sin historial.</div>';historialModal.classList.add('open')}
-async function eliminarAsignacion(id){if(!confirm('¿Quitar esta asignación? El proyecto y sus puntos NO se eliminarán.'))return;const {error}=await sb.from('mapping_proyecto_tecnicos').delete().eq('id',id);if(error)return alert(error.message);await cargarAsignaciones()}
+async function eliminarAsignacion(id){
+  if(!confirm('¿Quitar esta asignación? Los polígonos quedarán libres para otros técnicos. El proyecto y sus puntos NO se eliminarán.'))return;
+
+  const {error:polyError}=await sb
+    .from('mapping_tecnico_poligonos')
+    .delete()
+    .eq('asignacion_id',id);
+
+  if(polyError)return alert('No se pudieron liberar los polígonos: '+polyError.message);
+
+  const {error}=await sb
+    .from('mapping_proyecto_tecnicos')
+    .delete()
+    .eq('id',id);
+
+  if(error)return alert(error.message);
+
+  await cargarAsignaciones();
+  await cargarPoligonosAsignacion();
+}
 function verProyecto(id){fProyecto.value=id;cargarProyectoMapa()}
+
+function colorPoligonoPorNombre(nombre){
+  const n=String(nombre||'').trim().toUpperCase().replace(/\s+/g,'');
+  const colores={
+    'POLIGONO1':'#65F739',
+    'POLIGONO2':'#2D7DF5',
+    'POLIGONO3':'#F52D1B',
+    'POLIGONO4':'#F5DF1B',
+    'POLIGONO5':'#A87B22',
+    'POLIGONO6':'#B00AF7',
+    'POLIGONO7':'#0AD7F7'
+  };
+  return colores[n]||'#facc15';
+}
+
+
+function nombreExplicitoFeaturePoligonoMaster(feature){
+  const p=feature?.properties||{};
+  const candidatos=[
+    p.POLIGONO,p.poligono,p.Poligono,
+    p.NOMBRE,p.nombre,p.Nombre,
+    p.NAME,p.name,p.Name,
+    p.CODIGO,p.codigo,p.Codigo,
+    feature?.id
+  ];
+  const valor=candidatos.find(v=>
+    v!==null &&
+    v!==undefined &&
+    String(v).trim()!==''
+  );
+  return valor===undefined
+    ? ''
+    : normalizarCodigoPoligono(valor);
+}
+
+function codigoPoligonoFeatureMaster(feature,index=0){
+  const explicito=nombreExplicitoFeaturePoligonoMaster(feature);
+  if(explicito)return explicito;
+
+  const p=feature?.properties||{};
+  if(p.__codigo_mapping){
+    return normalizarCodigoPoligono(p.__codigo_mapping);
+  }
+
+  return normalizarCodigoPoligono(`POLIGONO${index+1}`);
+}
+
 async function cargarGeoJSONProyectoMaster(proyecto){
   if(polygonMasterLayer){
     try{map.removeLayer(polygonMasterLayer)}catch(_){}
@@ -900,19 +1195,73 @@ async function cargarGeoJSONProyectoMaster(proyecto){
   if(!url)return null;
 
   try{
-    const a=await descargarGeoJSONPublico(url);
-    polygonMasterLayer=L.geoJSON(a.geojson,{
-      style:{
-        color:'#facc15',
-        weight:3,
-        opacity:.95,
-        fillColor:'#facc15',
-        fillOpacity:.06
+    const [a,catalogo]=await Promise.all([
+      descargarGeoJSONPublico(url),
+      obtenerPoligonosProyecto(proyecto.id)
+    ]);
+
+    const porIndice=new Map(
+      (catalogo||[]).map(p=>[
+        Number(p.feature_index),
+        normalizarCodigoPoligono(p.codigo||p.nombre)
+      ])
+    );
+
+    const geojson={
+      ...a.geojson,
+      features:(a.geojson.features||[]).map((f,i)=>({
+        ...f,
+        properties:{
+          ...(f.properties||{}),
+          ...(porIndice.has(i)?{
+            __codigo_mapping:porIndice.get(i),
+            __feature_index_mapping:i
+          }:{})
+        }
+      }))
+    };
+
+    let __polyMasterIndex=0;
+    polygonMasterLayer=L.geoJSON(geojson,{
+      style:(feature)=>{
+        const nombre=codigoPoligonoFeatureMaster(feature,__polyMasterIndex);
+        const color=colorPoligonoPorNombre(nombre);
+        return {
+          color,
+          weight:3,
+          opacity:1,
+          fillColor:color,
+          fillOpacity:.10
+        };
       },
       onEachFeature:(f,l)=>{
-        try{l.bindTooltip(nombreFeaturePoligono(f,0),{sticky:true})}catch(_){}
+        try{
+          if(!['Polygon','MultiPolygon'].includes(f?.geometry?.type))return;
+          const nombre=codigoPoligonoFeatureMaster(f,__polyMasterIndex++);
+          const color=colorPoligonoPorNombre(nombre);
+
+          l.setStyle({
+            color,
+            weight:3,
+            opacity:1,
+            fillColor:color,
+            fillOpacity:.10
+          });
+
+          l.bindTooltip(nombre,{sticky:true});
+
+          l.on('tooltipopen',e=>{
+            const el=e.tooltip?.getElement?.();
+            if(el){
+              el.style.borderColor=color;
+              el.style.color=color;
+              el.style.fontWeight='900';
+            }
+          });
+        }catch(_){}
       }
     }).addTo(map);
+
     return polygonMasterLayer;
   }catch(e){
     console.warn('No se pudo cargar GeoJSON público en Master:',e);
