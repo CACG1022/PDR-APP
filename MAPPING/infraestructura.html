@@ -864,7 +864,7 @@ body.lightTheme .fueraPoligonoModal p{color:#334155!important}
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · conexiones desde el segundo elemento</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · CX=0 + campos fijos + fotos obligatorias</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -956,7 +956,7 @@ body.lightTheme .fueraPoligonoModal p{color:#334155!important}
     <button type="button" class="btn minimizarConexionesBtn" onclick="minimizarFormularioDesdeConexiones()">🗺️ Minimizar y ver mapa</button>
   </div>
   <div class="sectionBody">
-    <div class="hint">Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio y debe ser menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.</div>
+    <div class="hint">Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.</div>
     <div id="conexionesMismo"></div>
     <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button>
     <label>CONEXION A POSTE DE OTRO POLIGONO?</label>
@@ -1595,7 +1595,7 @@ function renderFotos(t){
   (photoDefs[t]||[]).forEach(([id,label])=>{
     photoGrid.insertAdjacentHTML('beforeend',`
       <div class="photoCard" id="photoCard_${id}">
-        <label>${label}</label>
+        <label>${label} <span class="req">*</span></label>
         <button class="btn blue" type="button" onclick="document.getElementById('file_${id}').click()">📷 Tomar/adjuntar foto</button>
         <input id="file_${id}" type="file" accept="image/*" capture="environment" style="display:none" onchange="cargarFoto('${id}',this)">
 
@@ -1625,6 +1625,12 @@ function cargarFoto(id,input){
     im.src=URL.createObjectURL(f);
     im.style.display='block';
   }
+
+  const card=document.getElementById('photoCard_'+id);
+  if(card){
+    card.classList.remove('photoRequiredMissing');
+    card.querySelector('.photoRequiredMsg')?.remove();
+  }
 }
 let conexionesVisibles=1;
 
@@ -1635,7 +1641,7 @@ function crearConexiones(){
       <div class="cxRow ${i>1?'cxRowHidden':''}" id="cxRow${i}" data-cx="${i}">
         <div>
           <label>CX${i}${i===1?' <span class="req">*</span>':''}</label>
-          <input id="CX${i}" type="number" min="0" value="${i===1?'':'0'}" onchange="precalcularCX(${i})">
+          <input id="CX${i}" type="number" min="0" value="${i===1?'':'0'}" placeholder="0 = sin conexión" onchange="precalcularCX(${i})">
         </div>
         <div>
           <label>¿Es cruce telemático?</label>
@@ -1876,9 +1882,10 @@ function campoEstaVacio(id){
   const el=document.getElementById(id);
   if(!el)return false;
 
-  // Los CX visibles deben ser mayores que cero.
+  // En CX, el valor 0 es válido y significa "sin conexión".
+  // Solo se considera faltante cuando el campo está realmente vacío.
   if(/^CX[1-4]$/.test(id)){
-    return Number(el.value||0)<=0;
+    return String(el.value??'').trim()==='';
   }
 
   return String(el.value??'').trim()==='';
@@ -2518,9 +2525,17 @@ function validar(){
     // Desde el segundo elemento, CX1 es obligatorio.
     // CX2-CX4 son obligatorios únicamente si el técnico los ha mostrado.
     for(let i=1;i<=conexionesVisibles;i++){
-      const x=Number(val('CX'+i)||0);
-      if(!x || x<=0)falt.push(`CX${i}`);
-      else if(x>=cons){
+      const raw=String(val('CX'+i)??'').trim();
+
+      // Vacío sí es inválido, pero 0 es válido = "sin conexión".
+      if(raw===''){
+        falt.push(`CX${i}`);
+        continue;
+      }
+
+      const x=Number(raw);
+
+      if(!Number.isFinite(x) || x<0){
         actualizarResaltadoObligatorios();
         const cxErr=document.getElementById(`CX${i}`);
         if(cxErr){
@@ -2528,7 +2543,20 @@ function validar(){
           cxErr.classList.add('campoObligatorioFaltante');
         }
         enfocarPrimerObligatorioFaltante([`CX${i}`]);
-        alert(`CX${i} debe ser menor que CONSECUTIV (${cons}).`);
+        alert(`CX${i} debe ser 0 o un consecutivo anterior válido.`);
+        return false;
+      }
+
+      // 0 = sin conexión. Solo los valores > 0 deben ser menores al consecutivo actual.
+      if(x>0 && x>=cons){
+        actualizarResaltadoObligatorios();
+        const cxErr=document.getElementById(`CX${i}`);
+        if(cxErr){
+          cxErr.classList.remove('campoObligatorioPendiente','campoObligatorioDiligenciado');
+          cxErr.classList.add('campoObligatorioFaltante');
+        }
+        enfocarPrimerObligatorioFaltante([`CX${i}`]);
+        alert(`CX${i} debe ser 0 (sin conexión) o menor que CONSECUTIV (${cons}).`);
         return false;
       }
     }
@@ -3890,15 +3918,18 @@ const PIN_STORAGE_KEY='mapping_sitesurvey_campos_fijos_v1';
 const CAMPOS_FIJABLES=[
   {key:'TIPO',id:'TIPO'},
   {key:'CIUDAD',id:'CIUDAD'},
+  {key:'BARRIO',id:'BARRIO'},
   {key:'TECNICO',id:'TECNICO'},
   {key:'PROPIETARI',id:'PROPIETARI'},
   {key:'ALTURA',id:'ALTURA'},
+  {key:'ROTURA',id:'ROTURA'},
   {key:'MATERIAL',id:'MATERIAL'},
   {key:'TENSION',id:'TENSION'},
   {key:'ESTADO',id:'ESTADO'},
   {key:'ESTADO',id:'ESTADO_CAM'},
   {key:'TIPOCAMARA',id:'TIPOCAMARA'},
   {key:'TIPO_POSTE',id:'TIPO_POSTE'},
+  {key:'CXOTROPOL',id:'CXOTROPOL'},
   {key:'PROYECTO',id:'PROYECTO',locked:true}
 ];
 
@@ -4021,13 +4052,16 @@ function aplicarCamposFijos(){
     cambiarTipo();
   }
 
-  for(const key of ['CIUDAD','TECNICO','PROPIETARI','ALTURA','MATERIAL','TENSION','TIPOCAMARA','TIPO_POSTE']){
+  for(const key of ['CIUDAD','BARRIO','TECNICO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','TIPOCAMARA','TIPO_POSTE','CXOTROPOL']){
     const p=pins[key];
     if(!p?.checked)continue;
     const item=CAMPOS_FIJABLES.find(x=>x.key===key);
     const el=document.getElementById(item?.id);
     if(el)el.value=p.value??'';
   }
+
+  // Si se fijó la conexión a otro polígono, actualiza también su panel dependiente.
+  if(pins.CXOTROPOL?.checked)toggleOtroPol();
 
   if(pins.ESTADO?.checked){
     const el=elementoPinActual('ESTADO');
@@ -4303,9 +4337,110 @@ function prepararRegistroLocalBase(){
   const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toISOString().slice(0,10),HORA:ahora.toLocaleTimeString('es-CO'),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
   for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=val(`CX${i}POL`)||'N/A';r[`CX${i}CONSE`]=num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=num(`DISTODO${i+4}`)}return r;
 }
+
+function limpiarMarcasFotosObligatorias(){
+  document.querySelectorAll('.photoCard.photoRequiredMissing').forEach(card=>{
+    card.classList.remove('photoRequiredMissing');
+    card.querySelector('.photoRequiredMsg')?.remove();
+  });
+}
+
+function marcarFotoObligatoriaFaltante(tipo){
+  const card=document.getElementById('photoCard_'+tipo);
+  if(!card)return;
+
+  card.classList.add('photoRequiredMissing');
+
+  if(!card.querySelector('.photoRequiredMsg')){
+    const msg=document.createElement('span');
+    msg.className='photoRequiredMsg';
+    msg.textContent='⚠ Fotografía obligatoria pendiente';
+    card.appendChild(msg);
+  }
+}
+
+async function validarFotosObligatorias(){
+  limpiarMarcasFotosObligatorias();
+
+  const tipo=String(TIPO?.value||'');
+  const requeridas=(photoDefs[tipo]||[]).map(([id])=>id);
+
+  if(!requeridas.length)return true;
+
+  const presentes=new Set();
+
+  // Fotografías seleccionadas/capturadas en el formulario actual.
+  for(const [id,valor] of Object.entries(photos||{})){
+    if(
+      valor instanceof Blob ||
+      valor?.blob instanceof Blob ||
+      (typeof valor==='string' && valor.startsWith('data:image/'))
+    ){
+      presentes.add(id);
+    }
+  }
+
+  // En edición, también cuentan las fotos ya guardadas localmente.
+  const actual=editingId?registros.find(r=>r.id===editingId):null;
+
+  if(actual){
+    try{
+      const locales=await obtenerFotosIDB(actual.offline_id||actual.id);
+      for(const f of locales||[]){
+        if(f?.tipo_foto)presentes.add(f.tipo_foto);
+      }
+    }catch(e){
+      console.warn('No se pudieron comprobar fotos locales obligatorias:',e);
+    }
+
+    // También cuentan las referencias remotas que ya fueron cargadas en el registro.
+    for(const [id,f] of Object.entries(actual.fotos_remotas||{})){
+      if(f?.url_foto || f?.ruta || f?.remoto)presentes.add(id);
+    }
+
+    // Comprobación directa en Supabase por seguridad.
+    if(actual.supabase_id){
+      try{
+        const remotas=await obtenerFotosRemotasSupabase(actual.supabase_id);
+        for(const f of remotas||[]){
+          if(f?.tipo_foto)presentes.add(f.tipo_foto);
+        }
+      }catch(e){
+        console.warn('No se pudieron comprobar fotos remotas obligatorias:',e);
+      }
+    }
+  }
+
+  const faltantes=requeridas.filter(id=>!presentes.has(id));
+
+  if(!faltantes.length)return true;
+
+  faltantes.forEach(marcarFotoObligatoriaFaltante);
+
+  const primera=document.getElementById('photoCard_'+faltantes[0]);
+  if(primera){
+    primera.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  const nombres=faltantes.map(id=>{
+    const def=(photoDefs[tipo]||[]).find(([x])=>x===id);
+    return def?.[1]||id;
+  });
+
+  alert(
+    'Faltan fotografías obligatorias. Debes adjuntar todas las fotos solicitadas antes de guardar:\\n\\n• '+
+    nombres.join('\\n• ')
+  );
+
+  return false;
+}
+
 guardarPunto=async function(){
+  // Todas las fotografías visibles para el tipo de elemento son obligatorias.
+  if(!(await validarFotosObligatorias()))return;
+
   // Si un campo está fijado, conserva el último valor diligenciado.
-  for(const key of ['TIPO','CIUDAD','TECNICO','PROPIETARI','ALTURA','MATERIAL','TENSION','ESTADO','TIPOCAMARA','TIPO_POSTE']){
+  for(const key of ['TIPO','CIUDAD','BARRIO','TECNICO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','ESTADO','TIPOCAMARA','TIPO_POSTE','CXOTROPOL']){
     actualizarValorPin(key);
   }
   let r=prepararRegistroLocalBase();
@@ -5553,6 +5688,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
+
 
 
 
