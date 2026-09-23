@@ -864,7 +864,7 @@ body.lightTheme .fueraPoligonoModal p{color:#334155!important}
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · validación geométrica estricta</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · conexiones desde el segundo elemento</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -950,13 +950,13 @@ body.lightTheme .fueraPoligonoModal p{color:#334155!important}
 <div><label>CONFIGURACION DE DUCTOS <span class="req">*</span></label><input id="CONF_DUCTO" placeholder="Ej: 4x4;2x2;"></div><div><label>DUCTO ELECTRICO <span class="req">*</span></label><input id="DUCTO_ELEC" placeholder="Sin guiones"></div><div><label>DUCT TELCO <span class="req">*</span></label><input id="DUCT_TELCO" placeholder="Sin guiones"></div><div><label>DUCTOS LIBRES <span class="req">*</span></label><input id="DUCT_LIBRE" placeholder="Sin guiones"></div><div><label>DUCTO A UTILIZAR <span class="req">*</span></label><input id="DUCT_UTIL" placeholder="Sin guiones"></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO_CAM"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
 </div></div></div>
 
-<div class="section conexionesSection">
+<div class="section conexionesSection" id="secConexiones">
   <div class="conexionesStickyHead">
     <h3>3. Conexiones</h3>
     <button type="button" class="btn minimizarConexionesBtn" onclick="minimizarFormularioDesdeConexiones()">🗺️ Minimizar y ver mapa</button>
   </div>
   <div class="sectionBody">
-    <div class="hint">CX1 se muestra inicialmente. CX2, CX3 y CX4 permanecen ocultos. Cada vez que pulses <b>+ Agregar otra conexión</b> aparecerá una fila completa con CX, ¿Es cruce telemático? y Distancia odómetro. Las filas ocultas permanecen en 0. Puedes minimizar el formulario desde esta sección para revisar el mapa sin perder lo diligenciado.</div>
+    <div class="hint">Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio y debe ser menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.</div>
     <div id="conexionesMismo"></div>
     <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button>
     <label>CONEXION A POSTE DE OTRO POLIGONO?</label>
@@ -1770,7 +1770,60 @@ async function precalcularCX(i){
   }
 }
 
+
+function esPrimerElementoDelPoligono(){
+  return Number(CONSECUTIV?.value||0)===1;
+}
+
+function limpiarConexionesPrimerElemento(){
+  for(let i=1;i<=4;i++){
+    const cx=document.getElementById(`CX${i}`);
+    const tel=document.getElementById(`TELCX${i}`);
+    const dist=document.getElementById(`DISTODO${i}`);
+    if(cx)cx.value='0';
+    if(tel)tel.value='0';
+    if(dist)dist.value='0';
+
+    window[`__LATCX${i}`]=null;
+    window[`__LONGTCX${i}`]=null;
+  }
+
+  if(CXOTROPOL){
+    CXOTROPOL.value='NO';
+    toggleOtroPol();
+  }
+}
+
+function actualizarVisibilidadSeccionConexiones(){
+  const sec=document.getElementById('secConexiones');
+  if(!sec)return;
+
+  const cons=Number(CONSECUTIV?.value||0);
+  const mostrar=Number.isFinite(cons) && cons>=2;
+
+  sec.style.display=mostrar?'':'none';
+  sec.classList.toggle('hidden',!mostrar);
+
+  if(!mostrar){
+    conexionesVisibles=1;
+    limpiarConexionesPrimerElemento();
+    setNumeroConexiones(1,true);
+  }else if(!editingId){
+    // Para un elemento nuevo >= 2 siempre arranca únicamente con CX1 visible.
+    setNumeroConexiones(1,true);
+  }
+
+  actualizarResaltadoObligatorios();
+}
+
 function ajustarConexionesEdicion(r){
+  if(Number(r?.CONSECUTIV||0)<=1){
+    conexionesVisibles=1;
+    limpiarConexionesPrimerElemento();
+    actualizarVisibilidadSeccionConexiones();
+    return;
+  }
+
   let max=1;
   for(let i=2;i<=4;i++){
     if(Number(r?.[`CX${i}`]||0)>0 || Number(r?.[`TELCX${i}`]||0)>0 || Number(r?.[`DISTODO${i}`]||0)>0)max=i;
@@ -1785,9 +1838,11 @@ function ajustarConexionesEdicion(r){
     if(tel)tel.value=String(r?.[`TELCX${i}`] ?? 0);
     if(dist)dist.value=r?.[`DISTODO${i}`] ?? 0;
   }
+
+  actualizarVisibilidadSeccionConexiones();
 }
 function toggleOtroPol(){otroPol.classList.toggle('hidden',CXOTROPOL.value!=='SI')}
-function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;}
+function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();}
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
 
 function obtenerCamposObligatoriosActivos(){
@@ -1808,8 +1863,11 @@ function obtenerCamposObligatoriosActivos(){
     );
   }
 
-  // CX1 siempre es obligatorio. CX2-CX4 solamente cuando están visibles.
-  for(let i=1;i<=conexionesVisibles;i++)ids.push(`CX${i}`);
+  // En el primer elemento del polígono no existen conexiones previas.
+  // A partir del segundo, CX1 es obligatorio y CX2-CX4 solo si están visibles.
+  if(Number(CONSECUTIV?.value||0)>=2){
+    for(let i=1;i<=conexionesVisibles;i++)ids.push(`CX${i}`);
+  }
 
   return [...new Set(ids)];
 }
@@ -2452,31 +2510,38 @@ function validar(){
 
   const cons=Number(CONSECUTIV.value);
 
-  // CX1 siempre es obligatorio. CX2-CX4 son obligatorios únicamente al mostrarlos.
-  for(let i=1;i<=conexionesVisibles;i++){
-    const x=Number(val('CX'+i)||0);
-    if(!x || x<=0)falt.push(`CX${i}`);
-    else if(x>=cons){
-      actualizarResaltadoObligatorios();
-      const cxErr=document.getElementById(`CX${i}`);
-      if(cxErr){
-        cxErr.classList.remove('campoObligatorioPendiente','campoObligatorioDiligenciado');
-        cxErr.classList.add('campoObligatorioFaltante');
+  if(cons<=1){
+    // Primer elemento del polígono: no puede tener CX porque no existe
+    // ningún consecutivo anterior al cual conectarse.
+    limpiarConexionesPrimerElemento();
+  }else{
+    // Desde el segundo elemento, CX1 es obligatorio.
+    // CX2-CX4 son obligatorios únicamente si el técnico los ha mostrado.
+    for(let i=1;i<=conexionesVisibles;i++){
+      const x=Number(val('CX'+i)||0);
+      if(!x || x<=0)falt.push(`CX${i}`);
+      else if(x>=cons){
+        actualizarResaltadoObligatorios();
+        const cxErr=document.getElementById(`CX${i}`);
+        if(cxErr){
+          cxErr.classList.remove('campoObligatorioPendiente','campoObligatorioDiligenciado');
+          cxErr.classList.add('campoObligatorioFaltante');
+        }
+        enfocarPrimerObligatorioFaltante([`CX${i}`]);
+        alert(`CX${i} debe ser menor que CONSECUTIV (${cons}).`);
+        return false;
       }
-      enfocarPrimerObligatorioFaltante([`CX${i}`]);
-      alert(`CX${i} debe ser menor que CONSECUTIV (${cons}).`);
-      return false;
     }
-  }
 
-  // Los CX que continúan ocultos se mantienen en 0.
-  for(let i=conexionesVisibles+1;i<=4;i++){
-    const cx=document.getElementById(`CX${i}`);
-    const tel=document.getElementById(`TELCX${i}`);
-    const dist=document.getElementById(`DISTODO${i}`);
-    if(cx)cx.value='0';
-    if(tel)tel.value='0';
-    if(dist)dist.value='0';
+    // Los CX que continúan ocultos se mantienen en 0.
+    for(let i=conexionesVisibles+1;i<=4;i++){
+      const cx=document.getElementById(`CX${i}`);
+      const tel=document.getElementById(`TELCX${i}`);
+      const dist=document.getElementById(`DISTODO${i}`);
+      if(cx)cx.value='0';
+      if(tel)tel.value='0';
+      if(dist)dist.value='0';
+    }
   }
 
   if(CXOTROPOL.value==='SI'){
@@ -4132,7 +4197,7 @@ abrirFormulario=function(){
   llevarFormularioAlInicio();
   setTimeout(actualizarResaltadoObligatorios,100);
 }
-recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`}
+recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();}
 
 
 async function resolverCoordenadasCX(poligono, consecutivo){
