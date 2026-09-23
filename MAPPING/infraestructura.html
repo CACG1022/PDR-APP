@@ -864,7 +864,7 @@ body.lightTheme .fueraPoligonoModal p{color:#334155!important}
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · CX=0 + campos fijos + fotos obligatorias</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · bloqueo total sin proyecto</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -903,6 +903,21 @@ body.lightTheme .fueraPoligonoModal p{color:#334155!important}
     <div class="authMsg" id="loginMsg">Inicia sesión para ver los proyectos que te han asignado.</div>
   </div>
 </div>
+
+<div id="sinProyectoLock" class="sinProyectoLock">
+  <div class="sinProyectoLockCard">
+    <div class="sinProyectoLockIcon">🔒</div>
+    <h2>Sin proyecto asignado</h2>
+    <p>
+      Tu usuario no tiene ningún proyecto activo asignado.
+      La aplicación permanecerá bloqueada hasta que el Master te asigne un proyecto.
+    </p>
+    <div id="sinProyectoLockUsuario" class="hint"></div>
+    <button class="btn blue" type="button" onclick="cargarProyectosAsignados()">⟳ Verificar asignaciones</button>
+    <button class="btn gray" type="button" onclick="logoutMapping()">⏻ Cerrar sesión</button>
+  </div>
+</div>
+
 <div class="sideMenu" id="sideMenu">
   <button onclick="abrirPanelProyectos();toggleSideMenu(false)">👷 Mis proyectos</button>
   <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
@@ -4100,32 +4115,181 @@ async function cargarPerfilMapping(){
 }
 async function cargarProyectosAsignados(){
   if(!mappingUser)return;
-  const {data,error}=await mappingSb.from('mapping_proyecto_tecnicos').select('*,mapping_proyectos(*,mapping_empresas(*))').eq('tecnico_id',mappingUser.id).order('fecha_asignacion',{ascending:false});
-  if(error){alert('Error cargando proyectos: '+error.message);return}
-  proyectosAsignados=(data||[]).filter(a=>['asignado','en_proceso','finalizado'].includes(String(a.estado_asignacion||'').toLowerCase()));
-  pintarProyectosAsignados();
-  if(proyectoActivo){
-    const a=proyectosAsignados.find(x=>String(x.proyecto_id)===String(proyectoActivo.proyecto_id));
-    if(a){proyectoActivo={...a,...a.mapping_proyectos,empresa:a.mapping_proyectos?.mapping_empresas||null,proyecto_id:a.proyecto_id,asignacion_id:a.id};localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));await cargarPoligonosAsignadosTecnico();await cargarPuntosSupabase(false);ubicarEnUltimoElementoRegistrado();return}
-  }
-  if(proyectosAsignados.length===1)await seleccionarProyecto(proyectosAsignados[0].id);
-  else{bloquearSinProyecto();if(proyectosAsignados.length)abrirPanelProyectos()}
-}
-function pintarProyectosAsignados(){
-  const c=document.getElementById('projectList');if(!c)return;
-  if(!proyectosAsignados.length){c.innerHTML='<div class="hint">No tienes proyectos asignados.</div>';return}
-  c.innerHTML=proyectosAsignados.map(a=>{const p=a.mapping_proyectos||{};const act=proyectoActivo&&String(proyectoActivo.proyecto_id)===String(a.proyecto_id);return `<div class="projectCard ${act?'active':''}"><small style="color:#38bdf8;font-weight:800">${esc(p.mapping_empresas?.nombre||p.empresa_nombre||'SIN EMPRESA')}</small><br><b>${esc(p.codigo||'SIN CÓDIGO')}</b><br>${esc(p.nombre||'Proyecto')}<br><small>${esc(p.ciudad||'')} · ${esc(a.estado_asignacion||'')}</small><button onclick="seleccionarProyecto('${a.id}')">${act?'Proyecto activo':'Trabajar este proyecto'}</button></div>`}).join('')
-}
-async function seleccionarProyecto(asignacionId){
-  const a=proyectosAsignados.find(x=>String(x.id)===String(asignacionId));if(!a)return;
-  const p=a.mapping_proyectos||{};proyectoActivo={...a,...p,empresa:p.mapping_empresas||null,proyecto_id:a.proyecto_id,asignacion_id:a.id};localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));
-  if(PROYECTO)PROYECTO.value=p.nombre||p.codigo||'';if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
-  await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'en_proceso',fecha_inicio:a.fecha_inicio||new Date().toISOString()}).eq('id',a.id);
-  cerrarPanelProyectos();desbloquearProyecto();sincronizarChecksPin();await cargarPoligonosAsignadosTecnico();await cargarPuntosSupabase();ubicarEnUltimoElementoRegistrado();actualizarEstadoSync();
-}
-function bloquearSinProyecto(){const b=document.getElementById('fabAgregar');if(b)b.classList.add('disabledMapControl');actualizarEstadoSync()}
-function desbloquearProyecto(){const b=document.getElementById('fabAgregar');if(b)b.classList.remove('disabledMapControl')}
 
+  const {data,error}=await mappingSb
+    .from('mapping_proyecto_tecnicos')
+    .select('*,mapping_proyectos(*,mapping_empresas(*))')
+    .eq('tecnico_id',mappingUser.id)
+    .order('fecha_asignacion',{ascending:false});
+
+  if(error){
+    alert('Error cargando proyectos: '+error.message);
+    bloquearSinProyecto('No fue posible verificar tus asignaciones.');
+    return;
+  }
+
+  // Solo estas asignaciones habilitan trabajo.
+  // Una asignación finalizada no permite modificar ni registrar.
+  proyectosAsignados=(data||[]).filter(a=>
+    ['asignado','en_proceso'].includes(
+      String(a.estado_asignacion||'').toLowerCase()
+    )
+  );
+
+  pintarProyectosAsignados();
+
+  if(!proyectosAsignados.length){
+    proyectoActivo=null;
+    poligonosAsignados=[];
+    poligonosAsignadosSet=new Set();
+    limpiarCapaPoligonos();
+    localStorage.removeItem('mapping_proyecto_activo_v1');
+    bloquearSinProyecto();
+    return;
+  }
+
+  // Valida que el proyecto guardado en caché siga realmente asignado.
+  if(proyectoActivo){
+    const a=proyectosAsignados.find(x=>
+      String(x.proyecto_id)===String(proyectoActivo.proyecto_id)
+    );
+
+    if(a){
+      proyectoActivo={
+        ...a,
+        ...a.mapping_proyectos,
+        empresa:a.mapping_proyectos?.mapping_empresas||null,
+        proyecto_id:a.proyecto_id,
+        asignacion_id:a.id
+      };
+
+      localStorage.setItem(
+        'mapping_proyecto_activo_v1',
+        JSON.stringify(proyectoActivo)
+      );
+
+      desbloquearProyecto();
+      await cargarPoligonosAsignadosTecnico();
+      await cargarPuntosSupabase(false);
+      ubicarEnUltimoElementoRegistrado();
+      actualizarEstadoSync();
+      return;
+    }
+
+    proyectoActivo=null;
+    localStorage.removeItem('mapping_proyecto_activo_v1');
+  }
+
+  if(proyectosAsignados.length===1){
+    await seleccionarProyecto(proyectosAsignados[0].id);
+  }else{
+    desbloquearProyecto();
+    abrirPanelProyectos();
+  }
+}
+
+function pintarProyectosAsignados(){
+  const c=document.getElementById('projectList');
+  if(!c)return;
+
+  if(!proyectosAsignados.length){
+    c.innerHTML='<div class="hint">No tienes proyectos activos asignados.</div>';
+    return;
+  }
+
+  c.innerHTML=proyectosAsignados.map(a=>{
+    const p=a.mapping_proyectos||{};
+    const act=proyectoActivo &&
+      String(proyectoActivo.proyecto_id)===String(a.proyecto_id);
+
+    return `<div class="projectCard ${act?'active':''}">
+      <small style="color:#38bdf8;font-weight:800">${esc(p.mapping_empresas?.nombre||p.empresa_nombre||'SIN EMPRESA')}</small><br>
+      <b>${esc(p.codigo||'SIN CÓDIGO')}</b><br>
+      ${esc(p.nombre||'Proyecto')}<br>
+      <small>${esc(p.ciudad||'')} · ${esc(a.estado_asignacion||'')}</small>
+      <button onclick="seleccionarProyecto('${a.id}')">${act?'Proyecto activo':'Trabajar este proyecto'}</button>
+    </div>`;
+  }).join('');
+}
+
+async function seleccionarProyecto(asignacionId){
+  const a=proyectosAsignados.find(x=>String(x.id)===String(asignacionId));
+
+  if(!a){
+    bloquearSinProyecto('La asignación seleccionada ya no está disponible.');
+    return;
+  }
+
+  const p=a.mapping_proyectos||{};
+
+  proyectoActivo={
+    ...a,
+    ...p,
+    empresa:p.mapping_empresas||null,
+    proyecto_id:a.proyecto_id,
+    asignacion_id:a.id
+  };
+
+  localStorage.setItem(
+    'mapping_proyecto_activo_v1',
+    JSON.stringify(proyectoActivo)
+  );
+
+  if(PROYECTO)PROYECTO.value=p.nombre||p.codigo||'';
+  if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;
+  if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
+
+  await mappingSb
+    .from('mapping_proyecto_tecnicos')
+    .update({
+      estado_asignacion:'en_proceso',
+      fecha_inicio:a.fecha_inicio||new Date().toISOString()
+    })
+    .eq('id',a.id);
+
+  cerrarPanelProyectos();
+  desbloquearProyecto();
+  sincronizarChecksPin();
+  await cargarPoligonosAsignadosTecnico();
+  await cargarPuntosSupabase();
+  ubicarEnUltimoElementoRegistrado();
+  actualizarEstadoSync();
+}
+
+function bloquearSinProyecto(mensaje=''){
+  proyectoActivo=null;
+  localStorage.removeItem('mapping_proyecto_activo_v1');
+
+  const lock=document.getElementById('sinProyectoLock');
+  const userInfo=document.getElementById('sinProyectoLockUsuario');
+
+  if(userInfo){
+    userInfo.innerHTML=
+      `<b>${esc(mappingProfile?.nombre||mappingUser?.email||'Técnico')}</b><br>`+
+      `${esc(mappingUser?.email||'')}`+
+      (mensaje?`<br><span style="color:#fca5a5">${esc(mensaje)}</span>`:'');
+  }
+
+  if(lock)lock.classList.add('open');
+
+  try{cerrarFormulario()}catch(_){}
+  try{cerrarRegistros()}catch(_){}
+  try{cerrarPanelProyectos()}catch(_){}
+  try{toggleSideMenu(false)}catch(_){}
+
+  const b=document.getElementById('fabAgregar');
+  if(b)b.classList.add('disabledMapControl');
+
+  actualizarEstadoSync();
+}
+
+function desbloquearProyecto(){
+  const lock=document.getElementById('sinProyectoLock');
+  if(lock)lock.classList.remove('open');
+
+  const b=document.getElementById('fabAgregar');
+  if(b)b.classList.remove('disabledMapControl');
+}
 
 function abrirAvisoFueraPoligono(lat,lon){
   const nombres=poligonosAsignados.map(p=>p.codigo).join(', ')||'ninguno';
@@ -4158,7 +4322,18 @@ function coordenadaDentroDePoligonoAsignado(lat,lon){
 
 const _abrirFormularioBase=abrirFormulario;
 abrirFormulario=function(){
-  if(!proyectoActivo){abrirPanelProyectos();return}
+  if(!proyectoActivo){
+    bloquearSinProyecto('Debes tener un proyecto activo asignado para registrar elementos.');
+    return;
+  }
+
+  if(
+    (proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url) &&
+    !poligonosAsignados.length
+  ){
+    alert('Este proyecto no tiene polígonos asignados a tu usuario. Solicita al Master que te asigne un polígono.');
+    return;
+  }
 
   if(formularioMinimizado){
     reanudarFormulario();
@@ -4986,7 +5161,11 @@ async function sincronizarPendientes(){
   }
   alert(`Sincronización terminada.\nEnviados: ${ok}\nCon error: ${fail}`);
 }
-async function reenviarTodo(){if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
+async function reenviarTodo(){
+  if(!proyectoActivo){
+    bloquearSinProyecto('No hay un proyecto activo asignado.');
+    return;
+  }if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
 function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,_tecnico_id:e.tecnico_id,_tecnico_email:e.tecnico_email,_tecnico_nombre:e.tecnico_nombre,_created_at:e.created_at||null,fecha_captura_app:q.fecha_captura_app||e.fecha_captura_app||e.created_at||null,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
 
 async function reconciliarEstadoLocalConNube(local,remoto){
@@ -5350,7 +5529,11 @@ eliminarPunto=async function(id){
 }
 exportarJSON=function(){const arr=registrosProyectoActual();download(JSON.stringify({proyecto:proyectoActivo,capa:'AGREGAR2_WEB',crs:'EPSG:4326',registros:arr},null,2),`${proyectoActivo?.codigo||'mapping'}_AGREGAR2.json`,'application/json')}
 exportarGeoJSON=function(){const arr=registrosProyectoActual();const gj={type:'FeatureCollection',name:proyectoActivo?.codigo||'AGREGAR2_WEB',features:arr.map(r=>{const p={...r};delete p.geometry;delete p.fotos;return {type:'Feature',geometry:r.geometry||{type:'Point',coordinates:[r.LONGITUDE,r.LATITUDE]},properties:p}})};download(JSON.stringify(gj,null,2),`${proyectoActivo?.codigo||'mapping'}.geojson`,'application/geo+json')}
-async function finalizarAsignacion(){if(!proyectoActivo)return;if(registrosProyectoActual().some(r=>r.sync_status!=='enviado')){alert('Primero envía todos los datos pendientes.');return}if(!confirm('¿Finalizar tu asignación en este proyecto?'))return;const {error}=await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'finalizado',fecha_finalizacion:new Date().toISOString()}).eq('id',proyectoActivo.asignacion_id);if(error){alert(error.message);return}alert('Asignación finalizada.');proyectoActivo=null;localStorage.removeItem('mapping_proyecto_activo_v1');await cargarProyectosAsignados()}
+async function finalizarAsignacion(){
+  if(!proyectoActivo){
+    bloquearSinProyecto('No hay un proyecto activo asignado.');
+    return;
+  }if(!proyectoActivo)return;if(registrosProyectoActual().some(r=>r.sync_status!=='enviado')){alert('Primero envía todos los datos pendientes.');return}if(!confirm('¿Finalizar tu asignación en este proyecto?'))return;const {error}=await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'finalizado',fecha_finalizacion:new Date().toISOString()}).eq('id',proyectoActivo.asignacion_id);if(error){alert(error.message);return}alert('Asignación finalizada.');proyectoActivo=null;localStorage.removeItem('mapping_proyecto_activo_v1');await cargarProyectosAsignados()}
 window.addEventListener('online',actualizarEstadoSync);window.addEventListener('offline',actualizarEstadoSync);window.addEventListener('load',async()=>{
   try{await migrarFotosLegacyLocalStorage()}catch(e){console.warn('Migración de fotos antiguas:',e)}
 
