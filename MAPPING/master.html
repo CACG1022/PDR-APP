@@ -1,1 +1,1530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Master Mapping & Site Survey - Dashboard Avances V8</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#06101d;--panel:#0d1b2a;--card:#13263a;--line:#29415d;--text:#f8fafc;--muted:#94a3b8;--teal:#12b8ae;--blue:#38bdf8;--warn:#f59e0b;--danger:#ef4444;--green:#22c55e;--purple:#8b5cf6}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}button,input,select,textarea{font:inherit}button{cursor:pointer}
+header{height:62px;background:#07111f;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:8px 14px;gap:12px}.brand{display:flex;align-items:center;gap:10px}.mark{width:30px;height:30px;border:5px solid var(--teal);border-radius:50%;box-shadow:inset 0 0 0 3px #07111f}.brand h1{margin:0;font-size:16px}.brand small{display:block;color:var(--muted);font-size:10px}.userBox{display:flex;align-items:center;gap:8px;color:#cbd5e1;font-size:11px}.logout{border:0;border-radius:9px;background:#dc2626;color:white;padding:8px 10px;font-weight:800}
+.layout{display:grid;grid-template-columns:365px 1fr;height:calc(100vh - 62px)}aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:12px}.mapPanel{position:relative;min-width:0}#map{width:100%;height:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:10px}.card h3{margin:0 0 8px;font-size:13px;color:#baf7f2}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kpi{background:#07111f;border:1px solid var(--line);border-radius:11px;padding:9px}.kpi span{display:block;color:var(--muted);font-size:10px}.kpi b{font-size:19px}
+label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px 0 4px}input,select,textarea{width:100%;background:#07111f;color:var(--text);border:1px solid #3a536f;border-radius:9px;padding:9px;outline:none}textarea{min-height:62px;resize:vertical}.btn{width:100%;border:0;border-radius:10px;padding:9px 10px;margin-top:8px;font-weight:900;background:var(--teal);color:white}.btn.blue{background:#0284c7}.btn.warn{background:var(--warn);color:#111827}.btn.gray{background:#64748b}.btn.danger{background:#dc2626}.btn.purple{background:var(--purple)}.btn.small{width:auto;margin:0;padding:6px 8px;font-size:10px}.actions{display:flex;gap:5px;flex-wrap:wrap}
+.tableWrap{overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:11px;background:#07111f}.table{border-collapse:collapse;width:100%;min-width:720px;font-size:10px}.table th{position:sticky;top:0;background:#0f172a;padding:8px;text-align:left;color:#cbd5e1;z-index:2}.table td{padding:7px;border-bottom:1px solid #233448;vertical-align:top}.badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:900;background:#334155}.badge.asignado{background:#2563eb}.badge.en_proceso{background:#f59e0b;color:#111827}.badge.finalizado{background:#16a34a}.badge.cancelado{background:#dc2626}.badge.POSTE{background:#166534}.badge.CANALIZADO{background:#075985}.badge.CAMERICANO{background:#7c2d12}.badge.CERCHA{background:#581c87}
+.mapToolbar{position:absolute;z-index:700;left:12px;top:12px;width:min(510px,calc(100% - 24px));background:rgba(7,17,31,.94);border:1px solid var(--line);border-radius:14px;padding:9px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:grid;grid-template-columns:1.4fr 1fr auto;gap:7px}.mapToolbar button{border:0;border-radius:9px;background:var(--teal);color:white;padding:9px;font-weight:900}.mapLegend{position:absolute;z-index:700;right:12px;bottom:12px;background:rgba(7,17,31,.94);border:1px solid var(--line);border-radius:12px;padding:8px;font-size:10px;line-height:1.6}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.posteLabel{background:transparent!important;border:0!important;box-shadow:none!important;color:#ffd400!important;font-weight:900!important;font-size:14px!important;text-shadow:0 1px 2px #000,0 0 4px #000;padding:0!important}.posteLabel:before{display:none!important}
+.authOverlay{position:fixed;inset:0;z-index:30000;background:#06101d;display:flex;align-items:center;justify-content:center;padding:16px}.authCard{width:min(420px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 25px 80px rgba(0,0,0,.6)}.authCard h2{margin:0 0 10px}.hint{font-size:11px;color:#cbd5e1;background:#07111f;border-left:4px solid var(--blue);padding:8px;border-radius:8px;margin:8px 0}.modalOverlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(2,6,23,.84);padding:12px;overflow:auto}.modalOverlay.open{display:block}.modal{width:min(1000px,100%);margin:3vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.6)}.modalHead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:#07111f}.modalHead h2{margin:0;font-size:15px}.modalBody{padding:12px}.close{width:auto;border:0;border-radius:9px;background:#dc2626;color:white;padding:8px 10px;font-weight:900}
 
+/* ===== MASTER ADMINISTRATIVO V3 ===== */
+.adminOnly{}.summary4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.summary4 .kpi{min-height:60px}.filtersGrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end}.modal.wide{width:min(1320px,98vw)}.table.assign{min-width:1180px}.miniActions{display:flex;gap:5px;flex-wrap:wrap}.historyItem{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:#07111f}.historyItem small{color:var(--blue);font-weight:800}.historyItem b{display:block;margin:4px 0}.userTable{max-height:220px}.roleBadge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:900;background:#334155}.roleBadge.admin{background:#7c3aed}.roleBadge.coordinador{background:#0284c7}.roleBadge.tecnico{background:#166534}@media(max-width:900px){.summary4{grid-template-columns:1fr 1fr}.filtersGrid{grid-template-columns:1fr}.modal.wide{width:100%}}
+@media(max-width:900px){body{overflow:auto}.layout{grid-template-columns:1fr;height:auto}aside{height:auto}.mapPanel{height:65vh}.mapToolbar{grid-template-columns:1fr 1fr}.mapToolbar button{grid-column:1/-1}}
+
+/* ===== DASHBOARD AVANCES V6 ===== */
+.dashboardModal{width:min(1450px,98vw);margin:1.2vh auto}
+.dashboardBody{background:#08131f}
+.dashHeadActions{display:flex;gap:7px;align-items:center}
+.dashFilters{display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr auto;gap:8px;align-items:end;background:#0d1b2a;border:1px solid var(--line);border-radius:13px;padding:10px;margin-bottom:10px}
+.dashKpis{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:10px}
+.dashKpi{background:#0d1b2a;border:1px solid var(--line);border-radius:13px;padding:10px;min-height:78px}
+.dashKpi span{display:block;font-size:9px;color:var(--muted);font-weight:900;text-transform:uppercase}
+.dashKpi b{display:block;font-size:22px;margin:4px 0;color:#e6fbff}
+.dashKpi small{color:#7dd3fc;font-size:9px}
+.chartsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chartCard{background:#0d1b2a;border:1px solid var(--line);border-radius:13px;padding:10px;min-width:0}
+.chartCard.span2{grid-column:1/-1}
+.chartCard h3{margin:0 0 8px;font-size:12px;color:#baf7f2}
+.chartBox{height:280px;position:relative}
+.chartCard.span2 .chartBox{height:310px}
+.dashTables{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.dashTableWrap{max-height:320px}
+.dashPrintHeader{display:none}
+.readonlyModal{width:min(1180px,98vw)}
+.readonlyBanner{background:#082f49;border:1px solid #0ea5e9;border-radius:11px;padding:9px 11px;color:#bae6fd;font-size:11px;font-weight:800;margin-bottom:10px}
+.readonlySection{background:#102236;border:1px solid var(--line);border-radius:13px;margin-bottom:10px;overflow:hidden}
+.readonlySection h3{margin:0;padding:10px 12px;background:#132b43;border-bottom:1px solid var(--line);font-size:12px;color:#baf7f2}
+.readonlyGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px}
+.roField label{margin:0 0 3px;color:#8fa8c1;font-size:9px;text-transform:uppercase}
+.roValue{min-height:36px;background:#07111f;border:1px solid #324c68;border-radius:8px;padding:8px;color:#f8fafc;font-size:11px;word-break:break-word}
+.roValue.long{min-height:70px;white-space:pre-wrap}
+.readonlyPhotos{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:10px}
+.roPhoto{background:#07111f;border:1px solid #324c68;border-radius:10px;padding:8px}
+.roPhoto b{display:block;font-size:10px;margin-bottom:6px;color:#cbd5e1}
+.roPhoto img{display:block;width:100%;height:190px;object-fit:cover;border-radius:8px;background:#020617}
+.roPhoto a{display:inline-block;margin-top:6px;font-size:9px;color:#38bdf8}
+.clickablePoint{cursor:pointer}
+@media(max-width:1100px){.dashKpis{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:800px){
+  .dashFilters{grid-template-columns:1fr 1fr}.dashFilters button{grid-column:1/-1}
+  .dashKpis{grid-template-columns:repeat(2,1fr)}
+  .chartsGrid,.dashTables{grid-template-columns:1fr}.chartCard.span2{grid-column:auto}
+  .readonlyGrid{grid-template-columns:1fr 1fr}.readonlyPhotos{grid-template-columns:1fr 1fr}
+}
+@media(max-width:520px){.readonlyGrid,.readonlyPhotos{grid-template-columns:1fr}}
+
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  body{overflow:visible!important;background:#fff!important;color:#111!important}
+  body>*{display:none!important}
+  #avanceModal{display:block!important;position:static!important;background:#fff!important;padding:0!important;overflow:visible!important}
+  #avanceModal .dashboardModal{display:block!important;width:100%!important;margin:0!important;border:0!important;box-shadow:none!important;background:#fff!important;color:#111!important}
+  #dashboardPrintArea{display:block!important;background:#fff!important;color:#111!important;padding:0!important}
+  .noPrint{display:none!important}
+  .dashPrintHeader{display:flex!important;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:8px}
+  .dashPrintHeader h1{font-size:17px;margin:0 0 4px}
+  .dashKpis{grid-template-columns:repeat(8,1fr)!important;gap:4px!important}
+  .dashKpi,.chartCard{background:#fff!important;color:#111!important;border:1px solid #bbb!important;break-inside:avoid}
+  .dashKpi b,.dashKpi small,.chartCard h3{color:#111!important}
+  .chartBox{height:220px!important}
+  .chartCard.span2 .chartBox{height:245px!important}
+  .chartsGrid{gap:6px!important}.dashTables{gap:6px!important}
+  .tableWrap{max-height:none!important;overflow:visible!important;border-color:#bbb!important}
+  .table{color:#111!important}.table th{position:static!important;background:#eee!important;color:#111!important}.table td{border-color:#ddd!important}
+}
+
+
+.geoDivider{height:1px;background:#334155;margin:16px 0}
+.polyChecks{
+  max-height:220px;
+  overflow:auto;
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:8px;
+  background:#07111f;
+  margin:6px 0 10px;
+}
+.polyCheck{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 8px;
+  border-bottom:1px solid #1e293b;
+  cursor:pointer;
+}
+.polyCheck:last-child{border-bottom:0}
+.polyCheck input{width:18px;height:18px;margin:0}
+.polyCheck b{font-size:12px}
+.polyMeta{font-size:10px;color:#94a3b8}
+.geoOk{color:#86efac!important}
+.geoError{color:#fca5a5!important}
+
+</style>
+</head>
+<body>
+<div class="authOverlay" id="authOverlay"><div class="authCard"><h2>Master - Mapping & Site Survey</h2><div class="hint">Ingresa con un usuario cuyo rol sea <b>admin</b> o <b>coordinador</b> en <code>mapping_usuarios</code>.</div><label>Correo</label><input id="loginEmail" type="email"><label>Contraseña</label><input id="loginPassword" type="password"><button class="btn" onclick="loginMaster()">Ingresar</button><div class="hint" id="loginMsg">Esperando inicio de sesión.</div></div></div>
+<header><div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · levantamiento de infraestructura</small></div></div><div class="userBox"><span id="userTop">Sin sesión</span><button class="logout" onclick="logoutMaster()">Salir</button></div></header>
+<div class="layout">
+<aside>
+  <div class="card"><h3>Empresas</h3>
+  <div class="grid2"><div><label>Nombre empresa *</label><input id="eNombre" placeholder="Ej: Liberty Networks"></div><div><label>Nombre corto</label><input id="eNombreCorto" placeholder="Ej: LIBERTY"></div></div>
+  <div class="grid2"><div><label>NIT</label><input id="eNit" placeholder="900123456-7"></div><div><label>Ciudad</label><input id="eCiudad" placeholder="Bogotá D.C"></div></div>
+  <button class="btn blue" onclick="crearEmpresa()">Crear empresa</button>
+  <div id="listaEmpresas" class="hint" style="margin-top:10px">Cargando empresas...</div>
+</div>
+<div class="card adminOnly"><h3>Usuarios</h3>
+  <label>Empresa *</label>
+  <select id="uEmpresa"><option value="">Seleccione empresa...</option></select>
+  <label>Nombre</label><input id="uNombre" placeholder="Nombre del usuario">
+  <label>Correo *</label><input id="uEmail" type="email" placeholder="tecnico@empresa.com">
+  <label>Contraseña temporal *</label><input id="uPassword" type="password" placeholder="Mínimo 6 caracteres">
+  <label>Rol</label><select id="uRol"><option value="tecnico">Técnico</option><option value="coordinador">Coordinador</option><option value="admin">Administrador</option></select>
+  <button class="btn purple" onclick="crearUsuarioMapping()">Crear usuario</button>
+  <div id="uMsg" class="hint">Los usuarios se crean en Supabase Auth y en mapping_usuarios.</div>
+  <div class="tableWrap userTable"><table class="table" style="min-width:520px"><thead><tr><th>Nombre</th><th>Empresa</th><th>Correo</th><th>Rol</th><th>Estado</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div>
+</div>
+<div class="card"><h3>Crear proyecto + POLIGONOS.geojson</h3>
+  <label>Empresa *</label><select id="pEmpresa"></select>
+  <div class="grid2"><div><label>Código *</label><input id="pCodigo" placeholder="EYCO-2026-BTA-01"></div><div><label>Ciudad</label><input id="pCiudad" placeholder="Bogotá D.C"></div></div>
+  <label>Nombre *</label><input id="pNombre" placeholder="Mapping Bogotá Veracruz">
+  <label>Descripción</label><textarea id="pDescripcion"></textarea>
+  <label>URL de Google Drive - POLIGONOS.geojson *</label>
+  <input id="pGeojsonUrl" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing">
+  <div class="actions" style="grid-template-columns:1fr 1fr">
+    <button class="btn gray" onclick="leerPoligonosDesdeDriveCrear()">Leer polígonos</button>
+    <button class="btn" onclick="crearProyecto()">Crear proyecto</button>
+  </div>
+  <div id="pGeojsonInfo" class="hint">El archivo debe estar compartido como <b>Cualquier persona con el enlace → Lector</b>.</div>
+
+  <div class="geoDivider"></div>
+  <h4>Actualizar GeoJSON de proyecto existente</h4>
+  <label>Proyecto</label><select id="geoProyectoExistente"></select>
+  <label>Nueva URL de Drive</label><input id="geoUrlActualiza" placeholder="https://drive.google.com/file/d/FILE_ID/view">
+  <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer URL / actualizar versión</button>
+</div>
+  <div class="card"><h3>Asignar proyecto</h3>
+    <label>Proyecto</label><select id="asigProyecto" onchange="filtrarTecnicosPorProyecto();cargarPoligonosAsignacion()"></select>
+    <label>Técnico</label><select id="asigTecnico" onchange="cargarPoligonosAsignacion()"></select>
+    <label>Polígonos asignados</label>
+    <div id="asigPoligonosBox" class="polyChecks"><div class="hint">Selecciona un proyecto para cargar sus polígonos.</div></div>
+    <button class="btn blue" onclick="asignarProyecto()">Asignar técnico + polígonos</button>
+    <div class="hint">El técnico podrá ver y seleccionar únicamente los polígonos asignados.</div>
+  </div>
+  <div class="card"><h3>Resumen</h3><div class="kpis"><div class="kpi"><span>Proyectos</span><b id="kProyectos">0</b></div><div class="kpi"><span>Técnicos</span><b id="kTecnicos">0</b></div><div class="kpi"><span>Asignaciones</span><b id="kAsignaciones">0</b></div><div class="kpi"><span>Puntos</span><b id="kPuntos">0</b></div></div><button class="btn blue" onclick="abrirDashboardAvances()">📊 Reporte de avances</button></div>
+  <div class="card"><h3>Asignaciones</h3><div class="hint" id="resumenAsignacionesMini">Consulta, filtra, reasigna, finaliza y revisa el historial de los proyectos.</div><button class="btn blue" onclick="abrirModalAsignaciones()">Ver / filtrar asignaciones</button><button class="btn gray" onclick="cargarTodo()">Actualizar todo</button><div class="tableWrap" style="margin-top:8px"><table class="table"><thead><tr><th>Proyecto</th><th>Técnico</th><th>Estado</th><th>Puntos</th><th>Acciones</th></tr></thead><tbody id="tablaAsignaciones"></tbody></table></div></div>
+</aside>
+<section class="mapPanel"><div id="map"></div><div class="mapToolbar"><select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select><select id="fProyecto" onchange="cargarProyectoMapa()"></select><select id="fTipo" onchange="pintarMapa()"><option value="">Todos los tipos</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select><button onclick="cargarProyectoMapa()">Actualizar mapa</button></div><div class="mapLegend"><div><span class="dot" style="background:#22c55e"></span>Poste</div><div><span class="dot" style="background:#38bdf8"></span>Canalizado</div><div><span class="dot" style="background:#f97316"></span>C. Americano</div><div><span class="dot" style="background:#a855f7"></span>Cercha</div><div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div><div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div></div></section>
+</div>
+<div class="modalOverlay" id="puntosModal"><div class="modal"><div class="modalHead"><h2 id="puntosTitle">Puntos del proyecto</h2><button class="close" onclick="puntosModal.classList.remove('open')">Cerrar</button></div><div class="modalBody"><div class="tableWrap" style="max-height:70vh"><table class="table"><thead><tr><th>ID</th><th>Tipo</th><th>Polígono</th><th>Conexiones</th><th>Técnico</th><th>Dirección</th></tr></thead><tbody id="tablaPuntos"></tbody></table></div></div></div></div>
+<div class="modalOverlay" id="asignacionesModal"><div class="modal wide"><div class="modalHead"><h2>Asignaciones de proyectos</h2><button class="close" onclick="cerrarModalAsignaciones()">Cerrar</button></div><div class="modalBody">
+  <div class="summary4"><div class="kpi"><span>Total</span><b id="asgTotal">0</b></div><div class="kpi"><span>Asignadas</span><b id="asgAsignadas">0</b></div><div class="kpi"><span>En proceso</span><b id="asgProceso">0</b></div><div class="kpi"><span>Finalizadas</span><b id="asgFinalizadas">0</b></div></div>
+  <div class="filtersGrid">
+    <div><label>Buscar</label><input id="asgBuscar" placeholder="Empresa, proyecto, técnico..." oninput="aplicarFiltrosAsignaciones()"></div>
+    <div><label>Empresa</label><select id="asgFiltroEmpresa" onchange="aplicarFiltrosAsignaciones()"></select></div>
+    <div><label>Proyecto</label><select id="asgFiltroProyecto" onchange="aplicarFiltrosAsignaciones()"></select></div>
+    <div><label>Estado</label><select id="asgFiltroEstado" onchange="aplicarFiltrosAsignaciones()"><option value="">Todos</option><option value="asignado">Asignado</option><option value="en_proceso">En proceso</option><option value="finalizado">Finalizado</option><option value="cancelado">Cancelado</option></select></div>
+    <div><label>Técnico</label><select id="asgFiltroTecnico" onchange="aplicarFiltrosAsignaciones()"></select></div>
+    <button class="btn blue" onclick="cargarAsignaciones()">Actualizar</button>
+  </div>
+  <div class="tableWrap" style="max-height:62vh;margin-top:10px"><table class="table assign"><thead><tr><th>Empresa</th><th>Proyecto</th><th>Ciudad</th><th>Técnico</th><th>Correo</th><th>Estado</th><th>Fecha asignación</th><th>Puntos</th><th>Acciones</th></tr></thead><tbody id="tablaAsignacionesModal"></tbody></table></div>
+</div></div></div>
+
+<div class="modalOverlay" id="reasignarModal"><div class="modal" style="width:min(650px,100%)"><div class="modalHead"><h2>Reasignar proyecto</h2><button class="close" onclick="cerrarReasignar()">Cerrar</button></div><div class="modalBody">
+  <input id="reasigId" type="hidden"><div id="reasigInfo" class="hint"></div><label>Nuevo técnico *</label><select id="reasigTecnico"></select><label>Observación / motivo</label><textarea id="reasigObs" placeholder="Motivo de la reasignación"></textarea><div id="reasigHistorial" class="hint"></div><button class="btn blue" onclick="confirmarReasignacion()">Confirmar reasignación</button>
+</div></div></div>
+
+<div class="modalOverlay" id="historialModal"><div class="modal" style="width:min(760px,100%)"><div class="modalHead"><h2>Historial de asignación</h2><button class="close" onclick="historialModal.classList.remove('open')">Cerrar</button></div><div class="modalBody"><div id="historialInfo" class="hint"></div><div id="historialLista"></div></div></div></div>
+
+
+
+<div class="modalOverlay" id="poligonosAsignacionModal">
+  <div class="modal" style="width:min(700px,100%)">
+    <div class="modalHead">
+      <h2>Polígonos de la asignación</h2>
+      <button class="close" onclick="poligonosAsignacionModal.classList.remove('open')">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <input type="hidden" id="polyAsigId">
+      <div id="polyAsigInfo" class="hint"></div>
+      <div id="polyAsigChecks" class="polyChecks"></div>
+      <button class="btn blue" onclick="guardarPoligonosAsignacion()">Guardar polígonos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD DE AVANCES ===== -->
+<div class="modalOverlay" id="avanceModal">
+  <div class="modal dashboardModal">
+    <div class="modalHead noPrint">
+      <div>
+        <h2>Dashboard de avances - Mapping & Site Survey</h2>
+        <small id="avanceSubtitulo" style="color:var(--muted)">Resumen operativo del levantamiento</small>
+      </div>
+      <div class="dashHeadActions">
+        <button class="btn small blue" onclick="exportarReporteExcel()">📥 Exportar reporte Excel</button>
+        <button class="btn small blue" onclick="imprimirDashboard()">🖨 Imprimir / PDF</button>
+        <button class="close" onclick="cerrarDashboardAvances()">Cerrar</button>
+      </div>
+    </div>
+    <div class="modalBody dashboardBody" id="dashboardPrintArea">
+      <div class="dashPrintHeader">
+        <div>
+          <h1>REPORTE DE AVANCES</h1>
+          <div id="dashPrintProyecto"></div>
+        </div>
+        <div id="dashPrintFecha"></div>
+      </div>
+
+      <div class="dashFilters noPrint">
+        <div><label>Proyecto</label><select id="dashProyecto" onchange="cargarDashboardAvances()"></select></div>
+        <div><label>Técnico</label><select id="dashTecnico" onchange="renderDashboardAvances()"></select></div>
+        <div><label>Desde</label><input id="dashDesde" type="date" onchange="renderDashboardAvances()"></div>
+        <div><label>Hasta</label><input id="dashHasta" type="date" onchange="renderDashboardAvances()"></div>
+        <button class="btn blue" onclick="cargarDashboardAvances()">Actualizar</button>
+      </div>
+
+      <div class="dashKpis">
+        <div class="dashKpi"><span>Total elementos</span><b id="dTotal">0</b><small>levantados</small></div>
+        <div class="dashKpi"><span>Postes</span><b id="dPostes">0</b><small>POSTE</small></div>
+        <div class="dashKpi"><span>Cámaras</span><b id="dCamaras">0</b><small>CANALIZADO</small></div>
+        <div class="dashKpi"><span>C. Americano</span><b id="dAmericano">0</b><small>elementos</small></div>
+        <div class="dashKpi"><span>Cerchas</span><b id="dCerchas">0</b><small>elementos</small></div>
+        <div class="dashKpi"><span>Promedio diario</span><b id="dPromedio">0</b><small>elementos/día activo</small></div>
+        <div class="dashKpi"><span>Mejor día</span><b id="dMejorDia">0</b><small id="dMejorDiaFecha">—</small></div>
+        <div class="dashKpi"><span>Técnicos activos</span><b id="dTecnicos">0</b><small>con producción</small></div>
+      </div>
+
+      <div class="chartsGrid">
+        <div class="chartCard span2"><h3>Cantidad total de elementos levantados por día</h3><div class="chartBox"><canvas id="chTotalDia"></canvas></div></div>
+        <div class="chartCard span2"><h3>Producción diaria por tipo</h3><div class="chartBox"><canvas id="chDiario"></canvas></div></div>
+        <div class="chartCard"><h3>Distribución por tipo</h3><div class="chartBox"><canvas id="chTipos"></canvas></div></div>
+        <div class="chartCard"><h3>Rendimiento por técnico</h3><div class="chartBox"><canvas id="chTecnicos"></canvas></div></div>
+        <div class="chartCard span2"><h3>Avance acumulado</h3><div class="chartBox"><canvas id="chAcumulado"></canvas></div></div>
+      </div>
+
+      <div class="dashTables">
+        <div class="chartCard">
+          <h3>Resumen por técnico</h3>
+          <div class="tableWrap dashTableWrap"><table class="table"><thead><tr><th>Técnico</th><th>Total</th><th>Días activos</th><th>Promedio/día</th><th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th></tr></thead><tbody id="dashTablaTecnicos"></tbody></table></div>
+        </div>
+        <div class="chartCard">
+          <h3>Detalle diario</h3>
+          <div class="tableWrap dashTableWrap"><table class="table"><thead><tr><th>Fecha</th><th>Total</th><th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th></tr></thead><tbody id="dashTablaDias"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETALLE SOLO LECTURA DEL ELEMENTO ===== -->
+<div class="modalOverlay" id="detallePuntoModal">
+  <div class="modal readonlyModal">
+    <div class="modalHead">
+      <div>
+        <h2 id="detallePuntoTitulo">Detalle del elemento</h2>
+        <small style="color:var(--muted)">Vista de consulta · no permite modificar información</small>
+      </div>
+      <button class="close" onclick="detallePuntoModal.classList.remove('open')">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <div class="readonlyBanner">🔒 Modo solo lectura. Los datos corresponden al levantamiento realizado por el técnico.</div>
+      <div id="detallePuntoContenido"></div>
+      <div class="readonlySection">
+        <h3>7. Registro fotográfico</h3>
+        <div id="detalleFotos" class="readonlyPhotos"><div class="hint">Consultando fotografías...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];let map,layer=null,polygonMasterLayer=null;let geojsonProyectoPreview=null;let passwordSesionActual='';let dashboardPuntos=[];let dashboardCharts={};
+Chart.register(ChartDataLabels);
+Chart.defaults.plugins.datalabels = {
+  color:'#f8fafc',
+  anchor:'end',
+  align:'top',
+  offset:2,
+  clamp:true,
+  clip:false,
+  font:{size:10,weight:'bold'},
+  formatter:(value)=>Number(value)===0?'':value
+};
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function initMap(){map=L.map('map').setView([4.65,-74.1],11);const g=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'});const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'OSM'});g.addTo(map);L.control.layers({'Google Híbrido':g,'Calles':osm}).addTo(map)}
+async function verificar(){const {data:{session}}=await sb.auth.getSession();if(!session)return;user=session.user;await validarPerfil()}
+async function loginMaster(){loginMsg.textContent='Validando...';const {data,error}=await sb.auth.signInWithPassword({email:loginEmail.value.trim(),password:loginPassword.value});if(error){loginMsg.textContent='Error: '+error.message;return}user=data.user;await validarPerfil()}
+async function validarPerfil(){const {data,error}=await sb.from('mapping_usuarios').select('*').eq('id',user.id).maybeSingle();if(error||!data){loginMsg.textContent='El usuario no tiene perfil en mapping_usuarios.';return}if(!['admin','coordinador'].includes(data.rol)){loginMsg.textContent='Este usuario no tiene permisos de Master.';await sb.auth.signOut();return}perfil=data;authOverlay.style.display='none';userTop.textContent=`${perfil.nombre||user.email} · ${perfil.rol}`;aplicarVisibilidadAdmin();await cargarTodo()}
+async function logoutMaster(){await sb.auth.signOut();location.reload()}
+async function cargarTodo(){await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios(),cargarAsignaciones()]);llenarSelects();actualizarKpis();if(!fProyecto.value&&proyectos.length)fProyecto.value=proyectos[0].id;await cargarProyectoMapa()}
+async function cargarEmpresas(){
+  const {data,error}=await sb.from('mapping_empresas').select('*').eq('activo',true).order('nombre');
+  if(error){alert('Error cargando empresas: '+error.message);return}
+  empresas=data||[];
+  pintarEmpresas();
+}
+function pintarEmpresas(){
+  if(!document.getElementById('listaEmpresas'))return;
+  listaEmpresas.innerHTML=empresas.length?empresas.map(e=>`<div style="padding:5px 0;border-bottom:1px solid #334155"><b>${esc(e.nombre)}</b>${e.nit?` · NIT ${esc(e.nit)}`:''}</div>`).join(''):'No hay empresas creadas.';
+}
+async function crearEmpresa(){
+  const nombre=eNombre.value.trim();if(!nombre)return alert('El nombre de la empresa es obligatorio.');
+  const payload={nombre,nombre_corto:eNombreCorto.value.trim()||null,nit:eNit.value.trim()||null,ciudad:eCiudad.value.trim()||null,activo:true};
+  const {error}=await sb.from('mapping_empresas').insert(payload);
+  if(error)return alert('Error creando empresa: '+error.message);
+  eNombre.value='';eNombreCorto.value='';eNit.value='';eCiudad.value='';
+  await cargarEmpresas();llenarSelects();alert('Empresa creada.');
+}
+async function cargarProyectos(){const {data,error}=await sb.from('mapping_proyectos').select('*').order('created_at',{ascending:false});if(error){alert(error.message);return}proyectos=data||[];kProyectos.textContent=proyectos.length}
+async function cargarUsuarios(){
+  const {data,error}=await sb
+    .from('mapping_usuarios')
+    .select('*,mapping_empresas(id,nombre,nombre_corto,nit)')
+    .order('nombre');
+  if(error){alert('Error cargando usuarios: '+error.message);return}
+  usuarios=(data||[]).map(u=>({
+    ...u,
+    empresa_nombre:u.mapping_empresas?.nombre||null,
+    empresa_nombre_corto:u.mapping_empresas?.nombre_corto||null
+  }));
+  kTecnicos.textContent=usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false).length;
+  pintarUsuarios();
+}
+function pintarUsuarios(){
+  if(!document.getElementById('tablaUsuarios'))return;
+  tablaUsuarios.innerHTML=usuarios.length
+    ? usuarios.map(u=>`<tr>
+        <td>${esc(u.nombre||'')}</td>
+        <td>${esc(u.empresa_nombre||'SIN EMPRESA')}</td>
+        <td>${esc(u.email)}</td>
+        <td><span class="roleBadge ${esc(u.rol)}">${esc(u.rol)}</span></td>
+        <td>${u.activo===false?'Inactivo':'Activo'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5">Sin usuarios.</td></tr>';
+}
+function aplicarVisibilidadAdmin(){const ok=perfil?.rol==='admin';document.querySelectorAll('.adminOnly').forEach(el=>el.style.display=ok?'block':'none')}
+async function crearUsuarioMapping(){
+  if(perfil?.rol!=='admin')return alert('Solo un administrador puede crear usuarios.');
+
+  const empresa_id=uEmpresa.value;
+  const nombre=uNombre.value.trim();
+  const email=uEmail.value.trim();
+  const password=uPassword.value;
+  const rol=uRol.value;
+
+  if(!empresa_id||!email||!password)
+    return alert('Empresa, correo y contraseña son obligatorios.');
+  if(password.length<6)
+    return alert('La contraseña debe tener mínimo 6 caracteres.');
+
+  const empresa=empresas.find(e=>String(e.id)===String(empresa_id));
+  uMsg.textContent=`Creando usuario para ${empresa?.nombre||'la empresa seleccionada'}...`;
+
+  const adminEmail=user.email;
+  const adminPassword=passwordSesionActual;
+
+  const {data,error}=await sb.auth.signUp({
+    email,
+    password,
+    options:{data:{nombre,rol,empresa_id}}
+  });
+
+  if(error){
+    uMsg.textContent='Error Auth: '+error.message;
+    return;
+  }
+
+  const uid=data.user?.id;
+  if(!uid){
+    uMsg.textContent='No se recibió ID del usuario. Revisa Authentication > Users.';
+    return;
+  }
+
+  const {error:pe}=await sb.from('mapping_usuarios').upsert({
+    id:uid,
+    email,
+    nombre:nombre||email,
+    rol,
+    empresa_id,
+    activo:true
+  },{onConflict:'id'});
+
+  if(pe){
+    uMsg.textContent='Auth creado, pero error creando perfil: '+pe.message;
+    return;
+  }
+
+  const {data:{session}}=await sb.auth.getSession();
+  if(session?.user?.id===uid && adminEmail&&adminPassword){
+    await sb.auth.signOut();
+    const back=await sb.auth.signInWithPassword({email:adminEmail,password:adminPassword});
+    if(back.error){
+      uMsg.textContent='Usuario creado. Debes volver a iniciar sesión como administrador.';
+      return;
+    }
+    user=back.data.user;
+    await validarPerfil();
+  }
+
+  uEmpresa.value='';
+  uNombre.value='';
+  uEmail.value='';
+  uPassword.value='';
+  uRol.value='tecnico';
+  uMsg.textContent=`Usuario creado correctamente y asociado a ${empresa?.nombre||'la empresa seleccionada'}.`;
+
+  await cargarUsuarios();
+  llenarSelects();
+}
+async function cargarAsignaciones(){const {data,error}=await sb.from('v_mapping_proyectos_asignados').select('*').order('fecha_asignacion',{ascending:false});if(error){alert(error.message);return}asignaciones=data||[];asignacionesFiltradas=[...asignaciones];kAsignaciones.textContent=asignaciones.length;pintarAsignaciones();llenarFiltrosAsignaciones();aplicarFiltrosAsignaciones();actualizarResumenAsignaciones()}
+function llenarSelects(){
+  const emp='<option value="">Todas / Seleccione...</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  pEmpresa.innerHTML='<option value="">Seleccione...</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  const ue=document.getElementById('uEmpresa'); if(ue) ue.innerHTML='<option value="">Seleccione empresa...</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  if(document.getElementById('fEmpresa'))fEmpresa.innerHTML=emp;
+  const po='<option value="">Seleccione...</option>'+proyectos.map(p=>{
+    const e=empresas.find(x=>x.id===p.empresa_id);
+    return `<option value="${p.id}">${esc(e?.nombre_corto||e?.nombre||'SIN EMPRESA')} · ${esc(p.codigo)} · ${esc(p.nombre)}</option>`
+  }).join('');
+  asigProyecto.innerHTML=po;fProyecto.innerHTML=po;if(document.getElementById('geoProyectoExistente'))geoProyectoExistente.innerHTML=po;
+  const tec=usuarios.filter(u=>u.rol==='tecnico');
+  asigTecnico.innerHTML='<option value="">Seleccione...</option>'+tec.map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)} · ${esc(u.email)} · ${esc(u.empresa_nombre||'SIN EMPRESA')}</option>`).join('')
+}
+function filtrarProyectosPorEmpresa(){
+  const empresaId=fEmpresa.value;
+  const lista=empresaId?proyectos.filter(p=>p.empresa_id===empresaId):proyectos;
+  fProyecto.innerHTML='<option value="">Seleccione...</option>'+lista.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');
+  if(lista.length){fProyecto.value=lista[0].id;cargarProyectoMapa()}else{puntos=[];pintarMapa();kPuntos.textContent=0}
+}
+function llenarFiltrosAsignaciones(){if(!document.getElementById('asgFiltroEmpresa'))return;const keepE=asgFiltroEmpresa.value,keepP=asgFiltroProyecto.value,keepT=asgFiltroTecnico.value;asgFiltroEmpresa.innerHTML='<option value="">Todas</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');asgFiltroProyecto.innerHTML='<option value="">Todos</option>'+proyectos.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');asgFiltroTecnico.innerHTML='<option value="">Todos</option>'+usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false).map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)}</option>`).join('');if([...asgFiltroEmpresa.options].some(o=>o.value===keepE))asgFiltroEmpresa.value=keepE;if([...asgFiltroProyecto.options].some(o=>o.value===keepP))asgFiltroProyecto.value=keepP;if([...asgFiltroTecnico.options].some(o=>o.value===keepT))asgFiltroTecnico.value=keepT}
+function actualizarResumenAsignaciones(){if(!document.getElementById('asgTotal'))return;asgTotal.textContent=asignaciones.length;asgAsignadas.textContent=asignaciones.filter(a=>a.tecnico_id).length;asgProceso.textContent=asignaciones.filter(a=>a.estado_asignacion==='en_proceso').length;asgFinalizadas.textContent=asignaciones.filter(a=>a.estado_asignacion==='finalizado').length;const mini=document.getElementById('resumenAsignacionesMini');if(mini)mini.innerHTML=`<b>Total:</b> ${asignaciones.length} · <b>En proceso:</b> ${asgProceso.textContent} · <b>Finalizadas:</b> ${asgFinalizadas.textContent}`}
+function aplicarFiltrosAsignaciones(){if(!document.getElementById('tablaAsignacionesModal'))return;const q=(asgBuscar.value||'').toLowerCase().trim(),e=asgFiltroEmpresa.value,p=asgFiltroProyecto.value,st=asgFiltroEstado.value,t=asgFiltroTecnico.value;asignacionesFiltradas=asignaciones.filter(a=>{const txt=JSON.stringify(a).toLowerCase();return(!q||txt.includes(q))&&(!e||a.empresa_id===e)&&(!p||a.proyecto_id===p)&&(!st||a.estado_asignacion===st)&&(!t||a.tecnico_id===t)});pintarAsignacionesModal()}
+function pintarAsignacionesModal(){tablaAsignacionesModal.innerHTML=asignacionesFiltradas.length?asignacionesFiltradas.map(a=>`<tr><td>${esc(a.empresa_nombre||'SIN EMPRESA')}</td><td><b>${esc(a.codigo)}</b><br>${esc(a.proyecto_nombre)}</td><td>${esc(a.ciudad||'')}</td><td>${esc(a.tecnico_nombre||a.tecnico_email||'')}</td><td>${esc(a.tecnico_email||'')}</td><td>${estadoBadge(a.estado_asignacion)}</td><td>${formatoFecha(a.fecha_asignacion)}</td><td>${a.cantidad_puntos||0}</td><td>${accionesAsignacion(a)}</td></tr>`).join(''):'<tr><td colspan="9">Sin asignaciones con estos filtros.</td></tr>'}
+function abrirModalAsignaciones(){llenarFiltrosAsignaciones();aplicarFiltrosAsignaciones();actualizarResumenAsignaciones();asignacionesModal.classList.add('open')}function cerrarModalAsignaciones(){asignacionesModal.classList.remove('open')}
+function formatoFecha(v){if(!v)return '—';try{return new Date(v).toLocaleString('es-CO')}catch{return v}}
+function accionesAsignacion(a){return `<div class="miniActions"><button class="btn small blue" onclick="verProyecto('${a.proyecto_id}')">Ver</button><button class="btn small gray" onclick="abrirPuntos('${a.proyecto_id}')">Puntos</button><button class="btn small blue" onclick="abrirEditarPoligonos('${a.asignacion_id}')">Polígonos</button><button class="btn small purple" onclick="abrirReasignar('${a.asignacion_id}')">Reasignar</button>${a.estado_asignacion==='finalizado'?`<button class="btn small warn" onclick="reabrirAsignacion('${a.asignacion_id}')">Reabrir</button>`:`<button class="btn small" onclick="finalizarAsignacion('${a.asignacion_id}')">Finalizar</button>`}<button class="btn small gray" onclick="abrirHistorial('${a.asignacion_id}')">Historial</button><button class="btn small danger" onclick="eliminarAsignacion('${a.asignacion_id}')">Quitar</button></div>`}
+
+function normalizarCodigoPoligono(v){
+  return String(v??'').trim().toUpperCase();
+}
+
+function nombreFeaturePoligono(feature,index){
+  const p=feature?.properties||{};
+  const candidatos=[
+    p.POLIGONO,p.poligono,p.Poligono,
+    p.NOMBRE,p.nombre,p.Nombre,
+    p.NAME,p.name,p.Name,
+    p.CODIGO,p.codigo,p.Codigo,
+    feature?.id
+  ];
+  const valor=candidatos.find(v=>v!==null&&v!==undefined&&String(v).trim()!=='');
+  if(!valor)throw new Error(`El polígono #${index+1} no tiene nombre. Agrega una propiedad POLIGONO, por ejemplo POLIGONO${index+1}.`);
+  return normalizarCodigoPoligono(valor);
+}
+
+function analizarGeoJSONPoligonos(obj){
+  if(!obj||obj.type!=='FeatureCollection'||!Array.isArray(obj.features)){
+    throw new Error('El archivo debe ser un GeoJSON FeatureCollection.');
+  }
+
+  const features=obj.features.filter(f=>['Polygon','MultiPolygon'].includes(f?.geometry?.type));
+  if(!features.length)throw new Error('El GeoJSON no contiene geometrías Polygon o MultiPolygon.');
+
+  const usados=new Set();
+  const poligonos=features.map((f,i)=>{
+    const codigo=nombreFeaturePoligono(f,i);
+    if(usados.has(codigo))throw new Error(`El nombre ${codigo} está repetido en el GeoJSON.`);
+    usados.add(codigo);
+    return {
+      codigo,
+      nombre:codigo,
+      feature_index:obj.features.indexOf(f),
+      properties:f.properties||{}
+    };
+  });
+
+  return {geojson:obj,poligonos};
+}
+
+function extraerDriveFileId(url){
+  const s=String(url||'').trim();
+  if(!s)return '';
+
+  const patrones=[
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/,
+    /\/d\/([a-zA-Z0-9_-]+)/
+  ];
+
+  for(const p of patrones){
+    const m=s.match(p);
+    if(m?.[1])return m[1];
+  }
+
+  // Permitir pegar directamente el file_id.
+  if(/^[a-zA-Z0-9_-]{20,}$/.test(s))return s;
+  return '';
+}
+
+function urlDescargaDriveGeoJSON(fileId){
+  // Endpoint de contenido público de Google Drive.
+  return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+}
+
+async function descargarGeoJSONDrive(url){
+  const fileId=extraerDriveFileId(url);
+  if(!fileId)throw new Error('No se pudo obtener el FILE_ID de la URL de Drive.');
+
+  const resp=await fetch(urlDescargaDriveGeoJSON(fileId),{cache:'no-store'});
+  if(!resp.ok)throw new Error(`Drive respondió HTTP ${resp.status}. Verifica que el archivo sea público.`);
+
+  const text=await resp.text();
+
+  // Si Drive devuelve HTML, normalmente es una pantalla de permisos/confirmación.
+  if(/^\s*</.test(text)){
+    throw new Error('Drive devolvió una página HTML en vez del GeoJSON. Verifica: "Cualquier persona con el enlace → Lector".');
+  }
+
+  let obj;
+  try{obj=JSON.parse(text)}
+  catch(_){throw new Error('El contenido descargado desde Drive no es JSON válido.');}
+
+  return {
+    ...analizarGeoJSONPoligonos(obj),
+    text,
+    fileId
+  };
+}
+
+async function leerPoligonosDesdeDriveCrear(){
+  const url=pGeojsonUrl.value.trim();
+  geojsonProyectoPreview=null;
+
+  if(!url){
+    pGeojsonInfo.className='hint geoError';
+    pGeojsonInfo.textContent='❌ Pega la URL de Drive.';
+    return;
+  }
+
+  pGeojsonInfo.className='hint';
+  pGeojsonInfo.textContent='Leyendo POLIGONOS.geojson desde Drive...';
+
+  try{
+    const a=await descargarGeoJSONDrive(url);
+    geojsonProyectoPreview=a;
+    pGeojsonInfo.className='hint geoOk';
+    pGeojsonInfo.innerHTML=`✅ ${a.poligonos.length} polígonos detectados: <b>${a.poligonos.map(x=>esc(x.codigo)).join(', ')}</b>`;
+  }catch(e){
+    pGeojsonInfo.className='hint geoError';
+    pGeojsonInfo.textContent='❌ '+(e?.message||e);
+  }
+}
+
+async function registrarCatalogoPoligonos(proyectoId,poligonos){
+  const {error:offError}=await sb
+    .from('mapping_poligonos')
+    .update({activo:false})
+    .eq('proyecto_id',proyectoId);
+  if(offError)throw offError;
+
+  const filas=poligonos.map(p=>({
+    proyecto_id:proyectoId,
+    codigo:p.codigo,
+    nombre:p.nombre,
+    feature_index:p.feature_index,
+    properties:p.properties||{},
+    activo:true
+  }));
+
+  const {error}=await sb
+    .from('mapping_poligonos')
+    .upsert(filas,{onConflict:'proyecto_id,codigo'});
+  if(error)throw error;
+}
+
+async function actualizarGeoJSONProyectoExistente(){
+  const proyectoId=geoProyectoExistente.value;
+  const url=geoUrlActualiza.value.trim();
+
+  if(!proyectoId)return alert('Selecciona el proyecto.');
+  if(!url)return alert('Pega la nueva URL de Drive.');
+
+  const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
+  if(!proyecto)return;
+
+  try{
+    const a=await descargarGeoJSONDrive(url);
+    const version=(Number(proyecto.poligonos_version)||0)+1;
+
+    await registrarCatalogoPoligonos(proyecto.id,a.poligonos);
+
+    const {error}=await sb
+      .from('mapping_proyectos')
+      .update({
+        poligonos_drive_url:url,
+        poligonos_drive_file_id:a.fileId,
+        poligonos_version:version,
+        poligonos_actualizados_at:new Date().toISOString()
+      })
+      .eq('id',proyecto.id);
+
+    if(error)throw error;
+
+    geoUrlActualiza.value='';
+    await cargarProyectos();
+    llenarSelects();
+    await cargarPoligonosAsignacion();
+
+    alert(`GeoJSON actualizado. Versión ${version}. Polígonos: ${a.poligonos.map(x=>x.codigo).join(', ')}`);
+  }catch(e){
+    alert('No se pudo actualizar el GeoJSON: '+(e?.message||e));
+  }
+}
+
+async function obtenerPoligonosProyecto(proyectoId){
+  if(!proyectoId)return [];
+  const {data,error}=await sb
+    .from('mapping_poligonos')
+    .select('id,proyecto_id,codigo,nombre,feature_index,activo')
+    .eq('proyecto_id',proyectoId)
+    .eq('activo',true)
+    .order('feature_index');
+  if(error){
+    console.warn('Error cargando polígonos:',error);
+    return [];
+  }
+  return data||[];
+}
+
+function htmlChecksPoligonos(lista,seleccionados=new Set(),prefix='asigPoly'){
+  if(!lista.length)return '<div class="hint">Este proyecto todavía no tiene polígonos activos.</div>';
+  return `
+    <label class="polyCheck" style="border-bottom:1px solid #475569">
+      <input type="checkbox" onchange="toggleTodosChecksPoligonos('${prefix}',this.checked)">
+      <div><b>Seleccionar todos</b><div class="polyMeta">${lista.length} polígonos disponibles</div></div>
+    </label>`+
+    lista.map(p=>`
+      <label class="polyCheck">
+        <input type="checkbox" data-poly-prefix="${prefix}" value="${p.id}" ${seleccionados.has(String(p.id))?'checked':''}>
+        <div><b>${esc(p.codigo)}</b><div class="polyMeta">Feature #${Number(p.feature_index)+1}</div></div>
+      </label>
+    `).join('');
+}
+
+function toggleTodosChecksPoligonos(prefix,checked){
+  document.querySelectorAll(`input[data-poly-prefix="${prefix}"]`).forEach(el=>el.checked=checked);
+}
+
+async function cargarPoligonosAsignacion(){
+  const box=document.getElementById('asigPoligonosBox');
+  if(!box)return;
+
+  const proyectoId=asigProyecto.value;
+  const tecnicoId=asigTecnico.value;
+  if(!proyectoId){
+    box.innerHTML='<div class="hint">Selecciona un proyecto.</div>';
+    return;
+  }
+
+  box.innerHTML='<div class="hint">Cargando polígonos...</div>';
+  const poligonos=await obtenerPoligonosProyecto(proyectoId);
+  const seleccionados=new Set();
+
+  if(tecnicoId){
+    const {data:asg}=await sb
+      .from('mapping_proyecto_tecnicos')
+      .select('id')
+      .eq('proyecto_id',proyectoId)
+      .eq('tecnico_id',tecnicoId)
+      .maybeSingle();
+
+    if(asg?.id){
+      const {data:rows}=await sb
+        .from('mapping_tecnico_poligonos')
+        .select('poligono_id')
+        .eq('asignacion_id',asg.id);
+      (rows||[]).forEach(x=>seleccionados.add(String(x.poligono_id)));
+    }
+  }
+
+  box.innerHTML=htmlChecksPoligonos(poligonos,seleccionados,'asigPoly');
+}
+
+function poligonosSeleccionados(prefix){
+  return [...document.querySelectorAll(`input[data-poly-prefix="${prefix}"]:checked`)].map(x=>x.value);
+}
+
+async function crearProyecto(){
+  const empresa_id=pEmpresa.value;
+  const codigo=pCodigo.value.trim();
+  const nombre=pNombre.value.trim();
+  const url=pGeojsonUrl.value.trim();
+
+  if(!empresa_id||!codigo||!nombre)return alert('Empresa, código y nombre son obligatorios.');
+  if(!url)return alert('Pega la URL de Google Drive de POLIGONOS.geojson.');
+
+  let analisis=geojsonProyectoPreview;
+
+  try{
+    if(!analisis || analisis.fileId!==extraerDriveFileId(url)){
+      analisis=await descargarGeoJSONDrive(url);
+    }
+  }catch(e){
+    return alert('No se pudo leer el GeoJSON desde Drive: '+(e?.message||e));
+  }
+
+  const {data:proyecto,error}=await sb
+    .from('mapping_proyectos')
+    .insert({
+      empresa_id,codigo,nombre,
+      ciudad:pCiudad.value.trim()||null,
+      descripcion:pDescripcion.value.trim()||null,
+      estado:'activo',
+      creado_por:user.id,
+      creado_por_email:user.email,
+      poligonos_drive_url:url,
+      poligonos_drive_file_id:analisis.fileId,
+      poligonos_version:1,
+      poligonos_actualizados_at:new Date().toISOString()
+    })
+    .select('*')
+    .single();
+
+  if(error)return alert('Error creando proyecto: '+error.message);
+
+  try{
+    await registrarCatalogoPoligonos(proyecto.id,analisis.poligonos);
+  }catch(e){
+    try{await sb.from('mapping_proyectos').delete().eq('id',proyecto.id)}catch(_){}
+    return alert('No se pudo registrar el catálogo de polígonos. El proyecto fue revertido. '+(e?.message||e));
+  }
+
+  pCodigo.value='';
+  pNombre.value='';
+  pCiudad.value='';
+  pDescripcion.value='';
+  pGeojsonUrl.value='';
+  geojsonProyectoPreview=null;
+  pGeojsonInfo.className='hint';
+  pGeojsonInfo.innerHTML='El archivo debe estar compartido como <b>Cualquier persona con el enlace → Lector</b>.';
+
+  await cargarTodo();
+  alert(`Proyecto creado con ${analisis.poligonos.length} polígonos.`);
+}
+
+function filtrarTecnicosPorProyecto(){
+  const proyecto=proyectos.find(p=>String(p.id)===String(asigProyecto.value));
+  const empresaId=proyecto?.empresa_id||'';
+  const tecnicos=usuarios.filter(u=>
+    u.rol==='tecnico' &&
+    u.activo!==false &&
+    (!empresaId || String(u.empresa_id||'')===String(empresaId))
+  );
+  asigTecnico.innerHTML='<option value="">Seleccione...</option>'+
+    tecnicos.map(u=>`<option value="${u.id}" data-empresa="${u.empresa_id||''}">
+      ${esc(u.nombre||u.email)} · ${esc(u.empresa_nombre||'SIN EMPRESA')} · ${esc(u.email)}
+    </option>`).join('');
+}
+
+async function asignarProyecto(){
+  const proyecto_id=asigProyecto.value;
+  const tecnico_id=asigTecnico.value;
+  if(!proyecto_id||!tecnico_id)return alert('Selecciona proyecto y técnico.');
+
+  const t=usuarios.find(u=>String(u.id)===String(tecnico_id));
+  const disponibles=await obtenerPoligonosProyecto(proyecto_id);
+  const seleccionados=poligonosSeleccionados('asigPoly');
+
+  if(disponibles.length && !seleccionados.length){
+    return alert('Selecciona al menos un polígono para el técnico.');
+  }
+
+  const hist=[{
+    fecha:new Date().toISOString(),
+    accion:'asignado',
+    usuario_master:user.email
+  }];
+
+  const {data:asg,error}=await sb
+    .from('mapping_proyecto_tecnicos')
+    .upsert({
+      proyecto_id,tecnico_id,
+      tecnico_email:t?.email,
+      tecnico_nombre:t?.nombre||t?.email,
+      estado_asignacion:'asignado',
+      fecha_asignacion:new Date().toISOString(),
+      asignado_por:user.id,
+      asignado_por_email:user.email,
+      historial:hist
+    },{onConflict:'proyecto_id,tecnico_id'})
+    .select('id')
+    .single();
+
+  if(error)return alert('Error asignando proyecto: '+error.message);
+
+  const {error:delError}=await sb
+    .from('mapping_tecnico_poligonos')
+    .delete()
+    .eq('asignacion_id',asg.id);
+  if(delError)return alert('Proyecto asignado, pero no se pudieron actualizar polígonos: '+delError.message);
+
+  if(seleccionados.length){
+    const filas=seleccionados.map(poligono_id=>({
+      asignacion_id:asg.id,
+      proyecto_id,
+      tecnico_id,
+      poligono_id
+    }));
+    const {error:polyError}=await sb.from('mapping_tecnico_poligonos').insert(filas);
+    if(polyError)return alert('Proyecto asignado, pero falló la asignación de polígonos: '+polyError.message);
+  }
+
+  await cargarAsignaciones();
+  actualizarKpis();
+  alert(`Proyecto asignado con ${seleccionados.length} polígono(s).`);
+}
+
+function estadoBadge(e){return `<span class="badge ${esc(e)}">${esc(e)}</span>`}
+function pintarAsignaciones(){tablaAsignaciones.innerHTML=asignaciones.length?asignaciones.slice(0,20).map(a=>`<tr><td><small style="color:#38bdf8;font-weight:800">${esc(a.empresa_nombre||'SIN EMPRESA')}</small><br><b>${esc(a.codigo)}</b><br>${esc(a.proyecto_nombre)}</td><td>${esc(a.tecnico_nombre||a.tecnico_email)}</td><td>${estadoBadge(a.estado_asignacion)}</td><td>${a.cantidad_puntos||0}</td><td>${accionesAsignacion(a)}</td></tr>`).join(''):'<tr><td colspan="5">No hay asignaciones.</td></tr>'}
+async function cambiarEstadoAsignacion(id,estado,accion,observacion=''){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:accion||estado,evento:accion||`Estado cambiado a ${estado}`,tecnico:a.tecnico_nombre||a.tecnico_email||'',observacion,usuario_master:user.email};const payload={estado_asignacion:estado,historial:[...hist,evento]};if(estado==='finalizado')payload.fecha_finalizacion=new Date().toISOString();else payload.fecha_finalizacion=null;const {error}=await sb.from('mapping_proyecto_tecnicos').update(payload).eq('id',id);if(error)return alert(error.message);await cargarAsignaciones();}
+async function finalizarAsignacion(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;if(!confirm(`¿Finalizar la asignación de ${a.proyecto_nombre} para ${a.tecnico_nombre||a.tecnico_email}?`))return;await cambiarEstadoAsignacion(id,'finalizado','finalizado_desde_master')}
+async function reabrirAsignacion(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;const motivo=prompt('Motivo de reapertura:','Corrección / continuación de levantamiento');if(motivo===null)return;await cambiarEstadoAsignacion(id,'en_proceso','reabierto',motivo)}
+
+async function abrirEditarPoligonos(asignacionId){
+  const a=asignaciones.find(x=>String(x.asignacion_id)===String(asignacionId));
+  if(!a)return;
+
+  polyAsigId.value=asignacionId;
+  polyAsigInfo.innerHTML=`<b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}`;
+  polyAsigChecks.innerHTML='<div class="hint">Cargando...</div>';
+
+  const poligonos=await obtenerPoligonosProyecto(a.proyecto_id);
+  const {data,error}=await sb
+    .from('mapping_tecnico_poligonos')
+    .select('poligono_id')
+    .eq('asignacion_id',asignacionId);
+
+  if(error){
+    polyAsigChecks.innerHTML='<div class="hint">Error: '+esc(error.message)+'</div>';
+    return;
+  }
+
+  const seleccionados=new Set((data||[]).map(x=>String(x.poligono_id)));
+  polyAsigChecks.innerHTML=htmlChecksPoligonos(poligonos,seleccionados,'editPoly');
+  poligonosAsignacionModal.classList.add('open');
+}
+
+async function guardarPoligonosAsignacion(){
+  const asignacionId=polyAsigId.value;
+  const a=asignaciones.find(x=>String(x.asignacion_id)===String(asignacionId));
+  if(!a)return;
+
+  const seleccionados=poligonosSeleccionados('editPoly');
+  const disponibles=await obtenerPoligonosProyecto(a.proyecto_id);
+  if(disponibles.length&&!seleccionados.length)return alert('Selecciona al menos un polígono.');
+
+  const {error:delError}=await sb
+    .from('mapping_tecnico_poligonos')
+    .delete()
+    .eq('asignacion_id',asignacionId);
+  if(delError)return alert(delError.message);
+
+  if(seleccionados.length){
+    const filas=seleccionados.map(poligono_id=>({
+      asignacion_id:asignacionId,
+      proyecto_id:a.proyecto_id,
+      tecnico_id:a.tecnico_id,
+      poligono_id
+    }));
+    const {error}=await sb.from('mapping_tecnico_poligonos').insert(filas);
+    if(error)return alert(error.message);
+  }
+
+  poligonosAsignacionModal.classList.remove('open');
+  alert(`Polígonos actualizados: ${seleccionados.length}.`);
+}
+
+function abrirReasignar(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;reasigId.value=id;reasigInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}`;const tecs=usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false);reasigTecnico.innerHTML='<option value="">Seleccione...</option>'+tecs.map(t=>`<option value="${t.id}" ${t.id===a.tecnico_id?'selected':''}>${esc(t.nombre||t.email)} · ${esc(t.email)}</option>`).join('');reasigObs.value='';const hist=Array.isArray(a.historial)?a.historial:[];reasigHistorial.innerHTML=hist.length?'<b>Historial reciente:</b><br>'+hist.slice(-4).map(h=>`• ${formatoFecha(h.fecha)} · ${esc(h.accion||h.evento||'')}`).join('<br>'):'Sin historial previo.';reasignarModal.classList.add('open')}
+function cerrarReasignar(){reasignarModal.classList.remove('open')}
+async function confirmarReasignacion(){const id=reasigId.value,a=asignaciones.find(x=>x.asignacion_id===id),nuevoId=reasigTecnico.value;if(!a||!nuevoId)return alert('Selecciona nuevo técnico.');if(nuevoId===a.tecnico_id)return alert('Ese técnico ya tiene esta asignación.');const nuevo=usuarios.find(u=>u.id===nuevoId);const choque=asignaciones.find(x=>x.proyecto_id===a.proyecto_id&&x.tecnico_id===nuevoId);if(choque)return alert('El técnico seleccionado ya está asignado a este proyecto.');if(!confirm(`¿Reasignar ${a.proyecto_nombre} de ${a.tecnico_nombre||a.tecnico_email} a ${nuevo?.nombre||nuevo?.email}?`))return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:'reasignado',evento:`Reasignado de ${a.tecnico_nombre||a.tecnico_email||'N/A'} a ${nuevo?.nombre||nuevo?.email}`,tecnico_anterior_id:a.tecnico_id,tecnico_anterior_email:a.tecnico_email,tecnico_nuevo_id:nuevoId,tecnico_nuevo_email:nuevo?.email,observacion:reasigObs.value.trim(),usuario_master:user.email};const {error}=await sb.from('mapping_proyecto_tecnicos').update({tecnico_id:nuevoId,tecnico_email:nuevo?.email,tecnico_nombre:nuevo?.nombre||nuevo?.email,estado_asignacion:'asignado',fecha_asignacion:new Date().toISOString(),fecha_finalizacion:null,historial:[...hist,evento]}).eq('id',id);if(error)return alert('Error reasignando: '+error.message);const {error:polyMoveError}=await sb.from('mapping_tecnico_poligonos').update({tecnico_id:nuevoId}).eq('asignacion_id',id);if(polyMoveError)return alert('La asignación cambió, pero no se pudieron transferir sus polígonos: '+polyMoveError.message);cerrarReasignar();await cargarAsignaciones();alert('Proyecto reasignado correctamente, conservando los polígonos asignados.')}
+function abrirHistorial(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;historialInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}<br><b>Estado:</b> ${estadoBadge(a.estado_asignacion)}`;const hist=Array.isArray(a.historial)?a.historial:[];const base=[{fecha:a.fecha_asignacion,accion:'asignación',evento:'Asignación registrada',tecnico:a.tecnico_nombre||a.tecnico_email}];const eventos=[...base,...hist].sort((x,y)=>new Date(x.fecha||0)-new Date(y.fecha||0));historialLista.innerHTML=eventos.length?eventos.map(h=>`<div class="historyItem"><small>${formatoFecha(h.fecha)}</small><b>${esc(h.accion||'Evento')}</b><div>${esc(h.evento||'')}</div>${h.tecnico?`<div><b>Técnico:</b> ${esc(h.tecnico)}</div>`:''}${h.observacion?`<div><b>Observación:</b> ${esc(h.observacion)}</div>`:''}${h.usuario_master?`<div><b>Master:</b> ${esc(h.usuario_master)}</div>`:''}</div>`).join(''):'<div class="hint">Sin historial.</div>';historialModal.classList.add('open')}
+async function eliminarAsignacion(id){if(!confirm('¿Quitar esta asignación? El proyecto y sus puntos NO se eliminarán.'))return;const {error}=await sb.from('mapping_proyecto_tecnicos').delete().eq('id',id);if(error)return alert(error.message);await cargarAsignaciones()}
+function verProyecto(id){fProyecto.value=id;cargarProyectoMapa()}
+async function cargarGeoJSONProyectoMaster(proyecto){
+  if(polygonMasterLayer){
+    try{map.removeLayer(polygonMasterLayer)}catch(_){}
+    polygonMasterLayer=null;
+  }
+
+  if(!proyecto?.poligonos_drive_url)return null;
+
+  try{
+    const a=await descargarGeoJSONDrive(proyecto.poligonos_drive_url);
+    polygonMasterLayer=L.geoJSON(a.geojson,{
+      style:{
+        color:'#facc15',
+        weight:3,
+        opacity:.95,
+        fillColor:'#facc15',
+        fillOpacity:.06
+      },
+      onEachFeature:(f,l)=>{
+        try{l.bindTooltip(nombreFeaturePoligono(f,0),{sticky:true})}catch(_){}
+      }
+    }).addTo(map);
+    return polygonMasterLayer;
+  }catch(e){
+    console.warn('No se pudo cargar GeoJSON de Drive en Master:',e);
+    return null;
+  }
+}
+
+async function cargarProyectoMapa(){
+  const id=fProyecto.value;
+  if(!id){
+    puntos=[];
+    pintarMapa();
+    kPuntos.textContent=0;
+    if(polygonMasterLayer){try{map.removeLayer(polygonMasterLayer)}catch(_){} polygonMasterLayer=null;}
+    return;
+  }
+
+  const proyecto=proyectos.find(p=>String(p.id)===String(id));
+  const [{data,error},polyLayer]=await Promise.all([
+    sb.from('mapping_puntos').select('*').eq('proyecto_id',id).order('poligono').order('consecutiv'),
+    cargarGeoJSONProyectoMaster(proyecto)
+  ]);
+
+  if(error)return alert(error.message);
+  puntos=data||[];
+  kPuntos.textContent=puntos.length;
+  pintarMapa();
+
+  const b=puntos.map(p=>[Number(p.latitude),Number(p.longitude)]).filter(x=>x.every(Number.isFinite));
+  if(b.length)map.fitBounds(b,{padding:[45,45],maxZoom:19});
+  else if(polyLayer?.getBounds?.().isValid())map.fitBounds(polyLayer.getBounds(),{padding:[35,35],maxZoom:18});
+}
+
+function idxPuntos(lista){const m=new Map();lista.forEach(p=>m.set(`${p.poligono}__${Number(p.consecutiv)||0}`,p));return m}
+function conexiones(p,idx){const out=[];for(let i=1;i<=4;i++){const c=Number(p['cx'+i]||0);if(c>0){const d=idx.get(`${p.poligono}__${c}`);if(d)out.push({d,otro:false,slot:'CX'+i})}}if(p.cxotropol==='SI'){for(let i=1;i<=4;i++){const pol=p['cx'+i+'pol'],c=Number(p['cx'+i+'conse']||0);if(pol&&c>0){const d=idx.get(`${pol}__${c}`);if(d)out.push({d,otro:true,slot:'CX'+i})}}}return out}
+function colorTipoMaster(){return '#ef4444'}
+function simboloTipoMaster(tipo,color){
+  if(tipo==='CANALIZADO')return `<div style="width:16px;height:16px;background:${color};border:2px solid white"></div>`;
+  if(tipo==='C. AMERICANO')return `<div style="font-size:27px;font-weight:1000;color:${color};line-height:18px;text-shadow:-1px -1px white,1px -1px white,-1px 1px white,1px 1px white">+</div>`;
+  if(tipo==='CERCHA')return `<div style="width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:17px solid ${color};filter:drop-shadow(0 0 1px white)"></div>`;
+  return `<div style="width:16px;height:16px;background:${color};border:2px solid white;border-radius:50%"></div>`;
+}
+function pintarMapa(){
+  if(!map)return;
+  if(layer)layer.remove();
+  layer=L.layerGroup().addTo(map);
+  const tipo=fTipo.value;
+  const lista=puntos.filter(p=>!tipo||p.tipo===tipo),idx=idxPuntos(puntos),lineas=new Set();
+
+  lista.forEach(p=>conexiones(p,idx).forEach(c=>{
+    const key=[p.idcampo,c.d.idcampo,c.otro].sort().join('|');
+    if(lineas.has(key))return;
+    lineas.add(key);
+    L.polyline([[p.latitude,p.longitude],[c.d.latitude,c.d.longitude]],{color:'#48d1cc',weight:4,opacity:.95,dashArray:'10,6'})
+      .addTo(layer).bindPopup(`<b>${esc(c.slot)}</b><br>${esc(p.idcampo)} ↔ ${esc(c.d.idcampo)}`);
+  }));
+
+  lista.forEach(p=>{
+    const icon=L.divIcon({className:'',html:simboloTipoMaster(p.tipo,colorTipoMaster()),iconSize:[20,20],iconAnchor:[10,10]});
+    const mk=L.marker([p.latitude,p.longitude],{icon})
+      .addTo(layer)
+      .bindTooltip(String(p.consecutiv||''),{permanent:['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(p.tipo),direction:'right',offset:[9,0],className:'posteLabel',opacity:1});
+    mk.on('click',()=>abrirDetallePunto(p.id));
+  });
+}
+async function abrirPuntos(proyectoId){const p=proyectos.find(x=>x.id===proyectoId);const emp=empresas.find(e=>e.id===p?.empresa_id);puntosTitle.textContent=`Puntos · ${emp?.nombre||'Sin empresa'} · ${p?.codigo||''}`;const {data,error}=await sb.from('mapping_puntos').select('*').eq('proyecto_id',proyectoId).order('poligono').order('consecutiv');if(error)return alert(error.message);const list=data||[],idx=idxPuntos(list);tablaPuntos.innerHTML=list.map(r=>`<tr class="clickablePoint" onclick="abrirDetallePunto('${r.id}')"><td><b>${esc(r.idcampo)}</b></td><td><span class="badge ${String(r.tipo).replace('. ','').replace(' ','')}">${esc(r.tipo)}</span></td><td>${esc(r.poligono)}</td><td>${conexiones(r,idx).map(c=>esc(c.d.idcampo)).join(', ')||'—'}</td><td>${esc(r.tecnico_nombre||r.tecnico_email||'')}</td><td>${esc(r.direccion||'')}</td></tr>`).join('');puntosModal.classList.add('open')}
+
+function fechaPunto(p){
+  const raw=p.fecha_captura_app||p.fecha||p.created_at||'';
+  if(!raw)return '';
+  const d=new Date(raw);
+  if(!isNaN(d))return d.toISOString().slice(0,10);
+  const m=String(raw).match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m?`${m[1]}-${m[2]}-${m[3]}`:String(raw).slice(0,10);
+}
+function nombreTecnicoPunto(p){return p.tecnico_nombre||p.tecnico_email||'Sin técnico'}
+function valorQ(p,key,dbkey=null){
+  const q=p?.datos_qgis&&typeof p.datos_qgis==='object'?p.datos_qgis:{};
+  return q[key]??p[dbkey||key.toLowerCase()]??'';
+}
+function numeroFmt(n,dec=1){return Number(n||0).toLocaleString('es-CO',{maximumFractionDigits:dec})}
+
+async function abrirDashboardAvances(){
+  dashProyecto.innerHTML='<option value="">Todos los proyectos</option>'+proyectos.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');
+  if(fProyecto?.value)dashProyecto.value=fProyecto.value;
+  avanceModal.classList.add('open');
+  await cargarDashboardAvances();
+}
+function cerrarDashboardAvances(){
+  avanceModal.classList.remove('open');
+}
+async function cargarDashboardAvances(){
+  const proyectoId=dashProyecto.value;
+  let q=sb.from('mapping_puntos').select('*').order('fecha_captura_app',{ascending:true});
+  if(proyectoId)q=q.eq('proyecto_id',proyectoId);
+  const {data,error}=await q;
+  if(error)return alert('Error cargando dashboard: '+error.message);
+  dashboardPuntos=data||[];
+
+  const tecActual=dashTecnico.value;
+  const tecs=[...new Set(dashboardPuntos.map(nombreTecnicoPunto))].sort((a,b)=>a.localeCompare(b));
+  dashTecnico.innerHTML='<option value="">Todos los técnicos</option>'+tecs.map(t=>`<option>${esc(t)}</option>`).join('');
+  if(tecs.includes(tecActual))dashTecnico.value=tecActual;
+
+  const fechas=dashboardPuntos.map(fechaPunto).filter(Boolean).sort();
+  if(fechas.length){
+    if(!dashDesde.value)dashDesde.value=fechas[0];
+    if(!dashHasta.value)dashHasta.value=fechas[fechas.length-1];
+  }
+
+  renderDashboardAvances();
+}
+function datosDashboardFiltrados(){
+  const tec=dashTecnico.value,desde=dashDesde.value,hasta=dashHasta.value;
+  return dashboardPuntos.filter(p=>{
+    const f=fechaPunto(p);
+    return (!tec||nombreTecnicoPunto(p)===tec)&&(!desde||f>=desde)&&(!hasta||f<=hasta);
+  });
+}
+function destruirChart(id){
+  if(dashboardCharts[id]){dashboardCharts[id].destroy();delete dashboardCharts[id]}
+}
+function crearChart(id,config){
+  destruirChart(id);
+  const el=document.getElementById(id);
+  if(!el)return;
+  dashboardCharts[id]=new Chart(el.getContext('2d'),config);
+}
+function renderDashboardAvances(){
+  const arr=datosDashboardFiltrados();
+  const porDia=new Map(),porTec=new Map();
+  const tipos=['POSTE','CANALIZADO','C. AMERICANO','CERCHA'];
+
+  for(const p of arr){
+    const f=fechaPunto(p)||'Sin fecha',t=p.tipo||'SIN TIPO',tec=nombreTecnicoPunto(p);
+    if(!porDia.has(f))porDia.set(f,{fecha:f,total:0,POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
+    const d=porDia.get(f);d.total++;if(d[t]!=null)d[t]++;
+
+    if(!porTec.has(tec))porTec.set(tec,{tecnico:tec,total:0,dias:new Set(),POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
+    const x=porTec.get(tec);x.total++;x.dias.add(f);if(x[t]!=null)x[t]++;
+  }
+
+  const dias=[...porDia.values()].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const tecnicos=[...porTec.values()].sort((a,b)=>b.total-a.total);
+  const total=arr.length;
+  const cuenta=tipo=>arr.filter(p=>p.tipo===tipo).length;
+  const activos=dias.filter(d=>d.fecha!=='Sin fecha');
+  const promedio=activos.length?total/activos.length:0;
+  const mejor=activos.reduce((m,d)=>!m||d.total>m.total?d:m,null);
+
+  dTotal.textContent=numeroFmt(total,0);
+  dPostes.textContent=numeroFmt(cuenta('POSTE'),0);
+  dCamaras.textContent=numeroFmt(cuenta('CANALIZADO'),0);
+  dAmericano.textContent=numeroFmt(cuenta('C. AMERICANO'),0);
+  dCerchas.textContent=numeroFmt(cuenta('CERCHA'),0);
+  dPromedio.textContent=numeroFmt(promedio,1);
+  dMejorDia.textContent=numeroFmt(mejor?.total||0,0);
+  dMejorDiaFecha.textContent=mejor?.fecha||'—';
+  dTecnicos.textContent=tecnicos.length;
+
+  const psel=proyectos.find(p=>p.id===dashProyecto.value);
+  avanceSubtitulo.textContent=psel?`${psel.codigo} · ${psel.nombre}`:'Todos los proyectos';
+  dashPrintProyecto.textContent=avanceSubtitulo.textContent+(dashTecnico.value?` · Técnico: ${dashTecnico.value}`:'');
+  dashPrintFecha.textContent=`Generado: ${new Date().toLocaleString('es-CO')}`;
+
+  const labels=dias.map(d=>d.fecha);
+
+  crearChart('chTotalDia',{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Elementos levantados',
+        data:dias.map(d=>d.total),
+        backgroundColor:'#14b8a6',
+        borderColor:'#5eead4',
+        borderWidth:1,
+        borderRadius:5
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:20}},
+      scales:{
+        x:{ticks:{color:'#94a3b8'}},
+        y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'},suggestedMax:Math.max(5,...dias.map(d=>d.total))+2}
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:true,color:'#f8fafc',anchor:'end',align:'top',formatter:(v)=>v||''}
+      }
+    }
+  });
+
+  crearChart('chDiario',{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Postes',data:dias.map(d=>d.POSTE),backgroundColor:'#ef4444'},
+      {label:'Cámaras',data:dias.map(d=>d.CANALIZADO),backgroundColor:'#38bdf8'},
+      {label:'C. Americano',data:dias.map(d=>d['C. AMERICANO']),backgroundColor:'#f59e0b'},
+      {label:'Cerchas',data:dias.map(d=>d.CERCHA),backgroundColor:'#8b5cf6'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,ticks:{color:'#94a3b8'}},y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}}},plugins:{
+      legend:{labels:{color:'#cbd5e1'}},
+      datalabels:{
+        display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+        color:'#f8fafc',
+        anchor:'center',
+        align:'center',
+        formatter:(v)=>v||''
+      }
+    }}
+  });
+
+  crearChart('chTipos',{
+    type:'doughnut',
+    data:{labels:['Postes','Cámaras','C. Americano','Cerchas'],datasets:[{data:[cuenta('POSTE'),cuenta('CANALIZADO'),cuenta('C. AMERICANO'),cuenta('CERCHA')],backgroundColor:['#ef4444','#38bdf8','#f59e0b','#8b5cf6']}]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#cbd5e1'}},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#fff',
+          anchor:'center',
+          align:'center',
+          formatter:(v)=>v||''
+        }
+      }
+    }
+  });
+
+  crearChart('chTecnicos',{
+    type:'bar',
+    data:{labels:tecnicos.map(t=>t.tecnico),datasets:[{label:'Elementos',data:tecnicos.map(t=>t.total),backgroundColor:'#12b8ae'}]},
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{right:28}},
+      scales:{x:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}},y:{ticks:{color:'#94a3b8'}}},
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:true,color:'#f8fafc',anchor:'end',align:'right',formatter:(v)=>v||''}
+      }
+    }
+  });
+
+  let ac=0;
+  crearChart('chAcumulado',{
+    type:'line',
+    data:{labels,datasets:[{label:'Elementos acumulados',data:dias.map(d=>ac+=d.total),borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,.15)',fill:true,tension:.25}]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:20}},
+      scales:{x:{ticks:{color:'#94a3b8'}},y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'}}},
+      plugins:{
+        legend:{labels:{color:'#cbd5e1'}},
+        datalabels:{display:true,color:'#f8fafc',anchor:'end',align:'top',formatter:(v)=>v||''}
+      }
+    }
+  });
+
+  dashTablaTecnicos.innerHTML=tecnicos.length?tecnicos.map(t=>`<tr>
+    <td><b>${esc(t.tecnico)}</b></td><td>${t.total}</td><td>${t.dias.size}</td><td>${numeroFmt(t.total/Math.max(t.dias.size,1),1)}</td>
+    <td>${t.POSTE}</td><td>${t.CANALIZADO}</td><td>${t.CERCHA}</td><td>${t['C. AMERICANO']}</td>
+  </tr>`).join(''):'<tr><td colspan="8">Sin información para los filtros seleccionados.</td></tr>';
+
+  dashTablaDias.innerHTML=dias.length?dias.slice().reverse().map(d=>`<tr>
+    <td>${esc(d.fecha)}</td><td><b>${d.total}</b></td><td>${d.POSTE}</td><td>${d.CANALIZADO}</td><td>${d.CERCHA}</td><td>${d['C. AMERICANO']}</td>
+  </tr>`).join(''):'<tr><td colspan="6">Sin información para los filtros seleccionados.</td></tr>';
+}
+
+const COLUMNAS_REPORTE_EJEMPLO = ["wkt_geom", "fid", "FOTO", "CONSECUTIV", "PROPIETARI", "CX1", "CX2", "CX3", "CX4", "PACVI", "TIPO POSTE", "ROTURA", "MATERIAL", "ALTURA", "ESTADO", "POLIGONO", "COSTADO", "DIRECCION", "TENSION", "CABLES", "RESERVAS", "EMPALMES", "OBSERVACIO", "FECHA", "IDCAMPO", "ID UNICO", "FOTO2", "EXISTENCIA", "TIPOCAMARA", "HORA", "TIPO", "ELECTRICOS", "CONF DUCTO", "DUCTO ELEC", "DUCT TELCO", "DUCT LIBRE", "DUCT UTIL", "SUBIDA A P", "ELEM RED", "CANT RESER", "ID", "LATCX1", "LATCX2", "LATCX3", "LATCX4", "LONGTCX1", "LONGTCX2", "LONGTCX3", "LONGTCX4", "CX1POL", "CX2POL", "CX3POL", "CX4POL", "CX1CONSE", "CX2CONSE", "CX3CONSE", "CX4CONSE", "CXOTROPOL", "CX1LATPOL", "CX2LATPOL", "CX3LATPOL", "CX4LATPOL", "CX1LONTPOL", "CX2LONTPOL", "CX3LONTPOL", "CX4LONTPOL", "DISTANCIA", "IMGDUCTOS", "FINDERED", "LATITUDE", "LONGITUDE", "MAPPING", "NAPS", "BAJANTES", "FUENTES", "PROEMPALME", "PRONAP", "RIENDA", "AMPLIFI", "TELCX1", "TELCX2", "TELCX3", "TELCX4", "FOTO3", "FOTO4", "FOTO5CAM", "FOTO6CAM", "FOTO7CAM", "FOTO8CAM", "FOTO9CAM", "BARRIO", "CIUDAD", "TECNICO", "PROYECTO", "DISTODO1", "DISTODO2", "DISTODO3", "DISTODO4", "DISTODO5", "DISTODO6", "DISTODO7", "DISTODO8", "IDGLOBAL", "FOTO10CAM", "FOTO11"];
+
+function valorExportPunto(p, campo){
+  const q=(p?.datos_qgis && typeof p.datos_qgis==='object') ? p.datos_qgis : {};
+  const get=(qKey,dbKey,def='') => {
+    const v=(q[qKey]!==undefined && q[qKey]!==null && q[qKey]!=='') ? q[qKey] :
+      (p[dbKey]!==undefined && p[dbKey]!==null ? p[dbKey] : def);
+    return v===undefined||v===null?'':v;
+  };
+
+  const foto=(tipo)=>p.__fotos?.[tipo]||'';
+
+  switch(campo){
+    case 'wkt_geom': {
+      const lat=Number(get('LATITUDE','latitude',''));
+      const lon=Number(get('LONGITUDE','longitude',''));
+      return Number.isFinite(lat)&&Number.isFinite(lon)?`Point (${lon} ${lat})`:'';
+    }
+    case 'fid': return p.__fid||'';
+    case 'FOTO': return foto('FOTO');
+    case 'CONSECUTIV': return get('CONSECUTIV','consecutiv');
+    case 'PROPIETARI': return get('PROPIETARI','propietari');
+    case 'CX1': return get('CX1','cx1');
+    case 'CX2': return get('CX2','cx2');
+    case 'CX3': return get('CX3','cx3');
+    case 'CX4': return get('CX4','cx4');
+    case 'PACVI': return get('PACVI','pacvi');
+    case 'TIPO POSTE': return get('TIPO POSTE','tipo_poste');
+    case 'ROTURA': return get('ROTURA','rotura');
+    case 'MATERIAL': return get('MATERIAL','material');
+    case 'ALTURA': return get('ALTURA','altura');
+    case 'ESTADO': return get('ESTADO','estado');
+    case 'POLIGONO': return get('POLIGONO','poligono');
+    case 'COSTADO': return get('COSTADO','costado');
+    case 'DIRECCION': return get('DIRECCION','direccion');
+    case 'TENSION': return get('TENSION','tension');
+    case 'CABLES': return get('CABLES','cables');
+    case 'RESERVAS': return get('RESERVAS','reservas');
+    case 'EMPALMES': return get('EMPALMES','empalmes');
+    case 'OBSERVACIO': return get('OBSERVACIO','observacio');
+    case 'FECHA': return get('FECHA','fecha');
+    case 'IDCAMPO': return get('IDCAMPO','idcampo');
+    case 'ID UNICO': return get('ID UNICO','id_unico');
+    case 'FOTO2': return foto('FOTO2');
+    case 'EXISTENCIA': return get('EXISTENCIA','existencia');
+    case 'TIPOCAMARA': return get('TIPOCAMARA','tipo_camara');
+    case 'HORA': return get('HORA','hora');
+    case 'TIPO': return get('TIPO','tipo');
+    case 'ELECTRICOS': return get('ELECTRICOS','electricos');
+    case 'CONF DUCTO': return get('CONF DUCTO','conf_ducto');
+    case 'DUCTO ELEC': return get('DUCTO ELEC','ducto_elec');
+    case 'DUCT TELCO': return get('DUCT TELCO','duct_telco');
+    case 'DUCT LIBRE': return get('DUCT LIBRE','duct_libre');
+    case 'DUCT UTIL': return get('DUCT UTIL','duct_util');
+    case 'SUBIDA A P': return get('SUBIDA A P','subida_a_p');
+    case 'ELEM RED': return get('ELEM RED','elem_red');
+    case 'CANT RESER': return get('CANT RESER','cant_reser');
+    case 'ID': return get('ID','id');
+    case 'LATCX1': return get('LATCX1','latcx1');
+    case 'LATCX2': return get('LATCX2','latcx2');
+    case 'LATCX3': return get('LATCX3','latcx3');
+    case 'LATCX4': return get('LATCX4','latcx4');
+    case 'LONGTCX1': return get('LONGTCX1','longtcx1');
+    case 'LONGTCX2': return get('LONGTCX2','longtcx2');
+    case 'LONGTCX3': return get('LONGTCX3','longtcx3');
+    case 'LONGTCX4': return get('LONGTCX4','longtcx4');
+    case 'CX1POL': return get('CX1POL','cx1pol');
+    case 'CX2POL': return get('CX2POL','cx2pol');
+    case 'CX3POL': return get('CX3POL','cx3pol');
+    case 'CX4POL': return get('CX4POL','cx4pol');
+    case 'CX1CONSE': return get('CX1CONSE','cx1conse');
+    case 'CX2CONSE': return get('CX2CONSE','cx2conse');
+    case 'CX3CONSE': return get('CX3CONSE','cx3conse');
+    case 'CX4CONSE': return get('CX4CONSE','cx4conse');
+    case 'CXOTROPOL': return get('CXOTROPOL','cxotropol');
+    case 'CX1LATPOL': return get('CX1LATPOL','cx1latpol');
+    case 'CX2LATPOL': return get('CX2LATPOL','cx2latpol');
+    case 'CX3LATPOL': return get('CX3LATPOL','cx3latpol');
+    case 'CX4LATPOL': return get('CX4LATPOL','cx4latpol');
+    case 'CX1LONTPOL': return get('CX1LONTPOL','cx1lontpol');
+    case 'CX2LONTPOL': return get('CX2LONTPOL','cx2lontpol');
+    case 'CX3LONTPOL': return get('CX3LONTPOL','cx3lontpol');
+    case 'CX4LONTPOL': return get('CX4LONTPOL','cx4lontpol');
+    case 'DISTANCIA': return get('DISTANCIA','distancia');
+    case 'IMGDUCTOS': return get('IMGDUCTOS','imgductos');
+    case 'FINDERED': return get('FINDERED','finder_ed');
+    case 'LATITUDE': return get('LATITUDE','latitude');
+    case 'LONGITUDE': return get('LONGITUDE','longitude');
+    case 'MAPPING': return get('MAPPING','mapping',0);
+    case 'NAPS': return get('NAPS','naps');
+    case 'BAJANTES': return get('BAJANTES','bajantes');
+    case 'FUENTES': return get('FUENTES','fuentes');
+    case 'PROEMPALME': return get('PROEMPALME','proempalme');
+    case 'PRONAP': return get('PRONAP','pronap');
+    case 'RIENDA': return get('RIENDA','rienda');
+    case 'AMPLIFI': return get('AMPLIFI','amplifi');
+    case 'TELCX1': return get('TELCX1','telcx1');
+    case 'TELCX2': return get('TELCX2','telcx2');
+    case 'TELCX3': return get('TELCX3','telcx3');
+    case 'TELCX4': return get('TELCX4','telcx4');
+    case 'FOTO3': return foto('FOTO3');
+    case 'FOTO4': return foto('FOTO4');
+    case 'FOTO5CAM': return foto('FOTO5CAM');
+    case 'FOTO6CAM': return foto('FOTO6CAM');
+    case 'FOTO7CAM': return foto('FOTO7CAM');
+    case 'FOTO8CAM': return foto('FOTO8CAM');
+    case 'FOTO9CAM': return foto('FOTO9CAM');
+    case 'BARRIO': return get('BARRIO','barrio');
+    case 'CIUDAD': return get('CIUDAD','ciudad');
+    case 'TECNICO': return get('TECNICO','tecnico_nombre') || p.tecnico_email || '';
+    case 'PROYECTO': {
+      const desdeQ=get('PROYECTO','');
+      if(desdeQ)return desdeQ;
+      const pr=proyectos.find(x=>String(x.id)===String(p.proyecto_id));
+      return pr?.nombre||pr?.codigo||'';
+    }
+    case 'DISTODO1': return get('DISTODO1','distodo1');
+    case 'DISTODO2': return get('DISTODO2','distodo2');
+    case 'DISTODO3': return get('DISTODO3','distodo3');
+    case 'DISTODO4': return get('DISTODO4','distodo4');
+    case 'DISTODO5': return get('DISTODO5','distodo5');
+    case 'DISTODO6': return get('DISTODO6','distodo6');
+    case 'DISTODO7': return get('DISTODO7','distodo7');
+    case 'DISTODO8': return get('DISTODO8','distodo8');
+    case 'IDGLOBAL': return get('IDGLOBAL','idglobal');
+    case 'FOTO10CAM': return foto('FOTO10CAM');
+    case 'FOTO11': return foto('FOTO11');
+    default: return '';
+  }
+}
+
+async function cargarFotosParaExportar(lista){
+  const ids=lista.map(p=>p.id).filter(Boolean);
+  if(!ids.length)return;
+
+  // Consulta en lotes para evitar URLs demasiado grandes.
+  const batch=250;
+  for(let i=0;i<ids.length;i+=batch){
+    const parte=ids.slice(i,i+batch);
+    const {data,error}=await sb
+      .from('mapping_punto_fotos')
+      .select('punto_id,tipo_foto,nombre_archivo,url_foto,storage_path')
+      .in('punto_id',parte);
+
+    if(error){
+      console.warn('No se pudieron cargar algunas fotos para el reporte:',error);
+      continue;
+    }
+
+    const mapa=new Map(lista.map(p=>[String(p.id),p]));
+    (data||[]).forEach(f=>{
+      const p=mapa.get(String(f.punto_id));
+      if(!p)return;
+      if(!p.__fotos)p.__fotos={};
+      // Conservamos una referencia útil. Si existe ruta/nombre, se usa; si no, URL.
+      p.__fotos[f.tipo_foto]=f.storage_path||f.nombre_archivo||f.url_foto||'';
+    });
+  }
+}
+
+async function exportarReporteExcel(){
+  if(typeof XLSX==='undefined'){
+    alert('No fue posible cargar el módulo de Excel. Verifica la conexión a Internet.');
+    return;
+  }
+
+  const btn=event?.target;
+  const textoOriginal=btn?.textContent;
+  if(btn){btn.disabled=true;btn.textContent='Generando Excel...';}
+
+  try{
+    const lista=datosDashboardFiltrados().map((p,i)=>({...p,__fid:i+1,__fotos:{}}));
+    if(!lista.length){
+      alert('No hay datos para exportar con los filtros seleccionados.');
+      return;
+    }
+
+    await cargarFotosParaExportar(lista);
+
+    // Mantiene exactamente el mismo orden de columnas del archivo EJEMPLO export REPORTE.xlsx.
+    const aoa=[COLUMNAS_REPORTE_EJEMPLO];
+    lista.forEach(p=>{
+      aoa.push(COLUMNAS_REPORTE_EJEMPLO.map(c=>valorExportPunto(p,c)));
+    });
+
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+
+    // Anchos para facilitar lectura sin alterar el orden.
+    ws['!cols']=COLUMNAS_REPORTE_EJEMPLO.map(c=>{
+      const largos=['DIRECCION','OBSERVACIO','IDGLOBAL','PROYECTO','TECNICO'];
+      if(largos.includes(c))return {wch:28};
+      if(c.startsWith('FOTO'))return {wch:22};
+      if(c.includes('LAT')||c.includes('LONG'))return {wch:16};
+      return {wch:13};
+    });
+
+    // Autofiltro exactamente sobre las 105 columnas.
+    ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(COLUMNAS_REPORTE_EJEMPLO.length-1)}${aoa.length}`};
+
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Hoja1');
+
+    const psel=proyectos.find(p=>String(p.id)===String(dashProyecto.value));
+    const nombreBase=(psel?.codigo||psel?.nombre||'REPORTE_MAPPING')
+      .replace(/[\\/:*?"<>|]+/g,'_')
+      .replace(/\s+/g,'_');
+    const fecha=new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb,`${nombreBase}_REPORTE_${fecha}.xlsx`);
+  }catch(e){
+    console.error(e);
+    alert('No fue posible generar el reporte Excel: '+(e?.message||e));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=textoOriginal||'📥 Exportar reporte Excel';}
+  }
+}
+
+function aplicarTemaImpresionCharts(imprimir){
+  Object.values(dashboardCharts).forEach(ch=>{
+    const c=imprimir?'#111827':'#94a3b8';
+    const dc=imprimir?'#111827':'#f8fafc';
+    if(ch.options?.scales){
+      Object.values(ch.options.scales).forEach(sc=>{if(sc?.ticks)sc.ticks.color=c;});
+    }
+    if(ch.options?.plugins?.legend?.labels)ch.options.plugins.legend.labels.color=imprimir?'#111827':'#cbd5e1';
+    if(ch.options?.plugins?.datalabels)ch.options.plugins.datalabels.color=dc;
+    ch.update('none');
+  });
+}
+window.addEventListener('beforeprint',()=>aplicarTemaImpresionCharts(true));
+window.addEventListener('afterprint',()=>aplicarTemaImpresionCharts(false));
+
+function imprimirDashboard(){
+  renderDashboardAvances();
+  aplicarTemaImpresionCharts(true);
+  setTimeout(()=>window.print(),350);
+}
+
+function roCampo(label,value,largo=false){
+  const v=(value===null||value===undefined||value==='')?'—':value;
+  return `<div class="roField"><label>${esc(label)}</label><div class="roValue ${largo?'long':''}">${esc(v)}</div></div>`;
+}
+function roSeccion(titulo,campos){
+  return `<div class="readonlySection"><h3>${esc(titulo)}</h3><div class="readonlyGrid">${campos.join('')}</div></div>`;
+}
+async function abrirDetallePunto(id){
+  let p=puntos.find(x=>String(x.id)===String(id))||dashboardPuntos.find(x=>String(x.id)===String(id));
+  if(!p){
+    const {data,error}=await sb.from('mapping_puntos').select('*').eq('id',id).maybeSingle();
+    if(error||!data)return alert('No fue posible consultar el punto.');
+    p=data;
+  }
+  const q=p.datos_qgis&&typeof p.datos_qgis==='object'?p.datos_qgis:{};
+  const get=(k,db)=>q[k]??p[db]??'';
+  detallePuntoTitulo.textContent=`${p.idcampo||''} · ${p.tipo||''}`;
+
+  const campos=[
+    roSeccion('1. Identificación',[
+      roCampo('Proyecto',get('PROYECTO','proyecto_id')),roCampo('Técnico',p.tecnico_nombre||p.tecnico_email),
+      roCampo('Tipo',p.tipo),roCampo('Polígono',p.poligono),roCampo('Consecutivo',p.consecutiv),roCampo('IDCAMPO',p.idcampo)
+    ]),
+    roSeccion('2. Ubicación',[
+      roCampo('Ciudad',p.ciudad),roCampo('Barrio',p.barrio),roCampo('Dirección',p.direccion),
+      roCampo('Costado',p.costado),roCampo('Latitud',p.latitude),roCampo('Longitud',p.longitude)
+    ]),
+    roSeccion('3. Características del elemento',[
+      roCampo('Propietario',p.propietari),roCampo('Altura',p.altura),roCampo('Tipo poste',p.tipo_poste),
+      roCampo('Material',p.material),roCampo('Rotura',p.rotura),roCampo('Estado',p.estado),
+      roCampo('Tensión',p.tension),roCampo('Rienda',p.rienda),roCampo('Eléctricos',p.electricos),
+      roCampo('Cables',p.cables),roCampo('Reservas',p.reservas),roCampo('Empalmes',p.empalmes),
+      roCampo('NAPs',p.naps),roCampo('Bajantes',p.bajantes),roCampo('Fuentes',p.fuentes),roCampo('Amplificadores',p.amplifi)
+    ]),
+    roSeccion('4. Cámara / canalizado',[
+      roCampo('Tipo cámara',p.tipo_camara),roCampo('Configuración ducto',p.conf_ducto),roCampo('Ducto eléctrico',p.ducto_elec),
+      roCampo('Ducto TELCO',p.duct_telco),roCampo('Ducto libre',p.duct_libre),roCampo('Ducto útil',p.duct_util),
+      roCampo('Subida a poste',p.subida_a_p),roCampo('Elementos de red',p.elem_red),roCampo('Existencia',p.existencia),roCampo('Cantidad reservas',p.cant_reser)
+    ]),
+    roSeccion('5. Conexiones',[
+      roCampo('CX1',p.cx1),roCampo('LATCX1',p.latcx1),roCampo('LONGTCX1',p.longtcx1),
+      roCampo('CX2',p.cx2),roCampo('LATCX2',p.latcx2),roCampo('LONGTCX2',p.longtcx2),
+      roCampo('CX3',p.cx3),roCampo('LATCX3',p.latcx3),roCampo('LONGTCX3',p.longtcx3),
+      roCampo('CX4',p.cx4),roCampo('LATCX4',p.latcx4),roCampo('LONGTCX4',p.longtcx4),
+      roCampo('Cruce otro polígono',p.cxotropol)
+    ]),
+    roSeccion('6. Información general',[
+      roCampo('PACVI',p.pacvi),roCampo('Fin de red',p.finder_ed),roCampo('Proyección empalme',p.proempalme),
+      roCampo('Proyección NAP',p.pronap),roCampo('Fecha',fechaPunto(p)),roCampo('Hora',p.hora),
+      roCampo('Observación',p.observacio,true)
+    ])
+  ];
+
+  detallePuntoContenido.innerHTML=campos.join('');
+  detalleFotos.innerHTML='<div class="hint">Consultando fotografías...</div>';
+  detallePuntoModal.classList.add('open');
+  await cargarFotosDetalle(p.id);
+}
+function driveId(url,path){
+  for(const s0 of [url,path]){
+    const s=String(s0||'');
+    let m=s.match(/\/file\/d\/([^/?#]+)/)||s.match(/[?&]id=([^&#]+)/);
+    if(m)return m[1];
+    if(/^[A-Za-z0-9_-]{15,}$/.test(s)&&!s.startsWith('http'))return s;
+  }
+  return '';
+}
+async function cargarFotosDetalle(puntoId){
+  const {data,error}=await sb.from('mapping_punto_fotos').select('tipo_foto,nombre_archivo,url_foto,storage_path').eq('punto_id',puntoId).order('created_at');
+  if(error){detalleFotos.innerHTML=`<div class="hint">No fue posible consultar fotografías: ${esc(error.message)}</div>`;return}
+  const fotos=data||[];
+  if(!fotos.length){detalleFotos.innerHTML='<div class="hint">Este elemento no tiene fotografías sincronizadas.</div>';return}
+  detalleFotos.innerHTML=fotos.map(f=>{
+    const id=driveId(f.url_foto,f.storage_path);
+    const img=id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`:(f.url_foto||'');
+    const link=id?`https://drive.google.com/file/d/${encodeURIComponent(id)}/view`:(f.url_foto||'#');
+    return `<div class="roPhoto"><b>${esc(f.tipo_foto||'Foto')}</b><img src="${esc(img)}" alt="${esc(f.nombre_archivo||'Foto')}" onerror="this.style.display='none'"><a href="${esc(link)}" target="_blank">Abrir fotografía</a></div>`;
+  }).join('');
+}
+
+function actualizarKpis(){kProyectos.textContent=proyectos.length;kTecnicos.textContent=usuarios.filter(u=>u.rol==='tecnico').length;kAsignaciones.textContent=asignaciones.length}
+window.addEventListener('load',()=>{initMap();verificar()});
+</script>
+</body>
+</html>
