@@ -826,16 +826,13 @@ body.lightTheme #stHint{
 .leaflet-poligonos-pane{z-index:330!important}
 .poligonoAsignadoTooltip{
   background:rgba(15,23,42,.88)!important;
-  border:1px solid #facc15!important;
-  color:#fde047!important;
+  border:1px solid currentColor!important;
   font-size:10px!important;
   font-weight:900!important;
   box-shadow:none!important;
 }
-.poligonoAsignadoTooltip:before{border-top-color:#facc15!important}
 body.lightTheme .poligonoAsignadoTooltip{
   background:rgba(255,255,255,.94)!important;
-  color:#a16207!important;
 }
 
 
@@ -854,10 +851,20 @@ body.lightTheme .poligonoAutoEstado.ok{color:#15803d!important}
 body.lightTheme .poligonoAutoEstado.warn{color:#b45309!important}
 body.lightTheme .poligonoAutoEstado.error{color:#b91c1c!important}
 
+
+.fueraPoligonoModal{width:min(520px,94vw)}
+.fueraPoligonoModal .body{text-align:center}
+.fueraPoligonoIcon{font-size:56px;line-height:1;margin:6px 0 10px}
+.fueraPoligonoModal h3{margin:0 0 8px;color:#fecaca;font-size:17px}
+.fueraPoligonoModal p{color:#cbd5e1;font-size:13px;line-height:1.45}
+body.lightTheme .fueraPoligonoModal h3{color:#b91c1c!important}
+body.lightTheme .fueraPoligonoModal p{color:#334155!important}
+
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · detección automática de polígono</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · validación geométrica estricta</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -868,6 +875,25 @@ body.lightTheme .poligonoAutoEstado.error{color:#b91c1c!important}
   <button id="btnTemaApp" onclick="toggleTemaApp()"><span class="ico">☀</span>Tema claro</button>
   <button onclick="abrirPerfilTecnico()"><span class="ico">👤</span>Perfil</button>
 </nav>
+
+<div class="overlay" id="fueraPoligonoOverlay">
+  <div class="modal fueraPoligonoModal">
+    <div class="modalHead">
+      <h2>⛔ Fuera del polígono asignado</h2>
+      <button class="close" onclick="cerrarAvisoFueraPoligono()">Cerrar</button>
+    </div>
+    <div class="body">
+      <div class="fueraPoligonoIcon">⛔</div>
+      <h3>No puedes registrar elementos en esta ubicación</h3>
+      <p id="fueraPoligonoTexto">
+        La mira central se encuentra fuera de los polígonos que tienes asignados.
+      </p>
+      <div id="fueraPoligonoCoords" class="hint"></div>
+      <button class="btn danger" style="width:100%" onclick="cerrarAvisoFueraPoligono()">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <div class="authOverlay" id="authOverlay">
   <div class="authCard">
     <h2>Ingreso Técnico - Mapping</h2>
@@ -902,7 +928,7 @@ body.lightTheme .poligonoAutoEstado.error{color:#b91c1c!important}
 <div class="hint">La coordenada se toma exactamente de la <b>mira central del mapa</b>. Los campos visibles cambian según el valor de <b>TIPO</b>, replicando la lógica del formulario de AGREGAR2.</div>
 <div class="section"><h3>1. Identificación y ubicación</h3><div class="sectionBody"><div class="grid">
 <div><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select></div>
-<div><label>POLIGONO <span class="req">*</span></label><select id="POLIGONO" onchange="recalcularIds()"><option value="">Seleccione...</option><option>POLIGONO1</option><option>POLIGONO2</option><option>POLIGONO3</option><option>POLIGONO4</option><option>POLIGONO5</option><option>POLIGONO6</option><option>POLIGONO7</option><option>POLIGONO8</option><option>POLIGONO9</option></select><small id="poligonoAutoEstado" class="poligonoAutoEstado">Detección automática por ubicación</small></div>
+<div><label>POLIGONO <span class="req">*</span> <small style="font-weight:800">(AUTOMÁTICO)</small></label><select id="POLIGONO" onchange="recalcularIds()"><option value="">Seleccione...</option><option>POLIGONO1</option><option>POLIGONO2</option><option>POLIGONO3</option><option>POLIGONO4</option><option>POLIGONO5</option><option>POLIGONO6</option><option>POLIGONO7</option><option>POLIGONO8</option><option>POLIGONO9</option></select><small id="poligonoAutoEstado" class="poligonoAutoEstado">Detección automática por ubicación</small></div>
 <div><label>CONSECUTIV</label><input id="CONSECUTIV" readonly></div><div><label>IDCAMPO</label><input id="IDCAMPO" readonly></div>
 <div><label>CIUDAD <span class="req">*</span></label><input id="CIUDAD" value="Bogota D.C"></div><div><label>BARRIO <span class="req">*</span></label><input id="BARRIO" placeholder="Barrio"></div>
 <div><label>TECNICO <span class="req">*</span></label><input id="TECNICO" placeholder="Nombre del técnico"></div><div><label>PROYECTO</label><input id="PROYECTO" readonly title="Proyecto asignado desde el Master"></div>
@@ -2774,6 +2800,7 @@ async function editarPunto(id){
   editingId=id;
   limpiarForm();
   aplicarOpcionesPoligonosAsignados(r.POLIGONO);
+  if(POLIGONO)POLIGONO.disabled=true;
   for(const [k,v] of Object.entries(r)){
     const mapId={
       'TIPO POSTE':'TIPO_POSTE','CONF DUCTO':'CONF_DUCTO',
@@ -3175,10 +3202,16 @@ function uuidValido(v){return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a
 function localId(r){return r.offline_id||r.id||crypto.randomUUID()}
 
 function normalizarCodigoPoligonoApp(v){
-  return String(v??'').trim().toUpperCase();
+  return String(v??'')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g,'');
 }
 
-function nombreFeaturePoligonoApp(feature,index){
+
+function nombreExplicitoFeaturePoligonoApp(feature){
   const p=feature?.properties||{};
   const candidatos=[
     p.POLIGONO,p.poligono,p.Poligono,
@@ -3187,8 +3220,33 @@ function nombreFeaturePoligonoApp(feature,index){
     p.CODIGO,p.codigo,p.Codigo,
     feature?.id
   ];
-  const valor=candidatos.find(v=>v!==null&&v!==undefined&&String(v).trim()!=='');
-  return normalizarCodigoPoligonoApp(valor||`POLIGONO${index+1}`);
+
+  const valor=candidatos.find(v=>
+    v!==null &&
+    v!==undefined &&
+    String(v).trim()!==''
+  );
+
+  return valor===undefined
+    ? ''
+    : normalizarCodigoPoligonoApp(valor);
+}
+
+function nombreFeaturePoligonoApp(feature,index){
+  const p=feature?.properties||{};
+
+  // 1. El nombre que viene DENTRO del GeoJSON es la fuente de verdad.
+  const explicito=nombreExplicitoFeaturePoligonoApp(feature);
+  if(explicito)return explicito;
+
+  // 2. Solo si la feature no tiene nombre, usamos el código canónico
+  // agregado internamente por la aplicación.
+  if(p.__codigo_mapping){
+    return normalizarCodigoPoligonoApp(p.__codigo_mapping);
+  }
+
+  // 3. Último respaldo por posición.
+  return normalizarCodigoPoligonoApp(`POLIGONO${index+1}`);
 }
 
 
@@ -3264,24 +3322,69 @@ function puntoEnFeaturePoligono(feature,lat,lon){
   return false;
 }
 
+
+function puntoDentroFeatureSeguro(feature,lat,lon){
+  const y=Number(lat),x=Number(lon);
+  if(!Number.isFinite(y)||!Number.isFinite(x)||!feature?.geometry)return false;
+
+  // Método principal: Turf booleanPointInPolygon.
+  // Soporta Polygon, MultiPolygon, huecos y límites complejos.
+  try{
+    if(window.turf?.booleanPointInPolygon && window.turf?.point){
+      return window.turf.booleanPointInPolygon(
+        window.turf.point([x,y]),
+        feature,
+        {ignoreBoundary:false}
+      );
+    }
+  }catch(e){
+    console.warn('[POLIGONO AUTO] Turf falló; se usa respaldo local:',e);
+  }
+
+  // Respaldo offline / si Turf no cargó.
+  return puntoEnFeaturePoligono(feature,y,x);
+}
+
 function detectarPoligonoPorCoordenada(lat,lon){
   const y=Number(lat),x=Number(lon);
+
   if(!Number.isFinite(y)||!Number.isFinite(x))return null;
   if(!poligonosGeoJSON?.features?.length)return null;
 
   for(let i=0;i<poligonosGeoJSON.features.length;i++){
     const feature=poligonosGeoJSON.features[i];
-    if(puntoEnFeaturePoligono(feature,y,x)){
-      const codigo=nombreFeaturePoligonoApp(feature,i);
-      if(!poligonosAsignadosSet.size || poligonosAsignadosSet.has(codigo)){
-        return {
-          codigo,
-          feature,
-          index:i
-        };
-      }
+    if(!['Polygon','MultiPolygon'].includes(feature?.geometry?.type))continue;
+
+    // Nombre real escrito dentro del GeoJSON:
+    // properties.NOMBRE / POLIGONO / NAME / CODIGO...
+    const codigo=
+      nombreExplicitoFeaturePoligonoApp(feature) ||
+      normalizarCodigoPoligonoApp(feature?.properties?.__codigo_mapping);
+
+    if(!codigo)continue;
+
+    // Solo se evalúan polígonos realmente asignados al técnico.
+    if(poligonosAsignadosSet.size && !poligonosAsignadosSet.has(codigo))continue;
+
+    if(puntoDentroFeatureSeguro(feature,y,x)){
+      console.log('[POLIGONO AUTO] Punto dentro de:',codigo,{
+        lat:y,lon:x,
+        nombreGeoJSON:nombreExplicitoFeaturePoligonoApp(feature),
+        feature_index:feature?.properties?.__feature_index_mapping ?? i
+      });
+
+      return {
+        codigo,
+        feature,
+        index:Number(feature?.properties?.__feature_index_mapping ?? i)
+      };
     }
   }
+
+  console.log('[POLIGONO AUTO] Punto FUERA de todos los polígonos asignados',{
+    lat:y,lon:x,
+    asignados:[...poligonosAsignadosSet]
+  });
 
   return null;
 }
@@ -3301,38 +3404,49 @@ function detectarYAsignarPoligonoPorCoordenada(lat,lon,{limpiarSiFuera=true}={})
   if(!select)return null;
 
   if(encontrado){
-    const existe=[...select.options].some(o=>
-      normalizarCodigoPoligonoApp(o.value)===encontrado.codigo
+    const opcion=[...select.options].find(o=>
+      normalizarCodigoPoligonoApp(o.value)===
+      normalizarCodigoPoligonoApp(encontrado.codigo)
     );
 
-    if(existe){
-      select.value=encontrado.codigo;
+    if(opcion){
+      select.value=opcion.value;
+      select.disabled=true;
       recalcularIds();
+
       actualizarEstadoDeteccionPoligono(
         'ok',
-        `✓ Detectado automáticamente: ${encontrado.codigo}`
+        `✓ Ubicación dentro de ${opcion.value}`
       );
       actualizarResaltadoObligatorios();
-      return encontrado;
+
+      console.log('[POLIGONO AUTO] SELECT actualizado:',select.value);
+
+      return {
+        ...encontrado,
+        codigo:normalizarCodigoPoligonoApp(opcion.value),
+        valorSelect:opcion.value
+      };
     }
+
+    console.error(
+      '[POLIGONO AUTO] Geometría detectada pero el técnico no tiene esa opción:',
+      encontrado.codigo
+    );
   }
 
   if(limpiarSiFuera){
     select.value='';
+    select.disabled=true;
     recalcularIds();
   }
 
-  if(poligonosGeoJSON?.features?.length){
-    actualizarEstadoDeteccionPoligono(
-      'error',
-      '⚠ La ubicación está fuera de los polígonos asignados'
-    );
-  }else{
-    actualizarEstadoDeteccionPoligono(
-      'warn',
-      'No hay geometría de polígonos disponible para detectar'
-    );
-  }
+  actualizarEstadoDeteccionPoligono(
+    'error',
+    poligonosGeoJSON?.features?.length
+      ? '⛔ La ubicación está fuera de los polígonos asignados'
+      : '⛔ No hay geometría disponible para validar la ubicación'
+  );
 
   actualizarResaltadoObligatorios();
   return null;
@@ -3347,20 +3461,26 @@ function aplicarOpcionesPoligonosAsignados(valorPreferido=''){
   const select=document.getElementById('POLIGONO');
   if(!select)return;
 
-  const previo=valorPreferido||select.value||'';
+  const previo=normalizarCodigoPoligonoApp(valorPreferido||'');
 
   if(poligonosAsignados.length){
-    select.disabled=false;
-    select.innerHTML='<option value="">Seleccione...</option>'+
-      poligonosAsignados.map(p=>`<option value="${esc(p.codigo)}">${esc(p.codigo)}</option>`).join('');
+    select.innerHTML='<option value="">Detección automática...</option>'+
+      poligonosAsignados.map(p=>{
+        const codigo=normalizarCodigoPoligonoApp(p.codigo||p.nombre);
+        return `<option value="${esc(codigo)}">${esc(codigo)}</option>`;
+      }).join('');
 
-    if(previo && poligonosAsignadosSet.has(normalizarCodigoPoligonoApp(previo))){
-      select.value=normalizarCodigoPoligonoApp(previo);
-    }else if(poligonosAsignados.length===1){
-      select.value=poligonosAsignados[0].codigo;
+    // SOLO conserva valor en edición si es válido.
+    // Para un punto nuevo queda vacío hasta que la geometría lo detecte.
+    if(previo && poligonosAsignadosSet.has(previo)){
+      const op=[...select.options].find(o=>normalizarCodigoPoligonoApp(o.value)===previo);
+      select.value=op?.value||'';
     }else{
       select.value='';
     }
+
+    // Campo automático: el técnico no puede cambiarlo manualmente.
+    select.disabled=true;
   }else if((proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url)){
     select.innerHTML='<option value="">Sin polígonos asignados</option>';
     select.value='';
@@ -3368,7 +3488,10 @@ function aplicarOpcionesPoligonosAsignados(valorPreferido=''){
   }else{
     select.disabled=false;
     select.innerHTML=POLIGONO_SELECT_HTML_INICIAL;
-    if(previo && [...select.options].some(o=>o.value===previo))select.value=previo;
+    if(previo){
+      const op=[...select.options].find(o=>normalizarCodigoPoligonoApp(o.value)===previo);
+      if(op)select.value=op.value;
+    }
   }
 
   recalcularIds();
@@ -3387,16 +3510,118 @@ function filtrarGeoJSONAsignado(obj){
     throw new Error('POLIGONOS.geojson no es un FeatureCollection válido.');
   }
 
-  if(!poligonosAsignadosSet.size){
+  if(!poligonosAsignados.length){
     return {type:'FeatureCollection',features:[]};
   }
 
+  const features=[];
+  const usados=new Set();
+
+  for(const p of poligonosAsignados){
+    const codigo=normalizarCodigoPoligonoApp(p.codigo||p.nombre);
+    let feature=null;
+    let indexReal=-1;
+
+    // MÉTODO PRINCIPAL:
+    // buscar por el nombre REAL escrito dentro del GeoJSON.
+    // Ejemplo real del archivo BTA:
+    // feature[0].properties.NOMBRE = POLIGONO2
+    // feature[1].properties.NOMBRE = POLIGONO1
+    for(let i=0;i<obj.features.length;i++){
+      const f=obj.features[i];
+      if(!['Polygon','MultiPolygon'].includes(f?.geometry?.type))continue;
+
+      const nombreGeoJSON=nombreExplicitoFeaturePoligonoApp(f);
+      if(nombreGeoJSON && nombreGeoJSON===codigo){
+        feature=f;
+        indexReal=i;
+        break;
+      }
+    }
+
+    // RESPALDO 1:
+    // feature_index de Supabase, pero solamente si la feature no trae un
+    // nombre explícito contradictorio.
+    if(!feature){
+      const idx=Number(p.feature_index);
+      const candidata=obj.features[idx];
+      if(
+        Number.isInteger(idx) &&
+        idx>=0 &&
+        idx<obj.features.length &&
+        ['Polygon','MultiPolygon'].includes(candidata?.geometry?.type)
+      ){
+        const nombreReal=nombreExplicitoFeaturePoligonoApp(candidata);
+        if(!nombreReal || nombreReal===codigo){
+          feature=candidata;
+          indexReal=idx;
+        }
+      }
+    }
+
+    // RESPALDO 2:
+    // solo cuando el GeoJSON no tiene nombres.
+    if(!feature){
+      const mm=codigo.match(/^POLIGONO(\d+)$/);
+      if(mm){
+        const ordinal=Number(mm[1])-1;
+        const polys=obj.features
+          .map((f,i)=>({f,i}))
+          .filter(x=>['Polygon','MultiPolygon'].includes(x.f?.geometry?.type))
+          .filter(x=>!nombreExplicitoFeaturePoligonoApp(x.f));
+
+        if(polys[ordinal]){
+          feature=polys[ordinal].f;
+          indexReal=polys[ordinal].i;
+        }
+      }
+    }
+
+    if(!feature){
+      console.warn('[POLIGONOS] No se encontró geometría para',codigo);
+      continue;
+    }
+
+    if(usados.has(indexReal))continue;
+    usados.add(indexReal);
+
+    features.push({
+      ...feature,
+      properties:{
+        ...(feature.properties||{}),
+        __codigo_mapping:codigo,
+        __feature_index_mapping:indexReal
+      }
+    });
+  }
+
+  console.log('[POLIGONOS] Relación final nombre ↔ geometría:',
+    features.map(f=>({
+      codigo:f.properties?.__codigo_mapping,
+      nombre_geojson:nombreExplicitoFeaturePoligonoApp(f),
+      feature_index:f.properties?.__feature_index_mapping
+    }))
+  );
+
   return {
     type:'FeatureCollection',
-    features:obj.features.filter((f,i)=>
-      poligonosAsignadosSet.has(nombreFeaturePoligonoApp(f,i))
-    )
+    features
   };
+}
+
+
+function colorPoligonoPorNombreApp(nombre){
+  const n=String(nombre||'').trim().toUpperCase().replace(/\s+/g,'');
+  const colores={
+    'POLIGONO1':'#65F739',
+    'POLIGONO2':'#2D7DF5',
+    'POLIGONO3':'#F52D1B',
+    'POLIGONO4':'#F5DF1B',
+    'POLIGONO5':'#A87B22',
+    'POLIGONO6':'#B00AF7',
+    'POLIGONO7':'#0AD7F7'
+  };
+  return colores[n]||'#facc15';
 }
 
 function pintarPoligonosAsignados(obj){
@@ -3404,20 +3629,47 @@ function pintarPoligonosAsignados(obj){
   poligonosGeoJSON=obj;
   if(!obj?.features?.length)return;
 
+  let __polyTechIndex=0;
   poligonoLayer=L.geoJSON(obj,{
     pane:'poligonosPane',
-    style:{
-      color:'#facc15',
-      weight:3,
-      opacity:.98,
-      fillColor:'#facc15',
-      fillOpacity:.055
+    style:(feature)=>{
+      const nombre=
+        nombreExplicitoFeaturePoligonoApp(feature) ||
+        normalizarCodigoPoligonoApp(feature?.properties?.__codigo_mapping) ||
+        nombreFeaturePoligonoApp(feature,0);
+      const color=colorPoligonoPorNombreApp(nombre);
+      return {
+        color,
+        weight:3,
+        opacity:1,
+        fillColor:color,
+        fillOpacity:.09
+      };
     },
     onEachFeature:(feature,layer)=>{
-      const nombre=nombreFeaturePoligonoApp(feature,0);
+      const nombre=
+        nombreExplicitoFeaturePoligonoApp(feature) ||
+        normalizarCodigoPoligonoApp(feature?.properties?.__codigo_mapping) ||
+        nombreFeaturePoligonoApp(feature,__polyTechIndex);
+      __polyTechIndex++;
+      const color=colorPoligonoPorNombreApp(nombre);
+      layer.setStyle({
+        color,
+        weight:3,
+        opacity:1,
+        fillColor:color,
+        fillOpacity:.09
+      });
       layer.bindTooltip(nombre,{
         sticky:true,
         className:'poligonoAsignadoTooltip'
+      });
+      layer.on('tooltipopen',e=>{
+        const el=e.tooltip?.getElement?.();
+        if(el){
+          el.style.borderColor=color;
+          el.style.color=color;
+        }
       });
     }
   }).addTo(map);
@@ -3485,9 +3737,14 @@ async function cargarPoligonosAsignadosTecnico(){
     .filter(Boolean)
     .filter(x=>x.activo!==false)
     .sort((a,b)=>(Number(a.feature_index)||0)-(Number(b.feature_index)||0))
-    .map(x=>({...x,codigo:normalizarCodigoPoligonoApp(x.codigo)}));
+    .map(x=>({
+      ...x,
+      codigo:normalizarCodigoPoligonoApp(x.codigo||x.nombre)
+    }));
 
-  poligonosAsignadosSet=new Set(poligonosAsignados.map(x=>x.codigo));
+  poligonosAsignadosSet=new Set(
+    poligonosAsignados.map(x=>normalizarCodigoPoligonoApp(x.codigo))
+  );
   aplicarOpcionesPoligonosAsignados();
 
   const completo=await descargarGeoJSONProyecto();
@@ -3770,29 +4027,103 @@ async function seleccionarProyecto(asignacionId){
 function bloquearSinProyecto(){const b=document.getElementById('fabAgregar');if(b)b.classList.add('disabledMapControl');actualizarEstadoSync()}
 function desbloquearProyecto(){const b=document.getElementById('fabAgregar');if(b)b.classList.remove('disabledMapControl')}
 
+
+function abrirAvisoFueraPoligono(lat,lon){
+  const nombres=poligonosAsignados.map(p=>p.codigo).join(', ')||'ninguno';
+  const txt=document.getElementById('fueraPoligonoTexto');
+  const coords=document.getElementById('fueraPoligonoCoords');
+
+  if(txt){
+    txt.innerHTML=
+      `La mira central está fuera de los polígonos asignados al técnico.<br>`+
+      `<b>Polígonos permitidos:</b> ${esc(nombres)}.`;
+  }
+
+  if(coords){
+    coords.innerHTML=
+      `<b>Ubicación de la mira:</b> ${Number(lat).toFixed(7)}, ${Number(lon).toFixed(7)}<br>`+
+      `Mueve el mapa hasta quedar dentro de uno de los polígonos y vuelve a pulsar <b>+</b>.`;
+  }
+
+  fueraPoligonoOverlay.classList.add('open');
+}
+
+function cerrarAvisoFueraPoligono(){
+  fueraPoligonoOverlay.classList.remove('open');
+}
+
+function coordenadaDentroDePoligonoAsignado(lat,lon){
+  if(!poligonosGeoJSON?.features?.length)return null;
+  return detectarPoligonoPorCoordenada(lat,lon);
+}
+
 const _abrirFormularioBase=abrirFormulario;
 abrirFormulario=function(){
   if(!proyectoActivo){abrirPanelProyectos();return}
 
-  // Si existe un formulario minimizado, simplemente vuelve a mostrarlo.
-  // No limpia ni recalcula los datos ya diligenciados.
   if(formularioMinimizado){
     reanudarFormulario();
     return;
   }
 
+  const c=map.getCenter();
+  const latMarcacion=Number(c.lat);
+  const lonMarcacion=Number(c.lng);
+
+  // Si el técnico tiene polígonos asignados, la geometría debe estar cargada.
+  if(poligonosAsignados.length){
+    if(!poligonosGeoJSON?.features?.length){
+      alert('No fue posible cargar la geometría de los polígonos asignados. No se puede crear el registro hasta validar la ubicación.');
+      return;
+    }
+
+    // VALIDACIÓN ANTES DE ABRIR EL FORMULARIO.
+    const detectado=detectarPoligonoPorCoordenada(latMarcacion,lonMarcacion);
+
+    if(!detectado){
+      abrirAvisoFueraPoligono(latMarcacion,lonMarcacion);
+      return;
+    }
+
+    _abrirFormularioBase();
+    setNumeroConexiones(1,true);
+
+    LATITUDE.value=latMarcacion.toFixed(8);
+    LONGITUDE.value=lonMarcacion.toFixed(8);
+
+    aplicarOpcionesPoligonosAsignados();
+
+    PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
+    TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
+    if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
+    aplicarCamposFijos();
+
+    // Fuerza EXACTAMENTE el código detectado geométricamente.
+    const op=[...POLIGONO.options].find(o=>
+      normalizarCodigoPoligonoApp(o.value)===
+      normalizarCodigoPoligonoApp(detectado.codigo)
+    );
+
+    if(!op){
+      cerrarFormulario();
+      alert(`La ubicación pertenece a ${detectado.codigo}, pero ese polígono no está habilitado en tu formulario.`);
+      return;
+    }
+
+    POLIGONO.value=op.value;
+    POLIGONO.disabled=true;
+
+    recalcularIds();
+    actualizarEstadoDeteccionPoligono('ok',`✓ Ubicación dentro de ${POLIGONO.value}`);
+    actualizarResaltadoObligatorios();
+    llevarFormularioAlInicio();
+    return;
+  }
+
+  // Compatibilidad para proyectos antiguos que todavía no usan polígonos.
   _abrirFormularioBase();
   setNumeroConexiones(1,true);
   aplicarOpcionesPoligonosAsignados();
-
-  // Detecta automáticamente el polígono usando la coordenada exacta
-  // tomada de la mira central al abrir el formulario.
-  detectarYAsignarPoligonoPorCoordenada(
-    Number(LATITUDE.value),
-    Number(LONGITUDE.value),
-    {limpiarSiFuera:true}
-  );
-
   PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
   TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
   if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
@@ -3868,16 +4199,39 @@ async function completarCoordenadasCX(registro){
 }
 
 function prepararRegistroLocalBase(){
-  if(!editingId && poligonosGeoJSON?.features?.length){
-    const auto=detectarYAsignarPoligonoPorCoordenada(
-      Number(LATITUDE.value),
-      Number(LONGITUDE.value),
-      {limpiarSiFuera:true}
-    );
-    if(!auto){
-      alert('La ubicación del nuevo elemento está fuera de los polígonos asignados. Mueve la mira central dentro del polígono y vuelve a abrir el formulario.');
+  if(!editingId && poligonosAsignados.length){
+    if(!poligonosGeoJSON?.features?.length){
+      alert('No hay geometría de polígonos disponible. No se puede validar ni guardar el punto.');
       return null;
     }
+
+    const detectado=detectarPoligonoPorCoordenada(
+      Number(LATITUDE.value),
+      Number(LONGITUDE.value)
+    );
+
+    if(!detectado){
+      cerrarFormulario();
+      abrirAvisoFueraPoligono(
+        Number(LATITUDE.value),
+        Number(LONGITUDE.value)
+      );
+      return null;
+    }
+
+    const op=[...POLIGONO.options].find(o=>
+      normalizarCodigoPoligonoApp(o.value)===
+      normalizarCodigoPoligonoApp(detectado.codigo)
+    );
+
+    if(!op){
+      alert(`La ubicación pertenece a ${detectado.codigo}, pero no está asignado al técnico.`);
+      return null;
+    }
+
+    POLIGONO.value=op.value;
+    POLIGONO.disabled=true;
+    recalcularIds();
   }
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
