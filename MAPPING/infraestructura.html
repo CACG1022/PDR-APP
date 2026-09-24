@@ -963,7 +963,7 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · tipo de proyecto dinámico</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · acceso cliente + sync inmediato</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1085,15 +1085,23 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 <div class="section" id="secProyeccion"><h3 id="tituloProyeccion">4. Inventario / proyección</h3><div class="sectionBody">
 <div class="grid" id="gridProyeccion">
   <div id="wrapElectricosGen"><label>ELEMENTOS ELECTRICOS EXISTENTES</label><select id="ELECTRICOS_GEN"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div>
-  <div><label>ELEMENTOS DE RED</label><input id="ELEM_RED"></div>
+  <div id="wrapElemRed"><label>ELEMENTOS DE RED</label><input id="ELEM_RED"></div>
   <div><label>PROYECCION DE EMPALME</label><select id="PROEMPALME"><option value="NO">NO</option><option value="EMPALME">SI</option></select></div>
   <div><label>PROYECCION DE NAP</label><select id="PRONAP"><option value="0">NO</option><option value="NAP">SI</option></select></div>
   <div id="wrapExistencia"><label>EXISTENCIA</label><input id="EXISTENCIA" type="number"></div>
   <div><label>CANT RESER</label><input id="CANT_RESER" type="number"></div>
-  <div class="viabilidadField projectConditionalHidden"><label>HERRAJES DE RETENCIÓN</label><input id="HERRAJES_RETENCION" type="number" min="0" step="1" value="0"></div>
-  <div class="viabilidadField projectConditionalHidden"><label>HERRAJES DE SUSPENSIÓN</label><input id="HERRAJES_SUSPENSION" type="number" min="0" step="1" value="0"></div>
+  <div class="viabilidadField projectConditionalHidden" id="wrapHerrajesRetencion"><label>HERRAJES DE RETENCIÓN</label><input id="HERRAJES_RETENCION" type="number" min="0" step="1" value="0" oninput="actualizarHerrajesExclusivos('RETENCION')"><small class="fieldHelp">Usar retención o suspensión, nunca ambas. Para cambiar de una a otra, primero deje la actual en 0.</small></div>
+  <div class="viabilidadField projectConditionalHidden" id="wrapHerrajesSuspension"><label>HERRAJES DE SUSPENSIÓN</label><input id="HERRAJES_SUSPENSION" type="number" min="0" step="1" value="0" oninput="actualizarHerrajesExclusivos('SUSPENSION')"><small class="fieldHelp">Usar suspensión o retención, nunca ambas.</small></div>
   <div class="viabilidadField projectConditionalHidden"><label>PROYECCIÓN DE BAJANTE</label><select id="PROY_BAJANTE"><option value="NO">NO</option><option value="SI">SI</option></select></div>
-  <div class="viabilidadField projectConditionalHidden"><label>DISTANCIA INTERNA (m)</label><input id="DISTANCIA_INTERNA" type="number" min="0" step="0.01" value="0"><small class="fieldHelp">Indicar la cantidad de fibra interna desde el poste de acceso hasta el cliente.</small></div>
+  <div class="viabilidadField projectConditionalHidden" id="wrapAccesoCliente">
+    <label>¿ESTE ELEMENTO ES DE ACCESO AL CLIENTE?</label>
+    <select id="ES_ACCESO_CLIENTE" onchange="actualizarAccesoCliente()"><option value="NO">NO</option><option value="SI">SI</option></select>
+  </div>
+  <div class="viabilidadField projectConditionalHidden" id="wrapDistanciaInterna">
+    <label>DISTANCIA INTERNA (m)</label>
+    <input id="DISTANCIA_INTERNA" type="number" min="0" step="0.01" value="0">
+    <small class="fieldHelp">Indicar la cantidad de fibra interna desde el poste de acceso hasta el cliente.</small>
+  </div>
 </div>
 <div id="wrapObservacion"><label>OBSERVACION</label><textarea id="OBSERVACIO"></textarea></div>
 </div></div>
@@ -1751,6 +1759,80 @@ function actualizarIndicadorTipoProyecto(){
   if(campo)campo.value=tipo;
 }
 
+function actualizarAccesoCliente(){
+  const esViabilidad=tipoProyectoActivo()==='VIABILIDAD';
+  const acceso=String(document.getElementById('ES_ACCESO_CLIENTE')?.value||'NO').toUpperCase()==='SI';
+  const wrap=document.getElementById('wrapDistanciaInterna');
+  if(wrap)wrap.classList.toggle('projectConditionalHidden',!(esViabilidad&&acceso));
+
+  // Sólo controla el formulario. NO crea un campo nuevo en Supabase y NO usa FIN DE RED.
+  if((!esViabilidad||!acceso) && document.getElementById('DISTANCIA_INTERNA'))DISTANCIA_INTERNA.value='0';
+}
+
+
+function esPosteViabilidad(){
+  return tipoProyectoActivo()==='VIABILIDAD' && String(TIPO?.value||'').toUpperCase()==='POSTE';
+}
+
+function actualizarHerrajesExclusivos(origen=''){
+  const ret=document.getElementById('HERRAJES_RETENCION');
+  const sus=document.getElementById('HERRAJES_SUSPENSION');
+  if(!ret||!sus)return;
+
+  const aplica=esPosteViabilidad();
+
+  if(!aplica){
+    ret.value='0';
+    sus.value='0';
+    ret.disabled=true;
+    sus.disabled=true;
+    return;
+  }
+
+  // En POSTE + VIABILIDAD ambos campos deben permanecer habilitados
+  // para que el técnico pueda decidir cambiar de retención a suspensión
+  // o viceversa. La exclusividad se controla con advertencia.
+  ret.disabled=false;
+  sus.disabled=false;
+
+  let vr=Number(ret.value||0);
+  let vs=Number(sus.value||0);
+
+  // Si ya hay retención > 0 y se intenta escribir suspensión > 0,
+  // se rechaza el nuevo valor y se informa cómo proceder.
+  if(origen==='SUSPENSION' && vs>0 && vr>0){
+    alert(
+      '⚠️ No puedes proyectar HERRAJES DE RETENCIÓN y HERRAJES DE SUSPENSIÓN al mismo tiempo.\n\n'+
+      `Actualmente HERRAJES DE RETENCIÓN tiene un valor de ${vr}.\n\n`+
+      'Si deseas ingresar HERRAJES DE SUSPENSIÓN, primero debes cambiar HERRAJES DE RETENCIÓN a 0.'
+    );
+    sus.value='0';
+    sus.focus();
+    return;
+  }
+
+  // Si ya hay suspensión > 0 y se intenta escribir retención > 0,
+  // se rechaza el nuevo valor y se informa cómo proceder.
+  if(origen==='RETENCION' && vr>0 && vs>0){
+    alert(
+      '⚠️ No puedes proyectar HERRAJES DE RETENCIÓN y HERRAJES DE SUSPENSIÓN al mismo tiempo.\n\n'+
+      `Actualmente HERRAJES DE SUSPENSIÓN tiene un valor de ${vs}.\n\n`+
+      'Si deseas ingresar HERRAJES DE RETENCIÓN, primero debes cambiar HERRAJES DE SUSPENSIÓN a 0.'
+    );
+    ret.value='0';
+    ret.focus();
+    return;
+  }
+
+  ret.title=vs>0
+    ? 'Suspensión ya tiene un valor. Para usar retención, primero cambia suspensión a 0.'
+    : 'Ingrese la cantidad de herrajes de retención.';
+
+  sus.title=vr>0
+    ? 'Retención ya tiene un valor. Para usar suspensión, primero cambia retención a 0.'
+    : 'Ingrese la cantidad de herrajes de suspensión.';
+}
+
 function aplicarConfiguracionTipoProyecto(){
   const tipo=tipoProyectoActivo();
   const esMapping=tipo==='MAPPING';
@@ -1769,10 +1851,18 @@ function aplicarConfiguracionTipoProyecto(){
 
   document.getElementById('wrapExistencia')?.classList.toggle('projectConditionalHidden',esViabilidad);
   document.getElementById('wrapElectricosGen')?.classList.toggle('projectConditionalHidden',esViabilidad);
+  document.getElementById('wrapElemRed')?.classList.toggle('projectConditionalHidden',esViabilidad);
 
   document.querySelectorAll('.viabilidadField').forEach(el=>{
     el.classList.toggle('projectConditionalHidden',!esViabilidad);
   });
+
+  // Herrajes solamente aplican a proyecto VIABILIDAD + elemento POSTE.
+  const mostrarHerrajes=esViabilidad && String(TIPO?.value||'').toUpperCase()==='POSTE';
+  document.getElementById('wrapHerrajesRetencion')?.classList.toggle('projectConditionalHidden',!mostrarHerrajes);
+  document.getElementById('wrapHerrajesSuspension')?.classList.toggle('projectConditionalHidden',!mostrarHerrajes);
+  actualizarHerrajesExclusivos();
+  actualizarAccesoCliente();
 
   const wrapOtro=document.getElementById('wrapCXOtroPol');
   if(wrapOtro)wrapOtro.classList.toggle('projectConditionalHidden',esViabilidad);
@@ -1789,7 +1879,13 @@ function aplicarConfiguracionTipoProyecto(){
     try{toggleOtroPol()}catch(_){}
   }
 
+  if(esViabilidad && document.getElementById('ELEM_RED')){
+    ELEM_RED.value='';
+  }
+
   if(esMapping){
+    if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value='NO';
+    actualizarAccesoCliente();
     if(document.getElementById('ELECTRICOS_GEN'))ELECTRICOS_GEN.value='';
     if(document.getElementById('ELEM_RED'))ELEM_RED.value='';
     if(document.getElementById('PROEMPALME'))PROEMPALME.value='NO';
@@ -2795,6 +2891,24 @@ function validar(){
     }
   }
 
+  // VIABILIDAD + POSTE: se proyecta RETENCIÓN o SUSPENSIÓN, nunca ambas.
+  if(esPosteViabilidad()){
+    const ret=Number(val('HERRAJES_RETENCION')||0);
+    const sus=Number(val('HERRAJES_SUSPENSION')||0);
+
+    if(ret>0 && sus>0){
+      alert('Para un POSTE de VIABILIDAD no puedes proyectar herrajes de RETENCIÓN y SUSPENSIÓN al mismo tiempo. Deja uno de los dos en 0.');
+      document.getElementById('HERRAJES_RETENCION')?.focus();
+      return false;
+    }
+
+    if(ret<=0 && sus<=0){
+      alert('Para un POSTE de VIABILIDAD debes proyectar herrajes de RETENCIÓN o herrajes de SUSPENSIÓN. Ingresa una cantidad mayor a 0 en uno de los dos campos.');
+      document.getElementById('HERRAJES_RETENCION')?.focus();
+      return false;
+    }
+  }
+
   const cons=Number(CONSECUTIV.value);
 
   if(cons<=1){
@@ -2874,7 +2988,7 @@ function validar(){
   return true;
 }
 
-function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':tipoProyectoActivo()==='VIABILIDAD'?val('ELEM_RED'):'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:tipoProyectoActivo()==='VIABILIDAD'?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -3119,6 +3233,12 @@ function resumenConexiones(r,idx){
   const items=obtenerConexionesDelRegistro(r,idx).map(c=>`${c.slot}: ${c.destino.IDCAMPO}`);
   return items.length?items.join('<br>'):'Sin conexiones registradas';
 }
+function textoEstadoSync(r){
+  const s=String(r?.sync_status||'pendiente');
+  const mapa={pendiente:'PENDIENTE',enviando:'ENVIANDO',datos_enviados:'DATOS ENVIADOS',fotos_pendientes:'FOTOS PENDIENTES',enviado:'ENVIADO',error:'ERROR'};
+  return mapa[s]||s.toUpperCase();
+}
+
 function pintarRegistros(){
   if(!map)return;
   if(markerLayer)markerLayer.remove();
@@ -3191,7 +3311,9 @@ async function editarPunto(id){
   LONGITUDE.value=r.LONGITUDE;
   cambiarTipo();
   TIPO_PROYECTO.value=tipoProyectoActivo();
+  if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value=Number(r.DISTANCIA_INTERNA||0)>0?'SI':'NO';
   aplicarConfiguracionTipoProyecto();
+  actualizarAccesoCliente();
   await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
   await renderizarFotosRemotasEnFormulario(r);
   toggleOtroPol();
@@ -4664,6 +4786,7 @@ abrirFormulario=function(){
     TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
     if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
     aplicarCamposFijos();
+    if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value='NO';
     aplicarConfiguracionTipoProyecto();
 
     // Fuerza EXACTAMENTE el código detectado geométricamente.
@@ -4697,6 +4820,7 @@ abrirFormulario=function(){
   TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
   if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
   aplicarCamposFijos();
+  if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value='NO';
   aplicarConfiguracionTipoProyecto();
   recalcularIds();
   llevarFormularioAlInicio();
@@ -4805,7 +4929,7 @@ function prepararRegistroLocalBase(){
   }
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
-  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':tipoProyectoActivo()==='VIABILIDAD'?val('ELEM_RED'):'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:tipoProyectoActivo()==='VIABILIDAD'?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
+  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:tipoProyectoActivo()==='VIABILIDAD'?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
   for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}return r;
 }
 
@@ -5589,6 +5713,15 @@ async function upsertPuntoConReintento(payload){
   return resp;
 }
 
+function refrescarUIEstadoSincronizacion(){
+  try{persist()}catch(e){console.warn('No se pudo persistir estado sync:',e)}
+  try{pintarRegistros()}catch(e){console.warn('No se pudo refrescar mapa:',e)}
+  try{pintarLista()}catch(e){console.warn('No se pudo refrescar lista:',e)}
+  try{actualizarEstadoSync()}catch(e){console.warn('No se pudo refrescar cabecera:',e)}
+  try{if(document.getElementById('storageOverlay')?.classList.contains('open'))actualizarAlmacenamientoIndexedDB()}catch(_){ }
+  try{if(document.getElementById('techDashOverlay')?.classList.contains('open'))renderDashboardTecnico()}catch(_){ }
+}
+
 async function sincronizarUno(r){
   const punto=r.IDCAMPO||r.offline_id||r.id||'punto';
 
@@ -5601,8 +5734,7 @@ async function sincronizarUno(r){
   }
 
   r.sync_status='enviando';
-  persist();
-  pintarRegistros();
+  refrescarUIEstadoSincronizacion();
 
   const payload=filaSupabase(r);
   let data=null,error=null;
@@ -5658,8 +5790,7 @@ async function sincronizarUno(r){
   r.sync_status='datos_enviados';
   r.sync_error=null;
   r.sync_error_detail=null;
-  persist();
-  pintarRegistros();
+  refrescarUIEstadoSincronizacion();
 
   try{
     await subirFotosN8N(r,data.id);
@@ -5678,8 +5809,7 @@ async function sincronizarUno(r){
   r.sync_error=null;
   r.sync_error_detail=null;
 
-  persist();
-  pintarRegistros();
+  refrescarUIEstadoSincronizacion();
   return r;
 }
 
@@ -5960,20 +6090,25 @@ async function sincronizarPendientesBackground(){
       const speedEl=document.getElementById('syncSpeed');
       if(speedEl) speedEl.textContent=formatearVelocidad(velocidadPunto);
     }catch(e){
-      r.sync_status='error';
+      r.sync_status=r.supabase_id?'fotos_pendientes':'error';
       const err=registrarErrorSync(e,r);
       syncResumen.error++;
       actualizarProgresoSync(`❌ ${etiqueta}: ${resumenErrorSync(err)}`);
     }
     syncResumen.procesados++;
-    persist();pintarRegistros();
-    if(r.sync_status!=='error'){
-      actualizarProgresoSync(`✓ Procesado ${etiqueta}. Puedes continuar levantando datos.`);
+    refrescarUIEstadoSincronizacion();
+    if(r.sync_status==='enviado'){
+      actualizarProgresoSync(`✓ ${etiqueta} ENVIADO. Puedes continuar levantando datos.`);
+    }else if(r.sync_status==='fotos_pendientes'){
+      actualizarProgresoSync(`⚠ ${etiqueta}: datos enviados; quedan fotos pendientes.`);
     }
     await new Promise(res=>setTimeout(res,20));
   }
 
-  syncEnCurso=false;actualizarEstadoSync();finalizarPanelSync();
+  syncEnCurso=false;
+  try{await cargarPuntosSupabase(false)}catch(e){console.warn('Reconciliación final sync:',e)}
+  refrescarUIEstadoSincronizacion();
+  finalizarPanelSync();
 }
 
 async function sincronizarPendientes(){
@@ -5985,8 +6120,9 @@ async function sincronizarPendientes(){
       await sincronizarUno(r);
       ok++;
     }catch(e){
-      r.sync_status='error';
+      r.sync_status=r.supabase_id?'fotos_pendientes':'error';
       registrarErrorSync(e,r);
+      refrescarUIEstadoSincronizacion();
       fail++;
       console.error('Error sincronizando punto',r.IDCAMPO||r.offline_id,e);
       if(esError401(e) || String(e?.message||'').toLowerCase().includes('sesión')){
@@ -6382,7 +6518,7 @@ pintarRegistros=function(){
   arr.forEach(r=>{
     const mk=crearMarcadorMapa(r)
       .addTo(markerLayer)
-      .bindPopup(`<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(r.sync_status||'pendiente')}</span><br>${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br><b>Fin de red:</b> ${tieneFinDeRed(r)?'SI':'NO'} <small>(${esc(r.FINDERED||r.finder_ed||'sin valor')})</small><br><b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br><button class="popupEditBtn" onclick="editarPunto('${r.id}')">Editar</button><button class="popupMoveBtn" onclick="moverPunto('${r.id}')">Mover</button>`);
+      .bindPopup(`<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br><b>Fin de red:</b> ${tieneFinDeRed(r)?'SI':'NO'} <small>(${esc(r.FINDERED||r.finder_ed||'sin valor')})</small><br><b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br><button class="popupEditBtn" onclick="editarPunto('${r.id}')">Editar</button><button class="popupMoveBtn" onclick="moverPunto('${r.id}')">Mover</button>`);
 
     if(['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(r.TIPO)){
       mk.bindTooltip(htmlEtiquetaConsecutivo(r),{permanent:true,direction:'right',offset:[9,0],className:'posteConsecutivoTooltip',opacity:1});
@@ -6399,7 +6535,7 @@ pintarRegistros=function(){
       : `${arr.length}/${todos.length} visibles`;
   }
 }
-pintarLista=function(){const arr=registrosVisiblesPorTipo(),idx=indicePuntos();recordsList.innerHTML=arr.length?arr.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(r.sync_status||'pendiente')}</span><br>${esc(r.DIRECCION||'')}<br>${Number(r.LATITUDE).toFixed(7)}, ${Number(r.LONGITUDE).toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn danger" onclick="eliminarPunto('${r.id}')">Eliminar</button></div></div>`).join(''):'<div class="hint">No hay elementos visibles con el filtro seleccionado.</div>'}
+pintarLista=function(){const arr=registrosVisiblesPorTipo(),idx=indicePuntos();recordsList.innerHTML=arr.length?arr.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>${esc(r.DIRECCION||'')}<br>${Number(r.LATITUDE).toFixed(7)}, ${Number(r.LONGITUDE).toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn danger" onclick="eliminarPunto('${r.id}')">Eliminar</button></div></div>`).join(''):'<div class="hint">No hay elementos visibles con el filtro seleccionado.</div>'}
 eliminarPunto=async function(id){
   const r=registros.find(x=>x.id===id);
   if(!r||!confirm('¿Eliminar este punto?'))return;
@@ -6783,7 +6919,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
-
-
 
 
