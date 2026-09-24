@@ -959,6 +959,24 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 .projectConditionalHidden{display:none!important}
 .fieldHelp{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.35}
 
+
+.mapSymbol.house{
+  width:28px!important;
+  height:28px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:24px!important;
+  line-height:1!important;
+  background:transparent!important;
+  border:none!important;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.75));
+}
+.clientDistanceRequired{
+  border-color:#f59e0b!important;
+  box-shadow:0 0 0 2px rgba(245,158,11,.18)!important;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1041,13 +1059,13 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 <div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><div class="modalHeadActions"><button class="close" onclick="cerrarFormulario()">Cerrar</button></div></div><div class="body">
 <div class="hint">La coordenada se toma exactamente de la <b>mira central del mapa</b>. Los campos visibles cambian según el valor de <b>TIPO</b>, replicando la lógica del formulario de AGREGAR2.</div>
 <div class="section"><h3>1. Identificación y ubicación</h3><div class="sectionBody"><div class="grid">
-<div><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select></div>
-<div><label>POLIGONO <span class="req">*</span> <small style="font-weight:800">(AUTOMÁTICO)</small></label><select id="POLIGONO" onchange="recalcularIds()"><option value="">Seleccione...</option><option>POLIGONO1</option><option>POLIGONO2</option><option>POLIGONO3</option><option>POLIGONO4</option><option>POLIGONO5</option><option>POLIGONO6</option><option>POLIGONO7</option><option>POLIGONO8</option><option>POLIGONO9</option></select><small id="poligonoAutoEstado" class="poligonoAutoEstado">Detección automática por ubicación</small></div>
-<div><label>CONSECUTIV</label><input id="CONSECUTIV" readonly></div><div><label>IDCAMPO</label><input id="IDCAMPO" readonly></div>
-<div><label>CIUDAD <span class="req">*</span></label><input id="CIUDAD" value="Bogota D.C"></div><div><label>BARRIO <span class="req">*</span></label><input id="BARRIO" placeholder="Barrio"></div>
-<div><label>TECNICO <span class="req">*</span></label><input id="TECNICO" placeholder="Nombre del técnico"></div><div><label>PROYECTO</label><input id="PROYECTO" readonly title="Proyecto asignado desde el Master"></div>
-<div><label>TIPO PROYECTO</label><input id="TIPO_PROYECTO" class="projectTypeField" readonly></div><div><label>LATITUDE</label><input id="LATITUDE" readonly></div>
-<div><label>LONGITUDE</label><input id="LONGITUDE" readonly></div><div><label>DIRECCION <span class="req">*</span></label><input id="DIRECCION" placeholder="Dirección / referencia"></div>
+<div id="wrapTipo"><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option><option id="tipoClienteOption" value="CLIENTE" hidden disabled>CLIENTE</option></select></div>
+<div id="wrapPoligono"><label>POLIGONO <span class="req">*</span> <small style="font-weight:800">(AUTOMÁTICO)</small></label><select id="POLIGONO" onchange="recalcularIds()"><option value="">Seleccione...</option><option>POLIGONO1</option><option>POLIGONO2</option><option>POLIGONO3</option><option>POLIGONO4</option><option>POLIGONO5</option><option>POLIGONO6</option><option>POLIGONO7</option><option>POLIGONO8</option><option>POLIGONO9</option></select><small id="poligonoAutoEstado" class="poligonoAutoEstado">Detección automática por ubicación</small></div>
+<div id="wrapConsecutiv"><label>CONSECUTIV</label><input id="CONSECUTIV" readonly></div><div id="wrapIdcampo"><label>IDCAMPO</label><input id="IDCAMPO" readonly></div>
+<div id="wrapCiudad"><label>CIUDAD <span class="req">*</span></label><input id="CIUDAD" value="Bogota D.C"></div><div id="wrapBarrio"><label>BARRIO <span class="req">*</span></label><input id="BARRIO" placeholder="Barrio"></div>
+<div id="wrapTecnico"><label>TECNICO <span class="req">*</span></label><input id="TECNICO" placeholder="Nombre del técnico"></div><div id="wrapProyecto"><label>PROYECTO</label><input id="PROYECTO" readonly title="Proyecto asignado desde el Master"></div>
+<div id="wrapTipoProyecto"><label>TIPO PROYECTO</label><input id="TIPO_PROYECTO" class="projectTypeField" readonly></div><div id="wrapLatitude"><label>LATITUDE</label><input id="LATITUDE" readonly></div>
+<div id="wrapLongitude"><label>LONGITUDE</label><input id="LONGITUDE" readonly></div><div id="wrapDireccion"><label>DIRECCION <span class="req">*</span></label><input id="DIRECCION" placeholder="Dirección / referencia"></div>
 <div id="wrapCostado"><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
 </div></div></div>
 
@@ -1071,7 +1089,7 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
     <button type="button" class="btn minimizarConexionesBtn" onclick="minimizarFormularioDesdeConexiones()">🗺️ Minimizar y ver mapa</button>
   </div>
   <div class="sectionBody">
-    <div class="hint">Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.</div>
+    <div class="hint" id="conexionesHint">Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.</div>
     <div id="conexionesMismo"></div>
     <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button>
     <div id="wrapCXOtroPol">
@@ -1106,7 +1124,7 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 <div id="wrapObservacion"><label>OBSERVACION</label><textarea id="OBSERVACIO"></textarea></div>
 </div></div>
 
-<div class="section"><h3>5. Registro fotográfico</h3><div class="sectionBody"><div class="photoGrid" id="photoGrid"></div></div></div>
+<div class="section" id="secFotos"><h3>5. Registro fotográfico</h3><div class="sectionBody"><div class="photoGrid" id="photoGrid"></div></div></div>
 <div class="actions"><button class="btn gray" onclick="cerrarFormulario()">Cancelar</button><button class="btn" onclick="guardarPunto()">Guardar punto</button></div>
 </div></div></div>
 
@@ -1187,7 +1205,7 @@ function orientarMapaNorte(){
 
 
 
-const TIPOS_FILTRO_MAPA=['POSTE','CANALIZADO','C. AMERICANO','CERCHA'];
+const TIPOS_FILTRO_MAPA=['POSTE','CANALIZADO','C. AMERICANO','CERCHA','CLIENTE'];
 
 function normalizarValorFiltro(v){
   return String(v??'')
@@ -1238,6 +1256,11 @@ function cargarConfigFiltroGuardado(){
 }
 
 let configFiltroMapa=cargarConfigFiltroGuardado();
+if(localStorage.getItem('mapping_filtro_cliente_migrado_v1')!=='1'){
+  if(!configFiltroMapa.tipos.includes('CLIENTE'))configFiltroMapa.tipos.push('CLIENTE');
+  localStorage.setItem('mapping_filtro_cliente_migrado_v1','1');
+  localStorage.setItem('mapping_filtro_avanzado_v1',JSON.stringify(configFiltroMapa));
+}
 let tiposFiltroMapa=new Set(configFiltroMapa.tipos);
 
 function normalizarTipoFiltro(v){
@@ -1329,7 +1352,8 @@ function abrirFiltroTipo(){
     'POSTE':'filtroTipo_POSTE',
     'CANALIZADO':'filtroTipo_CANALIZADO',
     'C. AMERICANO':'filtroTipo_CAMERICANO',
-    'CERCHA':'filtroTipo_CERCHA'
+    'CERCHA':'filtroTipo_CERCHA',
+    'CLIENTE':'filtroTipo_CLIENTE'
   };
 
   Object.entries(ids).forEach(([tipo,id])=>{
@@ -1344,13 +1368,15 @@ function abrirFiltroTipo(){
     'POSTE':postes.length,
     'CANALIZADO':canalizados.length,
     'C. AMERICANO':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='C. AMERICANO').length,
-    'CERCHA':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='CERCHA').length
+    'CERCHA':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='CERCHA').length,
+    'CLIENTE':arr.filter(r=>normalizarTipoFiltro(r.TIPO)==='CLIENTE').length
   };
 
   countTipo_POSTE.textContent=`${counts['POSTE']} elemento(s)`;
   countTipo_CANALIZADO.textContent=`${counts['CANALIZADO']} elemento(s)`;
   countTipo_CAMERICANO.textContent=`${counts['C. AMERICANO']} elemento(s)`;
   countTipo_CERCHA.textContent=`${counts['CERCHA']} elemento(s)`;
+  if(window.countTipo_CLIENTE)countTipo_CLIENTE.textContent=`${counts['CLIENTE']} elemento(s)`;
 
   llenarSelectFiltro(
     'filtroPosteAltura',
@@ -1397,7 +1423,8 @@ function tiposSeleccionadosFormularioFiltro(){
     ['POSTE','filtroTipo_POSTE'],
     ['CANALIZADO','filtroTipo_CANALIZADO'],
     ['C. AMERICANO','filtroTipo_CAMERICANO'],
-    ['CERCHA','filtroTipo_CERCHA']
+    ['CERCHA','filtroTipo_CERCHA'],
+    ['CLIENTE','filtroTipo_CLIENTE']
   ];
   return pares
     .filter(([,id])=>document.getElementById(id)?.checked)
@@ -1759,6 +1786,132 @@ function actualizarIndicadorTipoProyecto(){
   if(campo)campo.value=tipo;
 }
 
+
+function esClienteViabilidad(){
+  return tipoProyectoActivo()==='VIABILIDAD' && String(TIPO?.value||'').toUpperCase()==='CLIENTE';
+}
+
+function actualizarOpcionTipoCliente(){
+  const op=document.getElementById('tipoClienteOption');
+  if(!op)return;
+  const habilitado=tipoProyectoActivo()==='VIABILIDAD';
+  op.hidden=!habilitado;
+  op.disabled=!habilitado;
+  if(!habilitado && String(TIPO?.value||'').toUpperCase()==='CLIENTE')TIPO.value='';
+}
+
+function consecutivoAnteriorCliente(){
+  const cons=Number(CONSECUTIV?.value||0);
+  return cons>1?cons-1:0;
+}
+
+async function configurarConexionCliente(){
+  if(!esClienteViabilidad())return;
+
+  conexionesVisibles=1;
+  setNumeroConexiones(1,false);
+
+  // CLIENTE solo usa CX1 hacia el elemento inmediatamente anterior.
+  for(let i=2;i<=4;i++){
+    const cx=document.getElementById(`CX${i}`);
+    const tel=document.getElementById(`TELCX${i}`);
+    const dist=document.getElementById(`DISTODO${i}`);
+    if(cx)cx.value='0';
+    if(tel)tel.value='0';
+    if(dist)dist.value='0';
+    const row=document.getElementById(`cxRow${i}`);
+    if(row)row.style.display='none';
+  }
+
+  const previo=consecutivoAnteriorCliente();
+  const cx1=document.getElementById('CX1');
+  if(cx1){
+    cx1.value=previo>0?String(previo):'';
+    cx1.readOnly=true;
+    cx1.title='Se asigna automáticamente al consecutivo inmediatamente anterior al CLIENTE.';
+  }
+
+  const telWrap=document.getElementById('TELCX1')?.closest('div');
+  if(telWrap)telWrap.style.display='none';
+  if(document.getElementById('TELCX1'))TELCX1.value='0';
+
+  const dist=document.getElementById('DISTODO1');
+  if(dist){
+    const wrap=dist.closest('div');
+    const lab=wrap?.querySelector('label');
+    if(lab)lab.innerHTML='Distancia de fibra interna (m) <span class="req">*</span>';
+    dist.placeholder='Obligatorio';
+    dist.classList.add('clientDistanceRequired');
+  }
+
+  const add=document.getElementById('btnAgregarConexion');
+  if(add)add.style.display='none';
+  const otro=document.getElementById('wrapCXOtroPol');
+  if(otro)otro.style.display='none';
+
+  const hint=document.getElementById('conexionesHint');
+  if(hint)hint.innerHTML='Para <b>CLIENTE</b>, CX1 se enlaza automáticamente con el elemento inmediatamente anterior. La <b>Distancia de fibra interna</b> es obligatoria y corresponde a la fibra desde el elemento de acceso hasta el cliente.';
+
+  if(previo>0){
+    try{await precalcularCX(1)}catch(_){ }
+  }
+}
+
+function restaurarConexionNoCliente(){
+  const cx1=document.getElementById('CX1');
+  if(cx1){cx1.readOnly=false;cx1.title='';}
+
+  const telWrap=document.getElementById('TELCX1')?.closest('div');
+  if(telWrap)telWrap.style.display='';
+
+  const dist=document.getElementById('DISTODO1');
+  if(dist){
+    const wrap=dist.closest('div');
+    const lab=wrap?.querySelector('label');
+    if(lab)lab.textContent='Distancia odómetro 1 (m)';
+    dist.placeholder='';
+    dist.classList.remove('clientDistanceRequired');
+  }
+
+  const add=document.getElementById('btnAgregarConexion');
+  if(add)add.style.display=conexionesVisibles>=4?'none':'block';
+  const otro=document.getElementById('wrapCXOtroPol');
+  if(otro)otro.style.display='';
+
+  const hint=document.getElementById('conexionesHint');
+  if(hint)hint.innerHTML='Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.';
+}
+
+function aplicarVistaClienteViabilidad(){
+  const cliente=esClienteViabilidad();
+  const secPosteEl=document.getElementById('secPoste');
+  const secCamaraEl=document.getElementById('secCamara');
+  const secProy=document.getElementById('secProyeccion');
+  const secFotos=document.getElementById('secFotos');
+  const wrapPol=document.getElementById('wrapPoligono');
+  const wrapCost=document.getElementById('wrapCostado');
+
+  if(cliente){
+    secPosteEl?.classList.add('hidden');
+    secCamaraEl?.classList.add('hidden');
+    if(secProy)secProy.style.display='none';
+    if(secFotos)secFotos.style.display='none';
+    if(wrapPol)wrapPol.style.display='none';
+    if(wrapCost)wrapCost.style.display='none';
+    photoGrid.innerHTML='';
+    photos={};
+    actualizarVisibilidadSeccionConexiones();
+    configurarConexionCliente();
+  }else{
+    if(secProy)secProy.style.display='';
+    if(secFotos)secFotos.style.display='';
+    if(wrapPol)wrapPol.style.display='';
+    // COSTADO conserva la regla propia MAPPING/VIABILIDAD.
+    if(wrapCost)wrapCost.style.display='';
+    restaurarConexionNoCliente();
+  }
+}
+
 function actualizarAccesoCliente(){
   const esViabilidad=tipoProyectoActivo()==='VIABILIDAD';
   const acceso=String(document.getElementById('ES_ACCESO_CLIENTE')?.value||'NO').toUpperCase()==='SI';
@@ -1839,6 +1992,7 @@ function aplicarConfiguracionTipoProyecto(){
   const esViabilidad=tipo==='VIABILIDAD';
 
   actualizarIndicadorTipoProyecto();
+  actualizarOpcionTipoCliente();
 
   const grid=document.getElementById('gridProyeccion');
   const titulo=document.getElementById('tituloProyeccion');
@@ -1894,10 +2048,11 @@ function aplicarConfiguracionTipoProyecto(){
     if(document.getElementById('CANT_RESER'))CANT_RESER.value='';
   }
 
+  aplicarVistaClienteViabilidad();
   setTimeout(actualizarResaltadoObligatorios,0);
 }
 
-function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);aplicarConfiguracionTipoProyecto();setTimeout(actualizarResaltadoObligatorios,0);}
+function cambiarTipo(){const t=TIPO.value;const cliente=esClienteViabilidad();secPoste.classList.toggle('hidden',cliente||(t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA'));secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');if(cliente){photoGrid.innerHTML='';photos={};}else{renderFotos(t);}aplicarConfiguracionTipoProyecto();if(cliente)configurarConexionCliente();setTimeout(actualizarResaltadoObligatorios,0);}
 function renderFotos(t){
   photoGrid.innerHTML='';
   photos={};
@@ -2115,7 +2270,8 @@ function actualizarVisibilidadSeccionConexiones(){
   if(!sec)return;
 
   const cons=Number(CONSECUTIV?.value||0);
-  const mostrar=Number.isFinite(cons) && cons>=2;
+  const cliente=esClienteViabilidad();
+  const mostrar=cliente ? (Number.isFinite(cons) && cons>=2) : (Number.isFinite(cons) && cons>=2);
 
   sec.style.display=mostrar?'':'none';
   sec.classList.toggle('hidden',!mostrar);
@@ -2124,9 +2280,13 @@ function actualizarVisibilidadSeccionConexiones(){
     conexionesVisibles=1;
     limpiarConexionesPrimerElemento();
     setNumeroConexiones(1,true);
+  }else if(cliente){
+    conexionesVisibles=1;
+    setNumeroConexiones(1,false);
+    setTimeout(configurarConexionCliente,0);
   }else if(!editingId){
-    // Para un elemento nuevo >= 2 siempre arranca únicamente con CX1 visible.
     setNumeroConexiones(1,true);
+    restaurarConexionNoCliente();
   }
 
   actualizarResaltadoObligatorios();
@@ -2158,13 +2318,16 @@ function ajustarConexionesEdicion(r){
   actualizarVisibilidadSeccionConexiones();
 }
 function toggleOtroPol(){otroPol.classList.toggle('hidden',CXOTROPOL.value!=='SI')}
-function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();}
+function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();if(esClienteViabilidad())setTimeout(configurarConexionCliente,0);}
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
 
 function obtenerCamposObligatoriosActivos(){
+  const t=TIPO?.value||'';
+  if(esClienteViabilidad()){
+    return ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','CX1','DISTODO1'];
+  }
   const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION'];
   if(tipoProyectoActivo()==='VIABILIDAD')ids.push('COSTADO');
-  const t=TIPO?.value||'';
 
   if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
     ids.push(
@@ -2193,9 +2356,14 @@ function campoEstaVacio(id){
   const el=document.getElementById(id);
   if(!el)return false;
 
-  // En CX, el valor 0 es válido y significa "sin conexión".
-  // Solo se considera faltante cuando el campo está realmente vacío.
+  if(id==='DISTODO1' && esClienteViabilidad()){
+    const n=Number(el.value);
+    return !Number.isFinite(n) || n<=0;
+  }
+
+  // En CX normales, 0 significa sin conexión. Para CLIENTE CX1 debe ser >0.
   if(/^CX[1-4]$/.test(id)){
+    if(id==='CX1' && esClienteViabilidad())return !(Number(el.value)>0);
     return String(el.value??'').trim()==='';
   }
 
@@ -2860,12 +3028,41 @@ function validar(){
   const falt=[];
   aplicarConfiguracionTipoProyecto();
   const baseReq=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION'];
-  if(tipoProyectoActivo()==='VIABILIDAD')baseReq.push('COSTADO');
+  if(tipoProyectoActivo()==='VIABILIDAD' && !esClienteViabilidad())baseReq.push('COSTADO');
   baseReq.forEach(id=>{
     if(!val(id))falt.push(id);
   });
 
   const t=TIPO.value;
+
+  if(esClienteViabilidad()){
+    const consCliente=Number(CONSECUTIV.value||0);
+    const previo=consCliente-1;
+
+    if(consCliente<=1 || previo<=0){
+      alert('No se puede registrar un CLIENTE como primer elemento del polígono. Debe existir un elemento anterior para conectarlo automáticamente por CX1.');
+      return false;
+    }
+
+    const anterior=registrosProyectoActual().find(r=>
+      String(r.POLIGONO||'')===String(POLIGONO.value||'') &&
+      Number(r.CONSECUTIV)===previo
+    );
+    if(!anterior){
+      alert(`No se encontró el elemento anterior ${POLIGONO.value}-${previo}. Registra primero el elemento de acceso y luego el CLIENTE.`);
+      return false;
+    }
+
+    CX1.value=String(previo);
+    const distInterna=Number(val('DISTODO1'));
+    if(!Number.isFinite(distInterna) || distInterna<=0){
+      marcarObligatoriosFaltantes(['DISTODO1']);
+      enfocarPrimerObligatorioFaltante(['DISTODO1']);
+      alert('La DISTANCIA DE FIBRA INTERNA es obligatoria para un CLIENTE y debe ser mayor a 0 metros.');
+      return false;
+    }
+  }
+
   if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
     ['PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA','ESTADO','TENSION','RIENDA','ELECTRICOS','FINDERED'].forEach(id=>{
       if(val(id)==='')falt.push(id);
@@ -2941,6 +3138,12 @@ function validar(){
         return false;
       }
 
+      if(esClienteViabilidad() && i===1 && x!==cons-1){
+        CX1.value=String(cons-1);
+        alert(`Para CLIENTE, CX1 se asigna automáticamente al elemento anterior (${cons-1}).`);
+        return false;
+      }
+
       // 0 = sin conexión. Solo los valores > 0 deben ser menores al consecutivo actual.
       if(x>0 && x>=cons){
         actualizarResaltadoObligatorios();
@@ -2988,7 +3191,7 @@ function validar(){
   return true;
 }
 
-function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -3311,8 +3514,9 @@ async function editarPunto(id){
   LONGITUDE.value=r.LONGITUDE;
   cambiarTipo();
   TIPO_PROYECTO.value=tipoProyectoActivo();
-  if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value=Number(r.DISTANCIA_INTERNA||0)>0?'SI':'NO';
+  if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value=(!esClienteViabilidad()&&Number(r.DISTANCIA_INTERNA||0)>0)?'SI':'NO';
   aplicarConfiguracionTipoProyecto();
+  if(esClienteViabilidad())configurarConexionCliente();
   actualizarAccesoCliente();
   await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
   await renderizarFotosRemotasEnFormulario(r);
@@ -4929,7 +5133,7 @@ function prepararRegistroLocalBase(){
   }
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
-  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:tipoProyectoActivo()==='VIABILIDAD'?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
+  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
   for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}return r;
 }
 
@@ -6326,6 +6530,7 @@ function colorTipoPunto(tipo){
   return '#ef4444';
 }
 function htmlSimboloMapa(tipo,color){
+  if(tipo==='CLIENTE') return `<div class="mapSymbol house" title="CLIENTE">🏠</div>`;
   if(tipo==='CANALIZADO') return `<div class="mapSymbol square" style="background:${color}"></div>`;
   if(tipo==='C. AMERICANO') return `<div class="mapSymbol plus" style="color:${color}">+</div>`;
   if(tipo==='CERCHA') return `<div class="mapSymbol triangle" style="color:${color}"></div>`;
@@ -6509,7 +6714,7 @@ pintarRegistros=function(){
     ).addTo(markerLayer).bindPopup(
       `<b>${esc(c.slot)}</b><br>${esc(r.IDCAMPO)} ↔ ${esc(c.destino.IDCAMPO)}<br>`+
       `<b>GPS:</b> ${formatearDistanciaMapa(distanciaGeodesicaMetros(c.origen,c.destino))}`+
-      (distanciaOdomentroConexion(c)!==null?`<br><b>Odo:</b> ${formatearDistanciaMapa(distanciaOdomentroConexion(c))}`:'')
+      (distanciaOdomentroConexion(c)!==null?`<br><b>${String(c.origen?.TIPO).toUpperCase()==='CLIENTE'?'Fibra interna':'Odo'}:</b> ${formatearDistanciaMapa(distanciaOdomentroConexion(c))}`:'')
     );
 
     agregarEtiquetaDistanciaConexion(c);
@@ -6520,7 +6725,7 @@ pintarRegistros=function(){
       .addTo(markerLayer)
       .bindPopup(`<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br><b>Fin de red:</b> ${tieneFinDeRed(r)?'SI':'NO'} <small>(${esc(r.FINDERED||r.finder_ed||'sin valor')})</small><br><b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br><button class="popupEditBtn" onclick="editarPunto('${r.id}')">Editar</button><button class="popupMoveBtn" onclick="moverPunto('${r.id}')">Mover</button>`);
 
-    if(['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(r.TIPO)){
+    if(['POSTE','C. AMERICANO','CERCHA','CANALIZADO','CLIENTE'].includes(r.TIPO)){
       mk.bindTooltip(htmlEtiquetaConsecutivo(r),{permanent:true,direction:'right',offset:[9,0],className:'posteConsecutivoTooltip',opacity:1});
     }
 
@@ -6682,6 +6887,12 @@ document.addEventListener('DOMContentLoaded',()=>{
           <input type="checkbox" id="filtroTipo_CERCHA" value="CERCHA">
           <span class="filterTypeSymbol triangleSymbol"></span>
           <span><b>CERCHA</b><small id="countTipo_CERCHA">0 elementos</small></span>
+        </label>
+
+        <label class="filterTipoOption">
+          <input type="checkbox" id="filtroTipo_CLIENTE" value="CLIENTE">
+          <span class="filterTypeSymbol" style="font-size:18px">🏠</span>
+          <span><b>CLIENTE</b><small id="countTipo_CLIENTE">0 elementos</small></span>
         </label>
       </div>
 
