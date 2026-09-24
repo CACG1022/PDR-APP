@@ -2731,6 +2731,7 @@ function tipoPlanoCartera(tipo){
   if(t==='CANALIZADO')return 'CAMARA';
   if(t==='C. AMERICANO')return 'AMERICANO';
   if(t==='CERCHA')return 'CERCHA';
+  if(t==='CLIENTE')return 'CLIENTE';
   return 'POSTE';
 }
 
@@ -2813,6 +2814,37 @@ function distanciaEntradaCartera(p,indice){
   return total;
 }
 
+function distanciaClienteRealCartera(p,indice){
+  // Prioridad 1: distancia de fibra interna digitada por el técnico en DISTODO1.
+  const odo=numeroCartera(valorCartera(p,'DISTODO1','distodo1',0));
+  if(Number.isFinite(odo) && odo>0)return odo;
+
+  // Respaldo: si no existe distancia manual, calcular distancia GPS al CX1,
+  // manteniendo la lógica actual de la cartera.
+  const cx1=numeroCartera(valorCartera(p,'CX1','cx1',0));
+  if(!(cx1>0))return 0;
+
+  const proyecto=String(p?.proyecto_id||'');
+  const pol=String(p?.poligono||valorCartera(p,'POLIGONO','poligono','')).trim().toUpperCase();
+  const destino=indice.get(`${proyecto}||${pol}||${cx1}`);
+  if(!destino)return 0;
+
+  const d=distanciaHaversineMetros(p,destino);
+  return Number.isFinite(d)&&d>0?d:0;
+}
+
+function esPuntoClienteCartera(p){
+  return String(p?.tipo||valorCartera(p,'TIPO','tipo','')).trim().toUpperCase()==='CLIENTE';
+}
+
+function claveAccesoClienteCartera(p){
+  const proyecto=String(p?.proyecto_id||'');
+  const pol=String(p?.poligono||valorCartera(p,'POLIGONO','poligono','')).trim().toUpperCase();
+  const cx1=numeroCartera(valorCartera(p,'CX1','cx1',0));
+  return cx1>0?`${proyecto}||${pol}||${cx1}`:'';
+}
+
+
 function filaInfraCartera(p,item,distancia){
   const tipo=String(p?.tipo||valorCartera(p,'TIPO','tipo','POSTE')).trim().toUpperCase();
   const herraje=tipoHerrajeCartera(p);
@@ -2869,21 +2901,21 @@ function filaClienteCartera(p,item,distanciaInterna){
   return [
     `${item}.CLIENTE`,
     String(p?.direccion||valorCartera(p,'DIRECCION','direccion','')).toUpperCase(),
-    '',
+    georefCartera(p),
     'CLIENTE',
-    '',
-    Math.round(distanciaInterna*100)/100,
-    textoCartera(valorCartera(p,'TENSION','tension','')),
+    'N/A',
+    Math.round((distanciaInterna||0)*100)/100,
+    'N/A',
     'N/A','N/A',
-    '',null,'',
-    textoCartera(valorCartera(p,'ESTADO','estado','BUENO'),'BUENO'),
+    'N/A',null,'N/A',
+    'N/A',
     'N/A','N/A',
-    'SI','N/A','N/A','N/A','N/A','N/A',
-    'SI','N/A','N/A','N/A','N/A',null,
-    1,
-    tipoHerrajeCartera(p),
+    'N/A','N/A','N/A','N/A','N/A','N/A',
+    'SI','N/A','N/A','N/A','N/A',0,
+    'N/A',
+    'N/A',
     '',null,null,
-    'DISTANCIA INTERNA HASTA EL CLIENTE'
+    'DISTANCIA DE FIBRA INTERNA HASTA EL CLIENTE'
   ];
 }
 
@@ -2953,20 +2985,39 @@ async function exportarCarteraEMSA(){
     const indice=new Map();
     puntosProyecto.forEach(p=>indice.set(clavePuntoDistancia(p),p));
 
-    // Cada elemento levantado genera una fila. Cuando DISTANCIA_INTERNA > 0
-    // se agrega además la fila CLIENTE, como en el formato suministrado.
+    // Los CLIENTE registrados directamente en el Mapping generan su propia fila.
+    // DISTODO1 es la distancia de fibra interna. Si está vacío/0, se usa la
+    // distancia GPS entre CLIENTE y CX1 como respaldo.
     const filas=[];
     let numeroItem=1;
 
+    const clientesReales=puntosProyecto.filter(esPuntoClienteCartera);
+    const accesosConCliente=new Set(
+      clientesReales.map(claveAccesoClienteCartera).filter(Boolean)
+    );
+
     for(const p of puntosProyecto){
+      if(esPuntoClienteCartera(p)){
+        filas.push({
+          tipo:'cliente',
+          valores:filaClienteCartera(p,numeroItem,distanciaClienteRealCartera(p,indice))
+        });
+        numeroItem++;
+        continue;
+      }
+
       filas.push({
         tipo:'infra',
         valores:filaInfraCartera(p,numeroItem,distanciaEntradaCartera(p,indice))
       });
       numeroItem++;
 
+      // Compatibilidad con levantamientos anteriores a TIPO=CLIENTE:
+      // si usaban DISTANCIA_INTERNA y todavía no existe un CLIENTE real conectado,
+      // se conserva la fila CLIENTE histórica.
       const interna=distanciaInternaCartera(p);
-      if(interna>0){
+      const claveP=clavePuntoDistancia(p);
+      if(interna>0 && !accesosConCliente.has(claveP)){
         filas.push({
           tipo:'cliente',
           valores:filaClienteCartera(p,numeroItem,interna)
@@ -3048,7 +3099,7 @@ async function exportarCarteraEMSA(){
     // Materiales del cliente.
     const totalRet=puntosProyecto.reduce((s,p)=>s+valorHerrajesCartera(p,'RETENCION'),0);
     const totalSus=puntosProyecto.reduce((s,p)=>s+valorHerrajesCartera(p,'SUSPENSION'),0);
-    const accesos=puntosProyecto.filter(p=>distanciaInternaCartera(p)>0).length;
+    const accesos=clientesReales.length + puntosProyecto.filter(p=>!esPuntoClienteCartera(p) && distanciaInternaCartera(p)>0 && !accesosConCliente.has(clavePuntoDistancia(p))).length;
 
     ws.getCell(`H${materialsItemStart}`).value={formula:`F${totalFoRow}`}; // FIBRA OPTICA
     ws.getCell(`H${materialsItemStart+1}`).value=accesos||1;              // CAJA OB
