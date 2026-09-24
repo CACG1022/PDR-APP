@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - Dashboard Avances V14 - PDF Sin Solapamientos</title>
+<title>Master Mapping & Site Survey - Dashboard Avances V15 - Fecha Colombia</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2024,13 +2024,77 @@ async function exportarKMZProyecto(btn=null){
   }
 }
 
+
+const TZ_COLOMBIA_MASTER='America/Bogota';
+
+function partesFechaColombiaMaster(valor=new Date()){
+  const d=valor instanceof Date?valor:new Date(valor);
+  if(Number.isNaN(d.getTime()))return null;
+
+  const partes=new Intl.DateTimeFormat('en-CA',{
+    timeZone:TZ_COLOMBIA_MASTER,
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit'
+  }).formatToParts(d);
+
+  const get=t=>partes.find(p=>p.type===t)?.value||'';
+
+  return {
+    year:get('year'),
+    month:get('month'),
+    day:get('day')
+  };
+}
+
+function fechaISOColombiaMaster(valor=new Date()){
+  const p=partesFechaColombiaMaster(valor);
+  return p?`${p.year}-${p.month}-${p.day}`:'';
+}
+
+function fechaHoraColombiaMaster(valor=new Date()){
+  const d=valor instanceof Date?valor:new Date(valor);
+  if(Number.isNaN(d.getTime()))return '';
+
+  return new Intl.DateTimeFormat('es-CO',{
+    timeZone:TZ_COLOMBIA_MASTER,
+    year:'numeric',
+    month:'numeric',
+    day:'numeric',
+    hour:'numeric',
+    minute:'2-digit',
+    second:'2-digit',
+    hour12:true
+  }).format(d);
+}
+
 function fechaPunto(p){
-  const raw=p.fecha_captura_app||p.fecha||p.created_at||'';
-  if(!raw)return '';
-  const d=new Date(raw);
-  if(!isNaN(d))return d.toISOString().slice(0,10);
-  const m=String(raw).match(/(\d{4})-(\d{2})-(\d{2})/);
-  return m?`${m[1]}-${m[2]}-${m[3]}`:String(raw).slice(0,10);
+  // Fuente principal: fecha_captura_app / created_at son timestamps reales.
+  // Se convierten a America/Bogota antes de agrupar por día.
+  const timestamp=p?.fecha_captura_app||p?.created_at||'';
+
+  if(timestamp){
+    const d=new Date(timestamp);
+    if(!Number.isNaN(d.getTime())){
+      return fechaISOColombiaMaster(d);
+    }
+  }
+
+  // El campo fecha es calendario YYYY-MM-DD; si viene así, se respeta tal cual
+  // para no aplicar una segunda conversión de zona horaria.
+  const raw=String(p?.fecha||'').trim();
+
+  const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+
+  if(raw){
+    const d=new Date(raw);
+    if(!Number.isNaN(d.getTime())){
+      return fechaISOColombiaMaster(d);
+    }
+  }
+
+  return '';
 }
 function nombreTecnicoPunto(p){return p.tecnico_nombre||p.tecnico_email||'Sin técnico'}
 function valorQ(p,key,dbkey=null){
@@ -2338,7 +2402,7 @@ function renderDashboardAvances(){
   const proyectoTxt=textoProyectoDashboard();
   const ciudadTxt=dashCiudad.value||'Todas';
   const tecnicoTxt=dashTecnico.value||'Todos';
-  const fechaGeneracion=new Date().toLocaleString('es-CO');
+  const fechaGeneracion=fechaHoraColombiaMaster(new Date());
   avanceSubtitulo.textContent=proyectoTxt;
   dashPrintProyecto.textContent=`${proyectoTxt} · Ciudad: ${ciudadTxt} · Técnico: ${tecnicoTxt}`;
   dashPrintFecha.textContent=`Generado: ${fechaGeneracion}`;
@@ -2618,7 +2682,7 @@ async function exportarReporteExcel(){
     const nombreBase=(psel?.codigo||psel?.nombre||'REPORTE_MAPPING')
       .replace(/[\\/:*?"<>|]+/g,'_')
       .replace(/\s+/g,'_');
-    const fecha=new Date().toISOString().slice(0,10);
+    const fecha=fechaISOColombiaMaster(new Date());
     XLSX.writeFile(wb,`${nombreBase}_REPORTE_${fecha}.xlsx`);
   }catch(e){
     console.error(e);
