@@ -860,11 +860,103 @@ body.lightTheme .poligonoAutoEstado.error{color:#b91c1c!important}
 body.lightTheme .fueraPoligonoModal h3{color:#b91c1c!important}
 body.lightTheme .fueraPoligonoModal p{color:#334155!important}
 
+
+.syncErrorBox{
+  display:none;
+  margin-top:9px;
+  border:1px solid rgba(239,68,68,.55);
+  border-radius:10px;
+  background:rgba(69,10,10,.42);
+  overflow:hidden;
+}
+.syncErrorBox.open{display:block}
+.syncErrorHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:7px 9px;
+  border-bottom:1px solid rgba(239,68,68,.35);
+}
+.syncErrorHead b{font-size:10px;color:#fecaca}
+.syncErrorActions{display:flex;gap:5px}
+.syncErrorActions button{
+  width:auto!important;
+  border:1px solid #7f1d1d!important;
+  background:#450a0a!important;
+  color:#fee2e2!important;
+  border-radius:7px!important;
+  padding:5px 7px!important;
+  font-size:8px!important;
+  font-weight:900!important;
+}
+.syncErrorList{
+  max-height:220px;
+  overflow:auto;
+  padding:7px;
+}
+.syncErrorItem{
+  border:1px solid rgba(248,113,113,.30);
+  border-radius:8px;
+  background:rgba(15,23,42,.76);
+  padding:7px;
+  margin-bottom:6px;
+  font-size:9px;
+  line-height:1.35;
+  color:#e2e8f0;
+}
+.syncErrorItem:last-child{margin-bottom:0}
+.syncErrorItem .errTitle{
+  color:#fca5a5;
+  font-weight:1000;
+  font-size:10px;
+  margin-bottom:3px;
+}
+.syncErrorItem .errStage{
+  display:inline-block;
+  padding:2px 5px;
+  border-radius:999px;
+  background:#7f1d1d;
+  color:#fff;
+  font-weight:900;
+  font-size:8px;
+  margin-right:4px;
+}
+.syncErrorItem .errCode{
+  display:inline-block;
+  padding:2px 5px;
+  border-radius:999px;
+  background:#334155;
+  color:#f8fafc;
+  font-weight:900;
+  font-size:8px;
+}
+.syncErrorItem pre{
+  margin:5px 0 0;
+  padding:6px;
+  border-radius:6px;
+  background:#020617;
+  color:#cbd5e1;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:8px;
+  max-height:95px;
+  overflow:auto;
+}
+.syncErrorCurrent{
+  color:#fca5a5!important;
+  font-weight:900!important;
+}
+body.lightTheme .syncErrorBox{background:#fff1f2;border-color:#fca5a5}
+body.lightTheme .syncErrorItem{background:#fff;color:#334155;border-color:#fecaca}
+body.lightTheme .syncErrorItem pre{background:#f8fafc;color:#334155}
+body.lightTheme .syncErrorHead b{color:#b91c1c}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · bloqueo total sin proyecto</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fecha Colombia corregida</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -2286,14 +2378,76 @@ function esRegistroTecnicoActual(r){
   return valores.some(v=>candidatos.includes(v));
 }
 
+
+const TZ_COLOMBIA='America/Bogota';
+
+function partesFechaColombia(valor=new Date()){
+  const d=valor instanceof Date?valor:new Date(valor);
+  if(Number.isNaN(d.getTime()))return null;
+
+  const partes=new Intl.DateTimeFormat('en-CA',{
+    timeZone:TZ_COLOMBIA,
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit'
+  }).formatToParts(d);
+
+  const get=t=>partes.find(p=>p.type===t)?.value||'';
+
+  return {
+    year:get('year'),
+    month:get('month'),
+    day:get('day')
+  };
+}
+
+function fechaISOColombia(valor=new Date()){
+  const p=partesFechaColombia(valor);
+  return p?`${p.year}-${p.month}-${p.day}`:'';
+}
+
+function horaColombia(valor=new Date()){
+  const d=valor instanceof Date?valor:new Date(valor);
+  if(Number.isNaN(d.getTime()))return '';
+
+  return new Intl.DateTimeFormat('es-CO',{
+    timeZone:TZ_COLOMBIA,
+    hour:'2-digit',
+    minute:'2-digit',
+    second:'2-digit',
+    hour12:true
+  }).format(d);
+}
+
+function esTimestampConHora(v){
+  const s=String(v??'').trim();
+  return /T\d{2}:\d{2}/.test(s) || /\d{2}:\d{2}:\d{2}/.test(s);
+}
+
 function fechaAvanceTecnico(r){
-  const raw=r?.fecha_captura_app||r?.FECHA||'';
-  if(!raw)return '';
-  const m=String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  // fecha_captura_app es un timestamp real (normalmente UTC).
+  // Para el dashboard SIEMPRE se convierte a America/Bogota.
+  const captura=r?.fecha_captura_app;
+
+  if(captura){
+    const d=new Date(captura);
+    if(!Number.isNaN(d.getTime())){
+      return fechaISOColombia(d);
+    }
+  }
+
+  // FECHA es un campo de calendario YYYY-MM-DD y NO debe volver a
+  // convertirse como UTC porque podría desplazarse un día.
+  const fechaCampo=String(r?.FECHA||'').trim();
+  const m=fechaCampo.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(m)return `${m[1]}-${m[2]}-${m[3]}`;
 
-  const d=new Date(raw);
-  if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10);
+  // Respaldo para otros formatos que contengan hora.
+  if(esTimestampConHora(fechaCampo)){
+    const d=new Date(fechaCampo);
+    if(!Number.isNaN(d.getTime()))return fechaISOColombia(d);
+  }
+
   return '';
 }
 
@@ -2360,7 +2514,7 @@ function renderDashboardTecnico(){
   const dias=[...porDia.values()].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const diasValidos=dias.filter(d=>d.fecha!=='Sin fecha');
   const total=arr.length;
-  const hoy=new Date().toISOString().slice(0,10);
+  const hoy=fechaISOColombia(new Date());
   const hoyTotal=porDia.get(hoy)?.total||0;
   const promedio=diasValidos.length?total/diasValidos.length:0;
   const mejor=diasValidos.reduce((a,b)=>!a||b.total>a.total?b:a,null);
@@ -3873,10 +4027,30 @@ function registrosProyectoActual(){
 }
 function actualizarEstadoSync(){
   const arr=registrosProyectoActual();
-  const pend=arr.filter(r=>r.sync_status!=='enviado').length;
+
+  const nuevos=arr.filter(r=>
+    !['enviado','datos_enviados','fotos_pendientes'].includes(r.sync_status)
+  ).length;
+
+  const fotosPend=arr.filter(r=>
+    ['datos_enviados','fotos_pendientes'].includes(r.sync_status)
+  ).length;
+
   const err=arr.filter(r=>r.sync_status==='error').length;
+
+  const partes=[];
+  if(nuevos)partes.push(`Pendientes ${nuevos}`);
+  if(fotosPend)partes.push(`Fotos ${fotosPend}`);
+  if(err)partes.push(`Error ${err}`);
+  if(!partes.length)partes.push('Sin pendientes');
+
   const el=document.getElementById('syncStatusTop');
-  if(el)el.textContent=proyectoActivo?`${proyectoActivo.empresa?.nombre_corto||proyectoActivo.empresa?.nombre||'SIN EMPRESA'} · ${proyectoActivo.codigo||''} · Pendientes ${pend}${err?` · Error ${err}`:''}`:'Sin proyecto activo';
+  if(el){
+    el.textContent=proyectoActivo
+      ? `${proyectoActivo.empresa?.nombre_corto||proyectoActivo.empresa?.nombre||'SIN EMPRESA'} · ${proyectoActivo.codigo||''} · ${partes.join(' · ')}`
+      : 'Sin proyecto activo';
+  }
+
   if(counterTop)counterTop.textContent=`${arr.length} puntos`;
 }
 function persist(){
@@ -4509,7 +4683,7 @@ function prepararRegistroLocalBase(){
   }
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
-  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toISOString().slice(0,10),HORA:ahora.toLocaleTimeString('es-CO'),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
+  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
   for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=val(`CX${i}POL`)||'N/A';r[`CX${i}CONSE`]=num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=num(`DISTODO${i+4}`)}return r;
 }
 
@@ -4709,6 +4883,57 @@ function nombreFotoMapping(r,tipo,b64){
   return `${empresa}_${proyecto}_${idcampo}_${tipo}.${ext}`;
 }
 
+
+function crearErrorSync(etapa,mensaje,extra={}){
+  const e=new Error(String(mensaje||'Error de sincronización'));
+  e.sync_stage=etapa||'DESCONOCIDO';
+  Object.assign(e,extra||{});
+  return e;
+}
+
+function textoSeguroSync(v,max=900){
+  if(v===null||v===undefined)return '';
+  let s='';
+  try{
+    s=typeof v==='string'?v:JSON.stringify(v);
+  }catch(_){
+    s=String(v);
+  }
+  return s.length>max?s.slice(0,max)+'…':s;
+}
+
+function normalizarErrorSync(error,contexto={}){
+  const e=error||{};
+  const status=Number(e.status||e.statusCode||e.http_status||0)||null;
+
+  return {
+    fecha:new Date().toISOString(),
+    punto:contexto.punto||e.punto||'',
+    offline_id:contexto.offline_id||e.offline_id||'',
+    etapa:e.sync_stage||contexto.etapa||'DESCONOCIDO',
+    codigo:e.sync_code||e.code||contexto.codigo||'',
+    foto:e.tipo_foto||contexto.foto||'',
+    archivo:e.nombre_archivo||contexto.archivo||'',
+    tamano_bytes:Number(e.tamano_bytes||contexto.tamano_bytes||0)||0,
+    status,
+    mensaje:String(e.message||e.error_description||e.details||e.hint||error||'Error desconocido'),
+    detalle:textoSeguroSync(
+      e.sync_detail ?? e.detalle ?? e.details ?? e.body ?? e.response_body ?? e.cause ?? '',
+      1200
+    ),
+    endpoint:e.endpoint||contexto.endpoint||''
+  };
+}
+
+function resumenErrorSync(err){
+  const partes=[];
+  if(err.etapa)partes.push(err.etapa);
+  if(err.foto)partes.push(err.foto);
+  if(err.status)partes.push(`HTTP ${err.status}`);
+  if(err.codigo)partes.push(err.codigo);
+  return `${partes.length?partes.join(' · ')+' — ':''}${err.mensaje}`;
+}
+
 async function enviarFotoMappingN8N(r,tipo,b64){
   const nombreArchivo=nombreFotoMapping(r,tipo,b64);
 
@@ -4782,38 +5007,99 @@ async function enviarFotoMappingN8N(r,tipo,b64){
     }
   };
 
-  const resp=await fetch(N8N_WEBHOOK_FOTOS,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  });
+  let resp=null;
 
-  if(!resp.ok){
-    const detalle=await resp.text().catch(()=> '');
-    throw new Error(`n8n respondió HTTP ${resp.status}${detalle?`: ${detalle.slice(0,180)}`:''}`);
+  try{
+    resp=await fetch(N8N_WEBHOOK_FOTOS,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+  }catch(fetchError){
+    // TypeError: Failed to fetch suele significar:
+    // CORS, DNS, certificado HTTPS, red móvil o servidor n8n inaccesible.
+    throw crearErrorSync(
+      'N8N_CONEXION',
+      `No fue posible conectar con n8n al enviar ${tipo}: ${fetchError?.message||fetchError}`,
+      {
+        sync_code:'FETCH_FAILED',
+        tipo_foto:tipo,
+        nombre_archivo:nombreArchivo,
+        endpoint:N8N_WEBHOOK_FOTOS,
+        sync_detail:`El navegador no obtuvo respuesta HTTP. Posibles causas: CORS, DNS, certificado HTTPS, bloqueo de red o servidor n8n no disponible. Error original: ${fetchError?.name||''} ${fetchError?.message||fetchError}`
+      }
+    );
   }
 
-  const texto=await resp.text();
+  const texto=await resp.text().catch(e=>`[No se pudo leer body: ${e?.message||e}]`);
+
+  if(!resp.ok){
+    let codigo=`HTTP_${resp.status}`;
+    if(resp.status===413)codigo='PAYLOAD_TOO_LARGE';
+    else if(resp.status===401)codigo='N8N_UNAUTHORIZED';
+    else if(resp.status===403)codigo='N8N_FORBIDDEN';
+    else if(resp.status===404)codigo='WEBHOOK_NOT_FOUND';
+    else if(resp.status>=500)codigo='N8N_SERVER_ERROR';
+
+    throw crearErrorSync(
+      'N8N_HTTP',
+      `n8n rechazó ${tipo}: HTTP ${resp.status} ${resp.statusText||''}`.trim(),
+      {
+        status:resp.status,
+        sync_code:codigo,
+        tipo_foto:tipo,
+        nombre_archivo:nombreArchivo,
+        endpoint:N8N_WEBHOOK_FOTOS,
+        sync_detail:textoSeguroSync(texto,1200)
+      }
+    );
+  }
+
   let respuesta={};
-  try{respuesta=texto?JSON.parse(texto):{}}
-  catch{respuesta={respuesta_texto:texto}}
+  try{
+    respuesta=texto?JSON.parse(texto):{};
+  }catch(parseError){
+    respuesta={respuesta_texto:texto};
+
+    // Una respuesta no JSON no es necesariamente error si luego logramos
+    // extraer una URL/ruta del texto, pero se deja registrada en consola.
+    console.warn('n8n respondió texto no JSON para',tipo,texto);
+  }
 
   const url=extraerUrlN8N(respuesta);
   const ruta=extraerRutaN8N(respuesta);
 
   if(!url && !ruta){
-    console.warn('n8n respondió sin URL/ruta reconocible para',tipo,respuesta);
+    throw crearErrorSync(
+      'N8N_RESPUESTA',
+      `n8n recibió ${tipo}, pero la respuesta no contiene URL ni ruta de Drive.`,
+      {
+        sync_code:'SIN_URL_RUTA',
+        tipo_foto:tipo,
+        nombre_archivo:nombreArchivo,
+        endpoint:N8N_WEBHOOK_FOTOS,
+        sync_detail:textoSeguroSync(respuesta,1200)
+      }
+    );
   }
 
   return {respuesta,url,ruta,nombreArchivo};
 }
 
 async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
-  // Para borrar la copia local necesitamos evidencia de que n8n devolvió
-  // una referencia real de Drive/ruta remota.
   const tieneReferencia=Boolean(resultado?.url || resultado?.ruta);
+
   if(!tieneReferencia){
-    throw new Error(`La foto ${tipo} fue enviada a n8n, pero no se recibió URL/ruta de Drive. Se conserva la copia local para evitar pérdida de información.`);
+    throw crearErrorSync(
+      'N8N_RESPUESTA',
+      `La foto ${tipo} fue enviada, pero n8n no devolvió URL/ruta.`,
+      {
+        sync_code:'SIN_URL_RUTA',
+        tipo_foto:tipo,
+        nombre_archivo:resultado?.nombreArchivo||'',
+        sync_detail:textoSeguroSync(resultado?.respuesta,1200)
+      }
+    );
   }
 
   const {error:delError}=await mappingSb
@@ -4822,7 +5108,19 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
     .eq('punto_id',puntoId)
     .eq('tipo_foto',tipo);
 
-  if(delError)throw new Error(`No se pudo limpiar referencia anterior de ${tipo}: ${delError.message}`);
+  if(delError){
+    throw crearErrorSync(
+      'SUPABASE_FOTO_LIMPIAR',
+      `No se pudo limpiar la referencia anterior de ${tipo}: ${delError.message}`,
+      {
+        sync_code:delError.code||'SUPABASE_DELETE_ERROR',
+        status:delError.status||null,
+        tipo_foto:tipo,
+        nombre_archivo:resultado?.nombreArchivo||'',
+        sync_detail:textoSeguroSync(delError,1200)
+      }
+    );
+  }
 
   const fila={
     punto_id:puntoId,
@@ -4848,11 +5146,33 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
     .select('id,punto_id,tipo_foto,url_foto,storage_path,nombre_archivo')
     .single();
 
-  if(error)throw new Error(`No se pudo guardar referencia Supabase de ${tipo}: ${error.message}`);
+  if(error){
+    throw crearErrorSync(
+      'SUPABASE_FOTO_GUARDAR',
+      `Supabase no pudo guardar la referencia de ${tipo}: ${error.message}`,
+      {
+        sync_code:error.code||'SUPABASE_INSERT_ERROR',
+        status:error.status||null,
+        tipo_foto:tipo,
+        nombre_archivo:resultado?.nombreArchivo||'',
+        sync_detail:textoSeguroSync(error,1200)
+      }
+    );
+  }
 
   const confirmado=Boolean(data && (data.url_foto || data.storage_path));
+
   if(!confirmado){
-    throw new Error(`La referencia de ${tipo} no quedó confirmada en Supabase. Se conserva la foto local.`);
+    throw crearErrorSync(
+      'SUPABASE_FOTO_CONFIRMAR',
+      `La referencia de ${tipo} se insertó, pero volvió sin URL/ruta confirmada.`,
+      {
+        sync_code:'REFERENCIA_NO_CONFIRMADA',
+        tipo_foto:tipo,
+        nombre_archivo:resultado?.nombreArchivo||'',
+        sync_detail:textoSeguroSync(data,1200)
+      }
+    );
   }
 
   return data;
@@ -4860,39 +5180,97 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
 
 async function subirFotosN8N(r,puntoId){
   const puntoLocalId=r.offline_id||r.id;
-  const filas=await obtenerFotosIDB(puntoLocalId);
+  let filas=[];
+
+  try{
+    filas=await obtenerFotosIDB(puntoLocalId);
+  }catch(e){
+    throw crearErrorSync(
+      'INDEXEDDB_FOTOS',
+      `No se pudieron leer las fotos locales de ${r.IDCAMPO||puntoLocalId}: ${e?.message||e}`,
+      {
+        sync_code:'IDB_READ_ERROR',
+        sync_detail:textoSeguroSync(e,1000)
+      }
+    );
+  }
+
   if(!filas.length)return [];
 
   const resultados=[];
+
   for(const f of filas){
-    const tipo=f.tipo_foto;
-    const b64=await blobADataURL(f.blob);
+    const tipo=f.tipo_foto||'FOTO';
+    const tamano=Number(f?.blob?.size||0);
+    let b64='';
 
-    // 1. Subir por n8n -> Drive
-    const resultado=await enviarFotoMappingN8N(r,tipo,b64);
-
-    // 2. Confirmar que la referencia de Drive quedó registrada en Supabase
-    const refConfirmada=await guardarReferenciaFotoN8N(puntoId,r,tipo,resultado);
-
-    if(!r.fotos_remotas)r.fotos_remotas={};
-    r.fotos_remotas[tipo]={
-      url_foto:refConfirmada.url_foto||resultado.url||null,
-      ruta:refConfirmada.storage_path||resultado.ruta||null,
-      nombre_archivo:refConfirmada.nombre_archivo||resultado.nombreArchivo
-    };
-
-    // 3. SOLO AHORA borrar el Blob local de IndexedDB.
-    // Si cualquiera de los pasos anteriores falla, esta línea no se ejecuta.
-    await eliminarFotoIDB(puntoLocalId,tipo);
-
-    // Libera también la referencia en memoria si el formulario la conserva.
-    if(photos && photos[tipo]){
-      delete photos[tipo];
+    try{
+      b64=await blobADataURL(f.blob);
+    }catch(e){
+      throw crearErrorSync(
+        'FOTO_BASE64',
+        `No se pudo preparar ${tipo} para envío: ${e?.message||e}`,
+        {
+          sync_code:'BASE64_ERROR',
+          tipo_foto:tipo,
+          nombre_archivo:f?.nombre_original||'',
+          tamano_bytes:tamano,
+          sync_detail:textoSeguroSync(e,1000)
+        }
+      );
     }
 
-    console.info(`Foto ${tipo} confirmada en Drive/Supabase y eliminada de IndexedDB.`);
-    resultados.push({tipo,...resultado,referencia:refConfirmada,local_eliminada:true});
+    try{
+      // 1. Subir por n8n -> Drive.
+      const resultado=await enviarFotoMappingN8N(r,tipo,b64);
+
+      // 2. Confirmar referencia en Supabase.
+      const refConfirmada=await guardarReferenciaFotoN8N(puntoId,r,tipo,resultado);
+
+      if(!r.fotos_remotas)r.fotos_remotas={};
+      r.fotos_remotas[tipo]={
+        url_foto:refConfirmada.url_foto||resultado.url||null,
+        ruta:refConfirmada.storage_path||resultado.ruta||null,
+        nombre_archivo:refConfirmada.nombre_archivo||resultado.nombreArchivo
+      };
+
+      // 3. SOLO después de confirmación, borrar Blob local.
+      try{
+        await eliminarFotoIDB(puntoLocalId,tipo);
+      }catch(e){
+        throw crearErrorSync(
+          'INDEXEDDB_BORRAR_FOTO',
+          `La foto ${tipo} ya quedó en la nube, pero no se pudo borrar la copia local: ${e?.message||e}`,
+          {
+            sync_code:'IDB_DELETE_ERROR',
+            tipo_foto:tipo,
+            nombre_archivo:resultado?.nombreArchivo||f?.nombre_original||'',
+            tamano_bytes:tamano,
+            sync_detail:textoSeguroSync(e,1000)
+          }
+        );
+      }
+
+      if(photos && photos[tipo])delete photos[tipo];
+
+      console.info(`Foto ${tipo} confirmada en Drive/Supabase y eliminada de IndexedDB.`);
+      resultados.push({
+        tipo,
+        tamano_bytes:tamano,
+        ...resultado,
+        referencia:refConfirmada,
+        local_eliminada:true
+      });
+
+    }catch(e){
+      // Enriquecer cualquier error con la foto exacta y su tamaño.
+      if(!e.tipo_foto)e.tipo_foto=tipo;
+      if(!e.nombre_archivo)e.nombre_archivo=f?.nombre_original||'';
+      if(!e.tamano_bytes)e.tamano_bytes=tamano;
+      throw e;
+    }
   }
+
   return resultados;
 }
 
@@ -4937,50 +5315,250 @@ function esError401(error){
   return status===401 || msg.includes('401') || msg.includes('jwt') || msg.includes('unauthorized');
 }
 
-async function upsertPuntoConReintento(payload){
-  let resp=await mappingSb
+function esDuplicado23505(error){
+  const code=String(error?.code||'');
+  const msg=String(error?.message||'').toLowerCase();
+  return code==='23505' || msg.includes('duplicate key') || msg.includes('unique constraint');
+}
+
+async function buscarPuntoExistenteSupabase(payload){
+  // 1) Primero por offline_id: es la identidad local más fuerte.
+  if(payload?.offline_id){
+    const r1=await mappingSb
+      .from('mapping_puntos')
+      .select('id,offline_id,proyecto_id,idcampo,tecnico_id,tecnico_email')
+      .eq('offline_id',payload.offline_id)
+      .maybeSingle();
+
+    if(r1.error && esError401(r1.error))return {error:r1.error};
+    if(r1.error)return {error:r1.error};
+    if(r1.data)return {data:r1.data,encontrado_por:'offline_id'};
+  }
+
+  // 2) Después por la restricción única real de la tabla:
+  //    proyecto_id + idcampo.
+  if(payload?.proyecto_id && payload?.idcampo){
+    const r2=await mappingSb
+      .from('mapping_puntos')
+      .select('id,offline_id,proyecto_id,idcampo,tecnico_id,tecnico_email')
+      .eq('proyecto_id',payload.proyecto_id)
+      .eq('idcampo',payload.idcampo)
+      .maybeSingle();
+
+    if(r2.error && esError401(r2.error))return {error:r2.error};
+    if(r2.error)return {error:r2.error};
+    if(r2.data)return {data:r2.data,encontrado_por:'proyecto_id+idcampo'};
+  }
+
+  return {data:null,encontrado_por:null};
+}
+
+async function actualizarPuntoExistenteSupabase(existente,payload,encontradoPor){
+  if(!existente?.id){
+    return {
+      data:null,
+      error:{message:'No se recibió ID del registro existente.',code:'SIN_ID_EXISTENTE'}
+    };
+  }
+
+  // Seguridad: no sobrescribir silenciosamente un IDCAMPO de otro técnico.
+  // Si el registro coincide por offline_id, sí es el mismo registro local.
+  const mismoTecnico=
+    !existente.tecnico_id ||
+    String(existente.tecnico_id)===String(payload.tecnico_id);
+
+  if(encontradoPor!=='offline_id' && !mismoTecnico){
+    throw crearErrorSync(
+      'SUPABASE_PUNTO',
+      `El IDCAMPO ${payload.idcampo} ya existe en este proyecto y pertenece a otro técnico.`,
+      {
+        sync_code:'IDCAMPO_OCUPADO_OTRO_TECNICO',
+        sync_detail:`Registro existente: id=${existente.id}, técnico=${existente.tecnico_email||existente.tecnico_id||'desconocido'}. No se sobrescribió.`
+      }
+    );
+  }
+
+  const cambios={...payload};
+
+  // Si lo encontramos por proyecto+IDCAMPO pero el offline_id es diferente,
+  // conservamos el offline_id que ya tiene Supabase. De esta forma evitamos
+  // generar otra colisión de identidad local.
+  if(
+    encontradoPor==='proyecto_id+idcampo' &&
+    existente.offline_id &&
+    String(existente.offline_id)!==String(payload.offline_id||'')
+  ){
+    delete cambios.offline_id;
+  }
+
+  cambios.editado_en_app=true;
+  cambios.fecha_ultima_edicion_app=new Date().toISOString();
+
+  return await mappingSb
     .from('mapping_puntos')
-    .upsert(payload,{onConflict:'offline_id'})
-    .select('id')
+    .update(cambios)
+    .eq('id',existente.id)
+    .select('id,offline_id,proyecto_id,idcampo,tecnico_id')
     .single();
+}
+
+async function guardarPuntoSupabaseReconciliando(payload){
+  // Antes de insertar, verifica si el punto ya existe.
+  let busqueda=await buscarPuntoExistenteSupabase(payload);
+
+  if(busqueda.error)return {data:null,error:busqueda.error};
+
+  if(busqueda.data){
+    console.info(
+      '[SYNC] Punto ya existente en Supabase; se actualizará en lugar de insertar:',
+      payload.idcampo,
+      busqueda.encontrado_por,
+      busqueda.data.id
+    );
+
+    return await actualizarPuntoExistenteSupabase(
+      busqueda.data,
+      payload,
+      busqueda.encontrado_por
+    );
+  }
+
+  // No existe: insertar normalmente.
+  let ins=await mappingSb
+    .from('mapping_puntos')
+    .insert(payload)
+    .select('id,offline_id,proyecto_id,idcampo,tecnico_id')
+    .single();
+
+  if(!ins.error)return ins;
+
+  // Si entre la consulta y el INSERT otro proceso creó el mismo IDCAMPO,
+  // Supabase devolverá 23505. Se reconcilia en vez de dejar el punto en error.
+  if(esDuplicado23505(ins.error)){
+    console.warn(
+      '[SYNC] Se detectó duplicado 23505; intentando reconciliar:',
+      payload.idcampo,
+      ins.error
+    );
+
+    busqueda=await buscarPuntoExistenteSupabase(payload);
+
+    if(busqueda.error)return {data:null,error:busqueda.error};
+
+    if(busqueda.data){
+      return await actualizarPuntoExistenteSupabase(
+        busqueda.data,
+        payload,
+        busqueda.encontrado_por
+      );
+    }
+  }
+
+  return ins;
+}
+
+async function upsertPuntoConReintento(payload){
+  let resp=await guardarPuntoSupabaseReconciliando(payload);
 
   if(resp.error && esError401(resp.error)){
     await asegurarSesionValida();
-    resp=await mappingSb
-      .from('mapping_puntos')
-      .upsert(payload,{onConflict:'offline_id'})
-      .select('id')
-      .single();
+    resp=await guardarPuntoSupabaseReconciliando(payload);
   }
+
   return resp;
 }
 
 async function sincronizarUno(r){
-  await asegurarSesionValida();
+  const punto=r.IDCAMPO||r.offline_id||r.id||'punto';
+
+  try{
+    await asegurarSesionValida();
+  }catch(e){
+    if(!e.sync_stage)e.sync_stage='SUPABASE_SESION';
+    if(!e.sync_code)e.sync_code='SESION_INVALIDA';
+    throw e;
+  }
 
   r.sync_status='enviando';
   persist();
   pintarRegistros();
 
   const payload=filaSupabase(r);
-  const {data,error}=await upsertPuntoConReintento(payload);
+  let data=null,error=null;
 
-  if(error)throw error;
+  try{
+    const resp=await upsertPuntoConReintento(payload);
+    data=resp.data;
+    error=resp.error;
+  }catch(e){
+    throw crearErrorSync(
+      'SUPABASE_PUNTO',
+      `Falló el envío del punto ${punto} a Supabase: ${e?.message||e}`,
+      {
+        sync_code:e?.code||'SUPABASE_UPSERT_EXCEPTION',
+        status:e?.status||null,
+        sync_detail:textoSeguroSync(e,1200)
+      }
+    );
+  }
 
+  if(error){
+    const duplicado=esDuplicado23505(error);
+
+    throw crearErrorSync(
+      'SUPABASE_PUNTO',
+      duplicado
+        ? `No fue posible reconciliar el IDCAMPO duplicado ${punto}.`
+        : `Supabase rechazó el punto ${punto}: ${error.message}`,
+      {
+        sync_code:duplicado?'DUPLICADO_NO_RECONCILIADO':(error.code||'SUPABASE_UPSERT_ERROR'),
+        status:error.status||null,
+        sync_detail:textoSeguroSync(error,1200)
+      }
+    );
+  }
+
+  if(!data?.id){
+    throw crearErrorSync(
+      'SUPABASE_PUNTO',
+      `Supabase respondió sin ID para el punto ${punto}.`,
+      {
+        sync_code:'SIN_ID_SUPABASE',
+        sync_detail:textoSeguroSync(data,1000)
+      }
+    );
+  }
+
+  // El punto YA existe en Supabase desde este momento.
+  // Persistimos inmediatamente este estado para que, si el navegador se cierra,
+  // se recarga o falla una fotografía, el registro no vuelva a aparecer como
+  // un punto totalmente pendiente.
   r.supabase_id=data.id;
-
-  // La sincronización solo se marca como enviada cuando las fotos también
-  // llegaron a n8n y sus rutas quedaron registradas en Supabase.
-  await subirFotosN8N(r,data.id);
-
-  r.sync_status='enviado';
+  r.sync_status='datos_enviados';
   r.sync_error=null;
-
-  // Guardar inmediatamente el estado local. Así, si el usuario recarga
-  // justo después de terminar el envío, el punto no vuelve a aparecer pendiente.
+  r.sync_error_detail=null;
   persist();
   pintarRegistros();
 
+  try{
+    await subirFotosN8N(r,data.id);
+  }catch(e){
+    if(!e.sync_stage)e.sync_stage='FOTOS';
+
+    // Los datos estructurados ya están en Supabase; lo pendiente son las fotos.
+    r.sync_status='fotos_pendientes';
+    r.sync_error=e?.message||String(e);
+    persist();
+    pintarRegistros();
+    throw e;
+  }
+
+  r.sync_status='enviado';
+  r.sync_error=null;
+  r.sync_error_detail=null;
+
+  persist();
+  pintarRegistros();
   return r;
 }
 
@@ -4992,6 +5570,126 @@ let syncInicioMs=0;
 let syncTimerId=null;
 let syncBytesTransmitidos=0;
 let syncBytesTotalesEstimados=0;
+let syncErroresDetallados=[];
+
+
+function escSync(s){
+  return String(s??'').replace(/[&<>"']/g,m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+function renderErroresSync(){
+  const box=document.getElementById('syncErrorBox');
+  const list=document.getElementById('syncErrorList');
+
+  if(!box||!list)return;
+
+  if(!syncErroresDetallados.length){
+    box.classList.remove('open');
+    list.innerHTML='';
+    return;
+  }
+
+  box.classList.add('open');
+
+  list.innerHTML=syncErroresDetallados.map((e,i)=>{
+    const extra=[
+      e.foto?`Foto: ${e.foto}`:'',
+      e.archivo?`Archivo: ${e.archivo}`:'',
+      e.tamano_bytes?`Tamaño: ${formatearBytes(e.tamano_bytes)}`:'',
+      e.status?`HTTP: ${e.status}`:''
+    ].filter(Boolean).join(' · ');
+
+    const raw=[
+      e.detalle?`DETALLE:\n${e.detalle}`:'',
+      e.endpoint?`ENDPOINT:\n${e.endpoint}`:''
+    ].filter(Boolean).join('\n\n');
+
+    return `<div class="syncErrorItem">
+      <div class="errTitle">${i+1}. ${escSync(e.punto||'Punto sin ID')}</div>
+      <div>
+        <span class="errStage">${escSync(e.etapa||'ERROR')}</span>
+        ${e.codigo?`<span class="errCode">${escSync(e.codigo)}</span>`:''}
+      </div>
+      <div style="margin-top:4px"><b>${escSync(e.mensaje)}</b></div>
+      ${extra?`<div style="margin-top:3px;color:#94a3b8">${escSync(extra)}</div>`:''}
+      ${raw?`<pre>${escSync(raw)}</pre>`:''}
+    </div>`;
+  }).join('');
+}
+
+function registrarErrorSync(error,registro){
+  const err=normalizarErrorSync(error,{
+    punto:registro?.IDCAMPO||registro?.offline_id||registro?.id||'punto',
+    offline_id:registro?.offline_id||''
+  });
+
+  syncErroresDetallados.push(err);
+
+  if(registro){
+    registro.sync_error=resumenErrorSync(err);
+    registro.sync_error_detail=err;
+  }
+
+  console.error('[SYNC ERROR DETALLADO]',err,error);
+  renderErroresSync();
+  return err;
+}
+
+async function copiarDiagnosticoSync(){
+  if(!syncErroresDetallados.length){
+    alert('No hay errores registrados.');
+    return;
+  }
+
+  const cabecera=[
+    'MAPPING Y SITE SURVEY - DIAGNÓSTICO DE SINCRONIZACIÓN',
+    `Fecha: ${new Date().toLocaleString('es-CO')}`,
+    `Proyecto: ${proyectoActivo?.codigo||proyectoActivo?.nombre||''}`,
+    `Técnico: ${mappingProfile?.nombre||mappingUser?.email||''}`,
+    `Navegador: ${navigator.userAgent}`,
+    `Online: ${navigator.onLine?'SI':'NO'}`,
+    ''
+  ].join('\n');
+
+  const cuerpo=syncErroresDetallados.map((e,i)=>[
+    `ERROR ${i+1}`,
+    `Punto: ${e.punto||''}`,
+    `Etapa: ${e.etapa||''}`,
+    `Código: ${e.codigo||''}`,
+    `Foto: ${e.foto||''}`,
+    `Archivo: ${e.archivo||''}`,
+    `Tamaño: ${e.tamano_bytes?formatearBytes(e.tamano_bytes):''}`,
+    `HTTP: ${e.status||''}`,
+    `Mensaje: ${e.mensaje||''}`,
+    `Detalle: ${e.detalle||''}`,
+    `Endpoint: ${e.endpoint||''}`,
+    '------------------------------'
+  ].join('\n')).join('\n');
+
+  const texto=cabecera+cuerpo;
+
+  try{
+    await navigator.clipboard.writeText(texto);
+    alert('Diagnóstico copiado. Puedes pegarlo en WhatsApp o enviármelo aquí.');
+  }catch(_){
+    const ta=document.createElement('textarea');
+    ta.value=texto;
+    ta.style.position='fixed';
+    ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    alert('Diagnóstico copiado.');
+  }
+}
+
+function limpiarDiagnosticoSync(){
+  syncErroresDetallados=[];
+  renderErroresSync();
+}
 
 function formatearTiempo(ms){
   const total=Math.max(0,Math.floor(ms/1000));
@@ -5075,12 +5773,25 @@ function finalizarPanelSync(){
   const p=document.getElementById('syncProgressPanel');
   if(p){p.classList.toggle('ok',syncResumen.error===0);p.classList.toggle('error',syncResumen.error>0)}
   const d=document.getElementById('syncProgressDetail');
-  if(d)d.textContent=syncResumen.error===0?`Sincronización terminada en ${formatearTiempo(Date.now()-syncInicioMs)}.`:`Terminó con ${syncResumen.error} error(es). Los datos permanecen guardados para reintentar.`;
+  if(d)d.textContent=syncResumen.error===0
+    ? `Sincronización terminada en ${formatearTiempo(Date.now()-syncInicioMs)}.`
+    : `Terminó con ${syncResumen.error} error(es). Revisa "DETALLE EXACTO DE ERRORES" debajo. Los datos permanecen guardados para reintentar.`;
+
+  renderErroresSync();
   actualizarProgresoSync();
 }
 function iniciarSincronizacionSegundoPlano(){
   if(syncEnCurso){mostrarPanelSync();return}
-  sincronizarPendientesBackground().catch(e=>{console.error(e);syncEnCurso=false;syncResumen.error++;finalizarPanelSync()});
+
+  sincronizarPendientesBackground().catch(e=>{
+    console.error(e);
+    syncEnCurso=false;
+    syncResumen.error++;
+    const err=normalizarErrorSync(e,{punto:'PROCESO GENERAL',etapa:'SYNC_GENERAL'});
+    syncErroresDetallados.push(err);
+    renderErroresSync();
+    finalizarPanelSync();
+  });
 }
 async function sincronizarPendientesBackground(){
   if(syncEnCurso)return;
@@ -5095,6 +5806,8 @@ async function sincronizarPendientesBackground(){
 
   syncEnCurso=true;syncOcultoManual=false;
   syncResumen={total:pendientes.length,procesados:0,ok:0,error:0};
+  syncErroresDetallados=[];
+  renderErroresSync();
   syncInicioMs=Date.now();syncBytesTransmitidos=0;syncBytesTotalesEstimados=0;
 
   // El cronómetro arranca inmediatamente al pulsar Enviar datos.
@@ -5126,11 +5839,16 @@ async function sincronizarPendientesBackground(){
       const speedEl=document.getElementById('syncSpeed');
       if(speedEl) speedEl.textContent=formatearVelocidad(velocidadPunto);
     }catch(e){
-      r.sync_status='error';r.sync_error=e?.message||String(e);syncResumen.error++;console.error('Error sincronizando',etiqueta,e);
+      r.sync_status='error';
+      const err=registrarErrorSync(e,r);
+      syncResumen.error++;
+      actualizarProgresoSync(`❌ ${etiqueta}: ${resumenErrorSync(err)}`);
     }
     syncResumen.procesados++;
     persist();pintarRegistros();
-    actualizarProgresoSync(`Procesado ${etiqueta}. Puedes continuar levantando datos.`);
+    if(r.sync_status!=='error'){
+      actualizarProgresoSync(`✓ Procesado ${etiqueta}. Puedes continuar levantando datos.`);
+    }
     await new Promise(res=>setTimeout(res,20));
   }
 
@@ -5147,7 +5865,7 @@ async function sincronizarPendientes(){
       ok++;
     }catch(e){
       r.sync_status='error';
-      r.sync_error=e?.message||String(e);
+      registrarErrorSync(e,r);
       fail++;
       console.error('Error sincronizando punto',r.IDCAMPO||r.offline_id,e);
       if(esError401(e) || String(e?.message||'').toLowerCase().includes('sesión')){
@@ -5168,6 +5886,19 @@ async function reenviarTodo(){
   }if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
 function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,_tecnico_id:e.tecnico_id,_tecnico_email:e.tecnico_email,_tecnico_nombre:e.tecnico_nombre,_created_at:e.created_at||null,fecha_captura_app:q.fecha_captura_app||e.fecha_captura_app||e.created_at||null,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
 
+
+function tiposFotoRequeridosRegistro(r){
+  const tipo=String(r?.TIPO||r?.tipo||'').trim().toUpperCase();
+  return (photoDefs[tipo]||[]).map(([id])=>id);
+}
+
+function claveIdcampoLocal(r){
+  return [
+    String(r?.proyecto_id||''),
+    String(r?.IDCAMPO||r?.idcampo||'').trim().toUpperCase()
+  ].join('__');
+}
+
 async function reconciliarEstadoLocalConNube(local,remoto){
   if(!local || !remoto)return local||remoto;
 
@@ -5183,37 +5914,48 @@ async function reconciliarEstadoLocalConNube(local,remoto){
 
   const remotas=local.fotos_remotas||{};
 
-  // Limpieza segura de fotos antiguas:
-  // si una foto todavía está en IndexedDB pero ya tiene URL/ruta confirmada
-  // en mapping_punto_fotos, eliminamos solamente esa copia local.
+  // Si la foto ya está confirmada en la nube, limpia únicamente la copia local.
   for(const f of fotosLocales){
     const ref=remotas[f.tipo_foto];
     if(ref?.url_foto || ref?.ruta){
       try{
         await eliminarFotoIDB(local.offline_id||local.id,f.tipo_foto);
-        console.info(`Limpieza local: ${f.tipo_foto} ya estaba en nube y fue eliminada de IndexedDB.`);
       }catch(e){
         console.warn(`No se pudo limpiar ${f.tipo_foto} de IndexedDB:`,e);
       }
     }
   }
 
-  // Releer después de la limpieza para saber qué sigue realmente pendiente.
   try{
     fotosLocales=await obtenerFotosIDB(local.offline_id||local.id);
   }catch(e){
     console.warn('No fue posible releer fotos locales después de la limpieza:',e);
   }
 
-  const tiposLocales=fotosLocales.map(f=>f.tipo_foto).filter(Boolean);
-  const faltantes=tiposLocales.filter(tipo=>!remotas[tipo]?.url_foto && !remotas[tipo]?.ruta);
+  const requeridas=tiposFotoRequeridosRegistro(local);
+  const tiposLocales=new Set(fotosLocales.map(f=>String(f.tipo_foto||'')));
+  const tiposRemotos=new Set(
+    Object.entries(remotas)
+      .filter(([,ref])=>ref?.url_foto || ref?.ruta)
+      .map(([tipo])=>String(tipo))
+  );
 
-  if(faltantes.length===0){
+  const faltantes=requeridas.filter(tipo=>
+    !tiposLocales.has(tipo) &&
+    !tiposRemotos.has(tipo)
+  );
+
+  const pendientesLocales=requeridas.filter(tipo=>tiposLocales.has(tipo));
+
+  if(faltantes.length===0 && pendientesLocales.length===0){
     local.sync_status='enviado';
     local.sync_error=null;
+    local.sync_error_detail=null;
   }else{
-    local.sync_status='pendiente';
+    // El punto ya está en Supabase, pero aún faltan fotos por confirmar/subir.
+    local.sync_status='fotos_pendientes';
     local.sync_error=null;
+    local.sync_error_detail=null;
   }
 
   return local;
@@ -5265,28 +6007,51 @@ async function cargarPuntosSupabase(mostrar=true){
     r.fotos_remotas=fotosPorPunto[r.supabase_id]||{};
   });
 
-  const pendientes=new Map(
-    registrosProyectoActual()
-      .filter(r=>r.sync_status!=='enviado')
-      .map(r=>[r.offline_id,r])
+  const localesPendientes=registrosProyectoActual()
+    .filter(r=>r.sync_status!=='enviado');
+
+  const pendientesPorOffline=new Map(
+    localesPendientes
+      .filter(r=>r.offline_id)
+      .map(r=>[String(r.offline_id),r])
   );
+
+  const pendientesPorIdcampo=new Map(
+    localesPendientes
+      .filter(r=>r.IDCAMPO||r.idcampo)
+      .map(r=>[claveIdcampoLocal(r),r])
+  );
+
+  const procesadosLocales=new Set();
 
   registros=registros.filter(
     r=>String(r.proyecto_id||'')!==String(proyectoActivo.proyecto_id)
   );
 
   for(const remoto of remotos){
-    const local=pendientes.get(remoto.offline_id);
+    let local=null;
+
+    if(remoto.offline_id){
+      local=pendientesPorOffline.get(String(remoto.offline_id))||null;
+    }
+
+    if(!local){
+      local=pendientesPorIdcampo.get(claveIdcampoLocal(remoto))||null;
+    }
+
     if(local){
       const reconciliado=await reconciliarEstadoLocalConNube(local,remoto);
       registros.push(reconciliado);
-      pendientes.delete(remoto.offline_id);
+      procesadosLocales.add(local);
     }else{
       registros.push(remoto);
     }
   }
 
-  for(const r of pendientes.values())registros.push(r);
+  // Solo conserva locales que realmente no existen todavía en Supabase.
+  for(const r of localesPendientes){
+    if(!procesadosLocales.has(r))registros.push(r);
+  }
 
   persist();
   pintarRegistros();
@@ -5535,6 +6300,20 @@ async function finalizarAsignacion(){
     return;
   }if(!proyectoActivo)return;if(registrosProyectoActual().some(r=>r.sync_status!=='enviado')){alert('Primero envía todos los datos pendientes.');return}if(!confirm('¿Finalizar tu asignación en este proyecto?'))return;const {error}=await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'finalizado',fecha_finalizacion:new Date().toISOString()}).eq('id',proyectoActivo.asignacion_id);if(error){alert(error.message);return}alert('Asignación finalizada.');proyectoActivo=null;localStorage.removeItem('mapping_proyecto_activo_v1');await cargarProyectosAsignados()}
 window.addEventListener('online',actualizarEstadoSync);window.addEventListener('offline',actualizarEstadoSync);window.addEventListener('load',async()=>{
+  // Un estado "enviando" guardado en localStorage solo significa que la app
+  // se cerró/interrumpió durante una sincronización anterior. Nunca debe
+  // permanecer bloqueado al volver a abrir.
+  let cambioEstadoInterrumpido=false;
+
+  registros.forEach(r=>{
+    if(r.sync_status==='enviando'){
+      r.sync_status=r.supabase_id?'datos_enviados':'pendiente';
+      cambioEstadoInterrumpido=true;
+    }
+  });
+
+  if(cambioEstadoInterrumpido)persist();
+
   try{await migrarFotosLegacyLocalStorage()}catch(e){console.warn('Migración de fotos antiguas:',e)}
 
   if(location.protocol==='file:'){
@@ -5582,6 +6361,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   <div class="syncProgressBottom">
     <span id="syncProgressDetail">Puedes seguir agregando puntos mientras se sincroniza.</span>
     <button id="syncProgressHideBtn" type="button" onclick="ocultarPanelSync()">Ocultar</button>
+  </div>
+
+  <div id="syncErrorBox" class="syncErrorBox">
+    <div class="syncErrorHead">
+      <b>⚠ DETALLE EXACTO DE ERRORES</b>
+      <div class="syncErrorActions">
+        <button type="button" onclick="copiarDiagnosticoSync()">Copiar</button>
+        <button type="button" onclick="limpiarDiagnosticoSync()">Limpiar</button>
+      </div>
+    </div>
+    <div id="syncErrorList" class="syncErrorList"></div>
   </div>
 </div>
 
