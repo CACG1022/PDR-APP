@@ -952,11 +952,18 @@ body.lightTheme .syncErrorItem{background:#fff;color:#334155;border-color:#fecac
 body.lightTheme .syncErrorItem pre{background:#f8fafc;color:#334155}
 body.lightTheme .syncErrorHead b{color:#b91c1c}
 
+
+.projectTypeBadge{display:inline-flex;align-items:center;justify-content:center;min-width:82px;padding:3px 8px;border-radius:999px;font-size:9px;font-weight:1000;letter-spacing:.45px;background:#0ea5e9;color:#fff;margin-top:3px}
+.projectTypeBadge.viabilidad{background:#f59e0b;color:#111827}
+.projectTypeField{font-weight:1000!important;letter-spacing:.4px!important}
+.projectConditionalHidden{display:none!important}
+.fieldHelp{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.35}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fecha Colombia corregida</small></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · tipo de proyecto dinámico</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1039,8 +1046,9 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 <div><label>CONSECUTIV</label><input id="CONSECUTIV" readonly></div><div><label>IDCAMPO</label><input id="IDCAMPO" readonly></div>
 <div><label>CIUDAD <span class="req">*</span></label><input id="CIUDAD" value="Bogota D.C"></div><div><label>BARRIO <span class="req">*</span></label><input id="BARRIO" placeholder="Barrio"></div>
 <div><label>TECNICO <span class="req">*</span></label><input id="TECNICO" placeholder="Nombre del técnico"></div><div><label>PROYECTO</label><input id="PROYECTO" readonly title="Proyecto asignado desde el Master"></div>
-<div><label>LATITUDE</label><input id="LATITUDE" readonly></div><div><label>LONGITUDE</label><input id="LONGITUDE" readonly></div>
-<div><label>DIRECCION <span class="req">*</span></label><input id="DIRECCION" placeholder="Dirección / referencia"></div><div><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
+<div><label>TIPO PROYECTO</label><input id="TIPO_PROYECTO" class="projectTypeField" readonly></div><div><label>LATITUDE</label><input id="LATITUDE" readonly></div>
+<div><label>LONGITUDE</label><input id="LONGITUDE" readonly></div><div><label>DIRECCION <span class="req">*</span></label><input id="DIRECCION" placeholder="Dirección / referencia"></div>
+<div id="wrapCostado"><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
 </div></div></div>
 
 <div class="section hidden" id="secPoste"><h3>2. Datos del poste</h3><div class="sectionBody"><div class="grid3">
@@ -1066,15 +1074,29 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
     <div class="hint">Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.</div>
     <div id="conexionesMismo"></div>
     <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button>
-    <label>CONEXION A POSTE DE OTRO POLIGONO?</label>
-    <select id="CXOTROPOL" onchange="toggleOtroPol()"><option>NO</option><option>SI</option></select>
-    <div id="otroPol" class="hidden"><div class="grid" id="conexionesOtro"></div></div>
+    <div id="wrapCXOtroPol">
+      <label>CONEXION A POSTE DE OTRO POLIGONO?</label>
+      <select id="CXOTROPOL" onchange="toggleOtroPol()"><option>NO</option><option>SI</option></select>
+      <div id="otroPol" class="hidden"><div class="grid" id="conexionesOtro"></div></div>
+    </div>
   </div>
 </div>
 
-<div class="section"><h3>4. Inventario / proyección</h3><div class="sectionBody"><div class="grid">
-<div><label>ELEMENTOS ELECTRICOS EXISTENTES</label><select id="ELECTRICOS_GEN"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div><div><label>ELEMENTOS DE RED</label><input id="ELEM_RED"></div><div><label>PROYECCION DE EMPALME</label><select id="PROEMPALME"><option value="NO">NO</option><option value="EMPALME">SI</option></select></div><div><label>PROYECCION DE NAP</label><select id="PRONAP"><option value="0">NO</option><option value="NAP">SI</option></select></div><div><label>EXISTENCIA</label><input id="EXISTENCIA" type="number"></div><div><label>CANT RESER</label><input id="CANT_RESER" type="number"></div>
-</div><label>OBSERVACION</label><textarea id="OBSERVACIO"></textarea></div></div>
+<div class="section" id="secProyeccion"><h3 id="tituloProyeccion">4. Inventario / proyección</h3><div class="sectionBody">
+<div class="grid" id="gridProyeccion">
+  <div id="wrapElectricosGen"><label>ELEMENTOS ELECTRICOS EXISTENTES</label><select id="ELECTRICOS_GEN"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div>
+  <div><label>ELEMENTOS DE RED</label><input id="ELEM_RED"></div>
+  <div><label>PROYECCION DE EMPALME</label><select id="PROEMPALME"><option value="NO">NO</option><option value="EMPALME">SI</option></select></div>
+  <div><label>PROYECCION DE NAP</label><select id="PRONAP"><option value="0">NO</option><option value="NAP">SI</option></select></div>
+  <div id="wrapExistencia"><label>EXISTENCIA</label><input id="EXISTENCIA" type="number"></div>
+  <div><label>CANT RESER</label><input id="CANT_RESER" type="number"></div>
+  <div class="viabilidadField projectConditionalHidden"><label>HERRAJES DE RETENCIÓN</label><input id="HERRAJES_RETENCION" type="number" min="0" step="1" value="0"></div>
+  <div class="viabilidadField projectConditionalHidden"><label>HERRAJES DE SUSPENSIÓN</label><input id="HERRAJES_SUSPENSION" type="number" min="0" step="1" value="0"></div>
+  <div class="viabilidadField projectConditionalHidden"><label>PROYECCIÓN DE BAJANTE</label><select id="PROY_BAJANTE"><option value="NO">NO</option><option value="SI">SI</option></select></div>
+  <div class="viabilidadField projectConditionalHidden"><label>DISTANCIA INTERNA (m)</label><input id="DISTANCIA_INTERNA" type="number" min="0" step="0.01" value="0"><small class="fieldHelp">Indicar la cantidad de fibra interna desde el poste de acceso hasta el cliente.</small></div>
+</div>
+<div id="wrapObservacion"><label>OBSERVACION</label><textarea id="OBSERVACIO"></textarea></div>
+</div></div>
 
 <div class="section"><h3>5. Registro fotográfico</h3><div class="sectionBody"><div class="photoGrid" id="photoGrid"></div></div></div>
 <div class="actions"><button class="btn gray" onclick="cerrarFormulario()">Cancelar</button><button class="btn" onclick="guardarPunto()">Guardar punto</button></div>
@@ -1694,12 +1716,97 @@ function cerrarFormulario(){
 }
 function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
 function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');actualizarEstadoDeteccionPoligono('', 'Detección automática por ubicación');}
-function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);setTimeout(actualizarResaltadoObligatorios,0);}
+
+function tipoProyectoActivo(){
+  return String(
+    proyectoActivo?.tipo_proyecto ||
+    proyectoActivo?.TIPO_PROYECTO ||
+    'MAPPING'
+  ).trim().toUpperCase()==='VIABILIDAD'?'VIABILIDAD':'MAPPING';
+}
+
+function tipoProyectoRegistro(r){
+  const raw=r?.TIPO_PROYECTO||r?.tipo_proyecto||proyectoActivo?.tipo_proyecto||'MAPPING';
+  return String(raw).trim().toUpperCase()==='VIABILIDAD'?'VIABILIDAD':'MAPPING';
+}
+
+function photoDefsProyecto(tipo,registro=null){
+  const defs=[...(photoDefs[tipo]||[])];
+  const tipoProyecto=registro?tipoProyectoRegistro(registro):tipoProyectoActivo();
+  if(tipoProyecto==='VIABILIDAD'){
+    return defs.filter(([id])=>!['FOTO4','FOTO11'].includes(id));
+  }
+  return defs;
+}
+
+function actualizarIndicadorTipoProyecto(){
+  const tipo=tipoProyectoActivo();
+  const top=document.getElementById('projectTypeTop');
+  if(top){
+    top.textContent=tipo;
+    top.classList.toggle('viabilidad',tipo==='VIABILIDAD');
+    top.style.display=proyectoActivo?'inline-flex':'none';
+  }
+  const campo=document.getElementById('TIPO_PROYECTO');
+  if(campo)campo.value=tipo;
+}
+
+function aplicarConfiguracionTipoProyecto(){
+  const tipo=tipoProyectoActivo();
+  const esMapping=tipo==='MAPPING';
+  const esViabilidad=tipo==='VIABILIDAD';
+
+  actualizarIndicadorTipoProyecto();
+
+  const grid=document.getElementById('gridProyeccion');
+  const titulo=document.getElementById('tituloProyeccion');
+  if(grid)grid.classList.toggle('projectConditionalHidden',esMapping);
+  if(titulo)titulo.textContent=esMapping?'4. Observaciones':'4. Inventario / proyección';
+
+  const wrapCostado=document.getElementById('wrapCostado');
+  if(wrapCostado)wrapCostado.classList.toggle('projectConditionalHidden',esMapping);
+  if(esMapping && document.getElementById('COSTADO'))COSTADO.value='DERECHO';
+
+  document.getElementById('wrapExistencia')?.classList.toggle('projectConditionalHidden',esViabilidad);
+  document.getElementById('wrapElectricosGen')?.classList.toggle('projectConditionalHidden',esViabilidad);
+
+  document.querySelectorAll('.viabilidadField').forEach(el=>{
+    el.classList.toggle('projectConditionalHidden',!esViabilidad);
+  });
+
+  const wrapOtro=document.getElementById('wrapCXOtroPol');
+  if(wrapOtro)wrapOtro.classList.toggle('projectConditionalHidden',esViabilidad);
+  if(esViabilidad && document.getElementById('CXOTROPOL')){
+    CXOTROPOL.value='NO';
+    for(let i=1;i<=4;i++){
+      const pol=document.getElementById(`CX${i}POL`);
+      const cons=document.getElementById(`CX${i}CONSE`);
+      const dist=document.getElementById(`DISTODO${i+4}`);
+      if(pol)pol.value='N/A';
+      if(cons)cons.value='';
+      if(dist)dist.value='0';
+    }
+    try{toggleOtroPol()}catch(_){}
+  }
+
+  if(esMapping){
+    if(document.getElementById('ELECTRICOS_GEN'))ELECTRICOS_GEN.value='';
+    if(document.getElementById('ELEM_RED'))ELEM_RED.value='';
+    if(document.getElementById('PROEMPALME'))PROEMPALME.value='NO';
+    if(document.getElementById('PRONAP'))PRONAP.value='0';
+    if(document.getElementById('EXISTENCIA'))EXISTENCIA.value='';
+    if(document.getElementById('CANT_RESER'))CANT_RESER.value='';
+  }
+
+  setTimeout(actualizarResaltadoObligatorios,0);
+}
+
+function cambiarTipo(){const t=TIPO.value;secPoste.classList.toggle('hidden',t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA');secCamara.classList.toggle('hidden',t!=='CANALIZADO');renderFotos(t);aplicarConfiguracionTipoProyecto();setTimeout(actualizarResaltadoObligatorios,0);}
 function renderFotos(t){
   photoGrid.innerHTML='';
   photos={};
 
-  (photoDefs[t]||[]).forEach(([id,label])=>{
+  photoDefsProyecto(t).forEach(([id,label])=>{
     photoGrid.insertAdjacentHTML('beforeend',`
       <div class="photoCard" id="photoCard_${id}">
         <label>${label} <span class="req">*</span></label>
@@ -1959,7 +2066,8 @@ function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';I
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
 
 function obtenerCamposObligatoriosActivos(){
-  const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','COSTADO'];
+  const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION'];
+  if(tipoProyectoActivo()==='VIABILIDAD')ids.push('COSTADO');
   const t=TIPO?.value||'';
 
   if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
@@ -2654,7 +2762,10 @@ function validar(){
   }
 
   const falt=[];
-  ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','COSTADO'].forEach(id=>{
+  aplicarConfiguracionTipoProyecto();
+  const baseReq=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION'];
+  if(tipoProyectoActivo()==='VIABILIDAD')baseReq.push('COSTADO');
+  baseReq.forEach(id=>{
     if(!val(id))falt.push(id);
   });
 
@@ -2741,7 +2852,7 @@ function validar(){
     }
   }
 
-  if(CXOTROPOL.value==='SI'){
+  if(tipoProyectoActivo()!=='VIABILIDAD' && CXOTROPOL.value==='SI'){
     for(let i=1;i<=4;i++){
       const p=val(`CX${i}POL`),c=val(`CX${i}CONSE`);
       if(c&&p===POLIGONO.value){
@@ -2763,7 +2874,7 @@ function validar(){
   return true;
 }
 
-function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=val(`CX${i}POL`)||'N/A';r[`CX${i}CONSE`]=num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':tipoProyectoActivo()==='VIABILIDAD'?val('ELEM_RED'):'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:tipoProyectoActivo()==='VIABILIDAD'?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -3079,6 +3190,8 @@ async function editarPunto(id){
   LATITUDE.value=r.LATITUDE;
   LONGITUDE.value=r.LONGITUDE;
   cambiarTipo();
+  TIPO_PROYECTO.value=tipoProyectoActivo();
+  aplicarConfiguracionTipoProyecto();
   await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
   await renderizarFotosRemotasEnFormulario(r);
   toggleOtroPol();
@@ -4047,7 +4160,7 @@ function actualizarEstadoSync(){
   const el=document.getElementById('syncStatusTop');
   if(el){
     el.textContent=proyectoActivo
-      ? `${proyectoActivo.empresa?.nombre_corto||proyectoActivo.empresa?.nombre||'SIN EMPRESA'} · ${proyectoActivo.codigo||''} · ${partes.join(' · ')}`
+      ? `${proyectoActivo.empresa?.nombre_corto||proyectoActivo.empresa?.nombre||'SIN EMPRESA'} · ${proyectoActivo.codigo||''} · ${tipoProyectoActivo()} · ${partes.join(' · ')}`
       : 'Sin proyecto activo';
   }
 
@@ -4343,6 +4456,7 @@ async function cargarProyectosAsignados(){
       );
 
       desbloquearProyecto();
+      actualizarIndicadorTipoProyecto();
       await cargarPoligonosAsignadosTecnico();
       await cargarPuntosSupabase(false);
       ubicarEnUltimoElementoRegistrado();
@@ -4380,6 +4494,7 @@ function pintarProyectosAsignados(){
       <small style="color:#38bdf8;font-weight:800">${esc(p.mapping_empresas?.nombre||p.empresa_nombre||'SIN EMPRESA')}</small><br>
       <b>${esc(p.codigo||'SIN CÓDIGO')}</b><br>
       ${esc(p.nombre||'Proyecto')}<br>
+      <span class="projectTypeBadge ${String(p.tipo_proyecto||'MAPPING').toUpperCase()==='VIABILIDAD'?'viabilidad':''}">${esc(String(p.tipo_proyecto||'MAPPING').toUpperCase())}</span><br>
       <small>${esc(p.ciudad||'')} · ${esc(a.estado_asignacion||'')}</small>
       <button onclick="seleccionarProyecto('${a.id}')">${act?'Proyecto activo':'Trabajar este proyecto'}</button>
     </div>`;
@@ -4410,8 +4525,10 @@ async function seleccionarProyecto(asignacionId){
   );
 
   if(PROYECTO)PROYECTO.value=p.nombre||p.codigo||'';
+  if(TIPO_PROYECTO)TIPO_PROYECTO.value=String(p.tipo_proyecto||'MAPPING').toUpperCase();
   if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;
   if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
+  actualizarIndicadorTipoProyecto();
 
   await mappingSb
     .from('mapping_proyecto_tecnicos')
@@ -4445,6 +4562,7 @@ function bloquearSinProyecto(mensaje=''){
   }
 
   if(lock)lock.classList.add('open');
+  actualizarIndicadorTipoProyecto();
 
   try{cerrarFormulario()}catch(_){}
   try{cerrarRegistros()}catch(_){}
@@ -4542,9 +4660,11 @@ abrirFormulario=function(){
     aplicarOpcionesPoligonosAsignados();
 
     PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
+    TIPO_PROYECTO.value=tipoProyectoActivo();
     TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
     if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
     aplicarCamposFijos();
+    aplicarConfiguracionTipoProyecto();
 
     // Fuerza EXACTAMENTE el código detectado geométricamente.
     const op=[...POLIGONO.options].find(o=>
@@ -4573,9 +4693,11 @@ abrirFormulario=function(){
   setNumeroConexiones(1,true);
   aplicarOpcionesPoligonosAsignados();
   PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
+  TIPO_PROYECTO.value=tipoProyectoActivo();
   TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
   if(proyectoActivo.ciudad)CIUDAD.value=proyectoActivo.ciudad;
   aplicarCamposFijos();
+  aplicarConfiguracionTipoProyecto();
   recalcularIds();
   llevarFormularioAlInicio();
   setTimeout(actualizarResaltadoObligatorios,100);
@@ -4683,8 +4805,8 @@ function prepararRegistroLocalBase(){
   }
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
-  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:val('COSTADO'),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':val('ELEM_RED'),PROEMPALME:val('PROEMPALME'),PRONAP:val('PRONAP'),EXISTENCIA:num('EXISTENCIA'),'CANT RESER':num('CANT_RESER'),CXOTROPOL:val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
-  for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=val(`CX${i}POL`)||'N/A';r[`CX${i}CONSE`]=num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=num(`DISTODO${i+4}`)}return r;
+  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO')),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':tipoProyectoActivo()==='VIABILIDAD'?val('ELEM_RED'):'',PROEMPALME:tipoProyectoActivo()==='VIABILIDAD'?val('PROEMPALME'):'NO',PRONAP:tipoProyectoActivo()==='VIABILIDAD'?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':tipoProyectoActivo()==='VIABILIDAD'?num('CANT_RESER'):0,HERRAJES_RETENCION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:tipoProyectoActivo()==='VIABILIDAD'?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:tipoProyectoActivo()==='VIABILIDAD'?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:tipoProyectoActivo()==='VIABILIDAD'?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
+  for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}return r;
 }
 
 function limpiarMarcasFotosObligatorias(){
@@ -4712,7 +4834,8 @@ async function validarFotosObligatorias(){
   limpiarMarcasFotosObligatorias();
 
   const tipo=String(TIPO?.value||'');
-  const requeridas=(photoDefs[tipo]||[]).map(([id])=>id);
+  const actual=editingId?registros.find(r=>r.id===editingId):null;
+  const requeridas=photoDefsProyecto(tipo,actual).map(([id])=>id);
 
   if(!requeridas.length)return true;
 
@@ -4730,8 +4853,6 @@ async function validarFotosObligatorias(){
   }
 
   // En edición, también cuentan las fotos ya guardadas localmente.
-  const actual=editingId?registros.find(r=>r.id===editingId):null;
-
   if(actual){
     try{
       const locales=await obtenerFotosIDB(actual.offline_id||actual.id);
@@ -4772,7 +4893,7 @@ async function validarFotosObligatorias(){
   }
 
   const nombres=faltantes.map(id=>{
-    const def=(photoDefs[tipo]||[]).find(([x])=>x===id);
+    const def=photoDefsProyecto(tipo,actual).find(([x])=>x===id);
     return def?.[1]||id;
   });
 
@@ -4821,7 +4942,7 @@ guardarPunto=async function(){
 
 function filaSupabase(r){
   const q={...r};delete q.fotos;delete q.geometry;delete q.sync_status;delete q.supabase_id;delete q.id;delete q.asignacion_id;
-  return {proyecto_id:r.proyecto_id,tecnico_id:mappingUser.id,tecnico_email:mappingUser.email,tecnico_nombre:mappingProfile?.nombre||mappingUser.email,offline_id:r.offline_id,origen_registro:'APP_MOVIL',tipo:r.TIPO,poligono:r.POLIGONO,consecutiv:r.CONSECUTIV,idcampo:r.IDCAMPO,idglobal:r.IDGLOBAL||null,ciudad:r.CIUDAD||null,barrio:r.BARRIO||null,direccion:r.DIRECCION||null,costado:r.COSTADO||null,latitude:r.LATITUDE,longitude:r.LONGITUDE,precision_gps:null,fecha:r.FECHA||null,hora:r.HORA||null,fecha_captura_app:r.fecha_captura_app||new Date().toISOString(),user_agent:navigator.userAgent,propietari:r.PROPIETARI||null,pacvi:r.PACVI||null,tipo_poste:r['TIPO POSTE']||null,rotura:r.ROTURA,material:r.MATERIAL||null,altura:r.ALTURA,estado:r.ESTADO||null,tension:r.TENSION||null,cables:r.CABLES,reservas:r.RESERVAS,empalmes:r.EMPALMES,electricos:r.ELECTRICOS||null,naps:r.NAPS,bajantes:r.BAJANTES,fuentes:r.FUENTES,proempalme:r.PROEMPALME||null,pronap:r.PRONAP||null,rienda:r.RIENDA||null,amplifi:r.AMPLIFI,finder_ed:r.FINDERED||null,existencia:r.EXISTENCIA,tipo_camara:r.TIPOCAMARA||null,conf_ducto:r['CONF DUCTO']||null,ducto_elec:r['DUCTO ELEC']||null,duct_telco:r['DUCT TELCO']||null,duct_libre:r['DUCT LIBRE']||null,duct_util:r['DUCT UTIL']||null,subida_a_p:r['SUBIDA A P']||null,elem_red:r['ELEM RED']||null,cant_reser:r['CANT RESER'],cx1:r.CX1||0,cx2:r.CX2||0,cx3:r.CX3||0,cx4:r.CX4||0,telcx1:r.TELCX1||0,telcx2:r.TELCX2||0,telcx3:r.TELCX3||0,telcx4:r.TELCX4||0,distodo1:r.DISTODO1,distodo2:r.DISTODO2,distodo3:r.DISTODO3,distodo4:r.DISTODO4,latcx1:r.LATCX1,longtcx1:r.LONGTCX1,latcx2:r.LATCX2,longtcx2:r.LONGTCX2,latcx3:r.LATCX3,longtcx3:r.LONGTCX3,latcx4:r.LATCX4,longtcx4:r.LONGTCX4,cxotropol:r.CXOTROPOL||'NO',cx1pol:r.CX1POL||null,cx2pol:r.CX2POL||null,cx3pol:r.CX3POL||null,cx4pol:r.CX4POL||null,cx1conse:r.CX1CONSE,cx2conse:r.CX2CONSE,cx3conse:r.CX3CONSE,cx4conse:r.CX4CONSE,distodo5:r.DISTODO5,distodo6:r.DISTODO6,distodo7:r.DISTODO7,distodo8:r.DISTODO8,observacio:r.OBSERVACIO||null,datos_qgis:q,editado_en_app:!!r.supabase_id,fecha_ultima_edicion_app:r.supabase_id?new Date().toISOString():null};
+  return {proyecto_id:r.proyecto_id,tecnico_id:mappingUser.id,tecnico_email:mappingUser.email,tecnico_nombre:mappingProfile?.nombre||mappingUser.email,offline_id:r.offline_id,origen_registro:'APP_MOVIL',tipo:r.TIPO,poligono:r.POLIGONO,consecutiv:r.CONSECUTIV,idcampo:r.IDCAMPO,idglobal:r.IDGLOBAL||null,ciudad:r.CIUDAD||null,barrio:r.BARRIO||null,direccion:r.DIRECCION||null,costado:r.COSTADO||null,latitude:r.LATITUDE,longitude:r.LONGITUDE,precision_gps:null,fecha:r.FECHA||null,hora:r.HORA||null,fecha_captura_app:r.fecha_captura_app||new Date().toISOString(),user_agent:navigator.userAgent,propietari:r.PROPIETARI||null,pacvi:r.PACVI||null,tipo_poste:r['TIPO POSTE']||null,rotura:r.ROTURA,material:r.MATERIAL||null,altura:r.ALTURA,estado:r.ESTADO||null,tension:r.TENSION||null,cables:r.CABLES,reservas:r.RESERVAS,empalmes:r.EMPALMES,electricos:r.ELECTRICOS||null,naps:r.NAPS,bajantes:r.BAJANTES,fuentes:r.FUENTES,proempalme:r.PROEMPALME||null,pronap:r.PRONAP||null,rienda:r.RIENDA||null,amplifi:r.AMPLIFI,finder_ed:r.FINDERED||null,existencia:r.EXISTENCIA,tipo_camara:r.TIPOCAMARA||null,conf_ducto:r['CONF DUCTO']||null,ducto_elec:r['DUCTO ELEC']||null,duct_telco:r['DUCT TELCO']||null,duct_libre:r['DUCT LIBRE']||null,duct_util:r['DUCT UTIL']||null,subida_a_p:r['SUBIDA A P']||null,elem_red:r['ELEM RED']||null,cant_reser:r['CANT RESER'],herrajes_retencion:r.HERRAJES_RETENCION??0,herrajes_suspension:r.HERRAJES_SUSPENSION??0,proyeccion_bajante:r.PROY_BAJANTE||'NO',distancia_interna:r.DISTANCIA_INTERNA??0,cx1:r.CX1||0,cx2:r.CX2||0,cx3:r.CX3||0,cx4:r.CX4||0,telcx1:r.TELCX1||0,telcx2:r.TELCX2||0,telcx3:r.TELCX3||0,telcx4:r.TELCX4||0,distodo1:r.DISTODO1,distodo2:r.DISTODO2,distodo3:r.DISTODO3,distodo4:r.DISTODO4,latcx1:r.LATCX1,longtcx1:r.LONGTCX1,latcx2:r.LATCX2,longtcx2:r.LONGTCX2,latcx3:r.LATCX3,longtcx3:r.LONGTCX3,latcx4:r.LATCX4,longtcx4:r.LONGTCX4,cxotropol:r.CXOTROPOL||'NO',cx1pol:r.CX1POL||null,cx2pol:r.CX2POL||null,cx3pol:r.CX3POL||null,cx4pol:r.CX4POL||null,cx1conse:r.CX1CONSE,cx2conse:r.CX2CONSE,cx3conse:r.CX3CONSE,cx4conse:r.CX4CONSE,distodo5:r.DISTODO5,distodo6:r.DISTODO6,distodo7:r.DISTODO7,distodo8:r.DISTODO8,observacio:r.OBSERVACIO||null,datos_qgis:q,editado_en_app:!!r.supabase_id,fecha_ultima_edicion_app:r.supabase_id?new Date().toISOString():null};
 }
 function dataUriBlob(uri){
   const [h,b]=String(uri||'').split(',');
@@ -5884,12 +6005,12 @@ async function reenviarTodo(){
     bloquearSinProyecto('No hay un proyecto activo asignado.');
     return;
   }if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
-function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,_tecnico_id:e.tecnico_id,_tecnico_email:e.tecnico_email,_tecnico_nombre:e.tecnico_nombre,_created_at:e.created_at||null,fecha_captura_app:q.fecha_captura_app||e.fecha_captura_app||e.created_at||null,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
+function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,_tecnico_id:e.tecnico_id,_tecnico_email:e.tecnico_email,_tecnico_nombre:e.tecnico_nombre,_created_at:e.created_at||null,fecha_captura_app:q.fecha_captura_app||e.fecha_captura_app||e.created_at||null,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,HERRAJES_RETENCION:q.HERRAJES_RETENCION??e.herrajes_retencion??0,HERRAJES_SUSPENSION:q.HERRAJES_SUSPENSION??e.herrajes_suspension??0,PROY_BAJANTE:q.PROY_BAJANTE||e.proyeccion_bajante||'NO',DISTANCIA_INTERNA:q.DISTANCIA_INTERNA??e.distancia_interna??0,TIPO_PROYECTO:q.TIPO_PROYECTO||proyectoActivo?.tipo_proyecto||'MAPPING',CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
 
 
 function tiposFotoRequeridosRegistro(r){
   const tipo=String(r?.TIPO||r?.tipo||'').trim().toUpperCase();
-  return (photoDefs[tipo]||[]).map(([id])=>id);
+  return photoDefsProyecto(tipo,r).map(([id])=>id);
 }
 
 function claveIdcampoLocal(r){
@@ -6323,6 +6444,7 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
   setTimeout(verificarSesionMapping,150);
   if(proyectoActivo)desbloquearProyecto();else bloquearSinProyecto();
   actualizarBotonDistanciasMapa();
+  actualizarIndicadorTipoProyecto();
   actualizarEstadoSync();
 });
 
@@ -6661,7 +6783,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
-
 
 
 
