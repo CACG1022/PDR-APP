@@ -5344,6 +5344,87 @@ function nombreFotoMapping(r,tipo,b64){
 }
 
 
+
+function esperarSync(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+function mensajeErrorRed(v){
+  const s=String(
+    v?.message ||
+    v?.details ||
+    v?.error_description ||
+    v?.hint ||
+    v ||
+    ''
+  ).toLowerCase();
+
+  return (
+    s.includes('failed to fetch') ||
+    s.includes('networkerror') ||
+    s.includes('network request failed') ||
+    s.includes('load failed') ||
+    s.includes('fetch failed') ||
+    s.includes('connection') ||
+    s.includes('timed out') ||
+    s.includes('timeout')
+  );
+}
+
+function esErrorRedTransitorio(error){
+  if(!error)return false;
+
+  const status=Number(error?.status||error?.statusCode||0)||0;
+  if(status===408 || status===425 || status===429 || status>=500)return true;
+
+  return mensajeErrorRed(error);
+}
+
+const REINTENTOS_RED_SYNC=[2000,5000,10000];
+
+async function ejecutarConReintentosRed(fn,contexto='operación'){
+  let ultimoError=null;
+
+  for(let intento=0;intento<=REINTENTOS_RED_SYNC.length;intento++){
+    try{
+      const resultado=await fn(intento);
+
+      // Supabase normalmente devuelve {data,error} sin lanzar excepción.
+      const err=resultado?.error||null;
+
+      if(!err)return resultado;
+
+      ultimoError=err;
+
+      if(!esErrorRedTransitorio(err) || intento>=REINTENTOS_RED_SYNC.length){
+        return resultado;
+      }
+    }catch(e){
+      ultimoError=e;
+
+      if(!esErrorRedTransitorio(e) || intento>=REINTENTOS_RED_SYNC.length){
+        throw e;
+      }
+    }
+
+    const espera=REINTENTOS_RED_SYNC[intento];
+
+    console.warn(
+      `[SYNC] ${contexto}: fallo transitorio. Reintento ${intento+1}/${REINTENTOS_RED_SYNC.length} en ${espera/1000}s.`,
+      ultimoError
+    );
+
+    const d=document.getElementById('syncProgressDetail');
+    if(d){
+      d.textContent=`Conexión inestable. Reintentando ${contexto} en ${espera/1000}s...`;
+    }
+
+    await esperarSync(espera);
+  }
+
+  throw ultimoError||new Error(`Falló ${contexto}`);
+}
+
 function crearErrorSync(etapa,mensaje,extra={}){
   const e=new Error(String(mensaje||'Error de sincronización'));
   e.sync_stage=etapa||'DESCONOCIDO';
@@ -5470,23 +5551,24 @@ async function enviarFotoMappingN8N(r,tipo,b64){
   let resp=null;
 
   try{
-    resp=await fetch(N8N_WEBHOOK_FOTOS,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
+    resp=await ejecutarConReintentosRed(
+      async()=>await fetch(N8N_WEBHOOK_FOTOS,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      }),
+      `n8n · ${r.IDCAMPO||r.offline_id||'punto'} · ${tipo}`
+    );
   }catch(fetchError){
-    // TypeError: Failed to fetch suele significar:
-    // CORS, DNS, certificado HTTPS, red móvil o servidor n8n inaccesible.
     throw crearErrorSync(
       'N8N_CONEXION',
-      `No fue posible conectar con n8n al enviar ${tipo}: ${fetchError?.message||fetchError}`,
+      `No fue posible conectar con n8n al enviar ${tipo} después de varios reintentos: ${fetchError?.message||fetchError}`,
       {
         sync_code:'FETCH_FAILED',
         tipo_foto:tipo,
         nombre_archivo:nombreArchivo,
         endpoint:N8N_WEBHOOK_FOTOS,
-        sync_detail:`El navegador no obtuvo respuesta HTTP. Posibles causas: CORS, DNS, certificado HTTPS, bloqueo de red o servidor n8n no disponible. Error original: ${fetchError?.name||''} ${fetchError?.message||fetchError}`
+        sync_detail:`El navegador no obtuvo respuesta HTTP después de reintentos automáticos (2s, 5s y 10s). Posibles causas: pérdida temporal de Internet, DNS, CORS, certificado HTTPS, red móvil/Wi-Fi o servidor n8n no disponible. Error original: ${fetchError?.name||''} ${fetchError?.message||fetchError}`
       }
     );
   }
@@ -5562,11 +5644,14 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
     );
   }
 
-  const {error:delError}=await mappingSb
-    .from('mapping_punto_fotos')
-    .delete()
-    .eq('punto_id',puntoId)
-    .eq('tipo_foto',tipo);
+  const {error:delError}=await ejecutarConReintentosRed(
+    async()=>await mappingSb
+      .from('mapping_punto_fotos')
+      .delete()
+      .eq('punto_id',puntoId)
+      .eq('tipo_foto',tipo),
+    `Supabase limpiar referencia · ${tipo}`
+  );
 
   if(delError){
     throw crearErrorSync(
@@ -5600,11 +5685,14 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
     }
   };
 
-  const {data,error}=await mappingSb
-    .from('mapping_punto_fotos')
-    .insert(fila)
-    .select('id,punto_id,tipo_foto,url_foto,storage_path,nombre_archivo')
-    .single();
+  const {data,error}=await ejecutarConReintentosRed(
+    async()=>await mappingSb
+      .from('mapping_punto_fotos')
+      .insert(fila)
+      .select('id,punto_id,tipo_foto,url_foto,storage_path,nombre_archivo')
+      .single(),
+    `Supabase guardar referencia · ${tipo}`
+  );
 
   if(error){
     throw crearErrorSync(
@@ -5681,8 +5769,27 @@ async function subirFotosN8N(r,puntoId){
     }
 
     try{
-      // 1. Subir por n8n -> Drive.
-      const resultado=await enviarFotoMappingN8N(r,tipo,b64);
+      if(!r._fotos_n8n_pendientes)r._fotos_n8n_pendientes={};
+
+      // 1. Si esta foto ya llegó a n8n/Drive en un intento anterior,
+      // reutilizamos esa referencia y NO volvemos a cargar el archivo.
+      let resultado=r._fotos_n8n_pendientes[tipo]||null;
+
+      if(resultado?.url || resultado?.ruta){
+        console.info(`[SYNC] Reutilizando referencia N8N existente para ${r.IDCAMPO||puntoLocalId} · ${tipo}.`);
+      }else{
+        resultado=await enviarFotoMappingN8N(r,tipo,b64);
+
+        // Guardar inmediatamente la respuesta de n8n en localStorage.
+        // Si Supabase falla después, el siguiente reintento continuará desde aquí.
+        r._fotos_n8n_pendientes[tipo]={
+          respuesta:resultado.respuesta||null,
+          url:resultado.url||null,
+          ruta:resultado.ruta||null,
+          nombreArchivo:resultado.nombreArchivo||f?.nombre_original||''
+        };
+        persist();
+      }
 
       // 2. Confirmar referencia en Supabase.
       const refConfirmada=await guardarReferenciaFotoN8N(puntoId,r,tipo,resultado);
@@ -5693,6 +5800,11 @@ async function subirFotosN8N(r,puntoId){
         ruta:refConfirmada.storage_path||resultado.ruta||null,
         nombre_archivo:refConfirmada.nombre_archivo||resultado.nombreArchivo
       };
+
+      // Ya quedó confirmada en Supabase: limpiar caché temporal N8N.
+      delete r._fotos_n8n_pendientes[tipo];
+      if(!Object.keys(r._fotos_n8n_pendientes).length)delete r._fotos_n8n_pendientes;
+      persist();
 
       // 3. SOLO después de confirmación, borrar Blob local.
       try{
@@ -5745,9 +5857,26 @@ async function asegurarSesionValida(){
   }
 
   // Intenta renovar el access token antes de enviar datos.
-  const ref=await mappingSb.auth.refreshSession();
+  const ref=await ejecutarConReintentosRed(
+    async()=>await mappingSb.auth.refreshSession(),
+    'renovar sesión Supabase'
+  );
+
   if(ref.error){
     console.warn('No se pudo renovar sesión:',ref.error);
+
+    // Si es una falla de red, NO cerramos la sesión local ni enviamos al login.
+    if(esErrorRedTransitorio(ref.error)){
+      throw crearErrorSync(
+        'SUPABASE_CONEXION',
+        'No fue posible comunicarse con Supabase para renovar la sesión.',
+        {
+          sync_code:'SUPABASE_NETWORK',
+          sync_detail:textoSeguroSync(ref.error,1000)
+        }
+      );
+    }
+
     await mappingSb.auth.signOut().catch(()=>{});
     mappingUser=null;
     irLoginMapping('La sesión de Supabase venció o ya no es válida. Inicia sesión nuevamente.');
@@ -5756,9 +5885,25 @@ async function asegurarSesionValida(){
 
   session=ref.data.session||session;
 
-  const usr=await mappingSb.auth.getUser();
+  const usr=await ejecutarConReintentosRed(
+    async()=>await mappingSb.auth.getUser(),
+    'validar usuario Supabase'
+  );
+
   if(usr.error || !usr.data?.user){
     console.warn('Sesión no válida:',usr.error);
+
+    if(esErrorRedTransitorio(usr.error)){
+      throw crearErrorSync(
+        'SUPABASE_CONEXION',
+        'No fue posible validar el usuario por una falla temporal de red.',
+        {
+          sync_code:'SUPABASE_NETWORK',
+          sync_detail:textoSeguroSync(usr.error,1000)
+        }
+      );
+    }
+
     await mappingSb.auth.signOut().catch(()=>{});
     mappingUser=null;
     irLoginMapping('Supabase rechazó la sesión. Inicia sesión nuevamente.');
@@ -6091,7 +6236,25 @@ function registrarErrorSync(error,registro){
     offline_id:registro?.offline_id||''
   });
 
-  syncErroresDetallados.push(err);
+  const claveErr=[
+    err.punto||'',
+    err.etapa||'',
+    err.codigo||'',
+    err.foto||'',
+    err.mensaje||''
+  ].join('|');
+
+  const yaExiste=syncErroresDetallados.some(x=>
+    [
+      x.punto||'',
+      x.etapa||'',
+      x.codigo||'',
+      x.foto||'',
+      x.mensaje||''
+    ].join('|')===claveErr
+  );
+
+  if(!yaExiste)syncErroresDetallados.push(err);
 
   if(registro){
     registro.sync_error=resumenErrorSync(err);
@@ -7142,3 +7305,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
+
