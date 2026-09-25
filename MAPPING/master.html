@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - Dashboard Avances V15 - Fecha Colombia</title>
+<title>Master Mapping & Site Survey - V46 - Login Master externo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -361,6 +361,22 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 #avanceModal .chartMap{border-color:#dbe3ec!important}
 @media(max-width:1000px){#avanceModal .typeMiniGrid{grid-template-columns:repeat(2,1fr)!important}#avanceModal .rightSummaryReport{grid-template-columns:1fr!important}#avanceModal .rightKpiCard.primary{grid-column:auto}}
 
+
+.authChecking{
+  position:fixed;
+  inset:0;
+  z-index:40000;
+  background:#06101d;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#8defff;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.08em;
+}
+.authChecking.hide{display:none}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -397,7 +413,8 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 </style>
 </head>
 <body>
-<div class="authOverlay" id="authOverlay"><div class="authCard"><h2>Master - Mapping & Site Survey</h2><div class="hint">Ingresa con un usuario cuyo rol sea <b>admin</b> o <b>coordinador</b> en <code>mapping_usuarios</code>.</div><label>Correo</label><input id="loginEmail" type="email"><label>Contraseña</label><input id="loginPassword" type="password"><button class="btn" onclick="loginMaster()">Ingresar</button><div class="hint" id="loginMsg">Esperando inicio de sesión.</div></div></div>
+<div id="authChecking" class="authChecking">Validando acceso MASTER...</div>
+
 <header>
   <div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · levantamiento de infraestructura</small></div></div>
   <div class="topHeaderActions">
@@ -665,10 +682,85 @@ Chart.defaults.plugins.datalabels = {
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function initMap(){map=L.map('map').setView([4.65,-74.1],11);const g=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'});const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'OSM'});g.addTo(map);L.control.layers({'Google Híbrido':g,'Calles':osm}).addTo(map)}
-async function verificar(){const {data:{session}}=await sb.auth.getSession();if(!session)return;user=session.user;await validarPerfil()}
-async function loginMaster(){loginMsg.textContent='Validando...';const {data,error}=await sb.auth.signInWithPassword({email:loginEmail.value.trim(),password:loginPassword.value});if(error){loginMsg.textContent='Error: '+error.message;return}user=data.user;await validarPerfil()}
-async function validarPerfil(){const {data,error}=await sb.from('mapping_usuarios').select('*').eq('id',user.id).maybeSingle();if(error||!data){loginMsg.textContent='El usuario no tiene perfil en mapping_usuarios.';return}if(!['admin','coordinador'].includes(data.rol)){loginMsg.textContent='Este usuario no tiene permisos de Master.';await sb.auth.signOut();return}perfil=data;authOverlay.style.display='none';userTop.textContent=`${perfil.nombre||user.email} · ${perfil.rol}`;aplicarVisibilidadAdmin();await cargarTodo()}
-async function logoutMaster(){await sb.auth.signOut();location.reload()}
+const LOGIN_MASTER_URL='login_master.html';
+
+function paginaActualMaster(){
+  const nombre=location.pathname.split('/').pop()||'master.html';
+  return nombre + (location.search||'') + (location.hash||'');
+}
+
+function irLoginMaster(motivo=''){
+  const params=new URLSearchParams();
+  params.set('return',paginaActualMaster());
+  if(motivo)params.set('motivo',motivo);
+  location.replace(`${LOGIN_MASTER_URL}?${params.toString()}`);
+}
+
+async function verificar(){
+  try{
+    const {data:{session},error}=await sb.auth.getSession();
+
+    if(error){
+      console.error('Error consultando sesión Master:',error);
+      irLoginMaster('sesion');
+      return false;
+    }
+
+    if(!session){
+      irLoginMaster('sin_sesion');
+      return false;
+    }
+
+    user=session.user;
+    return await validarPerfil();
+  }catch(e){
+    console.error('No fue posible validar la sesión Master:',e);
+    irLoginMaster('sesion');
+    return false;
+  }
+}
+
+async function validarPerfil(){
+  const {data,error}=await sb
+    .from('mapping_usuarios')
+    .select('*')
+    .eq('id',user.id)
+    .maybeSingle();
+
+  if(error||!data){
+    console.error('Perfil Master no disponible:',error);
+    await sb.auth.signOut();
+    irLoginMaster('sin_perfil');
+    return false;
+  }
+
+  if(!['admin','coordinador'].includes(data.rol)){
+    await sb.auth.signOut();
+    irLoginMaster('sin_permisos_master');
+    return false;
+  }
+
+  perfil=data;
+  document.getElementById('authChecking')?.classList.add('hide');
+  userTop.textContent=`${perfil.nombre||user.email} · ${perfil.rol}`;
+  aplicarVisibilidadAdmin();
+  await cargarTodo();
+  return true;
+}
+
+// Se conserva el nombre por compatibilidad con código antiguo,
+// pero el Master ya no muestra ni utiliza un formulario de login interno.
+function loginMaster(){
+  irLoginMaster();
+}
+
+async function logoutMaster(){
+  try{
+    await sb.auth.signOut();
+  }finally{
+    irLoginMaster('logout');
+  }
+}
 async function cargarTodo(){await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios(),cargarAsignaciones()]);llenarSelects();actualizarKpis();if(!fProyecto.value&&proyectos.length)fProyecto.value=proyectos[0].id;await cargarProyectoMapa()}
 async function cargarEmpresas(){
   const {data,error}=await sb.from('mapping_empresas').select('*').eq('activo',true).order('nombre');
@@ -3640,7 +3732,10 @@ async function cargarFotosDetalle(puntoId){
 }
 
 function actualizarKpis(){kProyectos.textContent=proyectos.length;kTecnicos.textContent=usuarios.filter(u=>u.rol==='tecnico').length;kAsignaciones.textContent=asignaciones.length}
-window.addEventListener('load',()=>{initMap();verificar()});
+window.addEventListener('load',async()=>{
+  initMap();
+  await verificar();
+});
 
 function toggleEntregables(ev){
   if(ev){ev.preventDefault();ev.stopPropagation();}
@@ -3659,5 +3754,3 @@ document.addEventListener('keydown',function(e){
 </script>
 </body>
 </html>
-
-
