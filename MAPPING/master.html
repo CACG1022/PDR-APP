@@ -478,6 +478,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
         <small id="avanceSubtitulo" style="color:var(--muted)">Resumen operativo del levantamiento</small>
       </div>
       <div class="dashHeadActions">
+        <button id="btnAutoCAD" class="btn small" style="background:#2563eb;color:#fff" onclick="enviarAutoCADConnector()">📐 AutoCAD</button>
         <button id="btnCarteraEMSA" class="btn small warn" onclick="exportarCarteraEMSA()">📒 Cartera EMSA</button>
         <button class="btn small blue" onclick="exportarReporteExcel()">📥 Exportar reporte Excel</button>
         <button class="btn small blue" onclick="imprimirDashboard()">🖨 Imprimir / PDF</button>
@@ -2934,6 +2935,208 @@ function descargarBufferExcel(buffer,nombre){
   setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 
+
+function cadTipoPunto(p){
+  return String(p?.tipo ?? valorQgisODb(p,'TIPO','tipo') ?? '').trim().toUpperCase();
+}
+function cadConsecutivo(p){
+  return Number(p?.consecutiv ?? valorQgisODb(p,'CONSECUTIV','consecutiv') ?? 0);
+}
+function cadPoligono(p){
+  return String(p?.poligono ?? valorQgisODb(p,'POLIGONO','poligono') ?? '').trim().toUpperCase();
+}
+function cadLat(p){return numeroFlexible(p?.latitude ?? valorQgisODb(p,'LATITUDE','latitude'));}
+function cadLon(p){return numeroFlexible(p?.longitude ?? valorQgisODb(p,'LONGITUDE','longitude'));}
+
+// Convierte WGS84 geográfico (EPSG:4326) a WGS84 / UTM zona 18N (EPSG:32618).
+// Se usa exactamente el mismo sistema de coordenadas de la cartografía DXF exportada desde QGIS.
+function cadWgs84ToUtm18N(latDeg,lonDeg){
+  const lat=Number(latDeg), lon=Number(lonDeg);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+
+  const a=6378137.0;
+  const f=1/298.257223563;
+  const e2=f*(2-f);
+  const ep2=e2/(1-e2);
+  const k0=0.9996;
+  const lon0=-75*Math.PI/180; // meridiano central de UTM zona 18
+  const phi=lat*Math.PI/180;
+  const lambda=lon*Math.PI/180;
+
+  const sinPhi=Math.sin(phi), cosPhi=Math.cos(phi), tanPhi=Math.tan(phi);
+  const N=a/Math.sqrt(1-e2*sinPhi*sinPhi);
+  const T=tanPhi*tanPhi;
+  const C=ep2*cosPhi*cosPhi;
+  const A=cosPhi*(lambda-lon0);
+
+  const e4=e2*e2, e6=e4*e2;
+  const M=a*((1-e2/4-3*e4/64-5*e6/256)*phi
+    -(3*e2/8+3*e4/32+45*e6/1024)*Math.sin(2*phi)
+    +(15*e4/256+45*e6/1024)*Math.sin(4*phi)
+    -(35*e6/3072)*Math.sin(6*phi));
+
+  const x=500000+k0*N*(A+(1-T+C)*Math.pow(A,3)/6
+    +(5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120);
+
+  let y=k0*(M+N*tanPhi*(A*A/2
+    +(5-T+9*C+4*C*C)*Math.pow(A,4)/24
+    +(61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720));
+
+  // EPSG:32618 corresponde al hemisferio norte. Se deja soporte defensivo
+  // para coordenadas al sur del ecuador usando el falso norte UTM.
+  if(lat<0)y+=10000000;
+  return {x,y,easting:x,northing:y,epsg:'EPSG:32618'};
+}
+
+function cadEscPS(v){return String(v??'').replace(/'/g,"''");}
+function cadNombreArchivo(s){
+  return String(s||'PROYECTO').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_').slice(0,80);
+}
+function descargarTexto(nombre,contenido,mime='text/plain;charset=utf-8'){
+  const blob=new Blob([contenido],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=nombre;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+async function enviarAutoCADConnector(){
+  const btn=document.getElementById('btnAutoCAD');
+  const original=btn?.textContent||'📐 AutoCAD';
+  try{
+    const proyectoId=String(dashProyecto?.value||'');
+    if(!proyectoId){alert('Selecciona un proyecto específico antes de generar AutoCAD.');return;}
+    const proyecto=proyectos.find(p=>String(p.id)===proyectoId);
+    const filtrados=datosDashboardFiltrados();
+
+    // AutoCAD: se incluyen POSTES y CLIENTE.
+    const elementos=filtrados.filter(p=>{
+      const tipo=cadTipoPunto(p);
+      return ['POSTE','CLIENTE'].includes(tipo) &&
+        Number.isFinite(cadLat(p)) && Number.isFinite(cadLon(p)) &&
+        cadConsecutivo(p)>0;
+    });
+    const postes=elementos.filter(p=>cadTipoPunto(p)==='POSTE');
+    const clientes=elementos.filter(p=>cadTipoPunto(p)==='CLIENTE');
+
+    if(!elementos.length){
+      alert('No hay postes o clientes con coordenadas válidas en los filtros actuales del dashboard.');
+      return;
+    }
+
+    if(btn){btn.disabled=true;btn.textContent='⏳ Conectando...';}
+
+    let health;
+    try{
+      const hr=await fetch('http://127.0.0.1:8765/health',{cache:'no-store'});
+      health=await hr.json();
+    }catch(e){
+      throw new Error('No se pudo conectar con CAD Connector. Ejecuta INICIAR_CAD_CONNECTOR_V6.bat y déjalo abierto.');
+    }
+    if(!health?.ok)throw new Error('CAD Connector respondió, pero no está disponible.');
+    if(!health?.autocad)throw new Error('CAD Connector está activo, pero no detecta AutoCAD. Abre AutoCAD y deja un DWG activo.');
+
+    const key=p=>`${cadPoligono(p)}||${cadConsecutivo(p)}`;
+    // IMPORTANTE: el índice incluye CLIENTE, para que el último tramo pueda resolverse.
+    const idx=new Map(elementos.map(p=>[key(p),p]));
+    const xy=p=>cadWgs84ToUtm18N(cadLat(p),cadLon(p));
+
+    const points=elementos.map(p=>{
+      const q=xy(p);
+      const tipo=cadTipoPunto(p);
+      return {
+        type:tipo,
+        label:tipo==='CLIENTE' ? `CLIENTE ${cadConsecutivo(p)}` : `P${cadConsecutivo(p)}`,
+        x:+q.x.toFixed(3),y:+q.y.toFixed(3),
+        radius:tipo==='CLIENTE'?1.25:0.8
+      };
+    });
+
+    const lines=[];
+    const edges=new Set();
+
+    const agregar=(a,b,dist,kind='AEREA')=>{
+      if(!a||!b)return;
+      const ka=key(a),kb=key(b),edge=[ka,kb].sort().join('<->');
+      if(edges.has(edge))return;
+      edges.add(edge);
+      const A=xy(a),B=xy(b);
+      if(!A||!B)return;
+      const d=Number(dist)>0?Number(dist):Math.hypot(B.x-A.x,B.y-A.y);
+      lines.push({
+        x1:+A.x.toFixed(3),y1:+A.y.toFixed(3),
+        x2:+B.x.toFixed(3),y2:+B.y.toFixed(3),
+        label:`${d.toFixed(2)} m`,
+        kind
+      });
+    };
+
+    for(const p of elementos){
+      const pol=cadPoligono(p);
+      const esCliente=cadTipoPunto(p)==='CLIENTE';
+
+      // CLIENTE: CX1 es el acceso desde el último elemento de infraestructura.
+      // Para este tramo se usa primero DISTANCIA_INTERNA; si está vacía,
+      // DISTODO1; y finalmente distancia geométrica UTM.
+      if(esCliente){
+        const cx1=numeroFlexible(valorQgisODb(p,'CX1','cx1'));
+        if(Number.isFinite(cx1)&&cx1>0){
+          const destino=idx.get(`${pol}||${cx1}`);
+          const dInterna=distanciaInternaCartera(p);
+          const dOdo=distanciaRegistradaSlot(p,1);
+          agregar(p,destino,dInterna>0?dInterna:dOdo,'INTERNA');
+        }
+        continue;
+      }
+
+      // POSTES: conexiones aéreas normales CX1..CX4.
+      for(let i=1;i<=4;i++){
+        const cx=numeroFlexible(valorQgisODb(p,`CX${i}`,`cx${i}`));
+        if(Number.isFinite(cx)&&cx>0){
+          const destino=idx.get(`${pol}||${cx}`);
+          const kind=destino && cadTipoPunto(destino)==='CLIENTE' ? 'INTERNA' : 'AEREA';
+          let dist=distanciaRegistradaSlot(p,i);
+          if(kind==='INTERNA' && destino){
+            const di=distanciaInternaCartera(destino);
+            if(di>0)dist=di;
+          }
+          agregar(p,destino,dist,kind);
+        }
+      }
+
+      if(verdadSi(valorQgisODb(p,'CXOTROPOL','cxotropol'))){
+        for(let i=1;i<=4;i++){
+          const dp=String(valorQgisODb(p,`CX${i}POL`,`cx${i}pol`)||'').trim().toUpperCase();
+          const dc=numeroFlexible(valorQgisODb(p,`CX${i}CONSE`,`cx${i}conse`));
+          if(dp&&Number.isFinite(dc)&&dc>0){
+            const destino=idx.get(`${dp}||${dc}`);
+            const kind=destino && cadTipoPunto(destino)==='CLIENTE' ? 'INTERNA' : 'AEREA';
+            agregar(p,destino,distanciaRegistradaSlot(p,i+4),kind);
+          }
+        }
+      }
+    }
+
+    if(btn)btn.textContent='📐 Dibujando...';
+    const response=await fetch('http://127.0.0.1:8765/draw',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        project:{id:proyectoId,codigo:proyecto?.codigo||'',nombre:proyecto?.nombre||''},
+        crs:{source:'EPSG:4326',target:'EPSG:32618',name:'WGS 84 / UTM zone 18N',units:'metres'},
+        points,lines
+      })
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result?.ok)throw new Error(result?.error||`CAD Connector respondió HTTP ${response.status}.`);
+
+    const r=result.result||{};
+    alert(`Plano enviado correctamente a AutoCAD.\n\nProyecto: ${proyecto?.codigo||proyecto?.nombre||''}\nSistema: EPSG:32618 - WGS 84 / UTM zona 18N\nPostes: ${postes.length}\nClientes: ${clientes.length}\nConexiones: ${r.lines??lines.length}\nDibujo: ${r.drawing||'DWG activo'}`);
+  }catch(err){
+    console.error('AutoCAD Connector:',err);
+    alert('No fue posible generar el plano en AutoCAD.\n\n'+(err?.message||err));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=original;}
+  }
+}
+
 async function exportarCarteraEMSA(){
   const btn=document.getElementById('btnCarteraEMSA');
   const original=btn?.textContent||'📒 Cartera EMSA';
@@ -3345,5 +3548,6 @@ window.addEventListener('load',()=>{initMap();verificar()});
 </script>
 </body>
 </html>
+
 
 
