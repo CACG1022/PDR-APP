@@ -978,11 +978,112 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
   box-shadow:0 0 0 2px rgba(245,158,11,.18)!important;
 }
 
+
+/* ===== V68 · FORMULARIO MÓVIL ESTABLE / SIN PARPADEOS =====
+   Chrome/Android puede parpadear al combinar:
+   position:fixed + overflow:auto + header sticky + box-shadow animado.
+   El formulario ahora tiene un único contenedor de scroll interno.
+*/
+#formOverlay{
+  overflow:hidden!important;
+  padding:6px!important;
+  overscroll-behavior:none;
+}
+
+#formOverlay.open{
+  display:flex!important;
+  align-items:flex-start;
+  justify-content:center;
+}
+
+#formOverlay > .modal{
+  width:min(920px,100%)!important;
+  height:calc(100dvh - 12px)!important;
+  max-height:calc(100dvh - 12px)!important;
+  margin:0 auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+
+  /* Capa de composición estable en Chrome/Android */
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#formOverlay .modalHead{
+  position:relative!important;
+  top:auto!important;
+  flex:0 0 auto;
+  z-index:10;
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+}
+
+#formOverlay > .modal > .body{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+}
+
+/* Mientras se desplaza, nunca ejecutar efectos visuales costosos. */
+#formOverlay.formScrolling .campoObligatorioPendiente,
+#formOverlay.formScrolling .campoObligatorioFaltante{
+  animation:none!important;
+  box-shadow:none!important;
+}
+
+/* En dispositivos táctiles mantenemos la señal de obligatorio,
+   pero sin pulsaciones/box-shadow continuos durante todo el formulario.
+   Esto reduce repintados de GPU de forma importante. */
+@media (pointer:coarse), (max-width:900px){
+  #formOverlay .campoObligatorioPendiente,
+  #formOverlay .campoObligatorioFaltante,
+  body.lightTheme #formOverlay .campoObligatorioPendiente,
+  body.lightTheme #formOverlay .campoObligatorioFaltante{
+    animation:none!important;
+    box-shadow:none!important;
+  }
+
+  #formOverlay .campoObligatorioPendiente{
+    border-color:#f59e0b!important;
+  }
+
+  #formOverlay .campoObligatorioFaltante{
+    border-color:#ef4444!important;
+  }
+
+  body.lightTheme #formOverlay .campoObligatorioPendiente{
+    border-color:#dc2626!important;
+  }
+
+  body.lightTheme #formOverlay .campoObligatorioFaltante{
+    border-color:#b91c1c!important;
+  }
+}
+
+/* Evita que el mapa genere trabajo visual mientras el formulario está abierto. */
+body.formularioAbierto #map,
+body.formularioAbierto .crosshair,
+body.formularioAbierto .gpsFab,
+body.formularioAbierto .syncFab,
+body.formularioAbierto .menuFab,
+body.formularioAbierto .fab{
+  pointer-events:none!important;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fotos optimizadas · originales exportables</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fotos optimizadas · formulario móvil estable</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1699,23 +1800,23 @@ function seleccionarMapaBase(tipo){
 
 function actualizarCentro(){const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;document.getElementById('centerInfo').innerHTML=`<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)} · ${registros.length} punto(s)`;}
 function irGPS(){if(!navigator.geolocation)return alert('Geolocalización no disponible.');navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude,accuracy}=p.coords;map.setView([latitude,longitude],19);if(gpsMarker)gpsMarker.remove();gpsMarker=L.circleMarker([latitude,longitude],{radius:8,color:'#fff',weight:3,fillColor:'#38bdf8',fillOpacity:1}).addTo(map).bindPopup(`GPS ±${Math.round(accuracy)} m`);},e=>alert('No fue posible obtener GPS: '+e.message),{enableHighAccuracy:true,timeout:15000,maximumAge:2000});}
-function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');llevarFormularioAlInicio();}
+function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();}
 
 function llevarFormularioAlInicio(){
   const overlay=document.getElementById('formOverlay');
   if(!overlay)return;
 
+  const body=
+    overlay.querySelector(':scope > .modal > .body') ||
+    overlay.querySelector('.modal .body');
+
   const aplicar=()=>{
-    overlay.scrollTop=0;
-    const modal=overlay.querySelector('.modal');
-    const body=overlay.querySelector('.body');
-    if(modal)modal.scrollTop=0;
+    // V68: el único scroll real del formulario es .body.
     if(body)body.scrollTop=0;
   };
 
   aplicar();
   requestAnimationFrame(aplicar);
-  setTimeout(aplicar,80);
 }
 
 let formularioMinimizado=false;
@@ -1730,6 +1831,8 @@ function minimizarFormulario(){
   if(!formOverlay.classList.contains('open'))return;
   formularioMinimizado=true;
   formOverlay.classList.remove('open');
+  document.body.classList.remove('formularioAbierto');
+  formOverlay.classList.remove('formScrolling');
   const b=document.getElementById('resumeFormFab');
   if(b)b.style.display='block';
 }
@@ -1740,6 +1843,8 @@ function reanudarFormulario(){
   formularioMinimizado=false;
   const resumeBtn=document.getElementById('resumeFormFab');if(resumeBtn)resumeBtn.style.display='none';
   formOverlay.classList.add('open');
+  document.body.classList.add('formularioAbierto');
+  setTimeout(actualizarResaltadoObligatorios,0);
   const b=document.getElementById('resumeFormFab');
   if(b)b.style.display='none';
 }
@@ -1747,6 +1852,8 @@ function reanudarFormulario(){
 function cerrarFormulario(){
   formularioMinimizado=false;
   formOverlay.classList.remove('open');
+  formOverlay.classList.remove('formScrolling');
+  document.body.classList.remove('formularioAbierto');
   const b=document.getElementById('resumeFormFab');
   if(b)b.style.display='none';
   limpiarMarcasObligatorias();
@@ -2390,44 +2497,61 @@ function limpiarMarcasObligatorias(){
   });
 }
 
+function aplicarEstadoVisualObligatorio(el,estado){
+  if(!el)return;
+
+  const anterior=el.dataset.requiredVisualState||'';
+  if(anterior===estado)return;
+
+  el.dataset.requiredVisualState=estado;
+
+  el.classList.remove(
+    'campoObligatorioPendiente',
+    'campoObligatorioFaltante',
+    'campoObligatorioDiligenciado'
+  );
+
+  const lab=labelDeCampo(el);
+  if(lab){
+    lab.classList.remove(
+      'labelObligatorioPendiente',
+      'labelObligatorioFaltante',
+      'labelObligatorioDiligenciado'
+    );
+  }
+
+  if(estado==='pendiente'){
+    el.classList.add('campoObligatorioPendiente');
+    if(lab)lab.classList.add('labelObligatorioPendiente');
+  }else if(estado==='faltante'){
+    el.classList.add('campoObligatorioFaltante');
+    if(lab)lab.classList.add('labelObligatorioFaltante');
+  }else if(estado==='diligenciado'){
+    el.classList.add('campoObligatorioDiligenciado');
+    if(lab)lab.classList.add('labelObligatorioDiligenciado');
+  }
+}
+
 function actualizarResaltadoObligatorios(){
+  const overlay=document.getElementById('formOverlay');
+  if(!overlay?.classList.contains('open'))return;
+
   const activos=new Set(obtenerCamposObligatoriosActivos());
 
-  // Primero se limpia SIEMPRE cualquier estado visual anterior.
-  // Esto evita que un campo ya diligenciado conserve una animación amarilla/roja.
-  document.querySelectorAll('input,select,textarea').forEach(el=>{
-    el.classList.remove(
-      'campoObligatorioPendiente',
-      'campoObligatorioFaltante',
-      'campoObligatorioDiligenciado'
+  // Solo se revisan campos del formulario y solo se modifica el DOM
+  // cuando el estado visual realmente cambió.
+  overlay.querySelectorAll('input,select,textarea').forEach(el=>{
+    const id=el.id||'';
+
+    if(!activos.has(id)){
+      aplicarEstadoVisualObligatorio(el,'ninguno');
+      return;
+    }
+
+    aplicarEstadoVisualObligatorio(
+      el,
+      campoEstaVacio(id)?'pendiente':'diligenciado'
     );
-
-    const lab=labelDeCampo(el);
-    if(lab){
-      lab.classList.remove(
-        'labelObligatorioPendiente',
-        'labelObligatorioFaltante',
-        'labelObligatorioDiligenciado'
-      );
-    }
-  });
-
-  // Después se vuelve a marcar únicamente lo que realmente sigue vacío.
-  activos.forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-
-    const lab=labelDeCampo(el);
-    const vacio=campoEstaVacio(id);
-
-    if(vacio){
-      el.classList.add('campoObligatorioPendiente');
-      if(lab)lab.classList.add('labelObligatorioPendiente');
-    }else{
-      // Campo diligenciado = SIN animación.
-      el.classList.add('campoObligatorioDiligenciado');
-      if(lab)lab.classList.add('labelObligatorioDiligenciado');
-    }
   });
 }
 
@@ -2441,14 +2565,7 @@ function marcarObligatoriosFaltantes(ids){
     const el=document.getElementById(id);
     if(!el || !campoEstaVacio(id))return;
 
-    el.classList.remove('campoObligatorioPendiente','campoObligatorioDiligenciado');
-    el.classList.add('campoObligatorioFaltante');
-
-    const lab=labelDeCampo(el);
-    if(lab){
-      lab.classList.remove('labelObligatorioPendiente','labelObligatorioDiligenciado');
-      lab.classList.add('labelObligatorioFaltante');
-    }
+    aplicarEstadoVisualObligatorio(el,'faltante');
   });
 }
 
@@ -2481,37 +2598,50 @@ function instalarAvisosObligatorios(){
   if(document.body.dataset.requiredUxInstalled==='1')return;
   document.body.dataset.requiredUxInstalled='1';
 
+  let rafPendiente=0;
+
+  const programarActualizacion=()=>{
+    if(rafPendiente)return;
+
+    rafPendiente=requestAnimationFrame(()=>{
+      rafPendiente=0;
+      actualizarResaltadoObligatorios();
+    });
+  };
+
   const refrescarCampo=(el)=>{
-    if(!el || !el.matches?.('input,select,textarea'))return;
+    if(!el || !el.matches?.('#formOverlay input,#formOverlay select,#formOverlay textarea'))return;
 
-    el.classList.remove(
-      'campoObligatorioPendiente',
-      'campoObligatorioFaltante',
-      'campoObligatorioDiligenciado'
-    );
-
-    const lab=labelDeCampo(el);
-    if(lab){
-      lab.classList.remove(
-        'labelObligatorioPendiente',
-        'labelObligatorioFaltante',
-        'labelObligatorioDiligenciado'
-      );
-    }
-
-    setTimeout(actualizarResaltadoObligatorios,0);
+    // Forzar solo este campo a recalcularse en el próximo frame.
+    delete el.dataset.requiredVisualState;
+    programarActualizacion();
   };
 
   document.addEventListener('input',e=>refrescarCampo(e.target),true);
   document.addEventListener('change',e=>refrescarCampo(e.target),true);
-  document.addEventListener('keyup',e=>refrescarCampo(e.target),true);
   document.addEventListener('blur',e=>refrescarCampo(e.target),true);
 
-  window.__requiredUxTimer=setInterval(()=>{
-    if(formOverlay?.classList?.contains('open')){
-      actualizarResaltadoObligatorios();
-    }
-  },300);
+  // No se usa setInterval. El timer anterior recorría todos los inputs
+  // cada 300 ms incluso mientras el usuario estaba deslizando el formulario.
+  if(window.__requiredUxTimer){
+    clearInterval(window.__requiredUxTimer);
+    window.__requiredUxTimer=null;
+  }
+
+  const overlay=document.getElementById('formOverlay');
+  const body=overlay?.querySelector(':scope > .modal > .body') ||
+             overlay?.querySelector('.modal .body');
+
+  let scrollTimer=0;
+
+  body?.addEventListener('scroll',()=>{
+    overlay?.classList.add('formScrolling');
+
+    clearTimeout(scrollTimer);
+    scrollTimer=setTimeout(()=>{
+      overlay?.classList.remove('formScrolling');
+    },140);
+  },{passive:true});
 
   actualizarResaltadoObligatorios();
 }
