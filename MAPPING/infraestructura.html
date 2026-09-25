@@ -1011,7 +1011,7 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
   </div>
 </div>
 
-<div class="authOverlay" id="authOverlay">
+<div class="authOverlay" id="authOverlay" style="display:none">
   <div class="authCard">
     <h2>Ingreso Técnico - Mapping</h2>
     <label>Correo</label><input id="loginEmail" type="email" placeholder="tecnico@empresa.com">
@@ -4702,19 +4702,30 @@ function aplicarCamposFijos(){
   sincronizarChecksPin();
 }
 
+function destinoActualMappingParaLogin(){
+  const archivo=location.pathname.split('/').pop()||'infraestructura.html';
+  return archivo+location.search;
+}
+function irLoginMapping(msg=''){
+  const q=new URLSearchParams();
+  q.set('return',destinoActualMappingParaLogin());
+  if(msg)q.set('msg',msg);
+  location.replace(`login_mapping.html?${q.toString()}`);
+}
 async function verificarSesionMapping(){
-  const {data:{session}}=await mappingSb.auth.getSession();
-  if(!session){authOverlay.style.display='flex';bloquearSinProyecto();return}
-  mappingUser=session.user;authOverlay.style.display='none';
-  await cargarPerfilMapping();await cargarProyectosAsignados();
+  const {data:{session},error}=await mappingSb.auth.getSession();
+  if(error||!session){irLoginMapping();return}
+  mappingUser=session.user;
+  if(typeof authOverlay!=='undefined'&&authOverlay)authOverlay.style.display='none';
+  await cargarPerfilMapping();
+  await cargarProyectosAsignados();
 }
-async function loginMapping(){
-  loginMsg.textContent='Validando...';
-  const {data,error}=await mappingSb.auth.signInWithPassword({email:loginEmail.value.trim(),password:loginPassword.value});
-  if(error){loginMsg.textContent='Error: '+error.message;return}
-  mappingUser=data.user;authOverlay.style.display='none';await cargarPerfilMapping();await cargarProyectosAsignados();
+async function loginMapping(){irLoginMapping()}
+async function logoutMapping(){
+  await mappingSb.auth.signOut().catch(()=>{});
+  localStorage.removeItem('mapping_proyecto_activo_v1');
+  irLoginMapping();
 }
-async function logoutMapping(){await mappingSb.auth.signOut();localStorage.removeItem('mapping_proyecto_activo_v1');location.reload()}
 async function cargarPerfilMapping(){
   let {data,error}=await mappingSb.from('mapping_usuarios').select('*').eq('id',mappingUser.id).maybeSingle();
   if(error)console.warn(error);
@@ -5729,7 +5740,7 @@ async function asegurarSesionValida(){
   let {data:{session},error:sesErr}=await mappingSb.auth.getSession();
 
   if(!session){
-    authOverlay.style.display='flex';
+    irLoginMapping('No hay una sesión activa. Inicia sesión nuevamente.');
     throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
   }
 
@@ -5739,7 +5750,7 @@ async function asegurarSesionValida(){
     console.warn('No se pudo renovar sesión:',ref.error);
     await mappingSb.auth.signOut().catch(()=>{});
     mappingUser=null;
-    authOverlay.style.display='flex';
+    irLoginMapping('La sesión de Supabase venció o ya no es válida. Inicia sesión nuevamente.');
     throw new Error('La sesión de Supabase venció o ya no es válida. Inicia sesión nuevamente.');
   }
 
@@ -5750,7 +5761,7 @@ async function asegurarSesionValida(){
     console.warn('Sesión no válida:',usr.error);
     await mappingSb.auth.signOut().catch(()=>{});
     mappingUser=null;
-    authOverlay.style.display='flex';
+    irLoginMapping('Supabase rechazó la sesión. Inicia sesión nuevamente.');
     throw new Error('Supabase rechazó la sesión. Inicia sesión nuevamente.');
   }
 
@@ -6331,7 +6342,7 @@ async function sincronizarPendientes(){
       console.error('Error sincronizando punto',r.IDCAMPO||r.offline_id,e);
       if(esError401(e) || String(e?.message||'').toLowerCase().includes('sesión')){
         alert('La sesión de Supabase no es válida o venció. Vuelve a iniciar sesión y luego presiona Enviar datos nuevamente.\n\nTus puntos y fotografías siguen guardados localmente.');
-        authOverlay.style.display='flex';
+        irLoginMapping('La sesión de Supabase no es válida o venció.');
         break;
       }
     }
@@ -6761,6 +6772,7 @@ async function finalizarAsignacion(){
     bloquearSinProyecto('No hay un proyecto activo asignado.');
     return;
   }if(!proyectoActivo)return;if(registrosProyectoActual().some(r=>r.sync_status!=='enviado')){alert('Primero envía todos los datos pendientes.');return}if(!confirm('¿Finalizar tu asignación en este proyecto?'))return;const {error}=await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'finalizado',fecha_finalizacion:new Date().toISOString()}).eq('id',proyectoActivo.asignacion_id);if(error){alert(error.message);return}alert('Asignación finalizada.');proyectoActivo=null;localStorage.removeItem('mapping_proyecto_activo_v1');await cargarProyectosAsignados()}
+mappingSb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')irLoginMapping()});
 window.addEventListener('online',actualizarEstadoSync);window.addEventListener('offline',actualizarEstadoSync);window.addEventListener('load',async()=>{
   // Un estado "enviando" guardado en localStorage solo significa que la app
   // se cerró/interrumpió durante una sincronización anterior. Nunca debe
@@ -7130,5 +7142,3 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
-
-
