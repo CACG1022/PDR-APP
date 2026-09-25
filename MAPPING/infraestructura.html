@@ -1006,10 +1006,10 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
   overflow:hidden!important;
 
   /* Capa de composición estable en Chrome/Android */
-  transform:translateZ(0);
-  -webkit-transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+  transform:none!important;
+  -webkit-transform:none!important;
+  backface-visibility:visible!important;
+  -webkit-backface-visibility:visible!important;
 }
 
 #formOverlay .modalHead{
@@ -1079,11 +1079,45 @@ body.formularioAbierto .fab{
   pointer-events:none!important;
 }
 
+
+/* ===== V70 · VISTA PREVIA FOTOGRÁFICA LIVIANA =====
+   Nunca se muestra la foto original de 3-8 MB directamente dentro del
+   formulario. Se genera una miniatura local para evitar parpadeos en Android.
+*/
+#formOverlay .photoPreview{
+  width:100%!important;
+  max-height:180px!important;
+  object-fit:cover!important;
+  border-radius:9px!important;
+  margin-top:8px!important;
+  display:none;
+  contain:paint;
+  transform:none!important;
+  -webkit-transform:none!important;
+  backface-visibility:visible!important;
+  -webkit-backface-visibility:visible!important;
+  will-change:auto!important;
+}
+
+#formOverlay .photoCard{
+  contain:layout paint;
+}
+
+#formOverlay .photoPreview.previewLoading{
+  min-height:110px;
+  background:#0b1928;
+  opacity:.55;
+}
+
+body.lightTheme #formOverlay .photoPreview.previewLoading{
+  background:#e2e8f0;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fotos optimizadas · formulario móvil estable</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fotos optimizadas · preview móvil estable</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1148,7 +1182,7 @@ body.formularioAbierto .fab{
   <button onclick="orientarMapaNorte();toggleSideMenu(false)">🧭 Orientar al norte</button>
   <button onclick="abrirDashboardTecnico();toggleSideMenu(false)">📊 Mi avance</button>
   <button onclick="abrirAlmacenamientoIndexedDB();toggleSideMenu(false)">💾 Espacio local / IndexedDB</button>
-  <button onclick="exportarFotosOriginalesZIP();toggleSideMenu(false)">📦 Exportar fotos originales ZIP</button>
+  <button onclick="exportarFotosOriginalesZIP();toggleSideMenu(false)">📤 Compartir fotos originales</button>
   <button onclick="finalizarAsignacion();toggleSideMenu(false)">✓ Finalizar mi asignación</button>
   <button onclick="logoutMapping()">⏻ Cerrar sesión</button>
 </div>
@@ -1851,6 +1885,7 @@ function reanudarFormulario(){
 
 function cerrarFormulario(){
   formularioMinimizado=false;
+  liberarTodasPreviewFoto();
   formOverlay.classList.remove('open');
   formOverlay.classList.remove('formScrolling');
   document.body.classList.remove('formularioAbierto');
@@ -2163,6 +2198,7 @@ function aplicarConfiguracionTipoProyecto(){
 
 function cambiarTipo(){const t=TIPO.value;const cliente=esClienteViabilidad();secPoste.classList.toggle('hidden',cliente||(t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA'));secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');if(cliente){photoGrid.innerHTML='';photos={};}else{renderFotos(t);}aplicarConfiguracionTipoProyecto();if(cliente)configurarConexionCliente();setTimeout(actualizarResaltadoObligatorios,0);}
 function renderFotos(t){
+  liberarTodasPreviewFoto();
   photoGrid.innerHTML='';
   photos={};
 
@@ -2190,14 +2226,26 @@ function renderFotos(t){
       </div>`);
   });
 }
-function cargarFoto(id,input){
+async function cargarFoto(id,input){
   const f=input.files?.[0];
   if(!f)return;
+
+  // Se conserva el archivo ORIGINAL intacto para IndexedDB / ZIP.
   photos[id]={blob:f,nombre_original:f.name||''};
-  const im=document.getElementById('prev_'+id);
-  if(im){
-    im.src=URL.createObjectURL(f);
-    im.style.display='block';
+
+  const status=document.getElementById('status_'+id);
+  if(status){
+    status.textContent='⏳ Preparando vista previa...';
+    status.className='photoStatus local';
+    status.style.display='inline-flex';
+  }
+
+  // La foto original NO se pinta directamente en el DOM.
+  // Se crea una miniatura liviana para evitar parpadeos en Android.
+  await mostrarPreviewFotoLocal(id,f,'Foto original guardada localmente');
+
+  if(status){
+    status.textContent=`📱 Original guardado · ${formatearBytesStorage(f.size)}`;
   }
 
   const card=document.getElementById('photoCard_'+id);
@@ -2205,6 +2253,9 @@ function cargarFoto(id,input){
     card.classList.remove('photoRequiredMissing');
     card.querySelector('.photoRequiredMsg')?.remove();
   }
+
+  // Recalcular únicamente el estado visual necesario.
+  requestAnimationFrame(actualizarResaltadoObligatorios);
 }
 let conexionesVisibles=1;
 
@@ -2740,7 +2791,7 @@ async function limpiarFotosLocalesConfirmadas(){
     const continuar=confirm(
       'Esta opción eliminará del celular las fotografías ORIGINALES que ya estén confirmadas en Drive/Supabase.\n\n'+
       'Las copias optimizadas seguirán disponibles en Drive.\n\n'+
-      'Si necesitas conservar los originales, usa primero "Exportar originales ZIP".\n\n'+
+      'Si necesitas conservar los originales, usa primero "Preparar / compartir DCIM".\n\n'+
       '¿Deseas continuar?'
     );
     if(!continuar)return;
@@ -3824,6 +3875,103 @@ function blobADataURL(blob){
   });
 }
 
+const FOTO_PREVIEW_MAX_LADO=720;
+const FOTO_PREVIEW_CALIDAD=0.68;
+const fotoPreviewUrls=new Map();
+
+function liberarPreviewFoto(tipo){
+  const anterior=fotoPreviewUrls.get(tipo);
+  if(anterior){
+    try{URL.revokeObjectURL(anterior)}catch(_){}
+    fotoPreviewUrls.delete(tipo);
+  }
+}
+
+function liberarTodasPreviewFoto(){
+  for(const [,url] of fotoPreviewUrls){
+    try{URL.revokeObjectURL(url)}catch(_){}
+  }
+  fotoPreviewUrls.clear();
+}
+
+async function crearMiniaturaFoto(blob){
+  if(!(blob instanceof Blob) || !String(blob.type||'').startsWith('image/')){
+    return blob;
+  }
+
+  let imagen=null;
+
+  try{
+    imagen=await cargarImagenParaOptimizar(blob);
+
+    const sw=Number(imagen.width||imagen.naturalWidth||0);
+    const sh=Number(imagen.height||imagen.naturalHeight||0);
+
+    if(!(sw>0) || !(sh>0))return blob;
+
+    const factor=Math.min(1,FOTO_PREVIEW_MAX_LADO/Math.max(sw,sh));
+    const w=Math.max(1,Math.round(sw*factor));
+    const h=Math.max(1,Math.round(sh*factor));
+
+    const canvas=document.createElement('canvas');
+    canvas.width=w;
+    canvas.height=h;
+
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)return blob;
+
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,w,h);
+    ctx.drawImage(imagen,0,0,w,h);
+
+    return await canvasABlobJPEG(canvas,FOTO_PREVIEW_CALIDAD);
+  }catch(e){
+    console.warn('No se pudo generar miniatura; se usa respaldo:',e);
+    return blob;
+  }finally{
+    try{imagen?.close?.()}catch(_){}
+  }
+}
+
+async function mostrarPreviewFotoLocal(tipo,blob,titulo='Foto local de este dispositivo'){
+  const img=document.getElementById('prev_'+tipo);
+  if(!img || !(blob instanceof Blob))return;
+
+  liberarPreviewFoto(tipo);
+
+  img.classList.add('previewLoading');
+  img.removeAttribute('src');
+  img.style.display='block';
+  img.dataset.remote='0';
+  img.decoding='async';
+  img.loading='eager';
+  img.title='Preparando vista previa...';
+
+  try{
+    const mini=await crearMiniaturaFoto(blob);
+    const url=URL.createObjectURL(mini);
+    fotoPreviewUrls.set(tipo,url);
+
+    img.onload=()=>{
+      img.classList.remove('previewLoading');
+      img.title=titulo;
+    };
+
+    img.onerror=()=>{
+      img.classList.remove('previewLoading');
+      img.style.display='none';
+    };
+
+    img.src=url;
+  }catch(e){
+    console.warn('Vista previa local:',e);
+    img.classList.remove('previewLoading');
+    img.style.display='none';
+  }
+}
+
+
+
 const FOTO_ENVIO_MAX_LADO=1600;
 const FOTO_ENVIO_CALIDAD_INICIAL=0.78;
 const FOTO_ENVIO_CALIDAD_MINIMA=0.58;
@@ -3974,6 +4122,111 @@ function extensionFotoOriginal(f){
   return 'jpg';
 }
 
+
+let dcimZipPreparado=null;
+let dcimZipUrlTemporal='';
+
+function abrirCompartirDCIM(blobZip,agregadas,totalBytes){
+  dcimZipPreparado=blobZip;
+
+  const info=document.getElementById('dcimShareInfo');
+  if(info){
+    info.innerHTML=
+      `<b>DCIM.zip</b><br>`+
+      `${agregadas} fotografía(s) originales · ${formatearBytesStorage(totalBytes)}`;
+  }
+
+  const btn=document.getElementById('btnCompartirDCIM');
+  if(btn){
+    const archivo=new File(
+      [blobZip],
+      'DCIM.zip',
+      {type:'application/zip',lastModified:Date.now()}
+    );
+
+    const puedeCompartir=
+      !!navigator.share &&
+      (!navigator.canShare || navigator.canShare({files:[archivo]}));
+
+    btn.style.display=puedeCompartir?'block':'none';
+  }
+
+  document.getElementById('dcimShareOverlay')?.classList.add('open');
+}
+
+function cerrarCompartirDCIM(){
+  document.getElementById('dcimShareOverlay')?.classList.remove('open');
+}
+
+async function compartirDCIMPreparado(){
+  if(!dcimZipPreparado){
+    alert('Primero debes preparar el archivo DCIM.zip.');
+    return;
+  }
+
+  const archivo=new File(
+    [dcimZipPreparado],
+    'DCIM.zip',
+    {type:'application/zip',lastModified:Date.now()}
+  );
+
+  if(!navigator.share){
+    alert('Este navegador no permite compartir archivos directamente. Usa "Descargar DCIM.zip".');
+    return;
+  }
+
+  try{
+    if(navigator.canShare && !navigator.canShare({files:[archivo]})){
+      alert('Este dispositivo no permite compartir archivos ZIP directamente. Usa "Descargar DCIM.zip".');
+      return;
+    }
+
+    await navigator.share({
+      files:[archivo],
+      title:'DCIM',
+      text:'Fotografías originales del levantamiento'
+    });
+
+    const hint=document.getElementById('stHint');
+    if(hint)hint.textContent='✅ DCIM.zip enviado al menú de compartir del dispositivo.';
+  }catch(e){
+    if(e?.name==='AbortError'){
+      return;
+    }
+
+    console.error('Error compartiendo DCIM.zip:',e);
+    alert(
+      'No fue posible abrir el menú de compartir. '+
+      'Puedes usar el botón "Descargar DCIM.zip".'
+    );
+  }
+}
+
+function descargarDCIMPreparado(){
+  if(!dcimZipPreparado){
+    alert('Primero debes preparar el archivo DCIM.zip.');
+    return;
+  }
+
+  if(dcimZipUrlTemporal){
+    try{URL.revokeObjectURL(dcimZipUrlTemporal)}catch(_){}
+  }
+
+  dcimZipUrlTemporal=URL.createObjectURL(dcimZipPreparado);
+
+  const a=document.createElement('a');
+  a.href=dcimZipUrlTemporal;
+  a.download='DCIM.zip';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(()=>{
+    try{URL.revokeObjectURL(dcimZipUrlTemporal)}catch(_){}
+    dcimZipUrlTemporal='';
+  },10000);
+}
+
 async function exportarFotosOriginalesZIP(){
   try{
     if(typeof JSZip==='undefined'){
@@ -4021,13 +4274,8 @@ async function exportarFotosOriginalesZIP(){
     }
 
     const zip=new JSZip();
-    const carpetaRaiz=zip.folder(
-      nombreSeguroZIP(
-        proyectoActivo?.codigo||
-        proyectoActivo?.nombre||
-        'PROYECTO'
-      )+'_FOTOS_ORIGINALES'
-    );
+    // Tanto el archivo comprimido como su carpeta raíz se llaman DCIM.
+    const carpetaRaiz=zip.folder('DCIM');
 
     let agregadas=0;
 
@@ -4080,25 +4328,14 @@ async function exportarFotosOriginalesZIP(){
       }
     );
 
-    const url=URL.createObjectURL(blobZip);
-    const a=document.createElement('a');
-    const fecha=typeof fechaISOColombia==='function'
-      ? fechaISOColombia(new Date())
-      : new Date().toISOString().slice(0,10);
-
-    a.href=url;
-    a.download=
-      `${nombreSeguroZIP(proyectoActivo?.codigo||proyectoActivo?.nombre||'PROYECTO')}`+
-      `_FOTOS_ORIGINALES_${fecha}.zip`;
-
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    // No descargamos automáticamente. Se abre una pantalla para que
+    // el usuario pueda compartir DCIM.zip directamente por WhatsApp,
+    // correo, Drive u otra aplicación instalada.
+    abrirCompartirDCIM(blobZip,agregadas,totalBytes);
 
     if(hint){
       hint.textContent=
-        `✅ ZIP generado: ${agregadas} foto(s) originales · ${formatearBytesStorage(totalBytes)}.`;
+        `✅ DCIM.zip preparado: ${agregadas} foto(s) originales · ${formatearBytesStorage(totalBytes)}.`;
     }
   }catch(e){
     console.error('Error exportando fotos originales:',e);
@@ -4258,10 +4495,12 @@ async function renderizarFotosRemotasEnFormulario(registro){
 
 async function cargarFotosFormularioDesdeIDB(puntoId){
   photos={};
+  liberarTodasPreviewFoto();
 
   document.querySelectorAll('img[id^="prev_"]').forEach(img=>{
     img.removeAttribute('src');
     img.style.display='none';
+    img.classList.remove('previewLoading');
     delete img.dataset.remote;
     img.title='';
     img.onload=null;
@@ -4284,20 +4523,29 @@ async function cargarFotosFormularioDesdeIDB(puntoId){
   });
 
   const filas=await obtenerFotosIDB(puntoId);
+
+  // Una a una para no decodificar varias fotos de alta resolución al tiempo.
   for(const f of filas){
-    photos[f.tipo_foto]={blob:f.blob,nombre_original:f.nombre_original||''};
-    const img=document.getElementById('prev_'+f.tipo_foto);
-    if(img){
-      img.src=URL.createObjectURL(f.blob);
-      img.style.display='block';
-      img.dataset.remote='0';
-      img.title='Foto local de este dispositivo';
-      const status=document.getElementById('status_'+f.tipo_foto);
-      if(status){
-        status.textContent='📱 Foto local';
-        status.className='photoStatus local';
-        status.style.display='inline-flex';
-      }
+    photos[f.tipo_foto]={
+      blob:f.blob,
+      nombre_original:f.nombre_original||''
+    };
+
+    const status=document.getElementById('status_'+f.tipo_foto);
+    if(status){
+      status.textContent='⏳ Preparando vista previa...';
+      status.className='photoStatus local';
+      status.style.display='inline-flex';
+    }
+
+    await mostrarPreviewFotoLocal(
+      f.tipo_foto,
+      f.blob,
+      'Foto original guardada en este dispositivo'
+    );
+
+    if(status){
+      status.textContent=`📱 Original local · ${formatearBytesStorage(f?.blob?.size||0)}`;
     }
   }
 }
@@ -7675,6 +7923,45 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
+
+<div class="overlay" id="dcimShareOverlay">
+  <div class="modal" style="width:min(520px,96vw);margin-top:8vh">
+    <div class="modalHead">
+      <h2>📦 DCIM listo para compartir</h2>
+      <button class="close" type="button" onclick="cerrarCompartirDCIM()">Cerrar</button>
+    </div>
+    <div class="body">
+      <div class="hint" id="dcimShareInfo" style="margin-bottom:12px">
+        El archivo DCIM.zip está listo.
+      </div>
+
+      <button
+        id="btnCompartirDCIM"
+        class="btn blue"
+        type="button"
+        style="width:100%;margin-bottom:9px"
+        onclick="compartirDCIMPreparado()"
+      >
+        📲 Compartir DCIM.zip
+      </button>
+
+      <button
+        class="btn"
+        type="button"
+        style="width:100%"
+        onclick="descargarDCIMPreparado()"
+      >
+        ⬇ Descargar DCIM.zip
+      </button>
+
+      <div class="hint" style="margin-top:12px">
+        En Android se abrirá el menú de compartir del sistema. Allí podrás seleccionar WhatsApp,
+        correo, Drive u otra aplicación instalada.
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="storageOverlay">
   <div class="modal storageModal">
     <div class="modalHead">
@@ -7727,7 +8014,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       <div class="storageActions">
         <button class="btn blue" onclick="actualizarAlmacenamientoIndexedDB()">↻ Actualizar</button>
-        <button class="btn purple" onclick="exportarFotosOriginalesZIP()">📦 Exportar originales ZIP</button>
+        <button class="btn purple" onclick="exportarFotosOriginalesZIP()">📤 Preparar / compartir DCIM</button>
         <button class="btn" onclick="limpiarFotosLocalesConfirmadas()">🧹 Limpiar originales ya confirmados</button>
       </div>
 
