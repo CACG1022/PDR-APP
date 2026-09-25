@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{--bg:#07111f;--surface:#0d1b2a;--surface2:#14263a;--border:#29415d;--text:#f8fafc;--muted:#9fb0c4;--primary:#12b8ae;--danger:#ef4444;--warn:#f59e0b;--blue:#38bdf8}
 *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
@@ -981,7 +982,7 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · acceso cliente + sync inmediato</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fotos optimizadas · originales exportables</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1046,6 +1047,7 @@ body.lightTheme .syncErrorHead b{color:#b91c1c}
   <button onclick="orientarMapaNorte();toggleSideMenu(false)">🧭 Orientar al norte</button>
   <button onclick="abrirDashboardTecnico();toggleSideMenu(false)">📊 Mi avance</button>
   <button onclick="abrirAlmacenamientoIndexedDB();toggleSideMenu(false)">💾 Espacio local / IndexedDB</button>
+  <button onclick="exportarFotosOriginalesZIP();toggleSideMenu(false)">📦 Exportar fotos originales ZIP</button>
   <button onclick="finalizarAsignacion();toggleSideMenu(false)">✓ Finalizar mi asignación</button>
   <button onclick="logoutMapping()">⏻ Cerrar sesión</button>
 </div>
@@ -2595,7 +2597,7 @@ async function actualizarAlmacenamientoIndexedDB(){
     }else if(fotos.length===0){
       stHint.textContent='✅ IndexedDB no tiene fotos locales. Las fotos sincronizadas ya fueron liberadas.';
     }else{
-      stHint.textContent='Las fotos confirmadas en Drive/Supabase se eliminan automáticamente de IndexedDB.';
+      stHint.textContent='Las fotos originales se conservan en este dispositivo para poder exportarlas. Las copias optimizadas son las que se envían a n8n/Drive.';
     }
   }catch(e){
     console.error(e);
@@ -2605,6 +2607,14 @@ async function actualizarAlmacenamientoIndexedDB(){
 
 async function limpiarFotosLocalesConfirmadas(){
   try{
+    const continuar=confirm(
+      'Esta opción eliminará del celular las fotografías ORIGINALES que ya estén confirmadas en Drive/Supabase.\n\n'+
+      'Las copias optimizadas seguirán disponibles en Drive.\n\n'+
+      'Si necesitas conservar los originales, usa primero "Exportar originales ZIP".\n\n'+
+      '¿Deseas continuar?'
+    );
+    if(!continuar)return;
+
     stHint.textContent='Revisando fotos confirmadas...';
 
     const proyectoId=proyectoActivo?.proyecto_id||proyectoActivo?.id||null;
@@ -2660,7 +2670,7 @@ async function limpiarFotosLocalesConfirmadas(){
     }
 
     stHint.textContent=
-      `✅ Limpieza terminada: ${eliminadas} foto(s) confirmada(s) eliminada(s) de IndexedDB.`+
+      `✅ Limpieza terminada: ${eliminadas} foto(s) ORIGINAL(es) confirmada(s) eliminada(s) del dispositivo.`+
       (conservadas
         ? ` ${conservadas} foto(s) se conservaron porque aún no tienen confirmación remota.`
         : '');
@@ -3683,6 +3693,292 @@ function blobADataURL(blob){
     rd.readAsDataURL(blob);
   });
 }
+
+const FOTO_ENVIO_MAX_LADO=1600;
+const FOTO_ENVIO_CALIDAD_INICIAL=0.78;
+const FOTO_ENVIO_CALIDAD_MINIMA=0.58;
+const FOTO_ENVIO_OBJETIVO_BYTES=900*1024;
+
+function canvasABlobJPEG(canvas,calidad){
+  return new Promise((resolve,reject)=>{
+    canvas.toBlob(
+      blob=>blob?resolve(blob):reject(new Error('El navegador no pudo generar la foto optimizada.')),
+      'image/jpeg',
+      calidad
+    );
+  });
+}
+
+async function cargarImagenParaOptimizar(blob){
+  if('createImageBitmap' in window){
+    try{
+      return await createImageBitmap(blob,{imageOrientation:'from-image'});
+    }catch(_){}
+  }
+
+  return await new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror=()=>{
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo leer la fotografía para optimizarla.'));
+    };
+    img.src=url;
+  });
+}
+
+async function optimizarFotoParaEnvio(blob){
+  if(!(blob instanceof Blob) || !String(blob.type||'').startsWith('image/')){
+    return {
+      blob,
+      optimizada:false,
+      original_bytes:Number(blob?.size||0),
+      envio_bytes:Number(blob?.size||0),
+      ancho:null,
+      alto:null,
+      calidad:null
+    };
+  }
+
+  const originalBytes=Number(blob.size||0);
+
+  // Fotos pequeñas ya son suficientemente livianas.
+  if(originalBytes>0 && originalBytes<=FOTO_ENVIO_OBJETIVO_BYTES){
+    return {
+      blob,
+      optimizada:false,
+      original_bytes:originalBytes,
+      envio_bytes:originalBytes,
+      ancho:null,
+      alto:null,
+      calidad:null
+    };
+  }
+
+  let imagen=null;
+  try{
+    imagen=await cargarImagenParaOptimizar(blob);
+
+    const sw=Number(imagen.width||imagen.naturalWidth||0);
+    const sh=Number(imagen.height||imagen.naturalHeight||0);
+
+    if(!(sw>0) || !(sh>0))throw new Error('Dimensiones de imagen inválidas.');
+
+    const factor=Math.min(1,FOTO_ENVIO_MAX_LADO/Math.max(sw,sh));
+    const w=Math.max(1,Math.round(sw*factor));
+    const h=Math.max(1,Math.round(sh*factor));
+
+    const canvas=document.createElement('canvas');
+    canvas.width=w;
+    canvas.height=h;
+
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)throw new Error('No fue posible crear el lienzo de compresión.');
+
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,w,h);
+    ctx.drawImage(imagen,0,0,w,h);
+
+    let calidad=FOTO_ENVIO_CALIDAD_INICIAL;
+    let salida=await canvasABlobJPEG(canvas,calidad);
+
+    while(
+      salida.size>FOTO_ENVIO_OBJETIVO_BYTES &&
+      calidad>FOTO_ENVIO_CALIDAD_MINIMA
+    ){
+      calidad=Math.max(FOTO_ENVIO_CALIDAD_MINIMA,calidad-0.07);
+      salida=await canvasABlobJPEG(canvas,calidad);
+    }
+
+    // Nunca reemplazar por una versión más pesada.
+    if(salida.size>=originalBytes){
+      return {
+        blob,
+        optimizada:false,
+        original_bytes:originalBytes,
+        envio_bytes:originalBytes,
+        ancho:sw,
+        alto:sh,
+        calidad:null
+      };
+    }
+
+    return {
+      blob:salida,
+      optimizada:true,
+      original_bytes:originalBytes,
+      envio_bytes:Number(salida.size||0),
+      ancho:w,
+      alto:h,
+      calidad:Number(calidad.toFixed(2))
+    };
+  }finally{
+    try{imagen?.close?.()}catch(_){}
+  }
+}
+
+function nombreSeguroZIP(v){
+  return String(v||'archivo')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\\/:*?"<>|]+/g,'_')
+    .replace(/\s+/g,'_')
+    .replace(/_+/g,'_')
+    .replace(/^_+|_+$/g,'') || 'archivo';
+}
+
+function extensionFotoOriginal(f){
+  const nombre=String(f?.nombre_original||'');
+  const m=nombre.match(/\.([a-zA-Z0-9]{2,5})$/);
+  if(m)return m[1].toLowerCase();
+
+  const mime=String(f?.blob?.type||f?.mime||'').toLowerCase();
+  if(mime.includes('png'))return 'png';
+  if(mime.includes('webp'))return 'webp';
+  if(mime.includes('heic'))return 'heic';
+  if(mime.includes('heif'))return 'heif';
+  return 'jpg';
+}
+
+async function exportarFotosOriginalesZIP(){
+  try{
+    if(typeof JSZip==='undefined'){
+      throw new Error('No se pudo cargar JSZip. Verifica la conexión a Internet y vuelve a intentarlo.');
+    }
+
+    if(!proyectoActivo){
+      alert('Selecciona un proyecto antes de exportar las fotografías.');
+      return;
+    }
+
+    const proyectoId=String(proyectoActivo?.proyecto_id||proyectoActivo?.id||'');
+    const regs=registros.filter(r=>
+      String(r.proyecto_id||'')===proyectoId
+    );
+
+    const porLocalId=new Map(
+      regs.map(r=>[
+        String(r.offline_id||r.id||''),
+        r
+      ])
+    );
+
+    const todas=await listarFotosIndexedDB();
+    const fotos=todas.filter(f=>
+      porLocalId.has(String(f.punto_id||f.puntoId||f.key?.split('__')[0]||''))
+    );
+
+    if(!fotos.length){
+      alert(
+        'No hay fotografías originales locales para este proyecto.\\n\\n'+
+        'Las fotografías tomadas con versiones anteriores pudieron haber sido eliminadas del dispositivo después de sincronizarse.'
+      );
+      return;
+    }
+
+    const totalBytes=fotos.reduce((s,f)=>s+Number(f?.blob?.size||0),0);
+
+    if(totalBytes>250*1024*1024){
+      const continuar=confirm(
+        `Las fotografías originales ocupan ${formatearBytesStorage(totalBytes)}.\\n\\n`+
+        'Crear un ZIP tan grande puede consumir bastante memoria en el celular. ¿Deseas continuar?'
+      );
+      if(!continuar)return;
+    }
+
+    const zip=new JSZip();
+    const carpetaRaiz=zip.folder(
+      nombreSeguroZIP(
+        proyectoActivo?.codigo||
+        proyectoActivo?.nombre||
+        'PROYECTO'
+      )+'_FOTOS_ORIGINALES'
+    );
+
+    let agregadas=0;
+
+    for(const f of fotos){
+      if(!(f?.blob instanceof Blob))continue;
+
+      const localId=String(
+        f.punto_id||
+        f.puntoId||
+        f.key?.split('__')[0]||
+        ''
+      );
+      const r=porLocalId.get(localId);
+      if(!r)continue;
+
+      const idcampo=nombreSeguroZIP(r.IDCAMPO||localId||'PUNTO');
+      const tipo=nombreSeguroZIP(f.tipo_foto||f.tipo||'FOTO');
+      const ext=extensionFotoOriginal(f);
+
+      // Carpeta por elemento para que WhatsApp/PC conserve el orden.
+      const carpeta=carpetaRaiz.folder(idcampo);
+      carpeta.file(`${idcampo}_${tipo}.${ext}`,f.blob,{
+        binary:true,
+        compression:'STORE'
+      });
+
+      agregadas++;
+    }
+
+    if(!agregadas){
+      alert('No se encontraron blobs originales válidos para exportar.');
+      return;
+    }
+
+    const hint=document.getElementById('stHint');
+    if(hint)hint.textContent=`Preparando ZIP con ${agregadas} fotografías originales...`;
+
+    // JPEG/HEIC ya vienen comprimidos; STORE es mucho más rápido y evita
+    // consumir CPU intentando recomprimir archivos que casi no reducen.
+    const blobZip=await zip.generateAsync(
+      {
+        type:'blob',
+        compression:'STORE',
+        streamFiles:true
+      },
+      meta=>{
+        if(hint){
+          hint.textContent=`Generando ZIP de originales: ${Math.round(meta.percent||0)}%`;
+        }
+      }
+    );
+
+    const url=URL.createObjectURL(blobZip);
+    const a=document.createElement('a');
+    const fecha=typeof fechaISOColombia==='function'
+      ? fechaISOColombia(new Date())
+      : new Date().toISOString().slice(0,10);
+
+    a.href=url;
+    a.download=
+      `${nombreSeguroZIP(proyectoActivo?.codigo||proyectoActivo?.nombre||'PROYECTO')}`+
+      `_FOTOS_ORIGINALES_${fecha}.zip`;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+
+    if(hint){
+      hint.textContent=
+        `✅ ZIP generado: ${agregadas} foto(s) originales · ${formatearBytesStorage(totalBytes)}.`;
+    }
+  }catch(e){
+    console.error('Error exportando fotos originales:',e);
+    const hint=document.getElementById('stHint');
+    if(hint)hint.textContent='No fue posible exportar originales: '+(e?.message||e);
+    alert('No fue posible generar el ZIP de fotografías originales: '+(e?.message||e));
+  }
+}
+
+
 
 async function guardarFotosCapturadasIDB(puntoId){
   for(const [tipo,valor] of Object.entries(photos||{})){
@@ -5751,15 +6047,34 @@ async function subirFotosN8N(r,puntoId){
     const tipo=f.tipo_foto||'FOTO';
     const tamano=Number(f?.blob?.size||0);
     let b64='';
+    let fotoEnvio=null;
+
+    // Si ya existe referencia remota confirmada, el original se conserva
+    // únicamente para exportación y NO se vuelve a subir.
+    const refRemota=r?.fotos_remotas?.[tipo];
+    if(refRemota?.url_foto || refRemota?.ruta){
+      console.info(`[SYNC] ${r.IDCAMPO||puntoLocalId} · ${tipo}: ya está confirmada en nube; se conserva original local.`);
+      continue;
+    }
 
     try{
-      b64=await blobADataURL(f.blob);
+      fotoEnvio=await optimizarFotoParaEnvio(f.blob);
+
+      console.info(
+        `[FOTO OPT] ${r.IDCAMPO||puntoLocalId} · ${tipo}:`,
+        formatearBytesStorage(fotoEnvio.original_bytes),
+        '→',
+        formatearBytesStorage(fotoEnvio.envio_bytes),
+        fotoEnvio.optimizada?`(${fotoEnvio.ancho}x${fotoEnvio.alto}, q=${fotoEnvio.calidad})`:'(sin recompresión)'
+      );
+
+      b64=await blobADataURL(fotoEnvio.blob);
     }catch(e){
       throw crearErrorSync(
-        'FOTO_BASE64',
-        `No se pudo preparar ${tipo} para envío: ${e?.message||e}`,
+        'FOTO_OPTIMIZAR',
+        `No se pudo optimizar/preparar ${tipo} para envío: ${e?.message||e}`,
         {
-          sync_code:'BASE64_ERROR',
+          sync_code:'PHOTO_OPTIMIZE_ERROR',
           tipo_foto:tipo,
           nombre_archivo:f?.nombre_original||'',
           tamano_bytes:tamano,
@@ -5806,32 +6121,28 @@ async function subirFotosN8N(r,puntoId){
       if(!Object.keys(r._fotos_n8n_pendientes).length)delete r._fotos_n8n_pendientes;
       persist();
 
-      // 3. SOLO después de confirmación, borrar Blob local.
-      try{
-        await eliminarFotoIDB(puntoLocalId,tipo);
-      }catch(e){
-        throw crearErrorSync(
-          'INDEXEDDB_BORRAR_FOTO',
-          `La foto ${tipo} ya quedó en la nube, pero no se pudo borrar la copia local: ${e?.message||e}`,
-          {
-            sync_code:'IDB_DELETE_ERROR',
-            tipo_foto:tipo,
-            nombre_archivo:resultado?.nombreArchivo||f?.nombre_original||'',
-            tamano_bytes:tamano,
-            sync_detail:textoSeguroSync(e,1000)
-          }
-        );
-      }
-
+      // 3. La foto ORIGINAL permanece en IndexedDB.
+      // Solo se envió la copia optimizada. Esto permite exportar luego
+      // las originales en ZIP sin perder calidad.
       if(photos && photos[tipo])delete photos[tipo];
 
-      console.info(`Foto ${tipo} confirmada en Drive/Supabase y eliminada de IndexedDB.`);
+      console.info(
+        `Foto ${tipo} confirmada en Drive/Supabase. Original conservado localmente.`,
+        {
+          original:tamano,
+          enviado:fotoEnvio?.envio_bytes||0
+        }
+      );
+
       resultados.push({
         tipo,
         tamano_bytes:tamano,
+        tamano_envio_bytes:Number(fotoEnvio?.envio_bytes||0),
+        optimizada:!!fotoEnvio?.optimizada,
         ...resultado,
         referencia:refConfirmada,
-        local_eliminada:true
+        local_eliminada:false,
+        original_conservado:true
       });
 
     }catch(e){
@@ -6342,7 +6653,12 @@ async function estimarBytesPunto(r){
   try{bytes+=new TextEncoder().encode(JSON.stringify(filaSupabase(r))).length}catch(_){}
   try{
     const fotos=await obtenerFotosIDB(r.offline_id||r.id);
-    for(const f of fotos)bytes+=Number(f?.blob?.size||0);
+    for(const f of fotos){
+      const ref=r?.fotos_remotas?.[f.tipo_foto];
+      if(ref?.url_foto || ref?.ruta)continue;
+      const original=Number(f?.blob?.size||0);
+      bytes+=Math.min(original,FOTO_ENVIO_OBJETIVO_BYTES);
+    }
   }catch(_){}
   return bytes;
 }
@@ -6549,24 +6865,9 @@ async function reconciliarEstadoLocalConNube(local,remoto){
 
   const remotas=local.fotos_remotas||{};
 
-  // Si la foto ya está confirmada en la nube, limpia únicamente la copia local.
-  for(const f of fotosLocales){
-    const ref=remotas[f.tipo_foto];
-    if(ref?.url_foto || ref?.ruta){
-      try{
-        await eliminarFotoIDB(local.offline_id||local.id,f.tipo_foto);
-      }catch(e){
-        console.warn(`No se pudo limpiar ${f.tipo_foto} de IndexedDB:`,e);
-      }
-    }
-  }
-
-  try{
-    fotosLocales=await obtenerFotosIDB(local.offline_id||local.id);
-  }catch(e){
-    console.warn('No fue posible releer fotos locales después de la limpieza:',e);
-  }
-
+  // Las fotos originales locales se conservan aunque la copia optimizada
+  // ya esté confirmada en Drive/Supabase. El usuario puede exportarlas
+  // después como ZIP o eliminarlas manualmente desde Almacenamiento.
   const requeridas=tiposFotoRequeridosRegistro(local);
   const tiposLocales=new Set(fotosLocales.map(f=>String(f.tipo_foto||'')));
   const tiposRemotos=new Set(
@@ -6580,7 +6881,12 @@ async function reconciliarEstadoLocalConNube(local,remoto){
     !tiposRemotos.has(tipo)
   );
 
-  const pendientesLocales=requeridas.filter(tipo=>tiposLocales.has(tipo));
+  // Una foto local solo está pendiente si NO tiene referencia remota.
+  // Si existe local + remota, local es el ORIGINAL preservado para exportación.
+  const pendientesLocales=requeridas.filter(tipo=>
+    tiposLocales.has(tipo) &&
+    !tiposRemotos.has(tipo)
+  );
 
   if(faltantes.length===0 && pendientesLocales.length===0){
     local.sync_status='enviado';
@@ -7291,7 +7597,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 
       <div class="storageActions">
         <button class="btn blue" onclick="actualizarAlmacenamientoIndexedDB()">↻ Actualizar</button>
-        <button class="btn" onclick="limpiarFotosLocalesConfirmadas()">🧹 Limpiar fotos ya confirmadas</button>
+        <button class="btn purple" onclick="exportarFotosOriginalesZIP()">📦 Exportar originales ZIP</button>
+        <button class="btn" onclick="limpiarFotosLocalesConfirmadas()">🧹 Limpiar originales ya confirmados</button>
       </div>
 
       <div class="tableWrap storageTableWrap">
