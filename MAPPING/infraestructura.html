@@ -1117,7 +1117,7 @@ body.lightTheme #formOverlay .photoPreview.previewLoading{
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · fotos optimizadas · preview móvil estable</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · GPS continuo · dirección automática corta</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
@@ -1202,7 +1202,15 @@ body.lightTheme #formOverlay .photoPreview.previewLoading{
 <div id="wrapCiudad"><label>CIUDAD <span class="req">*</span></label><input id="CIUDAD" value="Bogota D.C"></div><div id="wrapBarrio"><label>BARRIO <span class="req">*</span></label><input id="BARRIO" placeholder="Barrio"></div>
 <div id="wrapTecnico"><label>TECNICO <span class="req">*</span></label><input id="TECNICO" placeholder="Nombre del técnico"></div><div id="wrapProyecto"><label>PROYECTO</label><input id="PROYECTO" readonly title="Proyecto asignado desde el Master"></div>
 <div id="wrapTipoProyecto"><label>TIPO PROYECTO</label><input id="TIPO_PROYECTO" class="projectTypeField" readonly></div><div id="wrapLatitude"><label>LATITUDE</label><input id="LATITUDE" readonly></div>
-<div id="wrapLongitude"><label>LONGITUDE</label><input id="LONGITUDE" readonly></div><div id="wrapDireccion"><label>DIRECCION <span class="req">*</span></label><input id="DIRECCION" placeholder="Dirección / referencia"></div>
+<div id="wrapLongitude"><label>LONGITUDE</label><input id="LONGITUDE" readonly></div>
+<div id="wrapDireccion">
+  <label>DIRECCION <span class="req">*</span></label>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
+    <input id="DIRECCION" placeholder="Ej: Calle 45A #30">
+    <button type="button" class="btn blue" style="width:auto;padding:9px 10px;font-size:10px" onclick="detectarDireccionDesdeFormulario()">📍 Detectar</button>
+  </div>
+  <small id="direccionAutoEstado" class="poligonoAutoEstado">Dirección automática por ubicación</small>
+</div>
 <div id="wrapCostado"><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
 </div></div></div>
 
@@ -1275,7 +1283,12 @@ const photoDefs={
  CERCHA:[['FOTO','Panorámica principal'],['FOTO2','Detalle del elemento'],['FOTO3','Panorámica indicando sentido de la ruta']],
  CANALIZADO:[['FOTO8CAM','Cámara con tapa abierta'],['FOTO9CAM','Panorámica con tapa cerrada y ruta'],['FOTO5CAM','Flecha indicando el costado de la vía'],['FOTO6CAM','Panorámica indicando la ruta del cable'],['FOTO7CAM','Banco de ductos completo'],['FOTO10CAM','Foto cámara anterior']]
 };
-let registros=JSON.parse(localStorage.getItem('mapping_sitesurvey_registros_v1')||'[]');let map,selectedLat,selectedLng,gpsMarker,editingId=null,photos={};
+let registros=JSON.parse(localStorage.getItem('mapping_sitesurvey_registros_v1')||'[]');
+let map,selectedLat,selectedLng,gpsMarker,gpsAccuracyCircle,editingId=null,photos={};
+let gpsWatchId=null;
+let gpsUltimaPosicion=null;
+let gpsSeguirCentro=false;
+let gpsErrorMostrado=false;
 let hyb=null,osm=null,darkBase=null,baseMapApagado=false;
 let poligonosAsignados=[];
 let poligonosAsignadosSet=new Set();
@@ -1330,8 +1343,19 @@ function init(){
   });
 
   map.on('move moveend zoom',actualizarCentro);
+
+  // Si el técnico mueve el mapa manualmente, dejamos de centrarlo
+  // automáticamente, pero el punto azul GPS continúa actualizándose.
+  map.on('dragstart',()=>{
+    gpsSeguirCentro=false;
+  });
+
   actualizarCentro();
   pintarRegistros();
+
+  // Seguimiento continuo. En GitHub Pages funciona bajo HTTPS.
+  // No fuerza el centro hasta que el usuario pulse el botón GPS.
+  setTimeout(()=>iniciarSeguimientoGPS(false),600);
 }
 function orientarMapaNorte(){
   if(!map)return;
@@ -1832,8 +1856,302 @@ function seleccionarMapaBase(tipo){
   cerrarSelectorMapaBase();
 }
 
+
+const direccionCache=new Map();
+let direccionUltimaConsultaMs=0;
+let direccionAbortController=null;
+
+function limpiarTextoDireccion(v){
+  return String(v||'')
+    .replace(/\s+/g,' ')
+    .replace(/\s*,\s*/g,', ')
+    .trim();
+}
+
+function normalizarNombreVia(v){
+  let s=limpiarTextoDireccion(v);
+  if(!s)return '';
+
+  const reglas=[
+    [/^(cl\.?|calle)\s*/i,'Calle '],
+    [/^(cr\.?|cra\.?|carrera)\s*/i,'Carrera '],
+    [/^(av\.?|avenida)\s*/i,'Avenida '],
+    [/^(dg\.?|diagonal)\s*/i,'Diagonal '],
+    [/^(tv\.?|transv\.?|transversal)\s*/i,'Transversal '],
+    [/^(aut\.?|autopista)\s*/i,'Autopista ']
+  ];
+
+  for(const [rx,repl] of reglas){
+    if(rx.test(s)){
+      s=s.replace(rx,repl);
+      break;
+    }
+  }
+
+  // Mayúsculas limpias para letras de la nomenclatura: 45a -> 45A.
+  s=s.replace(/(\d+)\s*([a-z])\b/gi,(_,n,l)=>`${n}${String(l).toUpperCase()}`);
+  return s;
+}
+
+function direccionCortaDesdeNominatim(data){
+  const a=data?.address||{};
+
+  let via=
+    a.road||
+    a.pedestrian||
+    a.residential||
+    a.living_street||
+    a.footway||
+    a.path||
+    '';
+
+  via=normalizarNombreVia(via);
+
+  let numero=limpiarTextoDireccion(a.house_number||'');
+
+  // Algunos registros de OSM no entregan house_number separado.
+  // Intentamos una extracción conservadora desde display_name.
+  if(!via){
+    const display=String(data?.display_name||'');
+    const m=display.match(/\b(Calle|Carrera|Avenida|Diagonal|Transversal|Autopista)\s+[^,]+/i);
+    if(m)via=normalizarNombreVia(m[0]);
+  }
+
+  if(!numero){
+    const first=String(data?.display_name||'').split(',')[0]?.trim()||'';
+    if(/^\d+[A-Za-z]?(?:-\d+[A-Za-z]?)?$/.test(first)){
+      numero=first.toUpperCase();
+    }
+  }
+
+  if(via && numero)return `${via} #${numero}`;
+  if(via)return via;
+
+  const barrio=
+    a.neighbourhood||
+    a.suburb||
+    a.quarter||
+    a.residential||
+    '';
+
+  return barrio?`Barrio ${limpiarTextoDireccion(barrio)}`:'';
+}
+
+function setEstadoDireccionAuto(tipo,texto){
+  const el=document.getElementById('direccionAutoEstado');
+  if(!el)return;
+  el.className='poligonoAutoEstado'+(tipo?` ${tipo}`:'');
+  el.textContent=texto;
+}
+
+async function detectarDireccionAutomatica(lat,lon,forzar=false){
+  const campo=document.getElementById('DIRECCION');
+  if(!campo)return '';
+
+  const y=Number(lat),x=Number(lon);
+  if(!Number.isFinite(y)||!Number.isFinite(x))return '';
+
+  if(!forzar && String(campo.value||'').trim()){
+    return campo.value.trim();
+  }
+
+  const clave=`${y.toFixed(5)},${x.toFixed(5)}`;
+  if(direccionCache.has(clave)){
+    const cache=direccionCache.get(clave);
+    if(forzar || !String(campo.value||'').trim()){
+      campo.value=cache;
+      campo.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    setEstadoDireccionAuto('ok',`✓ Dirección detectada: ${cache}`);
+    return cache;
+  }
+
+  if(!navigator.onLine){
+    setEstadoDireccionAuto('warn','Sin Internet: escribe la dirección manualmente.');
+    return '';
+  }
+
+  // Nominatim pide no hacer consultas masivas. Esta app solo consulta
+  // al abrir un punto o al pulsar "Detectar", y respeta al menos 1 s.
+  const espera=Math.max(0,1050-(Date.now()-direccionUltimaConsultaMs));
+  if(espera)await new Promise(r=>setTimeout(r,espera));
+  direccionUltimaConsultaMs=Date.now();
+
+  try{
+    direccionAbortController?.abort?.();
+    direccionAbortController=new AbortController();
+    const timeout=setTimeout(()=>direccionAbortController.abort(),9000);
+
+    setEstadoDireccionAuto('', 'Detectando dirección...');
+
+    const url=
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2`+
+      `&lat=${encodeURIComponent(y)}`+
+      `&lon=${encodeURIComponent(x)}`+
+      `&zoom=18&addressdetails=1&accept-language=es`;
+
+    const resp=await fetch(url,{
+      signal:direccionAbortController.signal,
+      headers:{'Accept':'application/json'}
+    });
+
+    clearTimeout(timeout);
+
+    if(!resp.ok){
+      throw new Error(`HTTP ${resp.status}`);
+    }
+
+    const data=await resp.json();
+    const corta=direccionCortaDesdeNominatim(data);
+
+    if(!corta){
+      setEstadoDireccionAuto('warn','No se encontró una dirección corta. Puedes escribirla manualmente.');
+      return '';
+    }
+
+    direccionCache.set(clave,corta);
+
+    // Si el usuario ya escribió algo mientras respondía la consulta,
+    // no lo sobrescribimos salvo que haya pulsado Detectar manualmente.
+    if(forzar || !String(campo.value||'').trim()){
+      campo.value=corta;
+      campo.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+
+    setEstadoDireccionAuto('ok',`✓ Dirección detectada: ${corta}`);
+    return corta;
+
+  }catch(e){
+    if(e?.name==='AbortError'){
+      setEstadoDireccionAuto('warn','La consulta de dirección tardó demasiado.');
+    }else{
+      console.warn('Dirección automática:',e);
+      setEstadoDireccionAuto('warn','No fue posible detectar la dirección. Puedes escribirla manualmente.');
+    }
+    return '';
+  }
+}
+
+function detectarDireccionDesdeFormulario(){
+  const lat=Number(document.getElementById('LATITUDE')?.value);
+  const lon=Number(document.getElementById('LONGITUDE')?.value);
+  return detectarDireccionAutomatica(lat,lon,true);
+}
+
+function programarDireccionAutomaticaFormulario(lat,lon){
+  setTimeout(()=>{
+    // Solo para un registro NUEVO. Al editar nunca sobreescribimos
+    // una dirección que ya fue guardada.
+    if(!editingId){
+      detectarDireccionAutomatica(lat,lon,false);
+    }
+  },180);
+}
+
+
 function actualizarCentro(){const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;document.getElementById('centerInfo').innerHTML=`<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)} · ${registros.length} punto(s)`;}
-function irGPS(){if(!navigator.geolocation)return alert('Geolocalización no disponible.');navigator.geolocation.getCurrentPosition(p=>{const {latitude,longitude,accuracy}=p.coords;map.setView([latitude,longitude],19);if(gpsMarker)gpsMarker.remove();gpsMarker=L.circleMarker([latitude,longitude],{radius:8,color:'#fff',weight:3,fillColor:'#38bdf8',fillOpacity:1}).addTo(map).bindPopup(`GPS ±${Math.round(accuracy)} m`);},e=>alert('No fue posible obtener GPS: '+e.message),{enableHighAccuracy:true,timeout:15000,maximumAge:2000});}
+function actualizarPosicionGPS(pos){
+  if(!map||!pos?.coords)return;
+
+  const latitude=Number(pos.coords.latitude);
+  const longitude=Number(pos.coords.longitude);
+  const accuracy=Number(pos.coords.accuracy||0);
+
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
+
+  gpsUltimaPosicion={latitude,longitude,accuracy,timestamp:pos.timestamp||Date.now()};
+
+  if(!gpsMarker){
+    gpsMarker=L.circleMarker([latitude,longitude],{
+      radius:8,
+      color:'#fff',
+      weight:3,
+      fillColor:'#38bdf8',
+      fillOpacity:1,
+      pane:'markerPane'
+    }).addTo(map);
+  }else{
+    gpsMarker.setLatLng([latitude,longitude]);
+  }
+
+  gpsMarker
+    .bindPopup(`GPS ±${Math.round(accuracy||0)} m`)
+    .setTooltipContent?.(`GPS ±${Math.round(accuracy||0)} m`);
+
+  if(!gpsAccuracyCircle){
+    gpsAccuracyCircle=L.circle([latitude,longitude],{
+      radius:Math.max(accuracy||0,1),
+      color:'#38bdf8',
+      weight:1,
+      opacity:.7,
+      fillColor:'#38bdf8',
+      fillOpacity:.08,
+      interactive:false
+    }).addTo(map);
+  }else{
+    gpsAccuracyCircle.setLatLng([latitude,longitude]);
+    gpsAccuracyCircle.setRadius(Math.max(accuracy||0,1));
+  }
+
+  // Solo centra automáticamente cuando el usuario lo haya solicitado.
+  if(gpsSeguirCentro && !formOverlay?.classList?.contains('open')){
+    map.panTo([latitude,longitude],{
+      animate:true,
+      duration:.35
+    });
+  }
+}
+
+function errorSeguimientoGPS(e,mostrarAlerta=false){
+  console.warn('GPS:',e);
+
+  if(mostrarAlerta && !gpsErrorMostrado){
+    gpsErrorMostrado=true;
+    alert('No fue posible obtener GPS: '+(e?.message||e));
+  }
+}
+
+function iniciarSeguimientoGPS(mostrarAlerta=true){
+  if(!navigator.geolocation){
+    if(mostrarAlerta)alert('Geolocalización no disponible en este dispositivo.');
+    return;
+  }
+
+  if(gpsWatchId!==null)return;
+
+  gpsWatchId=navigator.geolocation.watchPosition(
+    actualizarPosicionGPS,
+    e=>errorSeguimientoGPS(e,mostrarAlerta),
+    {
+      enableHighAccuracy:true,
+      timeout:20000,
+      maximumAge:1000
+    }
+  );
+}
+
+function detenerSeguimientoGPS(){
+  if(gpsWatchId!==null && navigator.geolocation){
+    navigator.geolocation.clearWatch(gpsWatchId);
+  }
+  gpsWatchId=null;
+  gpsSeguirCentro=false;
+}
+
+function irGPS(){
+  if(!navigator.geolocation){
+    alert('Geolocalización no disponible.');
+    return;
+  }
+
+  iniciarSeguimientoGPS(true);
+  gpsSeguirCentro=true;
+
+  if(gpsUltimaPosicion){
+    const {latitude,longitude}=gpsUltimaPosicion;
+    map.setView([latitude,longitude],Math.max(map.getZoom(),19),{animate:true});
+  }
+}
 function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();}
 
 function llevarFormularioAlInicio(){
@@ -1894,7 +2212,11 @@ function cerrarFormulario(){
   limpiarMarcasObligatorias();
 }
 function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
-function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';otroPol.classList.add('hidden');actualizarEstadoDeteccionPoligono('', 'Detección automática por ubicación');}
+function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';
+otroPol.classList.add('hidden');
+actualizarEstadoDeteccionPoligono('', 'Detección automática por ubicación');
+setEstadoDireccionAuto('', 'Dirección automática por ubicación');
+}
 
 function tipoProyectoActivo(){
   return String(
@@ -4125,32 +4447,51 @@ function extensionFotoOriginal(f){
 
 let dcimZipPreparado=null;
 let dcimZipUrlTemporal='';
+let dcimFotosOriginalesPreparadas=[];
 
-function abrirCompartirDCIM(blobZip,agregadas,totalBytes){
+const DCIM_LOTE_MAX_ARCHIVOS=8;
+const DCIM_LOTE_MAX_BYTES=24*1024*1024;
+
+function crearArchivoCompartibleFoto(foto){
+  const blob=foto?.blob;
+  if(!(blob instanceof Blob))return null;
+  const nombre=String(foto?.nombre_compartir||foto?.nombre_original||'foto.jpg');
+  return new File([blob],nombre,{type:blob.type||foto?.mime||'image/jpeg',lastModified:Date.now()});
+}
+
+function construirLotesFotosCompartir(){
+  const lotes=[];
+  let actual=[];
+  let bytes=0;
+  for(const f of dcimFotosOriginalesPreparadas){
+    const archivo=crearArchivoCompartibleFoto(f);
+    if(!archivo)continue;
+    const size=Number(archivo.size||0);
+    if(actual.length && (actual.length>=DCIM_LOTE_MAX_ARCHIVOS || bytes+size>DCIM_LOTE_MAX_BYTES)){
+      lotes.push(actual);
+      actual=[];
+      bytes=0;
+    }
+    actual.push(archivo);
+    bytes+=size;
+  }
+  if(actual.length)lotes.push(actual);
+  return lotes;
+}
+
+function abrirCompartirDCIM(blobZip,agregadas,totalBytes,fotosPreparadas=[]){
   dcimZipPreparado=blobZip;
-
+  dcimFotosOriginalesPreparadas=fotosPreparadas||[];
   const info=document.getElementById('dcimShareInfo');
   if(info){
-    info.innerHTML=
-      `<b>DCIM.zip</b><br>`+
-      `${agregadas} fotografía(s) originales · ${formatearBytesStorage(totalBytes)}`;
+    info.innerHTML=`<b>DCIM.zip</b><br>${agregadas} fotografía(s) originales · ${formatearBytesStorage(totalBytes)}`;
   }
-
-  const btn=document.getElementById('btnCompartirDCIM');
-  if(btn){
-    const archivo=new File(
-      [blobZip],
-      'DCIM.zip',
-      {type:'application/zip',lastModified:Date.now()}
-    );
-
-    const puedeCompartir=
-      !!navigator.share &&
-      (!navigator.canShare || navigator.canShare({files:[archivo]}));
-
-    btn.style.display=puedeCompartir?'block':'none';
-  }
-
+  const btnZip=document.getElementById('btnCompartirDCIM');
+  if(btnZip)btnZip.style.display=navigator.share?'block':'none';
+  const btnFotos=document.getElementById('btnCompartirFotosDirecto');
+  if(btnFotos)btnFotos.style.display=(navigator.share && dcimFotosOriginalesPreparadas.length)?'block':'none';
+  const wrap=document.getElementById('dcimLotesWrap');
+  if(wrap)wrap.style.display='none';
   document.getElementById('dcimShareOverlay')?.classList.add('open');
 }
 
@@ -4158,74 +4499,68 @@ function cerrarCompartirDCIM(){
   document.getElementById('dcimShareOverlay')?.classList.remove('open');
 }
 
-async function compartirDCIMPreparado(){
-  if(!dcimZipPreparado){
-    alert('Primero debes preparar el archivo DCIM.zip.');
-    return;
-  }
+function mostrarLotesCompartirFotos(){
+  const lotes=construirLotesFotosCompartir();
+  const wrap=document.getElementById('dcimLotesWrap');
+  const lista=document.getElementById('dcimLotesLista');
+  if(!wrap||!lista)return;
+  if(!lotes.length){alert('No hay fotografías originales disponibles para compartir.');return;}
+  lista.innerHTML=lotes.map((lote,i)=>{
+    const bytes=lote.reduce((s,f)=>s+Number(f.size||0),0);
+    return `<button type="button" class="btn blue" style="width:100%;text-align:left" onclick="compartirLoteFotos(${i})">📲 Lote ${i+1} · ${lote.length} foto(s) · ${formatearBytesStorage(bytes)}</button>`;
+  }).join('');
+  wrap.style.display='block';
+}
 
-  const archivo=new File(
-    [dcimZipPreparado],
-    'DCIM.zip',
-    {type:'application/zip',lastModified:Date.now()}
-  );
-
-  if(!navigator.share){
-    alert('Este navegador no permite compartir archivos directamente. Usa "Descargar DCIM.zip".');
-    return;
-  }
-
+async function compartirLoteFotos(indice){
+  const lotes=construirLotesFotosCompartir();
+  const lote=lotes[Number(indice)];
+  if(!lote?.length){alert('No fue posible preparar este lote de fotografías.');return;}
+  if(!navigator.share){alert('Este navegador no permite compartir archivos directamente.');return;}
   try{
-    if(navigator.canShare && !navigator.canShare({files:[archivo]})){
-      alert('Este dispositivo no permite compartir archivos ZIP directamente. Usa "Descargar DCIM.zip".');
-      return;
-    }
-
-    await navigator.share({
-      files:[archivo],
-      title:'DCIM',
-      text:'Fotografías originales del levantamiento'
-    });
-
-    const hint=document.getElementById('stHint');
-    if(hint)hint.textContent='✅ DCIM.zip enviado al menú de compartir del dispositivo.';
+    if(navigator.canShare && !navigator.canShare({files:lote}))throw new Error('El navegador indicó que este lote no se puede compartir.');
+    await navigator.share({files:lote,title:`DCIM · Lote ${Number(indice)+1}`,text:`Fotografías originales del levantamiento · lote ${Number(indice)+1}`});
+    const hint=document.getElementById('dcimShareHint');
+    if(hint)hint.textContent=`✅ Lote ${Number(indice)+1} enviado al menú de compartir.`;
   }catch(e){
-    if(e?.name==='AbortError'){
-      return;
-    }
+    if(e?.name==='AbortError')return;
+    console.error('Error compartiendo lote de fotos:',e);
+    alert(`No fue posible compartir el lote ${Number(indice)+1}.\n\nError: ${e?.name||'Error'} · ${e?.message||e}\n\nPrueba con Chrome o utiliza Descargar DCIM.zip.`);
+  }
+}
 
+async function compartirDCIMPreparado(){
+  if(!dcimZipPreparado){alert('Primero debes preparar el archivo DCIM.zip.');return;}
+  const archivo=new File([dcimZipPreparado],'DCIM.zip',{type:'application/zip',lastModified:Date.now()});
+  if(!navigator.share){alert('Este navegador no permite compartir archivos directamente. Usa "Descargar DCIM.zip".');return;}
+  try{
+    if(navigator.canShare && !navigator.canShare({files:[archivo]}))throw new Error('El navegador no admite compartir archivos ZIP desde una página web.');
+    await navigator.share({files:[archivo],title:'DCIM'});
+    const hint=document.getElementById('dcimShareHint');
+    if(hint)hint.textContent='✅ DCIM.zip enviado al menú de compartir.';
+  }catch(e){
+    if(e?.name==='AbortError')return;
     console.error('Error compartiendo DCIM.zip:',e);
-    alert(
-      'No fue posible abrir el menú de compartir. '+
-      'Puedes usar el botón "Descargar DCIM.zip".'
-    );
+    const hint=document.getElementById('dcimShareHint');
+    if(hint)hint.textContent=`⚠️ ZIP no compartible directamente (${e?.name||'Error'}). Usa "Compartir fotos por WhatsApp / aplicaciones".`;
+    mostrarLotesCompartirFotos();
+    alert('Este navegador no pudo compartir DCIM.zip directamente.\n\nEsto puede ocurrir con ZIP grandes o porque el navegador no admite ZIP mediante el menú de compartir.\n\nYa te mostré los lotes de fotografías para compartirlos directamente por WhatsApp.');
   }
 }
 
 function descargarDCIMPreparado(){
-  if(!dcimZipPreparado){
-    alert('Primero debes preparar el archivo DCIM.zip.');
-    return;
-  }
-
-  if(dcimZipUrlTemporal){
-    try{URL.revokeObjectURL(dcimZipUrlTemporal)}catch(_){}
-  }
-
+  if(!dcimZipPreparado){alert('Primero debes preparar el archivo DCIM.zip.');return;}
+  if(dcimZipUrlTemporal){try{URL.revokeObjectURL(dcimZipUrlTemporal)}catch(_){}}
   dcimZipUrlTemporal=URL.createObjectURL(dcimZipPreparado);
-
   const a=document.createElement('a');
   a.href=dcimZipUrlTemporal;
   a.download='DCIM.zip';
   document.body.appendChild(a);
   a.click();
   a.remove();
-
-  setTimeout(()=>{
-    try{URL.revokeObjectURL(dcimZipUrlTemporal)}catch(_){}
-    dcimZipUrlTemporal='';
-  },10000);
+  setTimeout(()=>{try{URL.revokeObjectURL(dcimZipUrlTemporal)}catch(_){} dcimZipUrlTemporal='';},10000);
 }
+
 
 async function exportarFotosOriginalesZIP(){
   try{
@@ -4278,6 +4613,7 @@ async function exportarFotosOriginalesZIP(){
     const carpetaRaiz=zip.folder('DCIM');
 
     let agregadas=0;
+    const originalesParaCompartir=[];
 
     for(const f of fotos){
       if(!(f?.blob instanceof Blob))continue;
@@ -4296,10 +4632,20 @@ async function exportarFotosOriginalesZIP(){
       const ext=extensionFotoOriginal(f);
 
       // Carpeta por elemento para que WhatsApp/PC conserve el orden.
+      const nombreCompartir=`${idcampo}_${tipo}.${ext}`;
       const carpeta=carpetaRaiz.folder(idcampo);
-      carpeta.file(`${idcampo}_${tipo}.${ext}`,f.blob,{
+      carpeta.file(nombreCompartir,f.blob,{
         binary:true,
         compression:'STORE'
+      });
+
+      originalesParaCompartir.push({
+        blob:f.blob,
+        mime:f?.blob?.type||f?.mime||'image/jpeg',
+        nombre_original:f?.nombre_original||'',
+        nombre_compartir:nombreCompartir,
+        idcampo,
+        tipo
       });
 
       agregadas++;
@@ -4331,7 +4677,7 @@ async function exportarFotosOriginalesZIP(){
     // No descargamos automáticamente. Se abre una pantalla para que
     // el usuario pueda compartir DCIM.zip directamente por WhatsApp,
     // correo, Drive u otra aplicación instalada.
-    abrirCompartirDCIM(blobZip,agregadas,totalBytes);
+    abrirCompartirDCIM(blobZip,agregadas,totalBytes,originalesParaCompartir);
 
     if(hint){
       hint.textContent=
@@ -5697,6 +6043,7 @@ abrirFormulario=function(){
     actualizarEstadoDeteccionPoligono('ok',`✓ Ubicación dentro de ${POLIGONO.value}`);
     actualizarResaltadoObligatorios();
     llevarFormularioAlInicio();
+    programarDireccionAutomaticaFormulario(latMarcacion,lonMarcacion);
     return;
   }
 
@@ -5713,6 +6060,8 @@ abrirFormulario=function(){
   aplicarConfiguracionTipoProyecto();
   recalcularIds();
   llevarFormularioAlInicio();
+  const cDireccion=map.getCenter();
+  programarDireccionAutomaticaFormulario(cDireccion.lat,cDireccion.lng);
   setTimeout(actualizarResaltadoObligatorios,100);
 }
 recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();}
@@ -7925,9 +8274,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 
 <div class="overlay" id="dcimShareOverlay">
-  <div class="modal" style="width:min(520px,96vw);margin-top:8vh">
+  <div class="modal" style="width:min(560px,96vw);margin-top:4vh">
     <div class="modalHead">
-      <h2>📦 DCIM listo para compartir</h2>
+      <h2>📦 DCIM listo</h2>
       <button class="close" type="button" onclick="cerrarCompartirDCIM()">Cerrar</button>
     </div>
     <div class="body">
@@ -7936,27 +8285,45 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
       <button
-        id="btnCompartirDCIM"
+        id="btnCompartirFotosDirecto"
         class="btn blue"
+        type="button"
+        style="width:100%;margin-bottom:9px"
+        onclick="mostrarLotesCompartirFotos()"
+      >
+        📲 Compartir fotos por WhatsApp / aplicaciones
+      </button>
+
+      <button
+        id="btnCompartirDCIM"
+        class="btn"
         type="button"
         style="width:100%;margin-bottom:9px"
         onclick="compartirDCIMPreparado()"
       >
-        📲 Compartir DCIM.zip
+        📦 Intentar compartir DCIM.zip
       </button>
 
       <button
         class="btn"
         type="button"
-        style="width:100%"
+        style="width:100%;margin-bottom:10px"
         onclick="descargarDCIMPreparado()"
       >
         ⬇ Descargar DCIM.zip
       </button>
 
-      <div class="hint" style="margin-top:12px">
-        En Android se abrirá el menú de compartir del sistema. Allí podrás seleccionar WhatsApp,
-        correo, Drive u otra aplicación instalada.
+      <div id="dcimLotesWrap" style="display:none;margin-top:10px">
+        <div class="hint" style="margin-bottom:8px">
+          Para evitar que Android/Brave falle con archivos muy grandes, las fotos se comparten
+          en lotes pequeños. Toca cada lote y selecciona WhatsApp.
+        </div>
+        <div id="dcimLotesLista" style="display:grid;gap:7px"></div>
+      </div>
+
+      <div class="hint" id="dcimShareHint" style="margin-top:12px">
+        Algunos navegadores Android no permiten compartir archivos ZIP directamente desde una web.
+        En ese caso usa "Compartir fotos por WhatsApp / aplicaciones".
       </div>
     </div>
   </div>
@@ -8029,4 +8396,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
+
 
