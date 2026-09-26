@@ -1113,12 +1113,142 @@ body.lightTheme #formOverlay .photoPreview.previewLoading{
   background:#e2e8f0;
 }
 
+
+/* ===== LOGIN MAPPING INTEGRADO ===== */
+#embeddedMappingLogin{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:60000;
+  background:#050d16;
+}
+#embeddedMappingLogin.open{display:block}
+#embeddedMappingLogin iframe{
+  display:block;
+  width:100%;
+  height:100%;
+  border:0;
+  background:#050d16;
+}
+body.mappingLoginOpen{
+  overflow:hidden!important;
+}
+
+
+#direccionCompletaEstado{
+  display:block;
+  margin-top:5px;
+  font-size:10px;
+  line-height:1.35;
+}
+#direccionCompletaEstado.ok{
+  color:#22c55e!important;
+  font-weight:800;
+}
+#direccionCompletaEstado.warn{
+  color:#f59e0b!important;
+  font-weight:800;
+}
+body.lightTheme #direccionCompletaEstado.ok{color:#15803d!important}
+body.lightTheme #direccionCompletaEstado.warn{color:#b45309!important}
+
+
+/* ===== V77 · GPS CONTINUO ROBUSTO ===== */
+.gpsFab{
+  overflow:visible!important;
+}
+.gpsLiveDot{
+  position:relative;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:#22d3ee;
+  border:3px solid #fff;
+  box-shadow:
+    0 0 0 5px rgba(34,211,238,.20),
+    0 0 18px rgba(34,211,238,.90);
+}
+.gpsLiveDot::after{
+  content:"";
+  position:absolute;
+  inset:-9px;
+  border-radius:50%;
+  border:2px solid rgba(34,211,238,.72);
+  animation:gpsLivePulse 1.45s ease-out infinite;
+}
+@keyframes gpsLivePulse{
+  0%{transform:scale(.55);opacity:1}
+  100%{transform:scale(1.35);opacity:0}
+}
+.gpsLiveMarkerHost{
+  background:transparent!important;
+  border:0!important;
+}
+.gpsStatusPill{
+  position:fixed;
+  right:72px;
+  top:88px;
+  z-index:2501;
+  max-width:150px;
+  min-height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 9px;
+  border-radius:999px;
+  border:1px solid #0ea5e9;
+  background:rgba(7,17,31,.94);
+  color:#bae6fd;
+  font-size:9px;
+  line-height:1.2;
+  font-weight:900;
+  text-align:center;
+  box-shadow:0 6px 18px rgba(0,0,0,.30);
+  pointer-events:none;
+}
+.gpsStatusPill.ok{
+  border-color:#22c55e;
+  color:#bbf7d0;
+}
+.gpsStatusPill.warn{
+  border-color:#f59e0b;
+  color:#fde68a;
+}
+.gpsStatusPill.error{
+  border-color:#ef4444;
+  color:#fecaca;
+}
+body.lightTheme .gpsStatusPill{
+  background:rgba(255,255,255,.95);
+  color:#075985;
+}
+@media(max-width:700px){
+  .gpsStatusPill{
+    right:70px;
+    top:88px;
+    max-width:132px;
+    font-size:8px;
+    padding:5px 7px;
+  }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
 <body>
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · GPS continuo · dirección automática corta</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
-<div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div><button class="gpsFab" onclick="irGPS()" title="Ir a mi GPS">📍</button><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
+
+<div id="embeddedMappingLogin" aria-label="Ingreso PDR-APP Mapping">
+  <iframe
+    id="embeddedMappingLoginFrame"
+    title="PDR-APP Mapping Login"
+    allow="clipboard-read; clipboard-write"
+  ></iframe>
+</div>
+
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · GPS continuo robusto · COSTADO/RIENDA fijables</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
+<button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
+<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav>
@@ -1147,14 +1277,7 @@ body.lightTheme #formOverlay .photoPreview.previewLoading{
   </div>
 </div>
 
-<div class="authOverlay" id="authOverlay" style="display:none">
-  <div class="authCard">
-    <h2>Ingreso Técnico - Mapping</h2>
-    <label>Correo</label><input id="loginEmail" type="email" placeholder="tecnico@empresa.com">
-    <label>Contraseña</label><input id="loginPassword" type="password" placeholder="Contraseña">
-    <button class="btn" style="width:100%;margin-top:12px" onclick="loginMapping()">Ingresar</button>
-    <div class="authMsg" id="loginMsg">Inicia sesión para ver los proyectos que te han asignado.</div>
-  </div>
+
 </div>
 
 <div id="sinProyectoLock" class="sinProyectoLock">
@@ -1206,10 +1329,17 @@ body.lightTheme #formOverlay .photoPreview.previewLoading{
 <div id="wrapDireccion">
   <label>DIRECCION <span class="req">*</span></label>
   <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
-    <input id="DIRECCION" placeholder="Ej: Calle 45A #30">
+    <input
+      id="DIRECCION"
+      placeholder="Ej: Calle 15 # 20-34"
+      autocomplete="street-address"
+      oninput="actualizarEstadoDireccionCompleta()"
+      onblur="normalizarDireccionCampo()"
+    >
     <button type="button" class="btn blue" style="width:auto;padding:9px 10px;font-size:10px" onclick="detectarDireccionDesdeFormulario()">📍 Detectar</button>
   </div>
   <small id="direccionAutoEstado" class="poligonoAutoEstado">Dirección automática por ubicación</small>
+  <small id="direccionCompletaEstado" class="fieldHelp">Completa la nomenclatura. Ejemplo: <b>Calle 15 # 20-34</b>.</small>
 </div>
 <div id="wrapCostado"><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
 </div></div></div>
@@ -1289,6 +1419,10 @@ let gpsWatchId=null;
 let gpsUltimaPosicion=null;
 let gpsSeguirCentro=false;
 let gpsErrorMostrado=false;
+let gpsActivado=false;
+let gpsUltimaActualizacionMs=0;
+let gpsWatchdogTimer=null;
+let gpsConsultaEnCurso=false;
 let hyb=null,osm=null,darkBase=null,baseMapApagado=false;
 let poligonosAsignados=[];
 let poligonosAsignadosSet=new Set();
@@ -1316,6 +1450,14 @@ function init(){
   const panePoligonos=map.createPane('poligonosPane');
   panePoligonos.classList.add('leaflet-poligonos-pane');
   panePoligonos.style.zIndex='330';
+
+  const paneGpsAccuracy=map.createPane('gpsAccuracyPane');
+  paneGpsAccuracy.style.zIndex='590';
+  paneGpsAccuracy.style.pointerEvents='none';
+
+  const paneGps=map.createPane('gpsPane');
+  paneGps.style.zIndex='1250';
+  paneGps.style.pointerEvents='none';
 
   hyb=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
     subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'
@@ -1353,9 +1495,10 @@ function init(){
   actualizarCentro();
   pintarRegistros();
 
-  // Seguimiento continuo. En GitHub Pages funciona bajo HTTPS.
-  // No fuerza el centro hasta que el usuario pulse el botón GPS.
-  setTimeout(()=>iniciarSeguimientoGPS(false),600);
+  // No solicitamos permiso de ubicación detrás del login.
+  // Si el permiso ya estaba concedido, el GPS arranca solo.
+  // Si aún no existe permiso, el usuario lo activa tocando 📍.
+  setTimeout(prepararGPSInicial,600);
 }
 function orientarMapaNorte(){
   if(!map)return;
@@ -1861,6 +2004,73 @@ const direccionCache=new Map();
 let direccionUltimaConsultaMs=0;
 let direccionAbortController=null;
 
+
+function normalizarDireccionColombia(v){
+  let s=limpiarTextoDireccion(v);
+  if(!s)return '';
+
+  s=s
+    .replace(/\s*#\s*/g,' # ')
+    .replace(/\s*-\s*/g,'-')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  // Letras de nomenclatura en mayúscula: 15a -> 15A.
+  s=s.replace(/(\d+)\s*([a-z])\b/gi,(_,n,l)=>`${n}${String(l).toUpperCase()}`);
+  return s;
+}
+
+function direccionCompletaColombia(v){
+  const s=normalizarDireccionColombia(v).toUpperCase();
+  if(!s)return false;
+
+  const partes=s.split('#');
+  if(partes.length<2)return false;
+
+  const via=partes[0].trim();
+  const placa=partes.slice(1).join('#').trim();
+
+  // Debe existir un número de vía antes del # y una placa tipo 20-34,
+  // permitiendo letras/BIS habituales de la nomenclatura colombiana.
+  if(!/\d/.test(via))return false;
+
+  return /^\d+[A-Z]?(?:\s+BIS(?:\s+[A-Z])?)?\s*-\s*\d+[A-Z]?(?:\s+\w+)?$/i.test(placa);
+}
+
+function actualizarEstadoDireccionCompleta(){
+  const campo=document.getElementById('DIRECCION');
+  const estado=document.getElementById('direccionCompletaEstado');
+  if(!campo||!estado)return;
+
+  const valor=String(campo.value||'').trim();
+
+  if(!valor){
+    estado.className='fieldHelp warn';
+    estado.innerHTML='Completa la nomenclatura. Ejemplo: <b>Calle 15 # 20-34</b>.';
+    return;
+  }
+
+  if(direccionCompletaColombia(valor)){
+    estado.className='fieldHelp ok';
+    estado.textContent='✓ Dirección completa.';
+  }else{
+    estado.className='fieldHelp warn';
+    estado.innerHTML='Falta completar la placa. Ejemplo: <b>Calle 15 # 20-34</b>.';
+  }
+
+  // Forzar actualización visual del obligatorio DIRECCION.
+  const el=document.getElementById('DIRECCION');
+  if(el)delete el.dataset.requiredVisualState;
+  requestAnimationFrame(actualizarResaltadoObligatorios);
+}
+
+function normalizarDireccionCampo(){
+  const campo=document.getElementById('DIRECCION');
+  if(!campo)return;
+  campo.value=normalizarDireccionColombia(campo.value);
+  actualizarEstadoDireccionCompleta();
+}
+
 function limpiarTextoDireccion(v){
   return String(v||'')
     .replace(/\s+/g,' ')
@@ -2018,7 +2228,13 @@ async function detectarDireccionAutomatica(lat,lon,forzar=false){
       campo.dispatchEvent(new Event('input',{bubbles:true}));
     }
 
-    setEstadoDireccionAuto('ok',`✓ Dirección detectada: ${corta}`);
+    if(direccionCompletaColombia(corta)){
+      setEstadoDireccionAuto('ok',`✓ Dirección detectada: ${corta}`);
+    }else{
+      setEstadoDireccionAuto('warn',`Vía detectada: ${corta}. Completa manualmente la placa después del #.`);
+    }
+
+    actualizarEstadoDireccionCompleta();
     return corta;
 
   }catch(e){
@@ -2050,6 +2266,33 @@ function programarDireccionAutomaticaFormulario(lat,lon){
 
 
 function actualizarCentro(){const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;document.getElementById('centerInfo').innerHTML=`<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)} · ${registros.length} punto(s)`;}
+function setEstadoGPS(tipo,texto){
+  const pill=document.getElementById('gpsStatusPill');
+  if(pill){
+    pill.className='gpsStatusPill'+(tipo?` ${tipo}`:'');
+    pill.textContent=texto;
+  }
+
+  const btn=document.getElementById('gpsFabBtn');
+  if(btn){
+    btn.title=texto;
+    btn.style.background=tipo==='error'
+      ? '#dc2626'
+      : tipo==='ok'
+        ? '#0891b2'
+        : '#0ea5e9';
+  }
+}
+
+function crearIconoGPS(){
+  return L.divIcon({
+    className:'gpsLiveMarkerHost',
+    html:'<div class="gpsLiveDot"></div>',
+    iconSize:[28,28],
+    iconAnchor:[14,14]
+  });
+}
+
 function actualizarPosicionGPS(pos){
   if(!map||!pos?.coords)return;
 
@@ -2059,99 +2302,290 @@ function actualizarPosicionGPS(pos){
 
   if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
 
-  gpsUltimaPosicion={latitude,longitude,accuracy,timestamp:pos.timestamp||Date.now()};
+  gpsActivado=true;
+  gpsUltimaActualizacionMs=Date.now();
+  gpsUltimaPosicion={
+    latitude,
+    longitude,
+    accuracy,
+    altitude:pos.coords.altitude??null,
+    heading:pos.coords.heading??null,
+    speed:pos.coords.speed??null,
+    timestamp:pos.timestamp||Date.now()
+  };
 
   if(!gpsMarker){
-    gpsMarker=L.circleMarker([latitude,longitude],{
-      radius:8,
-      color:'#fff',
-      weight:3,
-      fillColor:'#38bdf8',
-      fillOpacity:1,
-      pane:'markerPane'
+    gpsMarker=L.marker([latitude,longitude],{
+      icon:crearIconoGPS(),
+      pane:'gpsPane',
+      interactive:false,
+      keyboard:false,
+      zIndexOffset:10000
     }).addTo(map);
   }else{
     gpsMarker.setLatLng([latitude,longitude]);
   }
 
-  gpsMarker
-    .bindPopup(`GPS ±${Math.round(accuracy||0)} m`)
-    .setTooltipContent?.(`GPS ±${Math.round(accuracy||0)} m`);
-
   if(!gpsAccuracyCircle){
     gpsAccuracyCircle=L.circle([latitude,longitude],{
       radius:Math.max(accuracy||0,1),
       color:'#38bdf8',
-      weight:1,
-      opacity:.7,
+      weight:1.5,
+      opacity:.75,
       fillColor:'#38bdf8',
-      fillOpacity:.08,
-      interactive:false
+      fillOpacity:.10,
+      interactive:false,
+      pane:'gpsAccuracyPane'
     }).addTo(map);
   }else{
     gpsAccuracyCircle.setLatLng([latitude,longitude]);
     gpsAccuracyCircle.setRadius(Math.max(accuracy||0,1));
   }
 
-  // Solo centra automáticamente cuando el usuario lo haya solicitado.
+  try{gpsMarker.setZIndexOffset?.(10000)}catch(_){}
+
+  const acc=Math.round(accuracy||0);
+  setEstadoGPS('ok',`GPS ±${acc} m`);
+
+  // Si el usuario pidió seguimiento, la mira central acompaña al GPS.
+  // El marcador GPS SIEMPRE se mueve aunque el técnico desplace el mapa.
   if(gpsSeguirCentro && !formOverlay?.classList?.contains('open')){
     map.panTo([latitude,longitude],{
-      animate:true,
-      duration:.35
+      animate:false
     });
   }
 }
 
+function codigoErrorGPS(e){
+  const c=Number(e?.code||0);
+  if(c===1)return 'PERMISO_DENEGADO';
+  if(c===2)return 'POSICION_NO_DISPONIBLE';
+  if(c===3)return 'TIMEOUT';
+  return 'GPS_ERROR';
+}
+
 function errorSeguimientoGPS(e,mostrarAlerta=false){
-  console.warn('GPS:',e);
+  const codigo=codigoErrorGPS(e);
+  console.warn('GPS:',codigo,e);
+
+  if(codigo==='PERMISO_DENEGADO'){
+    setEstadoGPS('error','GPS: permiso bloqueado');
+
+    // Un watch creado antes de conceder permiso puede quedar inutilizable.
+    // Lo liberamos para que tocar 📍 pueda crear uno nuevo.
+    if(gpsWatchId!==null && navigator.geolocation){
+      try{navigator.geolocation.clearWatch(gpsWatchId)}catch(_){}
+    }
+    gpsWatchId=null;
+    gpsActivado=false;
+  }else if(codigo==='TIMEOUT'){
+    setEstadoGPS('warn','GPS: buscando señal…');
+  }else{
+    setEstadoGPS('warn','GPS: sin posición');
+  }
 
   if(mostrarAlerta && !gpsErrorMostrado){
     gpsErrorMostrado=true;
-    alert('No fue posible obtener GPS: '+(e?.message||e));
-  }
-}
 
-function iniciarSeguimientoGPS(mostrarAlerta=true){
-  if(!navigator.geolocation){
-    if(mostrarAlerta)alert('Geolocalización no disponible en este dispositivo.');
-    return;
-  }
-
-  if(gpsWatchId!==null)return;
-
-  gpsWatchId=navigator.geolocation.watchPosition(
-    actualizarPosicionGPS,
-    e=>errorSeguimientoGPS(e,mostrarAlerta),
-    {
-      enableHighAccuracy:true,
-      timeout:20000,
-      maximumAge:1000
+    let mensaje='No fue posible obtener la ubicación GPS.';
+    if(codigo==='PERMISO_DENEGADO'){
+      mensaje=
+        'El navegador no tiene permiso para usar tu ubicación.\n\n'+
+        'Habilita Ubicación para este sitio en el navegador y vuelve a tocar el botón GPS 📍.';
+    }else if(codigo==='TIMEOUT'){
+      mensaje=
+        'El GPS tardó demasiado en responder.\n\n'+
+        'Verifica que la ubicación del celular esté activada y vuelve a intentarlo.';
     }
-  );
+
+    alert(mensaje);
+  }
 }
 
 function detenerSeguimientoGPS(){
   if(gpsWatchId!==null && navigator.geolocation){
-    navigator.geolocation.clearWatch(gpsWatchId);
+    try{navigator.geolocation.clearWatch(gpsWatchId)}catch(_){}
   }
+
   gpsWatchId=null;
   gpsSeguirCentro=false;
+
+  if(gpsWatchdogTimer){
+    clearInterval(gpsWatchdogTimer);
+    gpsWatchdogTimer=null;
+  }
 }
 
-function irGPS(){
+function iniciarWatchGPS(forzarReinicio=false){
+  if(!navigator.geolocation)return false;
+
+  if(forzarReinicio && gpsWatchId!==null){
+    try{navigator.geolocation.clearWatch(gpsWatchId)}catch(_){}
+    gpsWatchId=null;
+  }
+
+  if(gpsWatchId!==null)return true;
+
+  try{
+    gpsWatchId=navigator.geolocation.watchPosition(
+      actualizarPosicionGPS,
+      e=>errorSeguimientoGPS(e,false),
+      {
+        enableHighAccuracy:true,
+        timeout:15000,
+        maximumAge:0
+      }
+    );
+
+    return true;
+  }catch(e){
+    gpsWatchId=null;
+    errorSeguimientoGPS(e,false);
+    return false;
+  }
+}
+
+function obtenerGPSAhora(mostrarAlerta=false){
+  if(!navigator.geolocation){
+    if(mostrarAlerta)alert('Geolocalización no disponible en este dispositivo.');
+    return Promise.reject(new Error('Geolocalización no disponible'));
+  }
+
+  if(gpsConsultaEnCurso)return Promise.resolve(gpsUltimaPosicion);
+
+  gpsConsultaEnCurso=true;
+  setEstadoGPS('warn','GPS: buscando…');
+
+  return new Promise((resolve,reject)=>{
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        gpsConsultaEnCurso=false;
+        gpsErrorMostrado=false;
+        actualizarPosicionGPS(pos);
+        resolve(gpsUltimaPosicion);
+      },
+      e=>{
+        gpsConsultaEnCurso=false;
+        errorSeguimientoGPS(e,mostrarAlerta);
+        reject(e);
+      },
+      {
+        enableHighAccuracy:true,
+        timeout:15000,
+        maximumAge:0
+      }
+    );
+  });
+}
+
+function iniciarWatchdogGPS(){
+  if(gpsWatchdogTimer)return;
+
+  gpsWatchdogTimer=setInterval(()=>{
+    if(
+      !gpsActivado ||
+      document.visibilityState!=='visible' ||
+      !mappingUser
+    )return;
+
+    const antiguedad=Date.now()-Number(gpsUltimaActualizacionMs||0);
+
+    // Algunos Android detienen silenciosamente watchPosition.
+    // Si pasan 8 s sin posición, hacemos una lectura fresca.
+    if(antiguedad>8000){
+      obtenerGPSAhora(false).catch(()=>{});
+    }
+
+    // Si pasan 20 s, recreamos también el watch.
+    if(antiguedad>20000){
+      iniciarWatchGPS(true);
+    }
+  },5000);
+}
+
+async function prepararGPSInicial(){
+  if(!navigator.geolocation){
+    setEstadoGPS('error','GPS no disponible');
+    return;
+  }
+
+  setEstadoGPS('warn','GPS: toca 📍');
+
+  try{
+    if(navigator.permissions?.query){
+      const permiso=await navigator.permissions.query({name:'geolocation'});
+
+      if(permiso.state==='granted'){
+        gpsActivado=true;
+        iniciarWatchGPS(true);
+        iniciarWatchdogGPS();
+        obtenerGPSAhora(false).catch(()=>{});
+      }else if(permiso.state==='denied'){
+        setEstadoGPS('error','GPS: permiso bloqueado');
+      }else{
+        setEstadoGPS('warn','GPS: toca 📍 para activar');
+      }
+
+      permiso.onchange=()=>{
+        if(permiso.state==='granted'){
+          gpsActivado=true;
+          iniciarWatchGPS(true);
+          iniciarWatchdogGPS();
+          obtenerGPSAhora(false).catch(()=>{});
+        }else if(permiso.state==='denied'){
+          detenerSeguimientoGPS();
+          setEstadoGPS('error','GPS: permiso bloqueado');
+        }else{
+          setEstadoGPS('warn','GPS: toca 📍 para activar');
+        }
+      };
+
+      return;
+    }
+  }catch(e){
+    console.warn('Permissions API GPS:',e);
+  }
+
+  // En navegadores sin Permissions API no generamos automáticamente
+  // un diálogo de permiso: se solicita al tocar el botón GPS.
+  setEstadoGPS('warn','GPS: toca 📍 para activar');
+}
+
+async function irGPS(){
   if(!navigator.geolocation){
     alert('Geolocalización no disponible.');
     return;
   }
 
-  iniciarSeguimientoGPS(true);
+  // Esta función se ejecuta desde un toque del usuario, por lo que es
+  // el momento correcto para solicitar permiso en Android/Brave/Chrome.
+  gpsErrorMostrado=false;
   gpsSeguirCentro=true;
+  gpsActivado=true;
 
-  if(gpsUltimaPosicion){
-    const {latitude,longitude}=gpsUltimaPosicion;
-    map.setView([latitude,longitude],Math.max(map.getZoom(),19),{animate:true});
-  }
+  iniciarWatchGPS(true);
+  iniciarWatchdogGPS();
+
+  try{
+    const p=await obtenerGPSAhora(true);
+
+    if(p){
+      map.setView(
+        [p.latitude,p.longitude],
+        Math.max(map.getZoom(),19),
+        {animate:false}
+      );
+    }
+  }catch(_){}
 }
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && gpsActivado){
+    iniciarWatchGPS(true);
+    obtenerGPSAhora(false).catch(()=>{});
+  }
+});
+
 function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();}
 
 function llevarFormularioAlInicio(){
@@ -2216,6 +2650,7 @@ function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readon
 otroPol.classList.add('hidden');
 actualizarEstadoDeteccionPoligono('', 'Detección automática por ubicación');
 setEstadoDireccionAuto('', 'Dirección automática por ubicación');
+actualizarEstadoDireccionCompleta();
 }
 
 function tipoProyectoActivo(){
@@ -2252,6 +2687,46 @@ function actualizarIndicadorTipoProyecto(){
   if(campo)campo.value=tipo;
 }
 
+
+
+function esProyectoViabilidad(){
+  return tipoProyectoActivo()==='VIABILIDAD';
+}
+
+async function aplicarCX1AutomaticoViabilidad(){
+  if(!esProyectoViabilidad())return;
+
+  const cons=Number(CONSECUTIV?.value||0);
+  const cx1=document.getElementById('CX1');
+  if(!cx1)return;
+
+  // Primer elemento: no existe un elemento anterior.
+  if(!Number.isFinite(cons) || cons<=1){
+    cx1.value='0';
+    cx1.readOnly=true;
+    cx1.title='El primer elemento no requiere CX1.';
+    return;
+  }
+
+  const anterior=cons-1;
+  cx1.value=String(anterior);
+  cx1.readOnly=true;
+  cx1.title=`CX1 automático: consecutivo anterior (${anterior}).`;
+
+  try{
+    await precalcularCX(1);
+  }catch(e){
+    console.warn('No fue posible precalcular CX1 automático:',e);
+  }
+
+  const hint=document.getElementById('conexionesHint');
+  if(hint && !esClienteViabilidad()){
+    hint.innerHTML=
+      `Proyecto <b>VIABILIDAD</b>: CX1 se asigna automáticamente al consecutivo anterior `+
+      `(<b>${anterior}</b>). El primer elemento del polígono no solicita conexión. `+
+      `CX2, CX3 y CX4 siguen disponibles si necesitas registrar conexiones adicionales.`;
+  }
+}
 
 function esClienteViabilidad(){
   return tipoProyectoActivo()==='VIABILIDAD' && String(TIPO?.value||'').toUpperCase()==='CLIENTE';
@@ -2325,7 +2800,14 @@ async function configurarConexionCliente(){
 
 function restaurarConexionNoCliente(){
   const cx1=document.getElementById('CX1');
-  if(cx1){cx1.readOnly=false;cx1.title='';}
+  if(cx1){
+    if(esProyectoViabilidad()){
+      cx1.readOnly=true;
+    }else{
+      cx1.readOnly=false;
+      cx1.title='';
+    }
+  }
 
   const telWrap=document.getElementById('TELCX1')?.closest('div');
   if(telWrap)telWrap.style.display='';
@@ -2345,7 +2827,11 @@ function restaurarConexionNoCliente(){
   if(otro)otro.style.display='';
 
   const hint=document.getElementById('conexionesHint');
-  if(hint)hint.innerHTML='Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.';
+  if(hint){
+    hint.innerHTML=esProyectoViabilidad()
+      ? 'Proyecto <b>VIABILIDAD</b>: desde el segundo elemento, CX1 se diligencia automáticamente con el consecutivo anterior. El primer elemento no solicita CX. CX2, CX3 y CX4 permanecen disponibles para conexiones adicionales.'
+      : 'Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.';
+  }
 }
 
 function aplicarVistaClienteViabilidad(){
@@ -2515,6 +3001,11 @@ function aplicarConfiguracionTipoProyecto(){
   }
 
   aplicarVistaClienteViabilidad();
+
+  if(esProyectoViabilidad()){
+    setTimeout(aplicarCX1AutomaticoViabilidad,0);
+  }
+
   setTimeout(actualizarResaltadoObligatorios,0);
 }
 
@@ -2771,6 +3262,10 @@ function actualizarVisibilidadSeccionConexiones(){
     restaurarConexionNoCliente();
   }
 
+  if(esProyectoViabilidad()){
+    setTimeout(aplicarCX1AutomaticoViabilidad,0);
+  }
+
   actualizarResaltadoObligatorios();
 }
 
@@ -2800,7 +3295,7 @@ function ajustarConexionesEdicion(r){
   actualizarVisibilidadSeccionConexiones();
 }
 function toggleOtroPol(){otroPol.classList.toggle('hidden',CXOTROPOL.value!=='SI')}
-function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();if(esClienteViabilidad())setTimeout(configurarConexionCliente,0);}
+function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();if(esProyectoViabilidad())setTimeout(aplicarCX1AutomaticoViabilidad,0);if(esClienteViabilidad())setTimeout(configurarConexionCliente,0);}
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
 
 function obtenerCamposObligatoriosActivos(){
@@ -2843,10 +3338,17 @@ function campoEstaVacio(id){
     return !Number.isFinite(n) || n<=0;
   }
 
-  // En CX normales, 0 significa sin conexión. Para CLIENTE CX1 debe ser >0.
+  // En VIABILIDAD, desde el segundo elemento CX1 siempre corresponde
+  // automáticamente al consecutivo anterior, por lo que debe ser > 0.
   if(/^CX[1-4]$/.test(id)){
-    if(id==='CX1' && esClienteViabilidad())return !(Number(el.value)>0);
+    if(id==='CX1' && esProyectoViabilidad() && Number(CONSECUTIV?.value||0)>=2){
+      return !(Number(el.value)>0);
+    }
     return String(el.value??'').trim()==='';
+  }
+
+  if(id==='DIRECCION'){
+    return !direccionCompletaColombia(el.value);
   }
 
   return String(el.value??'').trim()==='';
@@ -3548,6 +4050,18 @@ function validar(){
 
   const t=TIPO.value;
 
+  if(val('DIRECCION') && !direccionCompletaColombia(val('DIRECCION'))){
+    marcarObligatoriosFaltantes(['DIRECCION']);
+    enfocarPrimerObligatorioFaltante(['DIRECCION']);
+    alert(
+      'La DIRECCIÓN está incompleta.\n\n'+
+      'La aplicación puede detectar automáticamente la vía, por ejemplo "Calle 15", '+
+      'pero el técnico debe completar la placa.\n\n'+
+      'Ejemplo correcto: Calle 15 # 20-34'
+    );
+    return false;
+  }
+
   if(esClienteViabilidad()){
     const consCliente=Number(CONSECUTIV.value||0);
     const previo=consCliente-1;
@@ -3651,9 +4165,9 @@ function validar(){
         return false;
       }
 
-      if(esClienteViabilidad() && i===1 && x!==cons-1){
+      if(esProyectoViabilidad() && i===1 && x!==cons-1){
         CX1.value=String(cons-1);
-        alert(`Para CLIENTE, CX1 se asigna automáticamente al elemento anterior (${cons-1}).`);
+        alert(`En proyectos VIABILIDAD, CX1 se asigna automáticamente al elemento anterior (${cons-1}).`);
         return false;
       }
 
@@ -3704,7 +4218,7 @@ function validar(){
   return true;
 }
 
-function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -4057,6 +4571,67 @@ const MAPPING_SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
 const MAPPING_SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
 const N8N_WEBHOOK_FOTOS='https://ftth-n8n2.pzveh5.easypanel.host/webhook/0d9408c7-3f81-4596-a098-8660bfabc0db';
 const mappingSb=supabase.createClient(MAPPING_SUPABASE_URL,MAPPING_SUPABASE_ANON);
+
+const EMBEDDED_MAPPING_LOGIN_B64='PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVzIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEsIHZpZXdwb3J0LWZpdD1jb3ZlciIgLz4KPG1ldGEgbmFtZT0idGhlbWUtY29sb3IiIGNvbnRlbnQ9IiMwNzExMWQiIC8+Cjx0aXRsZT5QRFItQVBQIHwgTG9naW4gTWFwcGluZzwvdGl0bGU+Cgo8c3R5bGU+CiAgOnJvb3R7CiAgICAtLWJnLTE6IzA0MGIxNDsKICAgIC0tYmctMjojMDcxOTJhOwogICAgLS1iZy0zOiMwMzEwMWQ7CiAgICAtLWN5YW46IzIyZGZmMjsKICAgIC0tY3lhbi0yOiM0OWYxZDE7CiAgICAtLWxpbmU6cmdiYSg4OCwyMjAsMjU1LC4yMCk7CiAgICAtLXBhbmVsOnJnYmEoOCwyMSwzNiwuNDIpOwogICAgLS1wYW5lbC1zdHJvbmc6cmdiYSg4LDIxLDM2LC41OCk7CiAgICAtLXRleHQ6I2Y0ZjlmZjsKICAgIC0tbXV0ZWQ6I2E4YmJjYzsKICB9CgogICp7Ym94LXNpemluZzpib3JkZXItYm94fQogIGh0bWwsYm9keXsKICAgIG1hcmdpbjowOwogICAgd2lkdGg6MTAwJTsKICAgIG1pbi1oZWlnaHQ6MTAwJTsKICAgIGJhY2tncm91bmQ6IzA1MGQxNjsKICAgIGZvbnQtZmFtaWx5OkludGVyLFNlZ29lIFVJLEFyaWFsLEhlbHZldGljYSxzYW5zLXNlcmlmOwogICAgLXdlYmtpdC1mb250LXNtb290aGluZzphbnRpYWxpYXNlZDsKICAgIC1tb3otb3N4LWZvbnQtc21vb3RoaW5nOmdyYXlzY2FsZTsKICAgIHRleHQtcmVuZGVyaW5nOm9wdGltaXplTGVnaWJpbGl0eTsKICB9CgogIGJvZHl7CiAgICBtaW4taGVpZ2h0OjEwMHN2aDsKICAgIG92ZXJmbG93OmhpZGRlbjsKICAgIGNvbG9yOnZhcigtLXRleHQpOwogIH0KCiAgLnN0YWdlewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICB3aWR0aDoxMDB2dzsKICAgIGhlaWdodDoxMDBzdmg7CiAgICBvdmVyZmxvdzpoaWRkZW47CiAgICBiYWNrZ3JvdW5kOgogICAgICByYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDUwJSAxOCUsIHJnYmEoMzMsMjEwLDI0NSwuMTIpLCB0cmFuc3BhcmVudCAyNCUpLAogICAgICByYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDgyJSAyNiUsIHJnYmEoNzEsMjQxLDIwOSwuMDgpLCB0cmFuc3BhcmVudCAxOCUpLAogICAgICByYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDIwJSA4MCUsIHJnYmEoMzQsMTQzLDI1NSwuMDcpLCB0cmFuc3BhcmVudCAyNCUpLAogICAgICBsaW5lYXItZ3JhZGllbnQoMTgwZGVnLCB2YXIoLS1iZy0xKSAwJSwgdmFyKC0tYmctMikgNTUlLCB2YXIoLS1iZy0zKSAxMDAlKTsKICB9CgogIC5tZXNoewogICAgcG9zaXRpb246YWJzb2x1dGU7CiAgICBpbnNldDowOwogICAgYmFja2dyb3VuZDoKICAgICAgbGluZWFyLWdyYWRpZW50KHRyYW5zcGFyZW50IDAgOTglLCByZ2JhKDI1NSwyNTUsMjU1LC4wMTgpIDEwMCUpLAogICAgICBsaW5lYXItZ3JhZGllbnQoOTBkZWcsIHRyYW5zcGFyZW50IDAgOTglLCByZ2JhKDI1NSwyNTUsMjU1LC4wMTYpIDEwMCUpOwogICAgYmFja2dyb3VuZC1zaXplOjcycHggNzJweCw3MnB4IDcycHg7CiAgICBvcGFjaXR5Oi4xMjsKICAgIG1hc2staW1hZ2U6bGluZWFyLWdyYWRpZW50KHRvIGJvdHRvbSwgcmdiYSgwLDAsMCwuNzUpLCByZ2JhKDAsMCwwLC4yMikpOwogICAgei1pbmRleDowOwogICAgcG9pbnRlci1ldmVudHM6bm9uZTsKICB9CgogIC5hbWJpZW50ewogICAgcG9zaXRpb246YWJzb2x1dGU7CiAgICBpbnNldDotMTAlOwogICAgZmlsdGVyOmJsdXIoNDJweCk7CiAgICBvcGFjaXR5Oi42NTsKICAgIHotaW5kZXg6MDsKICAgIHBvaW50ZXItZXZlbnRzOm5vbmU7CiAgICBiYWNrZ3JvdW5kOgogICAgICByYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDE4JSAyNSUsIHJnYmEoMzAsMjIwLDI1NSwuMTIpLCB0cmFuc3BhcmVudCAyMCUpLAogICAgICByYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDgwJSAyMCUsIHJnYmEoNTMsMTE1LDI1NSwuMTApLCB0cmFuc3BhcmVudCAyMCUpLAogICAgICByYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDUwJSA4MCUsIHJnYmEoNzAsMjQxLDIwOSwuMDkpLCB0cmFuc3BhcmVudCAxOCUpOwogIH0KCiAgI25ldHdvcmtDYW52YXN7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIGluc2V0OjA7CiAgICB3aWR0aDoxMDAlOwogICAgaGVpZ2h0OjEwMCU7CiAgICB6LWluZGV4OjE7CiAgICBwb2ludGVyLWV2ZW50czpub25lOwogIH0KCiAgLnNoZWxsewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICB6LWluZGV4OjM7CiAgICB3aWR0aDoxMDAlOwogICAgaGVpZ2h0OjEwMCU7CiAgICBkaXNwbGF5OmdyaWQ7CiAgICBwbGFjZS1pdGVtczpjZW50ZXI7CiAgICBwYWRkaW5nOjI0cHg7CiAgfQoKICAubG9naW4tY2FyZHsKICAgIHBvc2l0aW9uOnJlbGF0aXZlOwogICAgd2lkdGg6bWluKDkydncsIDQ3MHB4KTsKICAgIGJvcmRlci1yYWRpdXM6MjhweDsKICAgIHBhZGRpbmc6MzRweCAzMHB4IDI4cHg7CiAgICBib3JkZXI6MXB4IHNvbGlkIHJnYmEoOTIsMjI4LDI1NSwuMjQpOwogICAgYmFja2dyb3VuZDoKICAgICAgbGluZWFyLWdyYWRpZW50KDE4MGRlZywgcmdiYSgxMCwyNiw0MywuNDIpLCByZ2JhKDYsMTgsMzEsLjMwKSk7CiAgICBiYWNrZHJvcC1maWx0ZXI6Ymx1cigxOHB4KSBzYXR1cmF0ZSgxNDAlKTsKICAgIC13ZWJraXQtYmFja2Ryb3AtZmlsdGVyOmJsdXIoMThweCkgc2F0dXJhdGUoMTQwJSk7CiAgICBib3gtc2hhZG93OgogICAgICBpbnNldCAwIDFweCAwIHJnYmEoMjU1LDI1NSwyNTUsLjEwKSwKICAgICAgaW5zZXQgMCAtMXB4IDAgcmdiYSgyNTUsMjU1LDI1NSwuMDIpLAogICAgICAwIDE4cHggNTBweCByZ2JhKDAsMCwwLC4zNSksCiAgICAgIDAgMCAzNnB4IHJnYmEoMzQsMjIzLDI0MiwuMTApOwogICAgb3ZlcmZsb3c6aGlkZGVuOwogIH0KCiAgLmxvZ2luLWNhcmQ6OmJlZm9yZXsKICAgIGNvbnRlbnQ6IiI7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIGluc2V0OjA7CiAgICBib3JkZXItcmFkaXVzOmluaGVyaXQ7CiAgICBwb2ludGVyLWV2ZW50czpub25lOwogICAgYmFja2dyb3VuZDoKICAgICAgcmFkaWFsLWdyYWRpZW50KGNpcmNsZSBhdCAxOCUgMCUsIHJnYmEoMjU1LDI1NSwyNTUsLjEyKSwgdHJhbnNwYXJlbnQgMjQlKSwKICAgICAgbGluZWFyLWdyYWRpZW50KDE4MGRlZywgcmdiYSgyNTUsMjU1LDI1NSwuMDUpLCB0cmFuc3BhcmVudCAyMCUsIHRyYW5zcGFyZW50IDgwJSwgcmdiYSgyNTUsMjU1LDI1NSwuMDIpKTsKICAgIG9wYWNpdHk6Ljk7CiAgfQoKICAubG9naW4tY2FyZDo6YWZ0ZXJ7CiAgICBjb250ZW50OiIiOwogICAgcG9zaXRpb246YWJzb2x1dGU7CiAgICBpbnNldDowOwogICAgYm9yZGVyLXJhZGl1czppbmhlcml0OwogICAgcG9pbnRlci1ldmVudHM6bm9uZTsKICAgIGJveC1zaGFkb3c6CiAgICAgIGluc2V0IDAgMCAwIDFweCByZ2JhKDI1NSwyNTUsMjU1LC4wMzUpLAogICAgICBpbnNldCAwIDAgMjJweCByZ2JhKDQxLDIxNCwyNTUsLjA2KTsKICB9CgogIC5icmFuZHsKICAgIHBvc2l0aW9uOnJlbGF0aXZlOwogICAgei1pbmRleDoyOwogICAgZGlzcGxheTpmbGV4OwogICAgZmxleC1kaXJlY3Rpb246Y29sdW1uOwogICAgYWxpZ24taXRlbXM6Y2VudGVyOwogICAgbWFyZ2luLWJvdHRvbToyMnB4OwogICAgdGV4dC1hbGlnbjpjZW50ZXI7CiAgfQoKICAuYnJhbmQtaWNvbnsKICAgIHdpZHRoOjg2cHg7CiAgICBoZWlnaHQ6ODZweDsKICAgIGJvcmRlci1yYWRpdXM6MjRweDsKICAgIHBvc2l0aW9uOnJlbGF0aXZlOwogICAgZGlzcGxheTpncmlkOwogICAgcGxhY2UtaXRlbXM6Y2VudGVyOwogICAgbWFyZ2luLWJvdHRvbToxNnB4OwogICAgYmFja2dyb3VuZDoKICAgICAgcmFkaWFsLWdyYWRpZW50KGNpcmNsZSBhdCAzMCUgMjAlLCByZ2JhKDg4LDIzMiwyNTUsLjA4KSwgdHJhbnNwYXJlbnQgMjglKSwKICAgICAgbGluZWFyLWdyYWRpZW50KDE4MGRlZywgcmdiYSgxMCwyNyw0NCwuNjIpLCByZ2JhKDYsMTgsMzEsLjM0KSk7CiAgICBib3JkZXI6MXB4IHNvbGlkIHJnYmEoOTIsMjI4LDI1NSwuMjQpOwogICAgYm94LXNoYWRvdzoKICAgICAgaW5zZXQgMCAxcHggMCByZ2JhKDI1NSwyNTUsMjU1LC4wOSksCiAgICAgIDAgMCAyNHB4IHJnYmEoMzQsMjIzLDI0MiwuMTApOwogICAgb3ZlcmZsb3c6aGlkZGVuOwogIH0KCiAgLmJyYW5kLWljb24gLnBsYW5ldHsKICAgIHBvc2l0aW9uOmFic29sdXRlOwogICAgd2lkdGg6MzZweDsKICAgIGhlaWdodDozNnB4OwogICAgYm9yZGVyLXJhZGl1czo1MCU7CiAgICBib3JkZXI6MnB4IHNvbGlkIHJnYmEoNTUsMjMyLDIzNiwuOTIpOwogICAgb3BhY2l0eTouOTg7CiAgICBib3gtc2hhZG93OjAgMCAxNnB4IHJnYmEoNTUsMjMyLDIzNiwuMTgpOwogIH0KCiAgLmJyYW5kLWljb24gLm9yYml0LWxpbmV7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIHdpZHRoOjY4cHg7CiAgICBoZWlnaHQ6MzBweDsKICAgIGJvcmRlci10b3A6Mi41cHggc29saWQgcmdiYSg3MywyNDEsMjA5LC45Mik7CiAgICBib3JkZXItcmFkaXVzOjUwJTsKICAgIHRyYW5zZm9ybTpyb3RhdGUoLTE4ZGVnKTsKICAgIGZpbHRlcjpkcm9wLXNoYWRvdygwIDAgOHB4IHJnYmEoNzMsMjQxLDIwOSwuMjYpKTsKICB9CgogIC5icmFuZC1pY29uIC5vcmJpdC1zd29vc2h7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIHdpZHRoOjU0cHg7CiAgICBoZWlnaHQ6NTRweDsKICAgIGJvcmRlci10b3A6Mi41cHggc29saWQgcmdiYSg1NSwyMzIsMjM2LC44OCk7CiAgICBib3JkZXItcmlnaHQ6Mi41cHggc29saWQgcmdiYSg1NSwyMzIsMjM2LC44OCk7CiAgICBib3JkZXItcmFkaXVzOjUwJTsKICAgIHRyYW5zZm9ybTp0cmFuc2xhdGUoOXB4LC05cHgpIHJvdGF0ZSgxNGRlZyk7CiAgICBvcGFjaXR5Oi45NTsKICAgIGZpbHRlcjpkcm9wLXNoYWRvdygwIDAgOHB4IHJnYmEoNTUsMjMyLDIzNiwuMTgpKTsKICAgIGNsaXAtcGF0aDogaW5zZXQoMCAwIDI4cHggMjRweCk7CiAgfQoKICAuYnJhbmQtaWNvbiAuZG90ewogICAgcG9zaXRpb246YWJzb2x1dGU7CiAgICByaWdodDoxMnB4OwogICAgdG9wOjE5cHg7CiAgICB3aWR0aDo5cHg7CiAgICBoZWlnaHQ6OXB4OwogICAgYm9yZGVyLXJhZGl1czo1MCU7CiAgICBiYWNrZ3JvdW5kOiM1NWYyZmY7CiAgICBib3gtc2hhZG93OjAgMCAxNHB4IHJnYmEoODUsMjQyLDI1NSwuODIpOwogIH0KCiAgLmJyYW5kLXRpdGxlewogICAgbWFyZ2luOjA7CiAgICBmb250LXNpemU6Y2xhbXAoMzRweCwgNnZ3LCA0MnB4KTsKICAgIGxpbmUtaGVpZ2h0OjE7CiAgICBmb250LXdlaWdodDo5MDA7CiAgICBsZXR0ZXItc3BhY2luZzotMS4zcHg7CiAgICB0ZXh0LXNoYWRvdzowIDAgMTRweCByZ2JhKDI1NSwyNTUsMjU1LC4wNCk7CiAgfQogIC5icmFuZC10aXRsZSAuYWNjZW50ewogICAgY29sb3I6dHJhbnNwYXJlbnQ7CiAgICBiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCg5MGRlZywgdmFyKC0tY3lhbiksIHZhcigtLWN5YW4tMikpOwogICAgLXdlYmtpdC1iYWNrZ3JvdW5kLWNsaXA6dGV4dDsKICAgIGJhY2tncm91bmQtY2xpcDp0ZXh0OwogIH0KCiAgLmJyYW5kLXN1YnsKICAgIG1hcmdpbi10b3A6MTBweDsKICAgIGNvbG9yOiM5OWIwYzI7CiAgICBmb250LXNpemU6MTJweDsKICAgIGxldHRlci1zcGFjaW5nOi4yOGVtOwogICAgdGV4dC10cmFuc2Zvcm06dXBwZXJjYXNlOwogIH0KCiAgLmhlYWRpbmd7CiAgICBwb3NpdGlvbjpyZWxhdGl2ZTsKICAgIHotaW5kZXg6MjsKICAgIHRleHQtYWxpZ246bGVmdDsKICAgIG1hcmdpbi1ib3R0b206MjJweDsKICB9CgogIC5oZWFkaW5nIGgyewogICAgbWFyZ2luOjAgMCAxMHB4OwogICAgZm9udC1zaXplOmNsYW1wKDI4cHgsIDQuMnZ3LCAzNHB4KTsKICAgIGxpbmUtaGVpZ2h0OjEuMDg7CiAgICBsZXR0ZXItc3BhY2luZzotLjZweDsKICB9CiAgLmhlYWRpbmcgaDIgc3BhbnsgY29sb3I6dmFyKC0tY3lhbik7IH0KCiAgLmhlYWRpbmcgcHsKICAgIG1hcmdpbjowOwogICAgY29sb3I6dmFyKC0tbXV0ZWQpOwogICAgZm9udC1zaXplOjE1cHg7CiAgICBsaW5lLWhlaWdodDoxLjQ4OwogIH0KCiAgLmZpZWxkewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICB6LWluZGV4OjI7CiAgICBtYXJnaW4tYm90dG9tOjE4cHg7CiAgfQoKICAuZmllbGQgbGFiZWx7CiAgICBkaXNwbGF5OmJsb2NrOwogICAgbWFyZ2luLWJvdHRvbTo4cHg7CiAgICBjb2xvcjojYzVkMmRkOwogICAgZm9udC1zaXplOjEycHg7CiAgICBmb250LXdlaWdodDo3MDA7CiAgICBsZXR0ZXItc3BhY2luZzouMDhlbTsKICAgIHRleHQtdHJhbnNmb3JtOnVwcGVyY2FzZTsKICB9CgogIC5pbnB1dC13cmFwewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgfQoKICAuaW5wdXQtaWNvbnsKICAgIHBvc2l0aW9uOmFic29sdXRlOwogICAgbGVmdDoxNnB4OwogICAgdG9wOjUwJTsKICAgIHRyYW5zZm9ybTp0cmFuc2xhdGVZKC01MCUpOwogICAgd2lkdGg6MjBweDsKICAgIGhlaWdodDoyMHB4OwogICAgZmlsbDpub25lOwogICAgc3Ryb2tlOiMyNGU2ZTg7CiAgICBzdHJva2Utd2lkdGg6MS45OwogICAgcG9pbnRlci1ldmVudHM6bm9uZTsKICAgIHotaW5kZXg6MjsKICB9CgogIC5pbnB1dHsKICAgIHdpZHRoOjEwMCU7CiAgICBoZWlnaHQ6NTZweDsKICAgIGJvcmRlci1yYWRpdXM6MTVweDsKICAgIGJvcmRlcjoxcHggc29saWQgcmdiYSgxMDQsMTY2LDIwNywuNTYpOwogICAgYmFja2dyb3VuZDpyZ2JhKDMsMTQsMjUsLjY2KTsKICAgIGNvbG9yOnZhcigtLXRleHQpOwogICAgcGFkZGluZzowIDQ4cHggMCA1MHB4OwogICAgZm9udC1zaXplOjE2cHg7CiAgICBvdXRsaW5lOm5vbmU7CiAgICB0cmFuc2l0aW9uOi4ycyBlYXNlOwogICAgYm94LXNoYWRvdzppbnNldCAwIDAgMCAxcHggcmdiYSgyNTUsMjU1LDI1NSwuMDE1KTsKICB9CgogIC5pbnB1dDo6cGxhY2Vob2xkZXJ7CiAgICBjb2xvcjojOTBhMmIxOwogICAgb3BhY2l0eToxOwogIH0KCiAgLmlucHV0OmZvY3VzewogICAgYm9yZGVyLWNvbG9yOiMzY2U5ZWU7CiAgICBiYWNrZ3JvdW5kOnJnYmEoNCwxNywyOSwuODYpOwogICAgYm94LXNoYWRvdzoKICAgICAgMCAwIDAgMXB4IHJnYmEoNjAsMjMzLDIzOCwuMTUpLAogICAgICAwIDAgMTZweCByZ2JhKDYwLDIzMywyMzgsLjA4KTsKICB9CgogIC5leWV7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIHJpZ2h0OjhweDsKICAgIHRvcDo1MCU7CiAgICB0cmFuc2Zvcm06dHJhbnNsYXRlWSgtNTAlKTsKICAgIHdpZHRoOjQwcHg7CiAgICBoZWlnaHQ6NDBweDsKICAgIGJvcmRlcjowOwogICAgYm9yZGVyLXJhZGl1czoxMnB4OwogICAgYmFja2dyb3VuZDp0cmFuc3BhcmVudDsKICAgIGNvbG9yOiM5ZWIwYmY7CiAgICBkaXNwbGF5OmdyaWQ7CiAgICBwbGFjZS1pdGVtczpjZW50ZXI7CiAgICBjdXJzb3I6cG9pbnRlcjsKICB9CiAgLmV5ZSBzdmd7CiAgICB3aWR0aDoyMHB4OwogICAgaGVpZ2h0OjIwcHg7CiAgICBmaWxsOm5vbmU7CiAgICBzdHJva2U6Y3VycmVudENvbG9yOwogICAgc3Ryb2tlLXdpZHRoOjEuODsKICB9CgogIC5sb2dpbi1idG57CiAgICBwb3NpdGlvbjpyZWxhdGl2ZTsKICAgIHotaW5kZXg6MjsKICAgIHdpZHRoOjEwMCU7CiAgICBoZWlnaHQ6NThweDsKICAgIG1hcmdpbi10b3A6NHB4OwogICAgYm9yZGVyOjA7CiAgICBib3JkZXItcmFkaXVzOjE2cHg7CiAgICBjdXJzb3I6cG9pbnRlcjsKICAgIGNvbG9yOiMwNDEzMWI7CiAgICBmb250LXNpemU6MTdweDsKICAgIGZvbnQtd2VpZ2h0OjgwMDsKICAgIGJhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDkwZGVnLCAjMWZkMGYxLCAjNDdlZmQyKTsKICAgIGJveC1zaGFkb3c6CiAgICAgIDAgMTJweCAyOHB4IHJnYmEoMjIsMjE0LDIzMywuMTUpLAogICAgICAwIDAgMThweCByZ2JhKDczLDI0MSwyMDksLjEwKTsKICAgIHRyYW5zaXRpb246dHJhbnNmb3JtIC4xOHMgZWFzZSwgYm94LXNoYWRvdyAuMThzIGVhc2U7CiAgfQoKICAubG9naW4tYnRuOmhvdmVyewogICAgdHJhbnNmb3JtOnRyYW5zbGF0ZVkoLTFweCk7CiAgICBib3gtc2hhZG93OgogICAgICAwIDE2cHggMzRweCByZ2JhKDIyLDIxNCwyMzMsLjE4KSwKICAgICAgMCAwIDIycHggcmdiYSg3MywyNDEsMjA5LC4xMik7CiAgfQoKICAubG9naW4tYnRuIC5hcnJvd3sKICAgIHBvc2l0aW9uOmFic29sdXRlOwogICAgcmlnaHQ6MTBweDsKICAgIHRvcDo1MCU7CiAgICB0cmFuc2Zvcm06dHJhbnNsYXRlWSgtNTAlKTsKICAgIHdpZHRoOjM4cHg7CiAgICBoZWlnaHQ6MzhweDsKICAgIGJvcmRlci1yYWRpdXM6NTAlOwogICAgZGlzcGxheTpncmlkOwogICAgcGxhY2UtaXRlbXM6Y2VudGVyOwogICAgYmFja2dyb3VuZDpyZ2JhKDQsMTMyLDE0NSwuMTIpOwogICAgZm9udC1zaXplOjIzcHg7CiAgICBmb250LXdlaWdodDo0MDA7CiAgfQoKICAuaGVscGVyewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICB6LWluZGV4OjI7CiAgICBtYXJnaW4tdG9wOjIwcHg7CiAgICBkaXNwbGF5OmZsZXg7CiAgICBhbGlnbi1pdGVtczpjZW50ZXI7CiAgICBnYXA6MTRweDsKICAgIGNvbG9yOiNhY2MwZDA7CiAgICBmb250LXNpemU6MTJweDsKICAgIGxpbmUtaGVpZ2h0OjEuMzU7CiAgICB0ZXh0LWFsaWduOmNlbnRlcjsKICB9CiAgLmhlbHBlcjo6YmVmb3JlLC5oZWxwZXI6OmFmdGVyewogICAgY29udGVudDoiIjsKICAgIGhlaWdodDoxcHg7CiAgICBmbGV4OjE7CiAgICBiYWNrZ3JvdW5kOiM3MDgzOTQ7CiAgICBvcGFjaXR5Oi42OwogIH0KICAuaGVscGVyIHNwYW57CiAgICBtYXgtd2lkdGg6MjUwcHg7CiAgfQoKICAuc3RhdHVzewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICB6LWluZGV4OjI7CiAgICBtaW4taGVpZ2h0OjE4cHg7CiAgICBtYXJnaW4tdG9wOjhweDsKICAgIHRleHQtYWxpZ246Y2VudGVyOwogICAgZm9udC1zaXplOjEycHg7CiAgICBjb2xvcjojN2RmZmUzOwogICAgb3BhY2l0eTowOwogICAgdHJhbnNmb3JtOnRyYW5zbGF0ZVkoNHB4KTsKICAgIHRyYW5zaXRpb246LjJzIGVhc2U7CiAgfQogIC5zdGF0dXMuc2hvd3sKICAgIG9wYWNpdHk6MTsKICAgIHRyYW5zZm9ybTpub25lOwogIH0KICAuc3RhdHVzLmVycm9yeyBjb2xvcjojZmY5ZGFkOyB9CgogIC5mb290ZXItbm90ZXsKICAgIHBvc2l0aW9uOmFic29sdXRlOwogICAgYm90dG9tOjE0cHg7CiAgICBsZWZ0OjUwJTsKICAgIHRyYW5zZm9ybTp0cmFuc2xhdGVYKC01MCUpOwogICAgY29sb3I6cmdiYSgxNzAsMTkyLDIwOCwuNDQpOwogICAgZm9udC1zaXplOjExcHg7CiAgICBsZXR0ZXItc3BhY2luZzouMDhlbTsKICAgIHRleHQtdHJhbnNmb3JtOnVwcGVyY2FzZTsKICAgIHotaW5kZXg6MjsKICAgIHdoaXRlLXNwYWNlOm5vd3JhcDsKICB9CgogIEBtZWRpYSAobWluLXdpZHRoOiA5ODBweCl7CiAgICAuc2hlbGx7CiAgICAgIHBhZGRpbmc6NDBweDsKICAgIH0KICAgIC5sb2dpbi1jYXJkewogICAgICB3aWR0aDptaW4oNDcwcHgsIDMxdncpOwogICAgICBwYWRkaW5nOjM2cHggMzJweCAzMHB4OwogICAgICBib3JkZXItcmFkaXVzOjMwcHg7CiAgICB9CiAgfQoKICBAbWVkaWEgKG1heC13aWR0aDogNTYwcHgpewogICAgLnNoZWxseyBwYWRkaW5nOjE4cHg7IH0KICAgIC5sb2dpbi1jYXJkewogICAgICB3aWR0aDoxMDAlOwogICAgICBib3JkZXItcmFkaXVzOjI2cHg7CiAgICAgIHBhZGRpbmc6MzBweCAyMnB4IDI0cHg7CiAgICB9CiAgICAuYnJhbmQtaWNvbnsKICAgICAgd2lkdGg6NzZweDsKICAgICAgaGVpZ2h0Ojc2cHg7CiAgICAgIGJvcmRlci1yYWRpdXM6MjJweDsKICAgICAgbWFyZ2luLWJvdHRvbToxNHB4OwogICAgfQogICAgLmJyYW5kLXN1YnsKICAgICAgZm9udC1zaXplOjEwcHg7CiAgICAgIGxldHRlci1zcGFjaW5nOi4yMmVtOwogICAgfQogICAgLmhlYWRpbmcgcHsKICAgICAgZm9udC1zaXplOjE0cHg7CiAgICB9CiAgICAuaW5wdXR7CiAgICAgIGhlaWdodDo1NHB4OwogICAgICBmb250LXNpemU6MTVweDsKICAgIH0KICAgIC5sb2dpbi1idG57CiAgICAgIGhlaWdodDo1NnB4OwogICAgICBmb250LXNpemU6MTZweDsKICAgIH0KICAgIC5oZWxwZXJ7CiAgICAgIGZvbnQtc2l6ZToxMXB4OwogICAgICBnYXA6MTBweDsKICAgIH0KICB9CgogIEBtZWRpYSAobWF4LWhlaWdodDogNzYwcHgpewogICAgLmxvZ2luLWNhcmR7CiAgICAgIHdpZHRoOm1pbig5MnZ3LCA0NDBweCk7CiAgICAgIHBhZGRpbmc6MjZweCAyNHB4IDIycHg7CiAgICB9CiAgICAuYnJhbmR7CiAgICAgIG1hcmdpbi1ib3R0b206MTZweDsKICAgIH0KICAgIC5oZWFkaW5newogICAgICBtYXJnaW4tYm90dG9tOjE2cHg7CiAgICB9CiAgICAuZmllbGR7CiAgICAgIG1hcmdpbi1ib3R0b206MTRweDsKICAgIH0KICAgIC5oZWxwZXJ7CiAgICAgIG1hcmdpbi10b3A6MTZweDsKICAgIH0KICB9CgogIEBtZWRpYSAocHJlZmVycy1yZWR1Y2VkLW1vdGlvbjogcmVkdWNlKXsKICAgIC5sb2dpbi1idG4sCiAgICAuc3RhdHVzLAogICAgLmlucHV0eyB0cmFuc2l0aW9uOm5vbmU7IH0KICB9CgogIC5icmFuZC1sb2dvLXJlYWx7CiAgICB3aWR0aDptaW4oODIlLCAzMzBweCk7CiAgICBtYXgtaGVpZ2h0OjExMHB4OwogICAgb2JqZWN0LWZpdDpjb250YWluOwogICAgZGlzcGxheTpibG9jazsKICAgIG1hcmdpbjowIGF1dG8gOHB4OwogICAgZmlsdGVyOmRyb3Atc2hhZG93KDAgMCAxOHB4IHJnYmEoMzQsMjIzLDI0MiwuMTApKTsKICB9CgogIC5hY2Nlc3MtYmFkZ2V7CiAgICBkaXNwbGF5OmlubGluZS1mbGV4OwogICAgYWxpZ24taXRlbXM6Y2VudGVyOwogICAganVzdGlmeS1jb250ZW50OmNlbnRlcjsKICAgIG1pbi13aWR0aDo5NnB4OwogICAgaGVpZ2h0OjI4cHg7CiAgICBwYWRkaW5nOjAgMTJweDsKICAgIG1hcmdpbi10b3A6NnB4OwogICAgYm9yZGVyLXJhZGl1czo5OTlweDsKICAgIGJvcmRlcjoxcHggc29saWQgcmdiYSg3MywyNDEsMjA5LC4zNSk7CiAgICBiYWNrZ3JvdW5kOnJnYmEoNSwyNyw0MCwuNTIpOwogICAgY29sb3I6IzY3ZjRkZjsKICAgIGZvbnQtc2l6ZToxMXB4OwogICAgZm9udC13ZWlnaHQ6OTAwOwogICAgbGV0dGVyLXNwYWNpbmc6LjE4ZW07CiAgICB0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7CiAgICBib3gtc2hhZG93OjAgMCAxOHB4IHJnYmEoNzMsMjQxLDIwOSwuMDgpOwogIH0KCiAgLmFjY2Vzcy1iYWRnZS5tYXN0ZXJ7CiAgICBjb2xvcjojOGRlZmZmOwogICAgYm9yZGVyLWNvbG9yOnJnYmEoMzQsMjIzLDI0MiwuNDUpOwogICAgYmFja2dyb3VuZDpyZ2JhKDQsMzEsNDgsLjYyKTsKICB9CgogIEBtZWRpYSAobWF4LXdpZHRoOjU2MHB4KXsKICAgIC5icmFuZC1sb2dvLXJlYWx7CiAgICAgIHdpZHRoOm1pbig4OCUsIDMwMHB4KTsKICAgICAgbWF4LWhlaWdodDo5NnB4OwogICAgICBtYXJnaW4tYm90dG9tOjZweDsKICAgIH0KICAgIC5hY2Nlc3MtYmFkZ2V7CiAgICAgIGhlaWdodDoyNnB4OwogICAgICBtaW4td2lkdGg6ODhweDsKICAgICAgZm9udC1zaXplOjEwcHg7CiAgICB9CiAgfQoKPC9zdHlsZT4KPC9oZWFkPgo8Ym9keT4KICA8bWFpbiBjbGFzcz0ic3RhZ2UiIGlkPSJzdGFnZSI+CiAgICA8ZGl2IGNsYXNzPSJhbWJpZW50Ij48L2Rpdj4KICAgIDxkaXYgY2xhc3M9Im1lc2giPjwvZGl2PgogICAgPGNhbnZhcyBpZD0ibmV0d29ya0NhbnZhcyI+PC9jYW52YXM+CgogICAgPGRpdiBjbGFzcz0ic2hlbGwiPgogICAgICA8c2VjdGlvbiBjbGFzcz0ibG9naW4tY2FyZCI+CiAgICAgICAgPGRpdiBjbGFzcz0iYnJhbmQiPgogICAgICAgICAgPGltZwogICAgICAgICAgICBjbGFzcz0iYnJhbmQtbG9nby1yZWFsIgogICAgICAgICAgICBzcmM9Imh0dHBzOi8vc3RhdGljLndpeHN0YXRpYy5jb20vbWVkaWEvNjNlNmVjXzZmNTE5YTBlMzk3ZDRmNmZiZTNmODJjZTgxNjA2NjE0fm12Mi5wbmcvdjEvZmlsbC93XzUyOSxoXzE3MyxhbF9jLHFfODUsdXNtXzAuNjZfMS4wMF8wLjAxLGVuY19hdXRvL1BEUi0xLnBuZyIKICAgICAgICAgICAgYWx0PSJQRFItQVBQIgogICAgICAgICAgICBsb2FkaW5nPSJlYWdlciIKICAgICAgICAgICAgcmVmZXJyZXJwb2xpY3k9Im5vLXJlZmVycmVyIgogICAgICAgICAgLz4KICAgICAgICAgIDxkaXYgY2xhc3M9ImFjY2Vzcy1iYWRnZSI+TUFQUElORzwvZGl2PgogICAgICAgIDwvZGl2PgoKICAgICAgICA8ZGl2IGNsYXNzPSJoZWFkaW5nIj4KICAgICAgICAgIDxoMj5JbmdyZXNvIGEgPHNwYW4+UERSLUFQUCBNQVBQSU5HPC9zcGFuPjwvaDI+CiAgICAgICAgICA8cD5BY2NlZGUgYSB0dXMgcHJveWVjdG9zIGRlIG1hcHBpbmc8YnI+eSBsZXZhbnRhbWllbnRvIGVuIGNhbXBvLjwvcD4KICAgICAgICA8L2Rpdj4KCiAgICAgICAgPGZvcm0gaWQ9ImxvZ2luRm9ybSI+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJmaWVsZCI+CiAgICAgICAgICAgIDxsYWJlbCBmb3I9ImVtYWlsIj5Db3JyZW8gZWxlY3Ryw7NuaWNvPC9sYWJlbD4KICAgICAgICAgICAgPGRpdiBjbGFzcz0iaW5wdXQtd3JhcCI+CiAgICAgICAgICAgICAgPHN2ZyBjbGFzcz0iaW5wdXQtaWNvbiIgdmlld0JveD0iMCAwIDI0IDI0IiBhcmlhLWhpZGRlbj0idHJ1ZSI+CiAgICAgICAgICAgICAgICA8cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iMTgiIGhlaWdodD0iMTQiIHJ4PSIyIj48L3JlY3Q+CiAgICAgICAgICAgICAgICA8cGF0aCBkPSJtNCA3IDggNiA4LTYiPjwvcGF0aD4KICAgICAgICAgICAgICA8L3N2Zz4KICAgICAgICAgICAgICA8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iZW1haWwiIHR5cGU9ImVtYWlsIiBpbnB1dG1vZGU9ImVtYWlsIiBhdXRvY29tcGxldGU9InVzZXJuYW1lIiBwbGFjZWhvbGRlcj0idGVjbmljb0BlbXByZXNhLmNvbSIgcmVxdWlyZWQgLz4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICA8ZGl2IGNsYXNzPSJmaWVsZCI+CiAgICAgICAgICAgIDxsYWJlbCBmb3I9InBhc3N3b3JkIj5Db250cmFzZcOxYTwvbGFiZWw+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImlucHV0LXdyYXAiPgogICAgICAgICAgICAgIDxzdmcgY2xhc3M9ImlucHV0LWljb24iIHZpZXdCb3g9IjAgMCAyNCAyNCIgYXJpYS1oaWRkZW49InRydWUiPgogICAgICAgICAgICAgICAgPHJlY3QgeD0iNSIgeT0iMTAiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxMCIgcng9IjIiPjwvcmVjdD4KICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik04IDEwVjdhNCA0IDAgMCAxIDggMHYzIj48L3BhdGg+CiAgICAgICAgICAgICAgPC9zdmc+CiAgICAgICAgICAgICAgPGlucHV0IGNsYXNzPSJpbnB1dCIgaWQ9InBhc3N3b3JkIiB0eXBlPSJwYXNzd29yZCIgYXV0b2NvbXBsZXRlPSJjdXJyZW50LXBhc3N3b3JkIiBwbGFjZWhvbGRlcj0iQ29udHJhc2XDsWEiIHJlcXVpcmVkIC8+CiAgICAgICAgICAgICAgPGJ1dHRvbiBjbGFzcz0iZXllIiBpZD0idG9nZ2xlUGFzc3dvcmQiIHR5cGU9ImJ1dHRvbiIgYXJpYS1sYWJlbD0iTW9zdHJhciBjb250cmFzZcOxYSI+CiAgICAgICAgICAgICAgICA8c3ZnIHZpZXdCb3g9IjAgMCAyNCAyNCIgYXJpYS1oaWRkZW49InRydWUiPgogICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMiAxMnMzLjUtNiAxMC02IDEwIDYgMTAgNi0zLjUgNi0xMCA2UzIgMTIgMiAxMloiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMi41Ij48L2NpcmNsZT4KICAgICAgICAgICAgICAgIDwvc3ZnPgogICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgIDxidXR0b24gY2xhc3M9ImxvZ2luLWJ0biIgdHlwZT0ic3VibWl0Ij4KICAgICAgICAgICAgSW5ncmVzYXIKICAgICAgICAgICAgPHNwYW4gY2xhc3M9ImFycm93Ij7ihpI8L3NwYW4+CiAgICAgICAgICA8L2J1dHRvbj4KCiAgICAgICAgICA8ZGl2IGNsYXNzPSJoZWxwZXIiPgogICAgICAgICAgICA8c3Bhbj5JbmljaWEgc2VzacOzbiBwYXJhIHZlciBsb3MgcHJveWVjdG9zPGJyPnF1ZSB0ZSBoYW4gYXNpZ25hZG8uPC9zcGFuPgogICAgICAgICAgPC9kaXY+CgogICAgICAgICAgPGRpdiBjbGFzcz0ic3RhdHVzIiBpZD0ic3RhdHVzIj48L2Rpdj4KICAgICAgICA8L2Zvcm0+CiAgICAgIDwvc2VjdGlvbj4KICAgIDwvZGl2PgoKICAgIDxkaXYgY2xhc3M9ImZvb3Rlci1ub3RlIj5QRFItQVBQIMK3IE1BUFBJTkc8L2Rpdj4KICA8L21haW4+Cgo8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L25wbS9Ac3VwYWJhc2Uvc3VwYWJhc2UtanNAMiI+PC9zY3JpcHQ+CjxzY3JpcHQ+CiAgY29uc3QgTE9HSU5fTU9ERT0nTUFQUElORyc7CiAgY29uc3QgREVGQVVMVF9SRVRVUk49J2luZnJhZXN0cnVjdHVyYS5odG1sJzsKICBjb25zdCBTVVBBQkFTRV9VUkw9J2h0dHBzOi8vcWF5cGVkcWFzY3JrbWxvbG1pdWYuc3VwYWJhc2UuY28nOwogIGNvbnN0IFNVUEFCQVNFX0FOT049J2V5SmhiR2NpT2lKSVV6STFOaUlzSW5SNWNDSTZJa3BYVkNKOS5leUpwYzNNaU9pSnpkWEJoWW1GelpTSXNJbkpsWmlJNkluRmhlWEJsWkhGaGMyTnlhMjFzYjJ4dGFYVm1JaXdpY205c1pTSTZJbUZ1YjI0aUxDSnBZWFFpT2pFM05UQTRNRGs0TlRBc0ltVjRjQ0k2TWpBMk5qTTROVGcxTUgwLkxsNklqRWxqTks5VFV1VDFaZGlSUC1tdHVNUm9DS1lCV3NtZ1FFNE5vNmcnOwogIGNvbnN0IGF1dGhTYj1zdXBhYmFzZS5jcmVhdGVDbGllbnQoU1VQQUJBU0VfVVJMLFNVUEFCQVNFX0FOT04pOwoKICBjb25zdCBwYXNzID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3Bhc3N3b3JkJyk7CiAgY29uc3QgZXllID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RvZ2dsZVBhc3N3b3JkJyk7CiAgY29uc3Qgc3RhdHVzRWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnc3RhdHVzJyk7CiAgY29uc3Qgc3VibWl0QnRuID0gZG9jdW1lbnQucXVlcnlTZWxlY3RvcignLmxvZ2luLWJ0bicpOwoKICBmdW5jdGlvbiBkZXN0aW5vU2VndXJvKCl7CiAgICBjb25zdCByYXc9bmV3IFVSTFNlYXJjaFBhcmFtcyhsb2NhdGlvbi5zZWFyY2gpLmdldCgncmV0dXJuJyl8fERFRkFVTFRfUkVUVVJOOwogICAgY29uc3QgdmFsdWU9U3RyaW5nKHJhd3x8JycpLnRyaW0oKTsKICAgIGlmKCF2YWx1ZSB8fCB2YWx1ZS5pbmNsdWRlcygnOi8vJykgfHwgdmFsdWUuc3RhcnRzV2l0aCgnLycpIHx8IHZhbHVlLmluY2x1ZGVzKCcuLicpIHx8IHZhbHVlLmluY2x1ZGVzKCdcXCcpKXsKICAgICAgcmV0dXJuIERFRkFVTFRfUkVUVVJOOwogICAgfQogICAgcmV0dXJuIHZhbHVlOwogIH0KCiAgYXN5bmMgZnVuY3Rpb24gaXJBcGxpY2FjaW9uKCl7CiAgICB0cnl7CiAgICAgIGNvbnN0IHtkYXRhOntzZXNzaW9ufX09YXdhaXQgYXV0aFNiLmF1dGguZ2V0U2Vzc2lvbigpOwoKICAgICAgaWYod2luZG93LnBhcmVudCAmJiB3aW5kb3cucGFyZW50IT09d2luZG93KXsKICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgIHR5cGU6J1BEUl9NQVBQSU5HX0xPR0lOX09LJywKICAgICAgICAgIGFjY2Vzc190b2tlbjpzZXNzaW9uPy5hY2Nlc3NfdG9rZW58fCcnLAogICAgICAgICAgcmVmcmVzaF90b2tlbjpzZXNzaW9uPy5yZWZyZXNoX3Rva2VufHwnJwogICAgICAgIH0sJyonKTsKICAgICAgICBzaG93U3RhdHVzKCdBY2Nlc28gY29ycmVjdG8uIENhcmdhbmRvIHByb3llY3Rvcy4uLicpOwogICAgICAgIHJldHVybjsKICAgICAgfQoKICAgICAgbG9jYXRpb24ucmVwbGFjZShkZXN0aW5vU2VndXJvKCkpOwogICAgfWNhdGNoKGUpewogICAgICBzaG93U3RhdHVzKGU/Lm1lc3NhZ2V8fCdObyBmdWUgcG9zaWJsZSBjb250aW51YXInLHRydWUpOwogICAgfQogIH0KCiAgZXllLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgY29uc3Qgc2hvdyA9IHBhc3MudHlwZSA9PT0gJ3Bhc3N3b3JkJzsKICAgIHBhc3MudHlwZSA9IHNob3cgPyAndGV4dCcgOiAncGFzc3dvcmQnOwogICAgZXllLnN0eWxlLmNvbG9yID0gc2hvdyA/ICcjMzJlOWVjJyA6ICcjOWViMGJmJzsKICB9KTsKCiAgYXN5bmMgZnVuY3Rpb24gdmFsaWRhck1hc3Rlcih1c2VyKXsKICAgIGNvbnN0IHtkYXRhLGVycm9yfT1hd2FpdCBhdXRoU2IKICAgICAgLmZyb20oJ21hcHBpbmdfdXN1YXJpb3MnKQogICAgICAuc2VsZWN0KCdpZCxlbWFpbCxub21icmUscm9sLGFjdGl2bycpCiAgICAgIC5lcSgnaWQnLHVzZXIuaWQpCiAgICAgIC5tYXliZVNpbmdsZSgpOwoKICAgIGlmKGVycm9yKXRocm93IG5ldyBFcnJvcignTm8gZnVlIHBvc2libGUgdmFsaWRhciBlbCBwZXJmaWwgTWFzdGVyOiAnK2Vycm9yLm1lc3NhZ2UpOwogICAgaWYoIWRhdGEpdGhyb3cgbmV3IEVycm9yKCdFbCB1c3VhcmlvIG5vIHRpZW5lIHBlcmZpbCBlbiBtYXBwaW5nX3VzdWFyaW9zLicpOwogICAgaWYoZGF0YS5hY3Rpdm89PT1mYWxzZSl0aHJvdyBuZXcgRXJyb3IoJ0VsIHVzdWFyaW8gZXN0w6EgaW5hY3Rpdm8uJyk7CiAgICBpZighWydhZG1pbicsJ2Nvb3JkaW5hZG9yJ10uaW5jbHVkZXMoU3RyaW5nKGRhdGEucm9sfHwnJykudG9Mb3dlckNhc2UoKSkpewogICAgICB0aHJvdyBuZXcgRXJyb3IoJ0VzdGUgdXN1YXJpbyBubyB0aWVuZSBwZXJtaXNvcyBkZSBNYXN0ZXIuJyk7CiAgICB9CiAgICByZXR1cm4gZGF0YTsKICB9CgogIGFzeW5jIGZ1bmN0aW9uIHByb2Nlc2FyU2VzaW9uRXhpc3RlbnRlKCl7CiAgICB0cnl7CiAgICAgIGNvbnN0IHtkYXRhOntzZXNzaW9ufSxlcnJvcn09YXdhaXQgYXV0aFNiLmF1dGguZ2V0U2Vzc2lvbigpOwogICAgICBpZihlcnJvciB8fCAhc2Vzc2lvbilyZXR1cm47CiAgICAgIGlmKExPR0lOX01PREU9PT0nTUFTVEVSJylhd2FpdCB2YWxpZGFyTWFzdGVyKHNlc3Npb24udXNlcik7CiAgICAgIGlyQXBsaWNhY2lvbigpOwogICAgfWNhdGNoKGUpewogICAgICBhd2FpdCBhdXRoU2IuYXV0aC5zaWduT3V0KCkuY2F0Y2goKCk9Pnt9KTsKICAgICAgc2hvd1N0YXR1cyhlPy5tZXNzYWdlfHxTdHJpbmcoZSksdHJ1ZSk7CiAgICB9CiAgfQoKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbG9naW5Gb3JtJykuYWRkRXZlbnRMaXN0ZW5lcignc3VibWl0JywgYXN5bmMgKGUpID0+IHsKICAgIGUucHJldmVudERlZmF1bHQoKTsKICAgIGNvbnN0IGVtYWlsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2VtYWlsJykudmFsdWUudHJpbSgpOwogICAgY29uc3QgcGFzc3dvcmQgPSBwYXNzLnZhbHVlOwoKICAgIGlmICghZW1haWwgfHwgIXBhc3N3b3JkKSB7CiAgICAgIHNob3dTdGF0dXMoJ0NvbXBsZXRhIGNvcnJlbyB5IGNvbnRyYXNlw7FhJywgdHJ1ZSk7CiAgICAgIHJldHVybjsKICAgIH0KCiAgICBzdWJtaXRCdG4uZGlzYWJsZWQ9dHJ1ZTsKICAgIHN1Ym1pdEJ0bi5zdHlsZS5vcGFjaXR5PScuNzUnOwogICAgc2hvd1N0YXR1cygnVmFsaWRhbmRvIGNyZWRlbmNpYWxlcy4uLicpOwoKICAgIHRyeXsKICAgICAgY29uc3Qge2RhdGEsZXJyb3J9PWF3YWl0IGF1dGhTYi5hdXRoLnNpZ25JbldpdGhQYXNzd29yZCh7ZW1haWwscGFzc3dvcmR9KTsKICAgICAgaWYoZXJyb3IpdGhyb3cgZXJyb3I7CiAgICAgIGlmKCFkYXRhPy51c2VyKXRocm93IG5ldyBFcnJvcignU3VwYWJhc2Ugbm8gZGV2b2x2acOzIHVuIHVzdWFyaW8gdsOhbGlkby4nKTsKCiAgICAgIGlmKExPR0lOX01PREU9PT0nTUFTVEVSJylhd2FpdCB2YWxpZGFyTWFzdGVyKGRhdGEudXNlcik7CgogICAgICBzaG93U3RhdHVzKCdBY2Nlc28gY29ycmVjdG8uIEluZ3Jlc2FuZG8uLi4nKTsKICAgICAgc2V0VGltZW91dChpckFwbGljYWNpb24sMTgwKTsKICAgIH1jYXRjaChlcnIpewogICAgICBhd2FpdCBhdXRoU2IuYXV0aC5zaWduT3V0KCkuY2F0Y2goKCk9Pnt9KTsKICAgICAgc2hvd1N0YXR1cyhlcnI/Lm1lc3NhZ2V8fCdObyBmdWUgcG9zaWJsZSBpbmljaWFyIHNlc2nDs24nLHRydWUpOwogICAgICBzdWJtaXRCdG4uZGlzYWJsZWQ9ZmFsc2U7CiAgICAgIHN1Ym1pdEJ0bi5zdHlsZS5vcGFjaXR5PScnOwogICAgfQogIH0pOwoKICBmdW5jdGlvbiBzaG93U3RhdHVzKG1zZywgZXJyb3IgPSBmYWxzZSl7CiAgICBzdGF0dXNFbC50ZXh0Q29udGVudCA9IG1zZzsKICAgIHN0YXR1c0VsLmNsYXNzTmFtZSA9ICdzdGF0dXMgc2hvdycgKyAoZXJyb3IgPyAnIGVycm9yJyA6ICcnKTsKICAgIGNsZWFyVGltZW91dCh3aW5kb3cuX3N0YXR1c1RpbWVyKTsKICAgIGlmKCFlcnJvcil7CiAgICAgIHdpbmRvdy5fc3RhdHVzVGltZXIgPSBzZXRUaW1lb3V0KCgpID0+IHsKICAgICAgICBzdGF0dXNFbC5jbGFzc05hbWUgPSAnc3RhdHVzJzsKICAgICAgfSwgMjQwMCk7CiAgICB9CiAgfQoKICB3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbWVzc2FnZScsKGV2ZW50KT0+ewogICAgY29uc3QgZD1ldmVudD8uZGF0YXx8e307CiAgICBpZihkLnR5cGU9PT0nUERSX01BUFBJTkdfTE9HSU5fU1RBVFVTJyl7CiAgICAgIHNob3dTdGF0dXMoZC5tZXNzYWdlfHwnJywhIWQuZXJyb3IpOwogICAgfQogIH0pOwoKICBjb25zdCBtc2c9bmV3IFVSTFNlYXJjaFBhcmFtcyhsb2NhdGlvbi5zZWFyY2gpLmdldCgnbXNnJyk7CiAgaWYobXNnKXNob3dTdGF0dXMobXNnLHRydWUpOwogIHByb2Nlc2FyU2VzaW9uRXhpc3RlbnRlKCk7CgogIC8qIEZvbmRvIGRlIHBhcnTDrWN1bGFzIGNvbmVjdGFkYXMgKi8KICBjb25zdCBzdGFnZSA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzdGFnZScpOwogIGNvbnN0IGNhbnZhcyA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCduZXR3b3JrQ2FudmFzJyk7CiAgY29uc3QgY3R4ID0gY2FudmFzLmdldENvbnRleHQoJzJkJyk7CgogIGxldCBEUFIgPSBNYXRoLm1pbih3aW5kb3cuZGV2aWNlUGl4ZWxSYXRpbyB8fCAxLCAyKTsKICBsZXQgVyA9IDAsIEggPSAwLCBwYXJ0aWNsZXMgPSBbXTsKCiAgZnVuY3Rpb24gcmVzaXplTmV0d29yaygpewogICAgY29uc3QgcmVjdCA9IHN0YWdlLmdldEJvdW5kaW5nQ2xpZW50UmVjdCgpOwogICAgVyA9IE1hdGgucm91bmQocmVjdC53aWR0aCk7CiAgICBIID0gTWF0aC5yb3VuZChyZWN0LmhlaWdodCk7CiAgICBjYW52YXMud2lkdGggPSBNYXRoLnJvdW5kKFcgKiBEUFIpOwogICAgY2FudmFzLmhlaWdodCA9IE1hdGgucm91bmQoSCAqIERQUik7CiAgICBjYW52YXMuc3R5bGUud2lkdGggPSBXICsgJ3B4JzsKICAgIGNhbnZhcy5zdHlsZS5oZWlnaHQgPSBIICsgJ3B4JzsKICAgIGN0eC5zZXRUcmFuc2Zvcm0oRFBSLCAwLCAwLCBEUFIsIDAsIDApOwoKICAgIGNvbnN0IGRlc2t0b3AgPSB3aW5kb3cuaW5uZXJXaWR0aCA+PSA5MDA7CiAgICBjb25zdCBjb3VudCA9IGRlc2t0b3AgPyA5NSA6IDU4OwoKICAgIHBhcnRpY2xlcyA9IEFycmF5LmZyb20oe2xlbmd0aDogY291bnR9LCAoXywgaSkgPT4gKHsKICAgICAgeDogTWF0aC5yYW5kb20oKSAqIFcsCiAgICAgIHk6IE1hdGgucmFuZG9tKCkgKiBILAogICAgICB2eDogKE1hdGgucmFuZG9tKCkgLSAwLjUpICogKGRlc2t0b3AgPyAwLjI4IDogMC4zNCksCiAgICAgIHZ5OiAoTWF0aC5yYW5kb20oKSAtIDAuNSkgKiAoZGVza3RvcCA/IDAuMjQgOiAwLjMwKSwKICAgICAgcjogKGRlc2t0b3AgPyAxLjIgOiAxLjM1KSArIE1hdGgucmFuZG9tKCkgKiAoZGVza3RvcCA/IDEuOCA6IDIuMiksCiAgICAgIHNlZWQ6IE1hdGgucmFuZG9tKCkgKiAxMDAwICsgaSAqIDExLAogICAgICBnbG93OiAwLjQ1ICsgTWF0aC5yYW5kb20oKSAqIDAuNTUKICAgIH0pKTsKICB9CgogIGZ1bmN0aW9uIGFuaW1hdGVOZXR3b3JrKHQpewogICAgY3R4LmNsZWFyUmVjdCgwLCAwLCBXLCBIKTsKCiAgICBjb25zdCBkZXNrdG9wID0gd2luZG93LmlubmVyV2lkdGggPj0gOTAwOwogICAgY29uc3QgbWF4RGlzdCA9IGRlc2t0b3AgPyAxNTAgOiAxMjg7CgogICAgZm9yIChsZXQgaSA9IDA7IGkgPCBwYXJ0aWNsZXMubGVuZ3RoOyBpKyspewogICAgICBjb25zdCBwID0gcGFydGljbGVzW2ldOwoKICAgICAgcC54ICs9IHAudnggKyBNYXRoLnNpbih0ICogMC4wMDAzNSArIHAuc2VlZCkgKiAwLjA1OwogICAgICBwLnkgKz0gcC52eSArIE1hdGguY29zKHQgKiAwLjAwMDI4ICsgcC5zZWVkKSAqIDAuMDQ1OwoKICAgICAgaWYgKHAueCA8IC0xMikgcC54ID0gVyArIDEyOwogICAgICBpZiAocC54ID4gVyArIDEyKSBwLnggPSAtMTI7CiAgICAgIGlmIChwLnkgPCAtMTIpIHAueSA9IEggKyAxMjsKICAgICAgaWYgKHAueSA+IEggKyAxMikgcC55ID0gLTEyOwoKICAgICAgY3R4LmJlZ2luUGF0aCgpOwogICAgICBjdHguYXJjKHAueCwgcC55LCBwLnIgKiAyLjIsIDAsIE1hdGguUEkgKiAyKTsKICAgICAgY3R4LmZpbGxTdHlsZSA9IGByZ2JhKDkwLCAyNDAsIDI1NSwgJHswLjAzICsgcC5nbG93ICogMC4wNn0pYDsKICAgICAgY3R4LmZpbGwoKTsKCiAgICAgIGN0eC5iZWdpblBhdGgoKTsKICAgICAgY3R4LmFyYyhwLngsIHAueSwgcC5yLCAwLCBNYXRoLlBJICogMik7CiAgICAgIGN0eC5maWxsU3R5bGUgPSBgcmdiYSgxMTgsIDI0OCwgMjU1LCAkezAuNzIgKyBwLmdsb3cgKiAwLjE4fSlgOwogICAgICBjdHguc2hhZG93Qmx1ciA9IGRlc2t0b3AgPyAxMCA6IDEyOwogICAgICBjdHguc2hhZG93Q29sb3IgPSAncmdiYSg4NCwyMzUsMjU1LC4zNCknOwogICAgICBjdHguZmlsbCgpOwoKICAgICAgZm9yIChsZXQgaiA9IGkgKyAxOyBqIDwgcGFydGljbGVzLmxlbmd0aDsgaisrKXsKICAgICAgICBjb25zdCBxID0gcGFydGljbGVzW2pdOwogICAgICAgIGNvbnN0IGR4ID0gcC54IC0gcS54OwogICAgICAgIGNvbnN0IGR5ID0gcC55IC0gcS55OwogICAgICAgIGNvbnN0IGQgPSBNYXRoLmh5cG90KGR4LCBkeSk7CgogICAgICAgIGlmIChkIDwgbWF4RGlzdCl7CiAgICAgICAgICBjb25zdCBhID0gKDEgLSBkIC8gbWF4RGlzdCkgKiAoZGVza3RvcCA/IDAuMTggOiAwLjI0KTsKICAgICAgICAgIGN0eC5iZWdpblBhdGgoKTsKICAgICAgICAgIGN0eC5tb3ZlVG8ocC54LCBwLnkpOwogICAgICAgICAgY3R4LmxpbmVUbyhxLngsIHEueSk7CiAgICAgICAgICBjdHgubGluZVdpZHRoID0gZCA8IDcwID8gMSA6IDAuNjU7CiAgICAgICAgICBjdHguc3Ryb2tlU3R5bGUgPSBgcmdiYSg4NiwgMjM1LCAyNTUsICR7YX0pYDsKICAgICAgICAgIGN0eC5zaGFkb3dCbHVyID0gMDsKICAgICAgICAgIGN0eC5zdHJva2UoKTsKICAgICAgICB9CiAgICAgIH0KICAgIH0KCiAgICByZXF1ZXN0QW5pbWF0aW9uRnJhbWUoYW5pbWF0ZU5ldHdvcmspOwogIH0KCiAgcmVzaXplTmV0d29yaygpOwogIHJlcXVlc3RBbmltYXRpb25GcmFtZShhbmltYXRlTmV0d29yayk7CiAgd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsICgpID0+IHsKICAgIERQUiA9IE1hdGgubWluKHdpbmRvdy5kZXZpY2VQaXhlbFJhdGlvIHx8IDEsIDIpOwogICAgcmVzaXplTmV0d29yaygpOwogIH0pOwoKPC9zY3JpcHQ+CjwvYm9keT4KPC9odG1sPgo=';
+let embeddedMappingLoginCargado=false;
+
+function prepararLoginMappingEmbebido(){
+  const frame=document.getElementById('embeddedMappingLoginFrame');
+  if(!frame || embeddedMappingLoginCargado)return;
+
+  frame.srcdoc=atob(EMBEDDED_MAPPING_LOGIN_B64);
+  embeddedMappingLoginCargado=true;
+}
+
+function mostrarLoginMappingEmbebido(msg=''){
+  prepararLoginMappingEmbebido();
+
+  const overlay=document.getElementById('embeddedMappingLogin');
+  if(overlay)overlay.classList.add('open');
+  document.body.classList.add('mappingLoginOpen');
+
+  if(msg){
+    setTimeout(()=>{
+      try{
+        document.getElementById('embeddedMappingLoginFrame')?.contentWindow?.postMessage({
+          type:'PDR_MAPPING_LOGIN_STATUS',
+          message:String(msg),
+          error:true
+        },'*');
+      }catch(_){
+        console.warn('No fue posible enviar el mensaje al login embebido.');
+      }
+    },300);
+  }
+}
+
+function ocultarLoginMappingEmbebido(){
+  document.getElementById('embeddedMappingLogin')?.classList.remove('open');
+  document.body.classList.remove('mappingLoginOpen');
+}
+
+window.addEventListener('message',async(event)=>{
+  const d=event?.data||{};
+  if(d.type!=='PDR_MAPPING_LOGIN_OK')return;
+
+  try{
+    if(d.access_token && d.refresh_token){
+      const {error}=await mappingSb.auth.setSession({
+        access_token:d.access_token,
+        refresh_token:d.refresh_token
+      });
+      if(error)throw error;
+    }
+
+    const ok=await verificarSesionMapping();
+    if(ok!==false)ocultarLoginMappingEmbebido();
+
+  }catch(e){
+    console.error('Login Mapping integrado:',e);
+    mostrarLoginMappingEmbebido(e?.message||'No fue posible completar el ingreso.');
+  }
+});
+
 let mappingUser=null,mappingProfile=null,proyectosAsignados=[];
 let proyectoActivo=JSON.parse(localStorage.getItem('mapping_proyecto_activo_v1')||'null');
 const LOCAL_KEY='mapping_sitesurvey_registros_v1';
@@ -5568,11 +6143,13 @@ const CAMPOS_FIJABLES=[
   {key:'CIUDAD',id:'CIUDAD'},
   {key:'BARRIO',id:'BARRIO'},
   {key:'TECNICO',id:'TECNICO'},
+  {key:'COSTADO',id:'COSTADO'},
   {key:'PROPIETARI',id:'PROPIETARI'},
   {key:'ALTURA',id:'ALTURA'},
   {key:'ROTURA',id:'ROTURA'},
   {key:'MATERIAL',id:'MATERIAL'},
   {key:'TENSION',id:'TENSION'},
+  {key:'RIENDA',id:'RIENDA'},
   {key:'ESTADO',id:'ESTADO'},
   {key:'ESTADO',id:'ESTADO_CAM'},
   {key:'TIPOCAMARA',id:'TIPOCAMARA'},
@@ -5700,7 +6277,7 @@ function aplicarCamposFijos(){
     cambiarTipo();
   }
 
-  for(const key of ['CIUDAD','BARRIO','TECNICO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','TIPOCAMARA','TIPO_POSTE','CXOTROPOL']){
+  for(const key of ['CIUDAD','BARRIO','TECNICO','COSTADO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','RIENDA','TIPOCAMARA','TIPO_POSTE','CXOTROPOL']){
     const p=pins[key];
     if(!p?.checked)continue;
     const item=CAMPOS_FIJABLES.find(x=>x.key===key);
@@ -5727,24 +6304,57 @@ function destinoActualMappingParaLogin(){
   return archivo+location.search;
 }
 function irLoginMapping(msg=''){
-  const q=new URLSearchParams();
-  q.set('return',destinoActualMappingParaLogin());
-  if(msg)q.set('msg',msg);
-  location.replace(`login_mapping.html?${q.toString()}`);
+  mostrarLoginMappingEmbebido(msg);
 }
 async function verificarSesionMapping(){
   const {data:{session},error}=await mappingSb.auth.getSession();
-  if(error||!session){irLoginMapping();return}
+
+  if(error||!session){
+    mappingUser=null;
+    mostrarLoginMappingEmbebido(
+      error ? ('No fue posible validar la sesión: '+error.message) : ''
+    );
+    return false;
+  }
+
   mappingUser=session.user;
-  if(typeof authOverlay!=='undefined'&&authOverlay)authOverlay.style.display='none';
+
+  if(typeof authOverlay!=='undefined'&&authOverlay){
+    authOverlay.style.display='none';
+  }
+
   await cargarPerfilMapping();
   await cargarProyectosAsignados();
+
+  ocultarLoginMappingEmbebido();
+
+  // El login ya desapareció: si el permiso estaba concedido, inicia GPS.
+  // Si no, el indicador pedirá tocar 📍 y el permiso se solicitará
+  // mediante una acción explícita del técnico.
+  setTimeout(prepararGPSInicial,250);
+
+  return true;
 }
 async function loginMapping(){irLoginMapping()}
 async function logoutMapping(){
   await mappingSb.auth.signOut().catch(()=>{});
+
+  mappingUser=null;
+  mappingProfile=null;
+  proyectoActivo=null;
+  proyectosAsignados=[];
+  poligonosAsignados=[];
+  poligonosAsignadosSet=new Set();
+
   localStorage.removeItem('mapping_proyecto_activo_v1');
-  irLoginMapping();
+
+  try{detenerSeguimientoGPS()}catch(_){}
+  try{cerrarFormulario()}catch(_){}
+  try{cerrarRegistros()}catch(_){}
+  try{cerrarPanelProyectos()}catch(_){}
+  try{toggleSideMenu(false)}catch(_){}
+
+  mostrarLoginMappingEmbebido();
 }
 async function cargarPerfilMapping(){
   let {data,error}=await mappingSb.from('mapping_usuarios').select('*').eq('id',mappingUser.id).maybeSingle();
@@ -7968,7 +8578,13 @@ async function finalizarAsignacion(){
     bloquearSinProyecto('No hay un proyecto activo asignado.');
     return;
   }if(!proyectoActivo)return;if(registrosProyectoActual().some(r=>r.sync_status!=='enviado')){alert('Primero envía todos los datos pendientes.');return}if(!confirm('¿Finalizar tu asignación en este proyecto?'))return;const {error}=await mappingSb.from('mapping_proyecto_tecnicos').update({estado_asignacion:'finalizado',fecha_finalizacion:new Date().toISOString()}).eq('id',proyectoActivo.asignacion_id);if(error){alert(error.message);return}alert('Asignación finalizada.');proyectoActivo=null;localStorage.removeItem('mapping_proyecto_activo_v1');await cargarProyectosAsignados()}
-mappingSb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT')irLoginMapping()});
+mappingSb.auth.onAuthStateChange((event)=>{
+  if(event==='SIGNED_OUT'){
+    mappingUser=null;
+    mappingProfile=null;
+    mostrarLoginMappingEmbebido();
+  }
+});
 window.addEventListener('online',actualizarEstadoSync);window.addEventListener('offline',actualizarEstadoSync);window.addEventListener('load',async()=>{
   // Un estado "enviando" guardado en localStorage solo significa que la app
   // se cerró/interrumpió durante una sincronización anterior. Nunca debe
