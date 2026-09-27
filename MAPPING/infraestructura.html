@@ -1245,7 +1245,7 @@ body.lightTheme .gpsStatusPill{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · GPS continuo robusto · COSTADO/RIENDA fijables</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · ductos fijables · configuración normalizada</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1355,7 +1355,7 @@ body.lightTheme .gpsStatusPill{
 
 <div class="section hidden" id="secCamara"><h3>2. Datos de cámara / canalizado</h3><div class="sectionBody"><div class="grid">
 <div><label>TIPOCAMARA <span class="req">*</span></label><select id="TIPOCAMARA"><option value="">Seleccione...</option><option>SENCILLA</option><option>DOBLE</option><option>VEHICULAR</option><option>TRIPLE</option><option>CAMARA AUXILIAR</option></select></div><div><label>SUBIDA A POSTE? <span class="req">*</span></label><select id="SUBIDA_A_P"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select></div>
-<div><label>CONFIGURACION DE DUCTOS <span class="req">*</span></label><input id="CONF_DUCTO" placeholder="Ej: 4x4;2x2;"></div><div><label>DUCTO ELECTRICO <span class="req">*</span></label><input id="DUCTO_ELEC" placeholder="Sin guiones"></div><div><label>DUCT TELCO <span class="req">*</span></label><input id="DUCT_TELCO" placeholder="Sin guiones"></div><div><label>DUCTOS LIBRES <span class="req">*</span></label><input id="DUCT_LIBRE" placeholder="Sin guiones"></div><div><label>DUCTO A UTILIZAR <span class="req">*</span></label><input id="DUCT_UTIL" placeholder="Sin guiones"></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO_CAM"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
+<div><label>CONFIGURACION DE DUCTOS <span class="req">*</span></label><input id="CONF_DUCTO" placeholder="Ej: 3;3;3" inputmode="text" oninput="normalizarConfiguracionDuctos(this)"></div><div><label>DUCTO ELECTRICO <span class="req">*</span></label><input id="DUCTO_ELEC" placeholder="Sin guiones"></div><div><label>DUCT TELCO <span class="req">*</span></label><input id="DUCT_TELCO" placeholder="Sin guiones"></div><div><label>DUCTOS LIBRES <span class="req">*</span></label><input id="DUCT_LIBRE" placeholder="Sin guiones"></div><div><label>DUCTO A UTILIZAR <span class="req">*</span></label><input id="DUCT_UTIL" placeholder="Sin guiones"></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO_CAM"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
 </div></div></div>
 
 <div class="section conexionesSection" id="secConexiones">
@@ -3007,6 +3007,32 @@ function aplicarConfiguracionTipoProyecto(){
   }
 
   setTimeout(actualizarResaltadoObligatorios,0);
+}
+
+
+function normalizarConfiguracionDuctosValor(v){
+  return String(v??'')
+    .replace(/,/g,';')
+    .replace(/\s*;\s*/g,';')
+    .trim();
+}
+
+function normalizarConfiguracionDuctos(el){
+  if(!el)return;
+
+  const inicio=el.selectionStart;
+  const antes=String(el.value||'');
+  const despues=normalizarConfiguracionDuctosValor(antes);
+
+  if(despues!==antes){
+    el.value=despues;
+    try{
+      const pos=Math.min(Number(inicio)||despues.length,despues.length);
+      el.setSelectionRange(pos,pos);
+    }catch(_){}
+  }
+
+  try{actualizarValorPin('CONF_DUCTO')}catch(_){}
 }
 
 function cambiarTipo(){const t=TIPO.value;const cliente=esClienteViabilidad();secPoste.classList.toggle('hidden',cliente||(t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA'));secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');if(cliente){photoGrid.innerHTML='';photos={};}else{renderFotos(t);}aplicarConfiguracionTipoProyecto();if(cliente)configurarConexionCliente();setTimeout(actualizarResaltadoObligatorios,0);}
@@ -6153,6 +6179,11 @@ const CAMPOS_FIJABLES=[
   {key:'ESTADO',id:'ESTADO'},
   {key:'ESTADO',id:'ESTADO_CAM'},
   {key:'TIPOCAMARA',id:'TIPOCAMARA'},
+  {key:'CONF_DUCTO',id:'CONF_DUCTO'},
+  {key:'DUCTO_ELEC',id:'DUCTO_ELEC'},
+  {key:'DUCT_TELCO',id:'DUCT_TELCO'},
+  {key:'DUCT_LIBRE',id:'DUCT_LIBRE'},
+  {key:'DUCT_UTIL',id:'DUCT_UTIL'},
   {key:'TIPO_POSTE',id:'TIPO_POSTE'},
   {key:'CXOTROPOL',id:'CXOTROPOL'},
   {key:'PROYECTO',id:'PROYECTO',locked:true}
@@ -6277,12 +6308,17 @@ function aplicarCamposFijos(){
     cambiarTipo();
   }
 
-  for(const key of ['CIUDAD','BARRIO','TECNICO','COSTADO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','RIENDA','TIPOCAMARA','TIPO_POSTE','CXOTROPOL']){
+  for(const key of ['CIUDAD','BARRIO','TECNICO','COSTADO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','RIENDA','TIPOCAMARA','CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL','TIPO_POSTE','CXOTROPOL']){
     const p=pins[key];
     if(!p?.checked)continue;
     const item=CAMPOS_FIJABLES.find(x=>x.key===key);
     const el=document.getElementById(item?.id);
-    if(el)el.value=p.value??'';
+    if(el){
+      el.value=p.value??'';
+      if(key==='CONF_DUCTO'){
+        normalizarConfiguracionDuctos(el);
+      }
+    }
   }
 
   // Si se fijó la conexión a otro polígono, actualiza también su panel dependiente.
@@ -9012,5 +9048,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
+
 
 
