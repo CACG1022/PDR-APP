@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V46 - Login Master externo</title>
+<title>Master Mapping & Site Survey - V47 - Validación código proyecto</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -377,6 +377,58 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 }
 .authChecking.hide{display:none}
 
+
+.hourActivitySummary{
+  margin-top:9px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.hourActivitySummary .hourInsight{
+  border:1px solid #d7e0e8;
+  border-radius:10px;
+  background:#f8fafc;
+  padding:9px 10px;
+  min-width:0;
+}
+.hourActivitySummary .hourInsight span{
+  display:block;
+  color:#64748b;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.hourActivitySummary .hourInsight b{
+  display:block;
+  margin-top:4px;
+  color:#0f172a;
+  font-size:13px;
+}
+.hourActivitySummary .hourInsight small{
+  display:block;
+  margin-top:2px;
+  color:#64748b;
+  font-size:9px;
+}
+@media(max-width:700px){
+  .hourActivitySummary{grid-template-columns:1fr}
+}
+@media print{
+  .hourActivitySummary{
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:5px!important;
+    margin-top:5px!important;
+  }
+  .hourActivitySummary .hourInsight{
+    padding:5px 7px!important;
+    break-inside:avoid!important;
+  }
+  .hourActivitySummary .hourInsight b{font-size:10px!important}
+  .hourActivitySummary .hourInsight span,
+  .hourActivitySummary .hourInsight small{font-size:7px!important}
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -625,6 +677,11 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
         <div class="chartCard"><h3>Cantidad de infraestructura por polígono</h3><div class="chartBox"><canvas id="chPoligonos"></canvas></div></div>
         <div class="chartCard"><h3>Histórico cantidad de infraestructura x técnico</h3><div class="chartBox"><canvas id="chTecnicos"></canvas></div></div>
         <div class="chartCard span2"><h3>Cant de infraestructura levantada x técnico x día</h3><div class="chartBox"><canvas id="chTecnicoDia"></canvas></div></div>
+        <div class="chartCard span2">
+          <h3>Actividad de los técnicos por hora del día</h3>
+          <div class="chartBox"><canvas id="chActividadHora"></canvas></div>
+          <div id="dashActividadHoraResumen" class="hourActivitySummary">Analizando horas de trabajo...</div>
+        </div>
         <div class="chartCard span2"><h3>Mapa de referencia</h3><div class="chartMap"><div id="dashMap"></div></div></div>
       </div>
 
@@ -1269,6 +1326,31 @@ async function crearProyecto(){
   if(!['MAPPING','VIABILIDAD'].includes(tipo_proyecto))return alert('TIPO PROYECTO no válido.');
   if(!url)return alert('Pega la URL pública de POLIGONOS.geojson.');
 
+  // El campo codigo tiene una restricción UNIQUE en Supabase
+  // (mapping_proyectos_codigo_key). Validamos antes del INSERT para
+  // mostrar un mensaje claro y evitar el error 409 de la API.
+  const {data:proyectoExistente,error:errorCodigo}=await sb
+    .from('mapping_proyectos')
+    .select('id,codigo,nombre,ciudad,estado,tipo_proyecto,empresa_id')
+    .eq('codigo',codigo)
+    .limit(1)
+    .maybeSingle();
+
+  if(errorCodigo){
+    return alert('No fue posible validar si el código del proyecto ya existe: '+errorCodigo.message);
+  }
+
+  if(proyectoExistente){
+    return alert(
+      `El código de proyecto "${codigo}" ya existe y no puede repetirse.\n\n`+
+      `Proyecto existente: ${proyectoExistente.nombre||'Sin nombre'}\n`+
+      `Ciudad: ${proyectoExistente.ciudad||'N/A'}\n`+
+      `Tipo: ${proyectoExistente.tipo_proyecto||'MAPPING'}\n`+
+      `Estado: ${proyectoExistente.estado||'N/A'}\n\n`+
+      'Ingresa un código diferente para crear el nuevo proyecto.'
+    );
+  }
+
   let analisis=geojsonProyectoPreview;
 
   try{
@@ -1296,7 +1378,20 @@ async function crearProyecto(){
     .select('*')
     .single();
 
-  if(error)return alert('Error creando proyecto: '+error.message);
+  if(error){
+    const duplicado=String(error.code||'')==='23505' ||
+      Number(error.status||0)===409 ||
+      String(error.message||'').toLowerCase().includes('duplicate key');
+
+    if(duplicado){
+      return alert(
+        `El código de proyecto "${codigo}" ya existe en Supabase y no puede repetirse.\n\n`+
+        'Ingresa un código diferente e intenta nuevamente.'
+      );
+    }
+
+    return alert('Error creando proyecto: '+error.message);
+  }
 
   try{
     await registrarCatalogoPoligonos(proyecto.id,analisis.poligonos);
@@ -2223,6 +2318,70 @@ function fechaHoraColombiaMaster(valor=new Date()){
   }).format(d);
 }
 
+
+function horaPuntoColombia(p){
+  // Fuente principal: timestamps reales guardados por la aplicación.
+  const timestamp=p?.fecha_captura_app||p?.created_at||'';
+
+  if(timestamp){
+    const d=new Date(timestamp);
+
+    if(!Number.isNaN(d.getTime())){
+      try{
+        const parts=new Intl.DateTimeFormat('en-GB',{
+          timeZone:TZ_COLOMBIA_MASTER,
+          hour:'2-digit',
+          hourCycle:'h23'
+        }).formatToParts(d);
+
+        const h=Number(parts.find(x=>x.type==='hour')?.value);
+        if(Number.isFinite(h) && h>=0 && h<=23)return h;
+      }catch(_){}
+    }
+  }
+
+  // Compatibilidad con registros antiguos que solo tengan HORA.
+  const q=(p?.datos_qgis && typeof p.datos_qgis==='object') ? p.datos_qgis : {};
+  const raw=String(
+    q.HORA ??
+    p?.hora ??
+    ''
+  ).trim();
+
+  if(!raw)return null;
+
+  // 24 horas: 13:45 / 13:45:20
+  let m=raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if(m){
+    const h=Number(m[1]);
+    return h>=0&&h<=23?h:null;
+  }
+
+  // 12 horas: 1:45 PM / 1:45 p. m.
+  const limpio=raw
+    .replace(/\./g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .toUpperCase();
+
+  m=limpio.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/);
+  if(m){
+    let h=Number(m[1]);
+    if(h<1||h>12)return null;
+    if(m[3]==='AM')h=h===12?0:h;
+    else h=h===12?12:h+12;
+    return h;
+  }
+
+  return null;
+}
+
+function etiquetaHoraDashboard(h){
+  const n=Number(h);
+  if(!Number.isFinite(n))return '—';
+  return `${String(n).padStart(2,'0')}:00`;
+}
+
 function fechaPunto(p){
   // Fuente principal: fecha_captura_app / created_at son timestamps reales.
   // Se convierten a America/Bogota antes de agrupar por día.
@@ -2502,7 +2661,7 @@ function renderResumenCiudades(ciudades){
 }
 function renderDashboardAvances(){
   const arr=datosDashboardFiltrados();
-  const porDia=new Map(),porTec=new Map(),porPoligono=new Map(),porCiudad=new Map(),porTecDia=new Map();
+  const porDia=new Map(),porTec=new Map(),porPoligono=new Map(),porCiudad=new Map(),porTecDia=new Map(),porHora=new Map(),porTecHora=new Map();
   for(const p of arr){
     const f=fechaPunto(p)||'Sin fecha';
     const t=(p.tipo||'SIN TIPO').toUpperCase();
@@ -2526,7 +2685,13 @@ function renderDashboardAvances(){
     if(!porTecDia.has(k))porTecDia.set(k,{tecnico:tec,fecha:f,total:0});
     porTecDia.get(k).total++;
 
+    const hora=horaPuntoColombia(p);
+    if(Number.isFinite(hora)){
+      porHora.set(hora,(porHora.get(hora)||0)+1);
 
+      const kh=`${tec}||${hora}`;
+      porTecHora.set(kh,(porTecHora.get(kh)||0)+1);
+    }
   }
 
   const distanciaRed=calcularDistanciaRedPorConexiones(arr);
@@ -2605,6 +2770,126 @@ function renderDashboardAvances(){
     data:{labels:fechas.map(fmtFechaCorta),datasets:tecnicos.map((t,i)=>({label:t.tecnico,data:fechas.map(f=>porTecDia.get(`${t.tecnico}||${f}`)?.total||0),backgroundColor:tecColors[i%tecColors.length]}))},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{position:'top',align:'start',labels:{color:chartText}},datalabels:{display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,color:(ctx)=>ctx?.dataset?.backgroundColor||'#334155',anchor:'end',align:'top',formatter:(v)=>v||''}}}
   });
+
+  // ===== Actividad horaria de los técnicos =====
+  // Se muestran las 24 horas. Los registros se convierten a hora Colombia
+  // (America/Bogota) antes de agrupar para evitar desfases por UTC.
+  const horasDia=Array.from({length:24},(_,h)=>h);
+  const labelsHora=horasDia.map(h=>etiquetaHoraDashboard(h));
+  const tecsActividad=tecnicos.filter(t=>
+    horasDia.some(h=>(porTecHora.get(`${t.tecnico}||${h}`)||0)>0)
+  );
+
+  crearChart('chActividadHora',{
+    type:'bar',
+    data:{
+      labels:labelsHora,
+      datasets:tecsActividad.map((t,i)=>({
+        label:t.tecnico,
+        data:horasDia.map(h=>porTecHora.get(`${t.tecnico}||${h}`)||0),
+        backgroundColor:tecColors[i%tecColors.length],
+        stack:'actividad'
+      }))
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{
+          stacked:true,
+          ticks:{
+            color:'#64748b',
+            autoSkip:false,
+            maxRotation:0,
+            callback:function(value,index){
+              return index%2===0 ? labelsHora[index] : '';
+            }
+          },
+          title:{display:true,text:'Hora del día · Colombia',color:'#475569'}
+        },
+        y:{
+          stacked:true,
+          beginAtZero:true,
+          ticks:{precision:0,color:'#64748b'},
+          title:{display:true,text:'Elementos levantados',color:'#475569'}
+        }
+      },
+      plugins:{
+        legend:{
+          position:'top',
+          align:'start',
+          labels:{color:chartText,boxWidth:14}
+        },
+        tooltip:{
+          callbacks:{
+            footer:(items)=>{
+              const idx=items?.[0]?.dataIndex;
+              if(idx===undefined)return '';
+              const totalHora=porHora.get(idx)||0;
+              return `Total de la hora: ${totalHora}`;
+            }
+          }
+        },
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          formatter:(v)=>Number(v)>0?Number(v):'',
+          anchor:'center',
+          align:'center',
+          clamp:true,
+          color:'#ffffff',
+          textStrokeColor:'#0f172a',
+          textStrokeWidth:3,
+          font:{weight:'900',size:9}
+        }
+      }
+    }
+  });
+
+  const horasConActividad=horasDia.filter(h=>(porHora.get(h)||0)>0);
+  const resumenHora=document.getElementById('dashActividadHoraResumen');
+
+  if(resumenHora){
+    if(!horasConActividad.length){
+      resumenHora.innerHTML='<div class="hint">No hay registros con hora válida para los filtros seleccionados.</div>';
+    }else{
+      const primeraHora=Math.min(...horasConActividad);
+      const ultimaHora=Math.max(...horasConActividad);
+
+      const horaPico=horasConActividad.reduce(
+        (mejor,h)=>(porHora.get(h)||0)>(porHora.get(mejor)||0)?h:mejor,
+        horasConActividad[0]
+      );
+
+      // "Menor actividad" se calcula dentro de la jornada observada
+      // (primera a última hora con producción), incluyendo huecos de 0.
+      const horasJornada=horasDia.filter(h=>h>=primeraHora&&h<=ultimaHora);
+      const minimoValor=Math.min(...horasJornada.map(h=>porHora.get(h)||0));
+      const horasMinimas=horasJornada.filter(h=>(porHora.get(h)||0)===minimoValor);
+
+      const textoMinimas=horasMinimas
+        .slice(0,4)
+        .map(etiquetaHoraDashboard)
+        .join(', ')+(horasMinimas.length>4?'…':'');
+
+      resumenHora.innerHTML=`
+        <div class="hourInsight">
+          <span>Jornada observada</span>
+          <b>${etiquetaHoraDashboard(primeraHora)} – ${etiquetaHoraDashboard(ultimaHora+1)}</b>
+          <small>Primera y última hora con registros</small>
+        </div>
+        <div class="hourInsight">
+          <span>Mayor actividad</span>
+          <b>${etiquetaHoraDashboard(horaPico)} · ${porHora.get(horaPico)||0} elementos</b>
+          <small>Hora con más levantamientos</small>
+        </div>
+        <div class="hourInsight">
+          <span>Menor actividad en la jornada</span>
+          <b>${textoMinimas} · ${minimoValor} elementos</b>
+          <small>Hora(s) con menos levantamientos</small>
+        </div>`;
+    }
+  }
 
   asegurarDashboardMap();
   if(dashboardMapLayer)dashboardMapLayer.clearLayers();
@@ -3754,3 +4039,4 @@ document.addEventListener('keydown',function(e){
 </script>
 </body>
 </html>
+
