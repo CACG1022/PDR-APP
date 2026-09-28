@@ -1245,7 +1245,7 @@ body.lightTheme .gpsStatusPill{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · ductos fijables · configuración normalizada</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · fotos configurables · GeoJSON/KMZ · ESTADO único</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1342,11 +1342,12 @@ body.lightTheme .gpsStatusPill{
   <small id="direccionCompletaEstado" class="fieldHelp">Completa la nomenclatura. Ejemplo: <b>Calle 15 # 20-34</b>.</small>
 </div>
 <div id="wrapCostado"><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
+<div id="wrapEstado"><label>ESTADO <span class="req">*</span></label><select id="ESTADO"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
 </div></div></div>
 
 <div class="section hidden" id="secPoste"><h3>2. Datos del poste</h3><div class="sectionBody"><div class="grid3">
 <div><label>PROPIETARI <span class="req">*</span></label><select id="PROPIETARI"></select></div><div><label>ALTURA <span class="req">*</span></label><select id="ALTURA"><option value="">Seleccione...</option><option>8</option><option>10</option><option>12</option><option>14</option></select></div><div><label>TIPO POSTE <span class="req">*</span></label><select id="TIPO_POSTE"><option value="">Seleccione...</option><option>SENCILLO</option><option>DOBLE</option><option>TRIPLE</option><option>ALUMBRADO PUBLICO</option></select></div>
-<div><label>MATERIAL <span class="req">*</span></label><select id="MATERIAL"><option value="">Seleccione...</option><option>CONCRETO</option><option>METALICO</option><option>MADERA</option><option value="FIBRA">FIBRA DE VIDRIO</option></select></div><div><label>ROTURA <span class="req">*</span></label><select id="ROTURA"><option value="">Seleccione...</option><option value="510">510</option><option value="750">750</option><option value="1050">1050</option><option value="1310">1310</option></select></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
+<div><label>MATERIAL <span class="req">*</span></label><select id="MATERIAL"><option value="">Seleccione...</option><option>CONCRETO</option><option>METALICO</option><option>MADERA</option><option value="FIBRA">FIBRA DE VIDRIO</option></select></div><div><label>ROTURA <span class="req">*</span></label><select id="ROTURA"><option value="">Seleccione...</option><option value="510">510</option><option value="750">750</option><option value="1050">1050</option><option value="1310">1310</option></select></div>
 <div><label>TENSION <span class="req">*</span></label><select id="TENSION"><option value="">Seleccione...</option><option>BAJA TENSION</option><option>MEDIA TENSION</option><option>ALTA TENSION</option><option>MEDIA Y BAJA TENSION</option><option>MEDIA Y ALTA TENSION</option><option>N/A</option></select></div><div><label>RIENDA <span class="req">*</span></label><select id="RIENDA"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select></div><div><label>ELECTRICOS <span class="req">*</span></label><select id="ELECTRICOS"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div>
 <div><label>CABLES EXISTENTES <span class="req">*</span></label><input id="CABLES" type="number" min="0" max="20" value="0"></div><div><label>RESERVAS EXISTENTES <span class="req">*</span></label><input id="RESERVAS" type="number" min="0" max="10" value="0"></div><div><label>EMPALMES EXISTENTES <span class="req">*</span></label><input id="EMPALMES" type="number" min="0" max="10" value="0"></div>
 <div><label>NAPS EXISTENTES <span class="req">*</span></label><input id="NAPS" type="number" min="0" max="10" value="0"></div><div><label>BAJANTES EXISTENTES <span class="req">*</span></label><input id="BAJANTES" type="number" min="0" max="10" value="0"></div><div><label>FUENTES <span class="req">*</span></label><input id="FUENTES" type="number" min="0" max="10" value="0"></div>
@@ -1355,7 +1356,7 @@ body.lightTheme .gpsStatusPill{
 
 <div class="section hidden" id="secCamara"><h3>2. Datos de cámara / canalizado</h3><div class="sectionBody"><div class="grid">
 <div><label>TIPOCAMARA <span class="req">*</span></label><select id="TIPOCAMARA"><option value="">Seleccione...</option><option>SENCILLA</option><option>DOBLE</option><option>VEHICULAR</option><option>TRIPLE</option><option>CAMARA AUXILIAR</option></select></div><div><label>SUBIDA A POSTE? <span class="req">*</span></label><select id="SUBIDA_A_P"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select></div>
-<div><label>CONFIGURACION DE DUCTOS <span class="req">*</span></label><input id="CONF_DUCTO" placeholder="Ej: 3;3;3" inputmode="text" oninput="normalizarConfiguracionDuctos(this)"></div><div><label>DUCTO ELECTRICO <span class="req">*</span></label><input id="DUCTO_ELEC" placeholder="Sin guiones"></div><div><label>DUCT TELCO <span class="req">*</span></label><input id="DUCT_TELCO" placeholder="Sin guiones"></div><div><label>DUCTOS LIBRES <span class="req">*</span></label><input id="DUCT_LIBRE" placeholder="Sin guiones"></div><div><label>DUCTO A UTILIZAR <span class="req">*</span></label><input id="DUCT_UTIL" placeholder="Sin guiones"></div><div><label>ESTADO <span class="req">*</span></label><select id="ESTADO_CAM"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
+<div><label>CONFIGURACION DE DUCTOS <span class="req">*</span></label><input id="CONF_DUCTO" placeholder="Ej: 3;3;3" inputmode="text" oninput="normalizarConfiguracionDuctos(this)"></div><div><label>DUCTO ELECTRICO <span class="req">*</span></label><input id="DUCTO_ELEC" placeholder="Sin guiones"></div><div><label>DUCT TELCO <span class="req">*</span></label><input id="DUCT_TELCO" placeholder="Sin guiones"></div><div><label>DUCTOS LIBRES <span class="req">*</span></label><input id="DUCT_LIBRE" placeholder="Sin guiones"></div><div><label>DUCTO A UTILIZAR <span class="req">*</span></label><input id="DUCT_UTIL" placeholder="Sin guiones"></div>
 </div></div></div>
 
 <div class="section conexionesSection" id="secConexiones">
@@ -2667,11 +2668,32 @@ function tipoProyectoRegistro(r){
 }
 
 function photoDefsProyecto(tipo,registro=null){
-  const defs=[...(photoDefs[tipo]||[])];
+  const tipoNormalizado=String(tipo||'').trim().toUpperCase();
+  const defs=[...(photoDefs[tipoNormalizado]||[])];
+
+  // Si el Master configuró explícitamente las fotos del proyecto,
+  // esa configuración manda para el técnico.
+  const cfg=proyectoActivo?.fotos_config;
+
+  if(
+    cfg &&
+    typeof cfg==='object' &&
+    !Array.isArray(cfg) &&
+    Array.isArray(cfg[tipoNormalizado])
+  ){
+    const permitidas=new Set(
+      cfg[tipoNormalizado].map(x=>String(x||'').trim())
+    );
+
+    return defs.filter(([id])=>permitidas.has(String(id)));
+  }
+
+  // Compatibilidad con proyectos antiguos que todavía no tienen fotos_config.
   const tipoProyecto=registro?tipoProyectoRegistro(registro):tipoProyectoActivo();
   if(tipoProyecto==='VIABILIDAD'){
     return defs.filter(([id])=>!['FOTO4','FOTO11'].includes(id));
   }
+
   return defs;
 }
 
@@ -2856,7 +2878,10 @@ function aplicarVistaClienteViabilidad(){
     configurarConexionCliente();
   }else{
     if(secProy)secProy.style.display='';
-    if(secFotos)secFotos.style.display='';
+    if(secFotos){
+      const tipoActual=String(TIPO?.value||'');
+      secFotos.style.display=photoDefsProyecto(tipoActual).length?'':'none';
+    }
     if(wrapPol)wrapPol.style.display='';
     // COSTADO conserva la regla propia MAPPING/VIABILIDAD.
     if(wrapCost)wrapCost.style.display='';
@@ -3327,22 +3352,22 @@ function val(id){return document.getElementById(id)?.value??''}function num(id){
 function obtenerCamposObligatoriosActivos(){
   const t=TIPO?.value||'';
   if(esClienteViabilidad()){
-    return ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','CX1','DISTODO1'];
+    return ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO','CX1','DISTODO1'];
   }
-  const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION'];
+  const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO'];
   if(tipoProyectoActivo()==='VIABILIDAD')ids.push('COSTADO');
 
   if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
     ids.push(
       'PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA',
-      'ESTADO','TENSION','RIENDA','ELECTRICOS','FINDERED'
+      'TENSION','RIENDA','ELECTRICOS','FINDERED'
     );
   }
 
   if(t==='CANALIZADO'){
     ids.push(
       'TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC',
-      'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL','ESTADO_CAM'
+      'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'
     );
   }
 
@@ -4068,7 +4093,7 @@ function validar(){
 
   const falt=[];
   aplicarConfiguracionTipoProyecto();
-  const baseReq=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION'];
+  const baseReq=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO'];
   if(tipoProyectoActivo()==='VIABILIDAD' && !esClienteViabilidad())baseReq.push('COSTADO');
   baseReq.forEach(id=>{
     if(!val(id))falt.push(id);
@@ -4117,13 +4142,13 @@ function validar(){
   }
 
   if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
-    ['PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA','ESTADO','TENSION','RIENDA','ELECTRICOS','FINDERED'].forEach(id=>{
+    ['PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA','TENSION','RIENDA','ELECTRICOS','FINDERED'].forEach(id=>{
       if(val(id)==='')falt.push(id);
     });
   }
 
   if(t==='CANALIZADO'){
-    ['TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL','ESTADO_CAM'].forEach(id=>{
+    ['TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'].forEach(id=>{
       if(!val(id))falt.push(id);
     });
     for(const id of ['CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL']){
@@ -4244,7 +4269,7 @@ function validar(){
   return true;
 }
 
-function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -4558,7 +4583,10 @@ async function editarPunto(id){
       'SUBIDA A P':'SUBIDA_A_P','ELEM RED':'ELEM_RED',
       'CANT RESER':'CANT_RESER'
     };
-    const el=document.getElementById(mapId[k]||k);
+
+    // ESTADO es un único campo para todos los tipos de elemento.
+    const idDestino=mapId[k]||k;
+    const el=document.getElementById(idDestino);
     if(el&&v!==null&&typeof v!=='object')el.value=v;
   }
   CONSECUTIV.value=r.CONSECUTIV;
@@ -4566,6 +4594,10 @@ async function editarPunto(id){
   LATITUDE.value=r.LATITUDE;
   LONGITUDE.value=r.LONGITUDE;
   cambiarTipo();
+
+  // Reaplica el ESTADO único después de cambiar la vista del formulario.
+  if(document.getElementById('ESTADO'))ESTADO.value=r.ESTADO||'';
+
   TIPO_PROYECTO.value=tipoProyectoActivo();
   if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value=(!esClienteViabilidad()&&Number(r.DISTANCIA_INTERNA||0)>0)?'SI':'NO';
   aplicarConfiguracionTipoProyecto();
@@ -5997,6 +6029,139 @@ function pintarPoligonosAsignados(obj){
   }).addTo(map);
 }
 
+
+function parsearCoordenadasKMLMapping(texto){
+  return String(texto||'')
+    .trim()
+    .split(/\s+/)
+    .map(par=>{
+      const p=par.split(',').map(Number);
+      return [p[0],p[1]];
+    })
+    .filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+}
+
+function propiedadesPlacemarkKMLMapping(pm){
+  const props={};
+
+  const nombre=pm.querySelector(':scope > name')?.textContent?.trim()||
+    pm.getElementsByTagName('name')?.[0]?.textContent?.trim()||'';
+
+  if(nombre){
+    props.NOMBRE=nombre;
+    props.POLIGONO=nombre;
+  }
+
+  pm.querySelectorAll('ExtendedData Data').forEach(d=>{
+    const key=d.getAttribute('name');
+    const value=d.querySelector('value')?.textContent?.trim()||'';
+    if(key)props[key]=value;
+  });
+
+  pm.querySelectorAll('ExtendedData SimpleData').forEach(d=>{
+    const key=d.getAttribute('name');
+    const value=d.textContent?.trim()||'';
+    if(key)props[key]=value;
+  });
+
+  return props;
+}
+
+function geoJSONDesdeKMLTextoMapping(kmlText){
+  const xml=new DOMParser().parseFromString(kmlText,'text/xml');
+  if(xml.querySelector('parsererror')){
+    throw new Error('El KML contenido en el KMZ no es válido.');
+  }
+
+  const features=[];
+
+  [...xml.getElementsByTagName('Placemark')].forEach((pm,idx)=>{
+    const polygons=[...pm.getElementsByTagName('Polygon')];
+    if(!polygons.length)return;
+
+    const geoms=[];
+
+    for(const poly of polygons){
+      const outerNode=poly.getElementsByTagName('outerBoundaryIs')?.[0];
+      const outerText=outerNode?.getElementsByTagName('coordinates')?.[0]?.textContent||'';
+      const outer=parsearCoordenadasKMLMapping(outerText);
+      if(outer.length<4)continue;
+
+      const rings=[outer];
+
+      [...poly.getElementsByTagName('innerBoundaryIs')].forEach(inner=>{
+        const t=inner.getElementsByTagName('coordinates')?.[0]?.textContent||'';
+        const ring=parsearCoordenadasKMLMapping(t);
+        if(ring.length>=4)rings.push(ring);
+      });
+
+      geoms.push(rings);
+    }
+
+    if(!geoms.length)return;
+
+    const properties=propiedadesPlacemarkKMLMapping(pm);
+    if(!properties.NOMBRE){
+      properties.NOMBRE=`POLIGONO${features.length+1}`;
+      properties.POLIGONO=properties.NOMBRE;
+    }
+
+    features.push({
+      type:'Feature',
+      id:properties.NOMBRE||idx,
+      properties,
+      geometry:geoms.length===1
+        ? {type:'Polygon',coordinates:geoms[0]}
+        : {type:'MultiPolygon',coordinates:geoms}
+    });
+  });
+
+  if(!features.length){
+    throw new Error('El KMZ/KML no contiene polígonos válidos.');
+  }
+
+  return {type:'FeatureCollection',features};
+}
+
+async function geoJSONDesdeKMZMapping(buffer){
+  if(typeof JSZip==='undefined'){
+    throw new Error('JSZip no está disponible.');
+  }
+
+  const zip=await JSZip.loadAsync(buffer);
+  const kmlFiles=Object.values(zip.files).filter(f=>
+    !f.dir && /\.kml$/i.test(f.name)
+  );
+
+  if(!kmlFiles.length){
+    throw new Error('El KMZ no contiene un archivo KML.');
+  }
+
+  const kmlText=await kmlFiles[0].async('text');
+  return geoJSONDesdeKMLTextoMapping(kmlText);
+}
+
+async function descargarArchivoPoligonosMapping(url){
+  const resp=await fetch(url,{cache:'no-store'});
+  if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+
+  if(/\.kmz(?:$|[?#])/i.test(url)){
+    const buffer=await resp.arrayBuffer();
+    return await geoJSONDesdeKMZMapping(buffer);
+  }
+
+  const text=await resp.text();
+
+  if(/^\s*</.test(text)){
+    if(/<kml[\s>]/i.test(text)){
+      return geoJSONDesdeKMLTextoMapping(text);
+    }
+    throw new Error('El archivo devolvió HTML en vez de GeoJSON/KML.');
+  }
+
+  return JSON.parse(text);
+}
+
 async function descargarGeoJSONProyecto(){
   const url=proyectoActivo?.poligonos_url||(proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url);
   const proyectoId=proyectoActivo?.proyecto_id||proyectoActivo?.id;
@@ -6012,19 +6177,11 @@ async function descargarGeoJSONProyecto(){
 
   if(navigator.onLine){
     try{
-      const resp=await fetch(url,{cache:'no-store'});
-      if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
-
-      const text=await resp.text();
-      if(/^\s*</.test(text)){
-        throw new Error('La URL devolvió HTML en vez de GeoJSON.');
-      }
-
-      const obj=JSON.parse(text);
+      const obj=await descargarArchivoPoligonosMapping(url);
       await guardarCachePoligonos(proyectoId,version,obj);
       return obj;
     }catch(e){
-      console.warn('No se pudo descargar POLIGONOS.geojson desde la URL pública:',e);
+      console.warn('No se pudo descargar el archivo de polígonos desde la URL pública:',e);
     }
   }
 
@@ -6177,7 +6334,6 @@ const CAMPOS_FIJABLES=[
   {key:'TENSION',id:'TENSION'},
   {key:'RIENDA',id:'RIENDA'},
   {key:'ESTADO',id:'ESTADO'},
-  {key:'ESTADO',id:'ESTADO_CAM'},
   {key:'TIPOCAMARA',id:'TIPOCAMARA'},
   {key:'CONF_DUCTO',id:'CONF_DUCTO'},
   {key:'DUCTO_ELEC',id:'DUCTO_ELEC'},
@@ -6210,11 +6366,7 @@ function guardarPinsProyecto(pins){
 }
 
 function elementoPinActual(key){
-  if(key==='ESTADO'){
-    return TIPO?.value==='CANALIZADO'
-      ? document.getElementById('ESTADO_CAM')
-      : document.getElementById('ESTADO');
-  }
+  if(key==='ESTADO')return document.getElementById('ESTADO');
   const item=CAMPOS_FIJABLES.find(x=>x.key===key && !x.locked);
   return item?document.getElementById(item.id):null;
 }
@@ -6240,7 +6392,6 @@ function actualizarEstiloPins(){
     if(!p?.checked)continue;
     if(key==='ESTADO'){
       document.getElementById('ESTADO')?.classList.add('pinFixedField');
-      document.getElementById('ESTADO_CAM')?.classList.add('pinFixedField');
     }else{
       const item=CAMPOS_FIJABLES.find(x=>x.key===key);
       document.getElementById(item?.id)?.classList.add('pinFixedField');
@@ -6813,7 +6964,7 @@ function prepararRegistroLocalBase(){
   }
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
-  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:TIPO.value==='CANALIZADO'?val('ESTADO_CAM'):val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
+  const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
   for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}return r;
 }
 
