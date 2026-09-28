@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V47 - Validación código proyecto</title>
+<title>Master Mapping & Site Survey - V51 - Fotos editables + archivos POLIGONOS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -429,6 +429,106 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   .hourActivitySummary .hourInsight small{font-size:7px!important}
 }
 
+
+/* ===== CONFIGURACIÓN DE FOTOS POR PROYECTO ===== */
+.projectPhotoConfig{
+  margin:12px 0;
+  border:1px solid #36526d;
+  border-radius:14px;
+  background:#0b1928;
+  overflow:hidden;
+}
+.projectPhotoConfigHead{
+  padding:10px 12px;
+  border-bottom:1px solid #36526d;
+  background:#102236;
+}
+.projectPhotoConfigHead b{
+  display:block;
+  color:#bae6fd;
+  font-size:12px;
+}
+.projectPhotoConfigHead small{
+  display:block;
+  margin-top:3px;
+  color:#94a3b8;
+  font-size:9px;
+  line-height:1.35;
+}
+.projectPhotoConfigGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  padding:10px;
+}
+.projectPhotoGroup{
+  border:1px solid #29415d;
+  border-radius:12px;
+  background:#07111f;
+  padding:9px;
+  min-width:0;
+}
+.projectPhotoGroupHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  margin-bottom:7px;
+}
+.projectPhotoGroupHead b{
+  color:#e2e8f0;
+  font-size:11px;
+}
+.projectPhotoMiniActions{
+  display:flex;
+  gap:4px;
+}
+.projectPhotoMiniActions button{
+  border:1px solid #36526d;
+  background:#13273a;
+  color:#bae6fd;
+  border-radius:7px;
+  padding:4px 6px;
+  font-size:8px;
+  font-weight:900;
+  cursor:pointer;
+}
+.projectPhotoCheck{
+  display:grid!important;
+  grid-template-columns:18px 1fr;
+  gap:7px;
+  align-items:start;
+  margin:5px 0!important;
+  padding:6px 7px;
+  border-radius:8px;
+  background:#0d1b2a;
+  color:#cbd5e1!important;
+  cursor:pointer;
+}
+.projectPhotoCheck input{
+  width:16px!important;
+  height:16px!important;
+  margin:0!important;
+  accent-color:#12b8ae;
+}
+.projectPhotoCheck span{
+  font-size:9px;
+  line-height:1.25;
+}
+.projectPhotoSummary{
+  margin:0 10px 10px;
+  padding:8px 10px;
+  border-left:4px solid #22d3ee;
+  border-radius:8px;
+  background:#07111f;
+  color:#cbd5e1;
+  font-size:9px;
+  line-height:1.35;
+}
+@media(max-width:700px){
+  .projectPhotoConfigGrid{grid-template-columns:1fr}
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -525,11 +625,28 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   <div class="grid2"><div><label>Código *</label><input id="pCodigo" placeholder="EYCO-2026-BTA-01"></div><div><label>Ciudad</label><input id="pCiudad" placeholder="Bogotá D.C"></div></div>
   <div class="grid2">
     <div><label>Nombre *</label><input id="pNombre" placeholder="Mapping Bogotá Veracruz"></div>
-    <div><label>TIPO PROYECTO *</label><select id="pTipoProyecto"><option value="MAPPING">MAPPING</option><option value="VIABILIDAD">VIABILIDAD</option></select></div>
+    <div><label>TIPO PROYECTO *</label><select id="pTipoProyecto" onchange="aplicarDefaultFotosProyecto(this.value,true)"><option value="MAPPING">MAPPING</option><option value="VIABILIDAD">VIABILIDAD</option></select></div>
   </div>
+
+  <div class="projectPhotoConfig" id="pFotoConfigPanel">
+    <div class="projectPhotoConfigHead">
+      <b>📷 Fotografías que verá el técnico</b>
+      <small>
+        Selecciona únicamente las fotografías requeridas por este proyecto.
+        Los campos desmarcados no aparecerán en el formulario del técnico y tampoco serán obligatorios.
+      </small>
+    </div>
+    <div class="projectPhotoConfigGrid" id="pFotoConfigBox"></div>
+    <div class="projectPhotoSummary" id="pFotoConfigResumen">Configurando fotografías...</div>
+  </div>
+
   <label>Descripción</label><textarea id="pDescripcion"></textarea>
-  <label>URL pública de POLIGONOS.geojson *</label>
-  <input id="pGeojsonUrl" placeholder="https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/POLIGONOS-BTA.geojson">
+  <label>Nombre del archivo de polígonos *</label>
+  <input id="pGeojsonUrl" placeholder="Ej: POLIGONOS-BTA.geojson o POLIGONOS-BTA.kmz">
+  <div class="hint" style="margin-top:5px">
+    Ruta base automática: <b>https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/</b><br>
+    Puedes escribir solo el nombre del archivo. Si no escribes extensión, se asumirá <b>.geojson</b>.
+  </div>
   <div class="actions" style="grid-template-columns:1fr 1fr">
     <button class="btn gray" onclick="leerPoligonosDesdeDriveCrear()">Leer polígonos</button>
     <button class="btn" onclick="crearProyecto()">Crear proyecto</button>
@@ -537,10 +654,30 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   <div id="pGeojsonInfo" class="hint">La URL debe abrir directamente el archivo GeoJSON en el navegador.</div>
 
   <div class="geoDivider"></div>
-  <h4>Actualizar GeoJSON de proyecto existente</h4>
+  <h4>Actualizar archivo de polígonos de proyecto existente</h4>
   <label>Proyecto</label><select id="geoProyectoExistente"></select>
-  <label>Nueva URL pública de GeoJSON</label><input id="geoUrlActualiza" placeholder="https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/POLIGONOS-BTA.geojson">
-  <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer URL / actualizar versión</button>
+  <label>Nuevo nombre del archivo de polígonos</label>
+  <input id="geoUrlActualiza" placeholder="Ej: POLIGONOS-BTA-V2.geojson o POLIGONOS-BTA-V2.kmz">
+  <div class="hint" style="margin-top:5px">
+    Se usará automáticamente la ruta <b>https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/</b>
+  </div>
+  <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer archivo / actualizar versión</button>
+
+  <div class="geoDivider"></div>
+  <h4>Actualizar fotografías de proyecto existente</h4>
+  <label>Proyecto</label>
+  <select id="fotoProyectoExistente" onchange="cargarConfigFotosProyectoExistente()"></select>
+  <div class="projectPhotoConfig" id="fotoConfigExistentePanel">
+    <div class="projectPhotoConfigHead">
+      <b>📷 Fotografías habilitadas para el técnico</b>
+      <small>
+        Puedes modificar un proyecto ya creado. Los cambios se aplican cuando el técnico actualiza sus proyectos o vuelve a ingresar.
+      </small>
+    </div>
+    <div class="projectPhotoConfigGrid" id="fotoConfigExistenteBox"></div>
+    <div class="projectPhotoSummary" id="fotoConfigExistenteResumen">Selecciona un proyecto.</div>
+  </div>
+  <button class="btn blue" onclick="guardarConfigFotosProyectoExistente()">Guardar configuración de fotos</button>
 </div>
   <div class="card"><h3>Asignar proyecto</h3>
     <label>Proyecto</label><select id="asigProyecto" onchange="filtrarTecnicosPorProyecto();cargarPoligonosAsignacion()"></select>
@@ -818,7 +955,28 @@ async function logoutMaster(){
     irLoginMaster('logout');
   }
 }
-async function cargarTodo(){await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios(),cargarAsignaciones()]);llenarSelects();actualizarKpis();if(!fProyecto.value&&proyectos.length)fProyecto.value=proyectos[0].id;await cargarProyectoMapa()}
+async function cargarTodo(){
+  await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios(),cargarAsignaciones()]);
+  llenarSelects();
+  actualizarKpis();
+
+  if(!document.getElementById('pFotoConfigBox')?.children.length){
+    renderConfigFotosProyectoCrear();
+  }
+
+  if(!document.getElementById('fotoConfigExistenteBox')?.children.length){
+    renderConfigFotosProyectoExistente();
+  }
+
+  const fp=document.getElementById('fotoProyectoExistente');
+  if(fp && !fp.value && proyectos.length){
+    fp.value=proyectos[0].id;
+  }
+  cargarConfigFotosProyectoExistente();
+
+  if(!fProyecto.value&&proyectos.length)fProyecto.value=proyectos[0].id;
+  await cargarProyectoMapa();
+}
 async function cargarEmpresas(){
   const {data,error}=await sb.from('mapping_empresas').select('*').eq('activo',true).order('nombre');
   if(error){alert('Error cargando empresas: '+error.message);return}
@@ -948,7 +1106,15 @@ function llenarSelects(){
     const e=empresas.find(x=>x.id===p.empresa_id);
     return `<option value="${p.id}">${esc(e?.nombre_corto||e?.nombre||'SIN EMPRESA')} · ${esc(p.codigo)} · ${esc(p.nombre)}</option>`
   }).join('');
-  asigProyecto.innerHTML=po;fProyecto.innerHTML=po;if(document.getElementById('geoProyectoExistente'))geoProyectoExistente.innerHTML=po;
+  asigProyecto.innerHTML=po;fProyecto.innerHTML=po;
+  if(document.getElementById('geoProyectoExistente'))geoProyectoExistente.innerHTML=po;
+  if(document.getElementById('fotoProyectoExistente')){
+    const keepFoto=fotoProyectoExistente.value;
+    fotoProyectoExistente.innerHTML=po;
+    if([...fotoProyectoExistente.options].some(o=>o.value===keepFoto)){
+      fotoProyectoExistente.value=keepFoto;
+    }
+  }
   const tec=usuarios.filter(u=>u.rol==='tecnico');
   asigTecnico.innerHTML='<option value="">Seleccione...</option>'+tec.map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)} · ${esc(u.email)} · ${esc(u.empresa_nombre||'SIN EMPRESA')}</option>`).join('')
 }
@@ -965,6 +1131,153 @@ function pintarAsignacionesModal(){tablaAsignacionesModal.innerHTML=asignaciones
 function abrirModalAsignaciones(){llenarFiltrosAsignaciones();aplicarFiltrosAsignaciones();actualizarResumenAsignaciones();asignacionesModal.classList.add('open')}function cerrarModalAsignaciones(){asignacionesModal.classList.remove('open')}
 function formatoFecha(v){if(!v)return '—';try{return new Date(v).toLocaleString('es-CO')}catch{return v}}
 function accionesAsignacion(a){return `<div class="miniActions"><button class="btn small blue" onclick="verProyecto('${a.proyecto_id}')">Ver</button><button class="btn small gray" onclick="abrirPuntos('${a.proyecto_id}')">Puntos</button><button class="btn small blue" onclick="abrirEditarPoligonos('${a.asignacion_id}')">Polígonos</button><button class="btn small purple" onclick="abrirReasignar('${a.asignacion_id}')">Reasignar</button>${a.estado_asignacion==='finalizado'?`<button class="btn small warn" onclick="reabrirAsignacion('${a.asignacion_id}')">Reabrir</button>`:`<button class="btn small" onclick="finalizarAsignacion('${a.asignacion_id}')">Finalizar</button>`}<button class="btn small gray" onclick="abrirHistorial('${a.asignacion_id}')">Historial</button><button class="btn small danger" onclick="eliminarAsignacion('${a.asignacion_id}')">Quitar</button></div>`}
+
+
+const POLIGONOS_PUBLIC_BASE='https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/';
+
+function nombreArchivoPoligonosDesdeEntrada(v){
+  let s=String(v||'').trim();
+  if(!s)return '';
+
+  try{
+    if(/^https?:\/\//i.test(s)){
+      const u=new URL(s);
+      s=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'');
+    }
+  }catch(_){}
+
+  s=s.replace(/\\/g,'/').split('/').pop().trim();
+  s=s.replace(/[?#].*$/,'');
+
+  if(!/\.[A-Za-z0-9]+$/.test(s)){
+    s+='.geojson';
+  }
+
+  return s;
+}
+
+function urlPublicaPoligonos(v){
+  const nombre=nombreArchivoPoligonosDesdeEntrada(v);
+  if(!nombre)return '';
+
+  return POLIGONOS_PUBLIC_BASE+
+    nombre.split('/').map(x=>encodeURIComponent(x)).join('/');
+}
+
+function valorInputArchivoPoligonosDesdeUrl(url){
+  return nombreArchivoPoligonosDesdeEntrada(url);
+}
+
+function parsearCoordenadasKML(texto){
+  return String(texto||'')
+    .trim()
+    .split(/\s+/)
+    .map(par=>{
+      const p=par.split(',').map(Number);
+      return [p[0],p[1]];
+    })
+    .filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+}
+
+function propiedadesPlacemarkKML(pm){
+  const props={};
+
+  const nombre=pm.querySelector(':scope > name')?.textContent?.trim()||
+    pm.getElementsByTagName('name')?.[0]?.textContent?.trim()||'';
+
+  if(nombre){
+    props.NOMBRE=nombre;
+    props.POLIGONO=nombre;
+  }
+
+  pm.querySelectorAll('ExtendedData Data').forEach(d=>{
+    const key=d.getAttribute('name');
+    const value=d.querySelector('value')?.textContent?.trim()||'';
+    if(key)props[key]=value;
+  });
+
+  pm.querySelectorAll('ExtendedData SimpleData').forEach(d=>{
+    const key=d.getAttribute('name');
+    const value=d.textContent?.trim()||'';
+    if(key)props[key]=value;
+  });
+
+  return props;
+}
+
+function geoJSONDesdeKMLTexto(kmlText){
+  const xml=new DOMParser().parseFromString(kmlText,'text/xml');
+  if(xml.querySelector('parsererror')){
+    throw new Error('El KML contenido en el KMZ no es XML válido.');
+  }
+
+  const features=[];
+
+  [...xml.getElementsByTagName('Placemark')].forEach((pm,idx)=>{
+    const polygons=[...pm.getElementsByTagName('Polygon')];
+    if(!polygons.length)return;
+
+    const geoms=[];
+
+    for(const poly of polygons){
+      const outerNode=poly.getElementsByTagName('outerBoundaryIs')?.[0];
+      const outerCoords=outerNode?.getElementsByTagName('coordinates')?.[0]?.textContent||'';
+      const outer=parsearCoordenadasKML(outerCoords);
+      if(outer.length<4)continue;
+
+      const rings=[outer];
+
+      [...poly.getElementsByTagName('innerBoundaryIs')].forEach(inner=>{
+        const t=inner.getElementsByTagName('coordinates')?.[0]?.textContent||'';
+        const ring=parsearCoordenadasKML(t);
+        if(ring.length>=4)rings.push(ring);
+      });
+
+      geoms.push(rings);
+    }
+
+    if(!geoms.length)return;
+
+    const properties=propiedadesPlacemarkKML(pm);
+    if(!properties.NOMBRE){
+      properties.NOMBRE=`POLIGONO${features.length+1}`;
+      properties.POLIGONO=properties.NOMBRE;
+    }
+
+    features.push({
+      type:'Feature',
+      id:properties.NOMBRE||idx,
+      properties,
+      geometry:geoms.length===1
+        ? {type:'Polygon',coordinates:geoms[0]}
+        : {type:'MultiPolygon',coordinates:geoms}
+    });
+  });
+
+  if(!features.length){
+    throw new Error('El KMZ/KML no contiene polígonos válidos.');
+  }
+
+  return {type:'FeatureCollection',features};
+}
+
+async function geoJSONDesdeKMZArrayBuffer(buffer){
+  if(typeof JSZip==='undefined'){
+    throw new Error('JSZip no está disponible para leer el KMZ.');
+  }
+
+  const zip=await JSZip.loadAsync(buffer);
+  const kmlFiles=Object.values(zip.files).filter(f=>
+    !f.dir && /\.kml$/i.test(f.name)
+  );
+
+  if(!kmlFiles.length){
+    throw new Error('El KMZ no contiene un archivo KML.');
+  }
+
+  const kmlText=await kmlFiles[0].async('text');
+  return geoJSONDesdeKMLTexto(kmlText);
+}
 
 function normalizarCodigoPoligono(v){
   return String(v??'').trim().toUpperCase();
@@ -1010,28 +1323,43 @@ function analizarGeoJSONPoligonos(obj){
 
 async function descargarGeoJSONPublico(url){
   const s=String(url||'').trim();
-  if(!s)throw new Error('Pega la URL pública del GeoJSON.');
+  if(!s)throw new Error('Ingresa el nombre del archivo de polígonos.');
 
   let resp;
   try{
     resp=await fetch(s,{cache:'no-store'});
   }catch(e){
-    throw new Error('No se pudo acceder a la URL. Verifica que sea pública y permita CORS.');
+    throw new Error('No se pudo acceder al archivo. Verifica que exista en la carpeta pública de POLIGONOS.');
   }
 
   if(!resp.ok){
-    throw new Error(`La URL respondió HTTP ${resp.status}.`);
+    throw new Error(`El archivo respondió HTTP ${resp.status}.`);
   }
 
-  const text=await resp.text();
+  const esKMZ=/\.kmz(?:$|[?#])/i.test(s);
+  let obj,text='';
 
-  if(/^\s*</.test(text)){
-    throw new Error('La URL devolvió HTML en vez de GeoJSON. Usa la URL pública directa del archivo.');
+  if(esKMZ){
+    const buffer=await resp.arrayBuffer();
+    obj=await geoJSONDesdeKMZArrayBuffer(buffer);
+    text=JSON.stringify(obj);
+  }else{
+    text=await resp.text();
+
+    if(/^\s*</.test(text)){
+      // También permitimos KML directo si alguna vez se publica.
+      if(/<kml[\s>]/i.test(text)){
+        obj=geoJSONDesdeKMLTexto(text);
+      }else{
+        throw new Error('El archivo devolvió HTML en vez de GeoJSON/KML.');
+      }
+    }
+
+    if(!obj){
+      try{obj=JSON.parse(text)}
+      catch(_){throw new Error('El archivo no contiene GeoJSON válido.');}
+    }
   }
-
-  let obj;
-  try{obj=JSON.parse(text)}
-  catch(_){throw new Error('El contenido de la URL no es JSON válido.');}
 
   return {
     ...analizarGeoJSONPoligonos(obj),
@@ -1041,12 +1369,13 @@ async function descargarGeoJSONPublico(url){
 }
 
 async function leerPoligonosDesdeDriveCrear(){
-  const url=pGeojsonUrl.value.trim();
+  const nombreArchivo=pGeojsonUrl.value.trim();
+  const url=urlPublicaPoligonos(nombreArchivo);
   geojsonProyectoPreview=null;
 
   if(!url){
     pGeojsonInfo.className='hint geoError';
-    pGeojsonInfo.textContent='❌ Pega la URL pública del GeoJSON.';
+    pGeojsonInfo.textContent='❌ Ingresa el nombre del archivo de polígonos.';
     return;
   }
 
@@ -1057,7 +1386,7 @@ async function leerPoligonosDesdeDriveCrear(){
     const a=await descargarGeoJSONPublico(url);
     geojsonProyectoPreview=a;
     pGeojsonInfo.className='hint geoOk';
-    pGeojsonInfo.innerHTML=`✅ ${a.poligonos.length} polígonos detectados: <b>${a.poligonos.map(x=>esc(x.codigo)).join(', ')}</b>`;
+    pGeojsonInfo.innerHTML=`✅ ${a.poligonos.length} polígonos detectados: <b>${a.poligonos.map(x=>esc(x.codigo)).join(', ')}</b><br><small>${esc(url)}</small>`;
   }catch(e){
     pGeojsonInfo.className='hint geoError';
     pGeojsonInfo.textContent='❌ '+(e?.message||e);
@@ -1088,10 +1417,11 @@ async function registrarCatalogoPoligonos(proyectoId,poligonos){
 
 async function actualizarGeoJSONProyectoExistente(){
   const proyectoId=geoProyectoExistente.value;
-  const url=geoUrlActualiza.value.trim();
+  const nombreArchivo=geoUrlActualiza.value.trim();
+  const url=urlPublicaPoligonos(nombreArchivo);
 
   if(!proyectoId)return alert('Selecciona el proyecto.');
-  if(!url)return alert('Pega la nueva URL pública del GeoJSON.');
+  if(!url)return alert('Ingresa el nombre del nuevo archivo de polígonos.');
 
   const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
   if(!proyecto)return;
@@ -1315,16 +1645,323 @@ function poligonosSeleccionados(prefix){
   return [...document.querySelectorAll(`input[data-poly-prefix="${prefix}"]:checked`)].map(x=>x.value);
 }
 
+
+const FOTO_CONFIG_DEFS_MASTER={
+  'POSTE':[
+    ['FOTO','Poste completo / panorámica'],
+    ['FOTO2','Zona de telemáticos'],
+    ['FOTO3','Panorámica indicando sentido de la ruta'],
+    ['FOTO4','Base del poste'],
+    ['FOTO11','Foto del poste anterior']
+  ],
+  'CANALIZADO':[
+    ['FOTO8CAM','Cámara con tapa abierta'],
+    ['FOTO9CAM','Panorámica con tapa cerrada y ruta'],
+    ['FOTO5CAM','Flecha indicando el costado de la vía'],
+    ['FOTO6CAM','Panorámica indicando la ruta del cable'],
+    ['FOTO7CAM','Banco de ductos completo'],
+    ['FOTO10CAM','Foto de la cámara anterior']
+  ],
+  'C. AMERICANO':[
+    ['FOTO','Panorámica principal'],
+    ['FOTO2','Zona de telemáticos'],
+    ['FOTO3','Panorámica indicando sentido de la ruta'],
+    ['FOTO4','Base / apoyo'],
+    ['FOTO11','Foto anterior']
+  ],
+  'CERCHA':[
+    ['FOTO','Panorámica principal'],
+    ['FOTO2','Detalle del elemento'],
+    ['FOTO3','Panorámica indicando sentido de la ruta']
+  ]
+};
+
+function idFotoConfigMaster(tipo,id){
+  return 'pFotoCfg_'+String(tipo)
+    .replace(/[^A-Za-z0-9]/g,'_')+'_'+String(id);
+}
+
+function renderConfigFotosProyectoCrear(){
+  const box=document.getElementById('pFotoConfigBox');
+  if(!box)return;
+
+  box.innerHTML=Object.entries(FOTO_CONFIG_DEFS_MASTER).map(([tipo,defs])=>`
+    <div class="projectPhotoGroup">
+      <div class="projectPhotoGroupHead">
+        <b>${esc(tipo)}</b>
+        <div class="projectPhotoMiniActions">
+          <button type="button" onclick="seleccionarFotosTipoProyecto('${tipo.replace(/'/g,"\\'")}',true)">Todas</button>
+          <button type="button" onclick="seleccionarFotosTipoProyecto('${tipo.replace(/'/g,"\\'")}',false)">Ninguna</button>
+        </div>
+      </div>
+      ${defs.map(([id,label])=>`
+        <label class="projectPhotoCheck">
+          <input
+            type="checkbox"
+            id="${idFotoConfigMaster(tipo,id)}"
+            data-photo-tipo="${esc(tipo)}"
+            data-photo-id="${esc(id)}"
+            onchange="actualizarResumenConfigFotosProyecto()"
+          >
+          <span><b>${esc(id)}</b> · ${esc(label)}</span>
+        </label>
+      `).join('')}
+    </div>
+  `).join('');
+
+  aplicarDefaultFotosProyecto(
+    document.getElementById('pTipoProyecto')?.value||'MAPPING',
+    false
+  );
+}
+
+function seleccionarFotosTipoProyecto(tipo,checked){
+  document.querySelectorAll(
+    `#pFotoConfigBox input[data-photo-tipo="${CSS.escape(tipo)}"]`
+  ).forEach(ch=>ch.checked=!!checked);
+
+  actualizarResumenConfigFotosProyecto();
+}
+
+function aplicarDefaultFotosProyecto(tipo,desdeCambio=false){
+  const tipoProyecto=String(tipo||'MAPPING').toUpperCase();
+
+  document.querySelectorAll('#pFotoConfigBox input[data-photo-id]')
+    .forEach(ch=>ch.checked=true);
+
+  // Compatibilidad con la regla que ya tenía VIABILIDAD:
+  // por defecto no pide FOTO4 ni FOTO11 en POSTE / C. AMERICANO.
+  if(tipoProyecto==='VIABILIDAD'){
+    document.querySelectorAll(
+      '#pFotoConfigBox input[data-photo-tipo="POSTE"][data-photo-id="FOTO4"],'+
+      '#pFotoConfigBox input[data-photo-tipo="POSTE"][data-photo-id="FOTO11"],'+
+      '#pFotoConfigBox input[data-photo-tipo="C. AMERICANO"][data-photo-id="FOTO4"],'+
+      '#pFotoConfigBox input[data-photo-tipo="C. AMERICANO"][data-photo-id="FOTO11"]'
+    ).forEach(ch=>ch.checked=false);
+  }
+
+  actualizarResumenConfigFotosProyecto();
+
+  if(desdeCambio){
+    const resumen=document.getElementById('pFotoConfigResumen');
+    if(resumen){
+      resumen.innerHTML=
+        `<b>${esc(tipoProyecto)}</b>: se cargó la configuración fotográfica predeterminada. `+
+        'Puedes marcar o desmarcar libremente antes de crear el proyecto.';
+    }
+  }
+}
+
+function obtenerConfigFotosProyectoCrear(){
+  const config={};
+
+  for(const tipo of Object.keys(FOTO_CONFIG_DEFS_MASTER)){
+    config[tipo]=[
+      ...document.querySelectorAll(
+        `#pFotoConfigBox input[data-photo-tipo="${CSS.escape(tipo)}"]:checked`
+      )
+    ].map(ch=>String(ch.dataset.photoId||'')).filter(Boolean);
+  }
+
+  return config;
+}
+
+function actualizarResumenConfigFotosProyecto(){
+  const resumen=document.getElementById('pFotoConfigResumen');
+  if(!resumen)return;
+
+  const cfg=obtenerConfigFotosProyectoCrear();
+  const partes=Object.entries(cfg).map(([tipo,arr])=>
+    `<b>${esc(tipo)}</b>: ${arr.length} foto${arr.length===1?'':'s'}`
+  );
+
+  resumen.innerHTML=
+    partes.join(' · ')+
+    '<br><span style="color:#94a3b8">Si un tipo queda en 0, el técnico no verá la sección de fotografías para ese elemento.</span>';
+}
+
+
+function idFotoConfigExistente(tipo,id){
+  return 'fotoExist_'+String(tipo).replace(/[^A-Za-z0-9]/g,'_')+'_'+String(id);
+}
+
+function renderConfigFotosProyectoExistente(){
+  const box=document.getElementById('fotoConfigExistenteBox');
+  if(!box)return;
+
+  box.innerHTML=Object.entries(FOTO_CONFIG_DEFS_MASTER).map(([tipo,defs])=>`
+    <div class="projectPhotoGroup">
+      <div class="projectPhotoGroupHead">
+        <b>${esc(tipo)}</b>
+        <div class="projectPhotoMiniActions">
+          <button type="button" onclick="seleccionarFotosTipoProyectoExistente('${tipo.replace(/'/g,"\\'")}',true)">Todas</button>
+          <button type="button" onclick="seleccionarFotosTipoProyectoExistente('${tipo.replace(/'/g,"\\'")}',false)">Ninguna</button>
+        </div>
+      </div>
+      ${defs.map(([id,label])=>`
+        <label class="projectPhotoCheck">
+          <input
+            type="checkbox"
+            id="${idFotoConfigExistente(tipo,id)}"
+            data-photo-exist-tipo="${esc(tipo)}"
+            data-photo-exist-id="${esc(id)}"
+            onchange="actualizarResumenConfigFotosExistente()"
+          >
+          <span><b>${esc(id)}</b> · ${esc(label)}</span>
+        </label>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function defaultFotosPorTipoProyecto(tipoProyecto){
+  const tipo=String(tipoProyecto||'MAPPING').toUpperCase();
+  const cfg={};
+
+  for(const [elemento,defs] of Object.entries(FOTO_CONFIG_DEFS_MASTER)){
+    cfg[elemento]=defs.map(([id])=>id);
+  }
+
+  if(tipo==='VIABILIDAD'){
+    for(const elemento of ['POSTE','C. AMERICANO']){
+      cfg[elemento]=cfg[elemento].filter(id=>!['FOTO4','FOTO11'].includes(id));
+    }
+  }
+
+  return cfg;
+}
+
+function configFotosProyectoEfectiva(proyecto){
+  const cfg=proyecto?.fotos_config;
+
+  if(cfg && typeof cfg==='object' && !Array.isArray(cfg)){
+    const out={};
+    for(const tipo of Object.keys(FOTO_CONFIG_DEFS_MASTER)){
+      out[tipo]=Array.isArray(cfg[tipo]) ? cfg[tipo].map(String) : [];
+    }
+    return out;
+  }
+
+  return defaultFotosPorTipoProyecto(proyecto?.tipo_proyecto||'MAPPING');
+}
+
+function cargarConfigFotosProyectoExistente(){
+  const select=document.getElementById('fotoProyectoExistente');
+  const proyecto=proyectos.find(p=>String(p.id)===String(select?.value||''));
+  const resumen=document.getElementById('fotoConfigExistenteResumen');
+
+  if(!document.getElementById('fotoConfigExistenteBox')?.children.length){
+    renderConfigFotosProyectoExistente();
+  }
+
+  if(!proyecto){
+    document.querySelectorAll('#fotoConfigExistenteBox input[type="checkbox"]')
+      .forEach(ch=>ch.checked=false);
+    if(resumen)resumen.textContent='Selecciona un proyecto.';
+    return;
+  }
+
+  const cfg=configFotosProyectoEfectiva(proyecto);
+
+  document.querySelectorAll('#fotoConfigExistenteBox input[data-photo-exist-id]')
+    .forEach(ch=>{
+      const tipo=ch.dataset.photoExistTipo;
+      const id=ch.dataset.photoExistId;
+      ch.checked=Array.isArray(cfg[tipo]) && cfg[tipo].includes(id);
+    });
+
+  actualizarResumenConfigFotosExistente();
+}
+
+function seleccionarFotosTipoProyectoExistente(tipo,checked){
+  document.querySelectorAll(
+    `#fotoConfigExistenteBox input[data-photo-exist-tipo="${CSS.escape(tipo)}"]`
+  ).forEach(ch=>ch.checked=!!checked);
+
+  actualizarResumenConfigFotosExistente();
+}
+
+function obtenerConfigFotosProyectoExistente(){
+  const cfg={};
+
+  for(const tipo of Object.keys(FOTO_CONFIG_DEFS_MASTER)){
+    cfg[tipo]=[
+      ...document.querySelectorAll(
+        `#fotoConfigExistenteBox input[data-photo-exist-tipo="${CSS.escape(tipo)}"]:checked`
+      )
+    ].map(ch=>String(ch.dataset.photoExistId||'')).filter(Boolean);
+  }
+
+  return cfg;
+}
+
+function actualizarResumenConfigFotosExistente(){
+  const resumen=document.getElementById('fotoConfigExistenteResumen');
+  if(!resumen)return;
+
+  const proyecto=proyectos.find(
+    p=>String(p.id)===String(document.getElementById('fotoProyectoExistente')?.value||'')
+  );
+
+  if(!proyecto){
+    resumen.textContent='Selecciona un proyecto.';
+    return;
+  }
+
+  const cfg=obtenerConfigFotosProyectoExistente();
+  const partes=Object.entries(cfg).map(([tipo,arr])=>
+    `<b>${esc(tipo)}</b>: ${arr.length} foto${arr.length===1?'':'s'}`
+  );
+
+  resumen.innerHTML=
+    `<b>${esc(proyecto.codigo||'')}</b> · ${esc(proyecto.tipo_proyecto||'MAPPING')}<br>`+
+    partes.join(' · ')+
+    '<br><span style="color:#94a3b8">Al guardar, esta configuración reemplaza la anterior del proyecto.</span>';
+}
+
+async function guardarConfigFotosProyectoExistente(){
+  const proyectoId=document.getElementById('fotoProyectoExistente')?.value||'';
+  if(!proyectoId)return alert('Selecciona el proyecto que deseas actualizar.');
+
+  const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
+  if(!proyecto)return alert('No se encontró el proyecto seleccionado.');
+
+  const fotos_config=obtenerConfigFotosProyectoExistente();
+
+  const {error}=await sb
+    .from('mapping_proyectos')
+    .update({fotos_config})
+    .eq('id',proyectoId);
+
+  if(error){
+    return alert('No fue posible actualizar la configuración de fotos: '+error.message);
+  }
+
+  await cargarProyectos();
+  llenarSelects();
+
+  const sel=document.getElementById('fotoProyectoExistente');
+  if(sel)sel.value=proyectoId;
+  cargarConfigFotosProyectoExistente();
+
+  alert(
+    `Configuración de fotos actualizada para ${proyecto.codigo||proyecto.nombre||'el proyecto'}.\n\n`+
+    'El técnico verá el cambio al actualizar sus proyectos o volver a ingresar.'
+  );
+}
+
 async function crearProyecto(){
   const empresa_id=pEmpresa.value;
   const codigo=pCodigo.value.trim();
   const nombre=pNombre.value.trim();
   const tipo_proyecto=String(pTipoProyecto?.value||'MAPPING').trim().toUpperCase();
-  const url=pGeojsonUrl.value.trim();
+  const fotos_config=obtenerConfigFotosProyectoCrear();
+  const nombreArchivoPoligonos=pGeojsonUrl.value.trim();
+  const url=urlPublicaPoligonos(nombreArchivoPoligonos);
 
   if(!empresa_id||!codigo||!nombre||!tipo_proyecto)return alert('Empresa, código, nombre y tipo de proyecto son obligatorios.');
   if(!['MAPPING','VIABILIDAD'].includes(tipo_proyecto))return alert('TIPO PROYECTO no válido.');
-  if(!url)return alert('Pega la URL pública de POLIGONOS.geojson.');
+  if(!url)return alert('Ingresa el nombre del archivo de polígonos.');
 
   // El campo codigo tiene una restricción UNIQUE en Supabase
   // (mapping_proyectos_codigo_key). Validamos antes del INSERT para
@@ -1365,6 +2002,7 @@ async function crearProyecto(){
     .from('mapping_proyectos')
     .insert({
       empresa_id,codigo,nombre,tipo_proyecto,
+      fotos_config,
       ciudad:pCiudad.value.trim()||null,
       descripcion:pDescripcion.value.trim()||null,
       estado:'activo',
@@ -1404,11 +2042,12 @@ async function crearProyecto(){
   pNombre.value='';
   pCiudad.value='';
   if(pTipoProyecto)pTipoProyecto.value='MAPPING';
+  aplicarDefaultFotosProyecto('MAPPING',false);
   pDescripcion.value='';
   pGeojsonUrl.value='';
   geojsonProyectoPreview=null;
   pGeojsonInfo.className='hint';
-  pGeojsonInfo.innerHTML='La URL debe abrir directamente el archivo GeoJSON en el navegador.';
+  pGeojsonInfo.innerHTML=`Ruta base automática: <b>${POLIGONOS_PUBLIC_BASE}</b>`;
 
   await cargarTodo();
   alert(`Proyecto ${tipo_proyecto} creado con ${analisis.poligonos.length} polígonos.`);
