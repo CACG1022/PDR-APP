@@ -1245,7 +1245,7 @@ body.lightTheme .gpsStatusPill{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · fotos configurables · GeoJSON/KMZ · ESTADO único</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · CX1 estable · C. AMERICANO/CERCHA simplificados</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1331,15 +1331,18 @@ body.lightTheme .gpsStatusPill{
   <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
     <input
       id="DIRECCION"
-      placeholder="Ej: Calle 15 # 20-34"
+      placeholder="Ej: Avenida Caracas # 18"
       autocomplete="street-address"
       oninput="actualizarEstadoDireccionCompleta()"
       onblur="normalizarDireccionCampo()"
     >
-    <button type="button" class="btn blue" style="width:auto;padding:9px 10px;font-size:10px" onclick="detectarDireccionDesdeFormulario()">📍 Detectar</button>
+    <div style="display:grid;gap:5px">
+      <button type="button" class="btn blue" style="width:auto;padding:9px 10px;font-size:10px;white-space:nowrap" onclick="detectarDireccionDesdeFormulario()">📍 Detectar</button>
+      <button type="button" class="btn" style="width:auto;padding:8px 10px;font-size:10px;white-space:nowrap" onclick="minimizarFormulario()">🗺️ Minimizar</button>
+    </div>
   </div>
   <small id="direccionAutoEstado" class="poligonoAutoEstado">Dirección automática por ubicación</small>
-  <small id="direccionCompletaEstado" class="fieldHelp">Completa la nomenclatura. Ejemplo: <b>Calle 15 # 20-34</b>.</small>
+  <small id="direccionCompletaEstado" class="fieldHelp">Completa al menos la vía y el número después de #. Ejemplo: <b>Avenida Caracas # 18</b>.</small>
 </div>
 <div id="wrapCostado"><label>COSTADO <span class="req">*</span></label><select id="COSTADO"><option value="">Seleccione...</option><option>DERECHO</option><option>IZQUIERDO</option></select></div>
 <div id="wrapEstado"><label>ESTADO <span class="req">*</span></label><select id="ESTADO"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
@@ -2029,13 +2032,16 @@ function direccionCompletaColombia(v){
   if(partes.length<2)return false;
 
   const via=partes[0].trim();
-  const placa=partes.slice(1).join('#').trim();
+  const complemento=partes.slice(1).join('#').trim();
 
-  // Debe existir un número de vía antes del # y una placa tipo 20-34,
-  // permitiendo letras/BIS habituales de la nomenclatura colombiana.
-  if(!/\d/.test(via))return false;
+  // La vía puede tener o no número:
+  // "Avenida Caracas", "Autopista Norte", "Calle 15", etc.
+  if(via.length<2)return false;
 
-  return /^\d+[A-Z]?(?:\s+BIS(?:\s+[A-Z])?)?\s*-\s*\d+[A-Z]?(?:\s+\w+)?$/i.test(placa);
+  // Después de # se exige únicamente el primer número.
+  // La placa posterior al guion es opcional:
+  // "Avenida Caracas # 18" y "Calle 15 # 20-34" son válidas.
+  return /^\d+[A-Z]?(?:\s+BIS(?:\s+[A-Z])?)?(?:\s*-\s*\d+[A-Z]?)?(?:\s+\w+)?$/i.test(complemento);
 }
 
 function actualizarEstadoDireccionCompleta(){
@@ -2047,7 +2053,7 @@ function actualizarEstadoDireccionCompleta(){
 
   if(!valor){
     estado.className='fieldHelp warn';
-    estado.innerHTML='Completa la nomenclatura. Ejemplo: <b>Calle 15 # 20-34</b>.';
+    estado.innerHTML='Completa al menos la vía y el número después de #. Ejemplo: <b>Avenida Caracas # 18</b>.';
     return;
   }
 
@@ -2056,7 +2062,7 @@ function actualizarEstadoDireccionCompleta(){
     estado.textContent='✓ Dirección completa.';
   }else{
     estado.className='fieldHelp warn';
-    estado.innerHTML='Falta completar la placa. Ejemplo: <b>Calle 15 # 20-34</b>.';
+    estado.innerHTML='Dirección incompleta. Ejemplos: <b>Avenida Caracas # 18</b> o <b>Calle 15 # 20-34</b>.';
   }
 
   // Forzar actualización visual del obligatorio DIRECCION.
@@ -2232,7 +2238,7 @@ async function detectarDireccionAutomatica(lat,lon,forzar=false){
     if(direccionCompletaColombia(corta)){
       setEstadoDireccionAuto('ok',`✓ Dirección detectada: ${corta}`);
     }else{
-      setEstadoDireccionAuto('warn',`Vía detectada: ${corta}. Completa manualmente la placa después del #.`);
+      setEstadoDireccionAuto('warn',`Vía detectada: ${corta}. Completa manualmente al menos el número después del #.`);
     }
 
     actualizarEstadoDireccionCompleta();
@@ -2715,38 +2721,22 @@ function esProyectoViabilidad(){
   return tipoProyectoActivo()==='VIABILIDAD';
 }
 
-async function aplicarCX1AutomaticoViabilidad(){
-  if(!esProyectoViabilidad())return;
-
+function prepararCX1Manual(){
   const cons=Number(CONSECUTIV?.value||0);
   const cx1=document.getElementById('CX1');
   if(!cx1)return;
 
-  // Primer elemento: no existe un elemento anterior.
-  if(!Number.isFinite(cons) || cons<=1){
-    cx1.value='0';
-    cx1.readOnly=true;
-    cx1.title='El primer elemento no requiere CX1.';
-    return;
-  }
+  cx1.readOnly=false;
+  cx1.title='Diligencia manualmente el consecutivo de conexión.';
 
-  const anterior=cons-1;
-  cx1.value=String(anterior);
-  cx1.readOnly=true;
-  cx1.title=`CX1 automático: consecutivo anterior (${anterior}).`;
-
-  try{
-    await precalcularCX(1);
-  }catch(e){
-    console.warn('No fue posible precalcular CX1 automático:',e);
-  }
-
+  // IMPORTANTE: esta función puede ejecutarse varias veces durante
+  // validación/recalculo/guardado. Por eso NO debe modificar el valor de CX1.
+  // CX1 se vacía exclusivamente al abrir un registro nuevo.
   const hint=document.getElementById('conexionesHint');
   if(hint && !esClienteViabilidad()){
-    hint.innerHTML=
-      `Proyecto <b>VIABILIDAD</b>: CX1 se asigna automáticamente al consecutivo anterior `+
-      `(<b>${anterior}</b>). El primer elemento del polígono no solicita conexión. `+
-      `CX2, CX3 y CX4 siguen disponibles si necesitas registrar conexiones adicionales.`;
+    hint.innerHTML=esProyectoViabilidad()
+      ? 'Proyecto <b>VIABILIDAD</b>: desde el segundo elemento, <b>CX1 debe ser diligenciado manualmente por el técnico</b>. Debe corresponder al consecutivo anterior. El primer elemento no solicita CX.'
+      : 'Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. CX1 abre vacío y debe ser diligenciado por el técnico. Puede usar <b>0</b> para indicar sin conexión o un consecutivo anterior menor que CONSECUTIV.';
   }
 }
 
@@ -2789,9 +2779,10 @@ async function configurarConexionCliente(){
   const previo=consecutivoAnteriorCliente();
   const cx1=document.getElementById('CX1');
   if(cx1){
-    cx1.value=previo>0?String(previo):'';
-    cx1.readOnly=true;
-    cx1.title='Se asigna automáticamente al consecutivo inmediatamente anterior al CLIENTE.';
+    cx1.readOnly=false;
+    cx1.title=previo>0
+      ? `Diligencia manualmente CX1 con el consecutivo anterior (${previo}).`
+      : 'Diligencia manualmente CX1.';
   }
 
   const telWrap=document.getElementById('TELCX1')?.closest('div');
@@ -2813,7 +2804,7 @@ async function configurarConexionCliente(){
   if(otro)otro.style.display='none';
 
   const hint=document.getElementById('conexionesHint');
-  if(hint)hint.innerHTML='Para <b>CLIENTE</b>, CX1 se enlaza automáticamente con el elemento inmediatamente anterior. La <b>Distancia de fibra interna</b> es obligatoria y corresponde a la fibra desde el elemento de acceso hasta el cliente.';
+  if(hint)hint.innerHTML='Para <b>CLIENTE</b>, el técnico debe diligenciar manualmente CX1 con el consecutivo inmediatamente anterior. La <b>Distancia de fibra interna</b> es obligatoria y corresponde a la fibra desde el elemento de acceso hasta el cliente.';
 
   if(previo>0){
     try{await precalcularCX(1)}catch(_){ }
@@ -2823,12 +2814,8 @@ async function configurarConexionCliente(){
 function restaurarConexionNoCliente(){
   const cx1=document.getElementById('CX1');
   if(cx1){
-    if(esProyectoViabilidad()){
-      cx1.readOnly=true;
-    }else{
-      cx1.readOnly=false;
-      cx1.title='';
-    }
+    cx1.readOnly=false;
+    cx1.title='Diligencia manualmente el consecutivo de conexión.';
   }
 
   const telWrap=document.getElementById('TELCX1')?.closest('div');
@@ -2851,7 +2838,7 @@ function restaurarConexionNoCliente(){
   const hint=document.getElementById('conexionesHint');
   if(hint){
     hint.innerHTML=esProyectoViabilidad()
-      ? 'Proyecto <b>VIABILIDAD</b>: desde el segundo elemento, CX1 se diligencia automáticamente con el consecutivo anterior. El primer elemento no solicita CX. CX2, CX3 y CX4 permanecen disponibles para conexiones adicionales.'
+      ? 'Proyecto <b>VIABILIDAD</b>: desde el segundo elemento, CX1 abre vacío y debe ser diligenciado manualmente con el consecutivo anterior. El primer elemento no solicita CX.'
       : 'Esta sección aparece automáticamente desde el <b>segundo elemento del polígono</b>. El primer elemento no requiere CX porque todavía no existe un elemento anterior al cual conectarse. Desde el segundo elemento, CX1 es obligatorio; puede ser <b>0</b> para indicar que el elemento no tiene conexión, o un consecutivo anterior menor que CONSECUTIV. CX2, CX3 y CX4 permanecen ocultos hasta usar <b>+ Agregar otra conexión</b>.';
   }
 }
@@ -3028,7 +3015,7 @@ function aplicarConfiguracionTipoProyecto(){
   aplicarVistaClienteViabilidad();
 
   if(esProyectoViabilidad()){
-    setTimeout(aplicarCX1AutomaticoViabilidad,0);
+    setTimeout(prepararCX1Manual,0);
   }
 
   setTimeout(actualizarResaltadoObligatorios,0);
@@ -3060,7 +3047,40 @@ function normalizarConfiguracionDuctos(el){
   try{actualizarValorPin('CONF_DUCTO')}catch(_){}
 }
 
-function cambiarTipo(){const t=TIPO.value;const cliente=esClienteViabilidad();secPoste.classList.toggle('hidden',cliente||(t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA'));secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');if(cliente){photoGrid.innerHTML='';photos={};}else{renderFotos(t);}aplicarConfiguracionTipoProyecto();if(cliente)configurarConexionCliente();setTimeout(actualizarResaltadoObligatorios,0);}
+
+const CAMPOS_OCULTOS_CA_CERCHA=[
+  'ALTURA','TIPO_POSTE','MATERIAL','ROTURA','TENSION','RIENDA','ELECTRICOS',
+  'CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES',
+  'FUENTES','AMPLIFI','PACVI'
+];
+
+function aplicarCamposPorTipoElemento(){
+  const t=String(TIPO?.value||'').toUpperCase();
+  const ocultar=t==='C. AMERICANO'||t==='CERCHA';
+
+  for(const id of CAMPOS_OCULTOS_CA_CERCHA){
+    const el=document.getElementById(id);
+    const wrap=el?.closest('div');
+    if(wrap)wrap.classList.toggle('projectConditionalHidden',ocultar);
+  }
+
+  // Para registros nuevos evitamos guardar accidentalmente valores fijados
+  // de POSTE en C. AMERICANO o CERCHA.
+  if(ocultar && !editingId){
+    for(const id of CAMPOS_OCULTOS_CA_CERCHA){
+      const el=document.getElementById(id);
+      if(!el)continue;
+
+      if(['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(id)){
+        el.value='0';
+      }else{
+        el.value='';
+      }
+    }
+  }
+}
+
+function cambiarTipo(){const t=TIPO.value;const cliente=esClienteViabilidad();secPoste.classList.toggle('hidden',cliente||(t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA'));secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');if(cliente){photoGrid.innerHTML='';photos={};}else{renderFotos(t);}aplicarConfiguracionTipoProyecto();aplicarCamposPorTipoElemento();if(cliente)configurarConexionCliente();setTimeout(actualizarResaltadoObligatorios,0);}
 function renderFotos(t){
   liberarTodasPreviewFoto();
   photoGrid.innerHTML='';
@@ -3289,6 +3309,21 @@ function limpiarConexionesPrimerElemento(){
   }
 }
 
+
+function vaciarCX1SoloAlAbrirNuevo(){
+  if(editingId)return;
+
+  const cons=Number(CONSECUTIV?.value||0);
+  const cx1=document.getElementById('CX1');
+
+  if(cx1 && Number.isFinite(cons) && cons>=2){
+    cx1.value='';
+    cx1.readOnly=false;
+    cx1.title='Diligencia manualmente el consecutivo de conexión.';
+    delete cx1.dataset.requiredVisualState;
+  }
+}
+
 function actualizarVisibilidadSeccionConexiones(){
   const sec=document.getElementById('secConexiones');
   if(!sec)return;
@@ -3314,7 +3349,7 @@ function actualizarVisibilidadSeccionConexiones(){
   }
 
   if(esProyectoViabilidad()){
-    setTimeout(aplicarCX1AutomaticoViabilidad,0);
+    setTimeout(prepararCX1Manual,0);
   }
 
   actualizarResaltadoObligatorios();
@@ -3346,7 +3381,7 @@ function ajustarConexionesEdicion(r){
   actualizarVisibilidadSeccionConexiones();
 }
 function toggleOtroPol(){otroPol.classList.toggle('hidden',CXOTROPOL.value!=='SI')}
-function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();if(esProyectoViabilidad())setTimeout(aplicarCX1AutomaticoViabilidad,0);if(esClienteViabilidad())setTimeout(configurarConexionCliente,0);}
+function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();if(esProyectoViabilidad())setTimeout(prepararCX1Manual,0);if(esClienteViabilidad())setTimeout(configurarConexionCliente,0);}
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
 
 function obtenerCamposObligatoriosActivos(){
@@ -3357,11 +3392,15 @@ function obtenerCamposObligatoriosActivos(){
   const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO'];
   if(tipoProyectoActivo()==='VIABILIDAD')ids.push('COSTADO');
 
-  if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
+  if(t==='POSTE'){
     ids.push(
       'PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA',
       'TENSION','RIENDA','ELECTRICOS','FINDERED'
     );
+  }
+
+  if(t==='C. AMERICANO'||t==='CERCHA'){
+    ids.push('PROPIETARI','FINDERED');
   }
 
   if(t==='CANALIZADO'){
@@ -3389,12 +3428,9 @@ function campoEstaVacio(id){
     return !Number.isFinite(n) || n<=0;
   }
 
-  // En VIABILIDAD, desde el segundo elemento CX1 siempre corresponde
-  // automáticamente al consecutivo anterior, por lo que debe ser > 0.
+  // Desde el segundo elemento, los CX visibles son obligatorios.
+  // CX1 abre vacío para que el técnico lo diligencie manualmente.
   if(/^CX[1-4]$/.test(id)){
-    if(id==='CX1' && esProyectoViabilidad() && Number(CONSECUTIV?.value||0)>=2){
-      return !(Number(el.value)>0);
-    }
     return String(el.value??'').trim()==='';
   }
 
@@ -4106,9 +4142,10 @@ function validar(){
     enfocarPrimerObligatorioFaltante(['DIRECCION']);
     alert(
       'La DIRECCIÓN está incompleta.\n\n'+
-      'La aplicación puede detectar automáticamente la vía, por ejemplo "Calle 15", '+
-      'pero el técnico debe completar la placa.\n\n'+
-      'Ejemplo correcto: Calle 15 # 20-34'
+      'La aplicación puede detectar automáticamente la vía. El técnico debe completar al menos el número después de #.\n\n'+
+      'Ejemplos válidos:\n'+
+      'Avenida Caracas # 18\n'+
+      'Calle 15 # 20-34'
     );
     return false;
   }
@@ -4131,7 +4168,16 @@ function validar(){
       return false;
     }
 
-    CX1.value=String(previo);
+    const cxClienteRaw=String(val('CX1')??'').trim();
+    const cxCliente=Number(cxClienteRaw);
+
+    if(cxClienteRaw==='' || !Number.isFinite(cxCliente) || cxCliente!==previo){
+      marcarObligatoriosFaltantes(['CX1']);
+      enfocarPrimerObligatorioFaltante(['CX1']);
+      alert(`Para CLIENTE debes diligenciar manualmente CX1 con el consecutivo anterior (${previo}).`);
+      return false;
+    }
+
     const distInterna=Number(val('DISTODO1'));
     if(!Number.isFinite(distInterna) || distInterna<=0){
       marcarObligatoriosFaltantes(['DISTODO1']);
@@ -4141,8 +4187,14 @@ function validar(){
     }
   }
 
-  if(t==='POSTE'||t==='C. AMERICANO'||t==='CERCHA'){
+  if(t==='POSTE'){
     ['PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA','TENSION','RIENDA','ELECTRICOS','FINDERED'].forEach(id=>{
+      if(val(id)==='')falt.push(id);
+    });
+  }
+
+  if(t==='C. AMERICANO'||t==='CERCHA'){
+    ['PROPIETARI','FINDERED'].forEach(id=>{
       if(val(id)==='')falt.push(id);
     });
   }
@@ -4217,8 +4269,14 @@ function validar(){
       }
 
       if(esProyectoViabilidad() && i===1 && x!==cons-1){
-        CX1.value=String(cons-1);
-        alert(`En proyectos VIABILIDAD, CX1 se asigna automáticamente al elemento anterior (${cons-1}).`);
+        actualizarResaltadoObligatorios();
+        const cxErr=document.getElementById('CX1');
+        if(cxErr){
+          cxErr.classList.remove('campoObligatorioPendiente','campoObligatorioDiligenciado');
+          cxErr.classList.add('campoObligatorioFaltante');
+        }
+        enfocarPrimerObligatorioFaltante(['CX1']);
+        alert(`En proyectos VIABILIDAD debes diligenciar CX1 manualmente con el consecutivo anterior (${cons-1}).`);
         return false;
       }
 
@@ -6335,6 +6393,7 @@ const CAMPOS_FIJABLES=[
   {key:'RIENDA',id:'RIENDA'},
   {key:'ESTADO',id:'ESTADO'},
   {key:'TIPOCAMARA',id:'TIPOCAMARA'},
+  {key:'SUBIDA_A_P',id:'SUBIDA_A_P'},
   {key:'CONF_DUCTO',id:'CONF_DUCTO'},
   {key:'DUCTO_ELEC',id:'DUCTO_ELEC'},
   {key:'DUCT_TELCO',id:'DUCT_TELCO'},
@@ -6459,7 +6518,7 @@ function aplicarCamposFijos(){
     cambiarTipo();
   }
 
-  for(const key of ['CIUDAD','BARRIO','TECNICO','COSTADO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','RIENDA','TIPOCAMARA','CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL','TIPO_POSTE','CXOTROPOL']){
+  for(const key of ['CIUDAD','BARRIO','TECNICO','COSTADO','PROPIETARI','ALTURA','ROTURA','MATERIAL','TENSION','RIENDA','TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL','TIPO_POSTE','CXOTROPOL']){
     const p=pins[key];
     if(!p?.checked)continue;
     const item=CAMPOS_FIJABLES.find(x=>x.key===key);
@@ -6479,6 +6538,8 @@ function aplicarCamposFijos(){
     const el=elementoPinActual('ESTADO');
     if(el)el.value=pins.ESTADO.value??'';
   }
+
+  aplicarCamposPorTipoElemento();
 
   // Proyecto siempre proviene del Master, nunca del valor fijado localmente.
   if(PROYECTO && proyectoActivo)PROYECTO.value=proyectoActivo.nombre||proyectoActivo.codigo||'';
@@ -6837,6 +6898,7 @@ abrirFormulario=function(){
     POLIGONO.disabled=true;
 
     recalcularIds();
+    vaciarCX1SoloAlAbrirNuevo();
     actualizarEstadoDeteccionPoligono('ok',`✓ Ubicación dentro de ${POLIGONO.value}`);
     actualizarResaltadoObligatorios();
     llevarFormularioAlInicio();
@@ -6856,6 +6918,7 @@ abrirFormulario=function(){
   if(document.getElementById('ES_ACCESO_CLIENTE'))ES_ACCESO_CLIENTE.value='NO';
   aplicarConfiguracionTipoProyecto();
   recalcularIds();
+  vaciarCX1SoloAlAbrirNuevo();
   llevarFormularioAlInicio();
   const cDireccion=map.getCenter();
   programarDireccionAutomaticaFormulario(cDireccion.lat,cDireccion.lng);
@@ -6960,6 +7023,9 @@ function prepararRegistroLocalBase(){
 
     POLIGONO.value=op.value;
     POLIGONO.disabled=true;
+
+    // Revalidamos consecutivo/IDCAMPO antes de guardar, pero esta operación
+    // ya NO modifica CX1.
     recalcularIds();
   }
 
@@ -9199,6 +9265,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
+
 
 
 
