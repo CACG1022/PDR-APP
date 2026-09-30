@@ -1232,6 +1232,18 @@ body.lightTheme .gpsStatusPill{
   }
 }
 
+
+/* ===== BLOQUEO DE TRABAJO SIN POLÍGONO ASIGNADO ===== */
+.appControlLocked{
+  opacity:.28!important;
+  pointer-events:none!important;
+  filter:grayscale(1)!important;
+  cursor:not-allowed!important;
+}
+button.appControlLocked{
+  transform:none!important;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1245,10 +1257,10 @@ body.lightTheme .gpsStatusPill{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · CX1 estable · C. AMERICANO/CERCHA simplificados</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · bloqueo total sin polígono · CX1 estable</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
-<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
+<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav>
@@ -1283,8 +1295,8 @@ body.lightTheme .gpsStatusPill{
 <div id="sinProyectoLock" class="sinProyectoLock">
   <div class="sinProyectoLockCard">
     <div class="sinProyectoLockIcon">🔒</div>
-    <h2>Sin proyecto asignado</h2>
-    <p>
+    <h2 id="sinProyectoLockTitulo">Sin proyecto asignado</h2>
+    <p id="sinProyectoLockMensaje">
       Tu usuario no tiene ningún proyecto activo asignado.
       La aplicación permanecerá bloqueada hasta que el Master te asigne un proyecto.
     </p>
@@ -2652,7 +2664,7 @@ function cerrarFormulario(){
   if(b)b.style.display='none';
   limpiarMarcasObligatorias();
 }
-function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
+function cerrarPaneles(){cerrarFormulario();cerrarRegistros()}function abrirRegistros(){if(!exigirPoligonoParaTrabajar('ver los registros'))return;pintarLista();recordsOverlay.classList.add('open')}function cerrarRegistros(){recordsOverlay.classList.remove('open')}
 function limpiarForm(){document.querySelectorAll('#formOverlay input:not([readonly]),#formOverlay textarea').forEach(el=>{if(['CIUDAD','PROYECTO'].includes(el.id))return; if(el.type==='number'&&['CABLES','RESERVAS','EMPALMES','NAPS','BAJANTES','FUENTES','AMPLIFI'].includes(el.id))el.value=0;else el.value=''});document.querySelectorAll('#formOverlay select').forEach(el=>{if(el.id==='CXOTROPOL')el.value='NO';else el.selectedIndex=0});CIUDAD.value='Bogota D.C';PROYECTO.value='EYCO 2026 BTA-VERACRUZ';secPoste.classList.add('hidden');secCamara.classList.add('hidden');photoGrid.innerHTML='';
 otroPol.classList.add('hidden');
 actualizarEstadoDeteccionPoligono('', 'Detección automática por ubicación');
@@ -6251,10 +6263,11 @@ async function cargarPoligonosAsignadosTecnico(){
   limpiarCapaPoligonos();
   poligonosAsignados=[];
   poligonosAsignadosSet=new Set();
+  setControlesTrabajoHabilitados(false);
 
   if(!proyectoActivo||!mappingUser){
     aplicarOpcionesPoligonosAsignados();
-    return;
+    return 0;
   }
 
   const {data,error}=await mappingSb
@@ -6266,7 +6279,8 @@ async function cargarPoligonosAsignadosTecnico(){
   if(error){
     console.warn('No se pudieron cargar polígonos asignados:',error.message);
     aplicarOpcionesPoligonosAsignados();
-    return;
+    bloquearSinPoligonos('No fue posible verificar tus polígonos asignados.');
+    return 0;
   }
 
   poligonosAsignados=(data||[])
@@ -6284,6 +6298,13 @@ async function cargarPoligonosAsignadosTecnico(){
   );
   aplicarOpcionesPoligonosAsignados();
 
+  if(!poligonosAsignados.length){
+    bloquearSinPoligonos(
+      `El proyecto ${proyectoActivo.codigo||proyectoActivo.nombre||''} todavía no tiene polígonos asignados a tu usuario.`
+    );
+    return 0;
+  }
+
   const completo=await descargarGeoJSONProyecto();
   if(completo){
     try{
@@ -6292,6 +6313,9 @@ async function cargarPoligonosAsignadosTecnico(){
       console.warn('No fue posible pintar polígonos:',e);
     }
   }
+
+  desbloquearProyecto();
+  return poligonosAsignados.length;
 }
 
 function registrosProyectoActual(){
@@ -6372,7 +6396,22 @@ function toggleBaseMap(){
   actualizarBotonBaseMap();
 }
 
-function toggleSideMenu(force){const e=document.getElementById('sideMenu');if(!e)return;if(force===false)e.classList.remove('open');else e.classList.toggle('open')}
+function toggleSideMenu(force){
+  const e=document.getElementById('sideMenu');
+  if(!e)return;
+
+  if(force===false){
+    e.classList.remove('open');
+    return;
+  }
+
+  if(!exigirPoligonoParaTrabajar('abrir el menú')){
+    e.classList.remove('open');
+    return;
+  }
+
+  e.classList.toggle('open');
+}
 function abrirPanelProyectos(){document.getElementById('projectsOverlay').classList.add('open');pintarProyectosAsignados()}
 function cerrarPanelProyectos(){document.getElementById('projectsOverlay').classList.remove('open')}
 
@@ -6555,6 +6594,7 @@ function irLoginMapping(msg=''){
   mostrarLoginMappingEmbebido(msg);
 }
 async function verificarSesionMapping(){
+  setControlesTrabajoHabilitados(false);
   const {data:{session},error}=await mappingSb.auth.getSession();
 
   if(error||!session){
@@ -6595,6 +6635,7 @@ async function logoutMapping(){
   poligonosAsignadosSet=new Set();
 
   localStorage.removeItem('mapping_proyecto_activo_v1');
+  setControlesTrabajoHabilitados(false);
 
   try{detenerSeguimientoGPS()}catch(_){}
   try{cerrarFormulario()}catch(_){}
@@ -6670,9 +6711,15 @@ async function cargarProyectosAsignados(){
         JSON.stringify(proyectoActivo)
       );
 
-      desbloquearProyecto();
+      setControlesTrabajoHabilitados(false);
       actualizarIndicadorTipoProyecto();
-      await cargarPoligonosAsignadosTecnico();
+
+      const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
+      if(!cantidadPoligonos){
+        actualizarEstadoSync();
+        return;
+      }
+
       await cargarPuntosSupabase(false);
       ubicarEnUltimoElementoRegistrado();
       actualizarEstadoSync();
@@ -6686,7 +6733,9 @@ async function cargarProyectosAsignados(){
   if(proyectosAsignados.length===1){
     await seleccionarProyecto(proyectosAsignados[0].id);
   }else{
-    desbloquearProyecto();
+    setControlesTrabajoHabilitados(false);
+    const lock=document.getElementById('sinProyectoLock');
+    if(lock)lock.classList.remove('open');
     abrirPanelProyectos();
   }
 }
@@ -6754,28 +6803,123 @@ async function seleccionarProyecto(asignacionId){
     .eq('id',a.id);
 
   cerrarPanelProyectos();
-  desbloquearProyecto();
+  setControlesTrabajoHabilitados(false);
   sincronizarChecksPin();
-  await cargarPoligonosAsignadosTecnico();
+
+  const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
+  if(!cantidadPoligonos){
+    actualizarEstadoSync();
+    return;
+  }
+
   await cargarPuntosSupabase();
   ubicarEnUltimoElementoRegistrado();
   actualizarEstadoSync();
 }
 
-function bloquearSinProyecto(mensaje=''){
-  proyectoActivo=null;
-  localStorage.removeItem('mapping_proyecto_activo_v1');
 
-  const lock=document.getElementById('sinProyectoLock');
+let trabajoProyectoHabilitado=false;
+
+function setControlesTrabajoHabilitados(habilitado){
+  trabajoProyectoHabilitado=!!habilitado;
+
+  const ids=['fabAgregar','btnEnviarDatosFab','btnMenuPrincipal'];
+  for(const id of ids){
+    const el=document.getElementById(id);
+    if(!el)continue;
+    el.classList.toggle('appControlLocked',!trabajoProyectoHabilitado);
+    el.disabled=!trabajoProyectoHabilitado;
+    el.setAttribute('aria-disabled',trabajoProyectoHabilitado?'false':'true');
+  }
+
+  if(!trabajoProyectoHabilitado){
+    try{toggleSideMenu(false)}catch(_){}
+  }
+}
+
+function configurarOverlayBloqueo(tipo='proyecto',mensaje=''){
+  const titulo=document.getElementById('sinProyectoLockTitulo');
+  const texto=document.getElementById('sinProyectoLockMensaje');
+
+  if(tipo==='poligono'){
+    if(titulo)titulo.textContent='Sin polígono asignado';
+    if(texto){
+      texto.innerHTML=
+        'Tienes un proyecto asignado, pero <b>no tienes ningún polígono habilitado en este proyecto</b>.<br><br>'+
+        'No puedes ver registros, editar elementos, crear puntos ni enviar información hasta que el Master te asigne al menos un polígono.';
+    }
+  }else{
+    if(titulo)titulo.textContent='Sin proyecto asignado';
+    if(texto){
+      texto.textContent=
+        'Tu usuario no tiene ningún proyecto activo asignado. La aplicación permanecerá bloqueada hasta que el Master te asigne un proyecto.';
+    }
+  }
+
   const userInfo=document.getElementById('sinProyectoLockUsuario');
-
   if(userInfo){
+    const proyectoTxt=proyectoActivo
+      ? `<br><b>Proyecto:</b> ${esc(proyectoActivo.codigo||proyectoActivo.nombre||'')}`
+      : '';
+
     userInfo.innerHTML=
       `<b>${esc(mappingProfile?.nombre||mappingUser?.email||'Técnico')}</b><br>`+
       `${esc(mappingUser?.email||'')}`+
+      proyectoTxt+
       (mensaje?`<br><span style="color:#fca5a5">${esc(mensaje)}</span>`:'');
   }
+}
 
+function bloquearSinPoligonos(mensaje=''){
+  setControlesTrabajoHabilitados(false);
+  configurarOverlayBloqueo('poligono',mensaje);
+
+  const lock=document.getElementById('sinProyectoLock');
+  if(lock)lock.classList.add('open');
+
+  try{cerrarFormulario()}catch(_){}
+  try{cerrarRegistros()}catch(_){}
+  try{cerrarPanelProyectos()}catch(_){}
+  try{toggleSideMenu(false)}catch(_){}
+
+  limpiarCapaPoligonos();
+
+  // No se cargan ni muestran puntos del proyecto mientras no exista
+  // al menos un polígono asignado al técnico.
+  try{
+    if(recordsOverlay)recordsOverlay.classList.remove('open');
+  }catch(_){}
+
+  actualizarEstadoSync();
+}
+
+function tienePoligonoAsignadoActivo(){
+  return !!(
+    proyectoActivo &&
+    Array.isArray(poligonosAsignados) &&
+    poligonosAsignados.length>0
+  );
+}
+
+function exigirPoligonoParaTrabajar(accion='realizar esta acción'){
+  if(tienePoligonoAsignadoActivo() && trabajoProyectoHabilitado)return true;
+
+  bloquearSinPoligonos(
+    `No puedes ${accion} hasta que tengas un polígono asignado en el proyecto.`
+  );
+  return false;
+}
+
+function bloquearSinProyecto(mensaje=''){
+  proyectoActivo=null;
+  poligonosAsignados=[];
+  poligonosAsignadosSet=new Set();
+  localStorage.removeItem('mapping_proyecto_activo_v1');
+
+  setControlesTrabajoHabilitados(false);
+  configurarOverlayBloqueo('proyecto',mensaje);
+
+  const lock=document.getElementById('sinProyectoLock');
   if(lock)lock.classList.add('open');
   actualizarIndicadorTipoProyecto();
 
@@ -6783,19 +6927,22 @@ function bloquearSinProyecto(mensaje=''){
   try{cerrarRegistros()}catch(_){}
   try{cerrarPanelProyectos()}catch(_){}
   try{toggleSideMenu(false)}catch(_){}
-
-  const b=document.getElementById('fabAgregar');
-  if(b)b.classList.add('disabledMapControl');
+  try{limpiarCapaPoligonos()}catch(_){}
 
   actualizarEstadoSync();
 }
 
 function desbloquearProyecto(){
+  if(!tienePoligonoAsignadoActivo()){
+    bloquearSinPoligonos();
+    return false;
+  }
+
   const lock=document.getElementById('sinProyectoLock');
   if(lock)lock.classList.remove('open');
 
-  const b=document.getElementById('fabAgregar');
-  if(b)b.classList.remove('disabledMapControl');
+  setControlesTrabajoHabilitados(true);
+  return true;
 }
 
 function abrirAvisoFueraPoligono(lat,lon){
@@ -6834,11 +6981,7 @@ abrirFormulario=function(){
     return;
   }
 
-  if(
-    (proyectoActivo?.poligonos_url||proyectoActivo?.poligonos_drive_url) &&
-    !poligonosAsignados.length
-  ){
-    alert('Este proyecto no tiene polígonos asignados a tu usuario. Solicita al Master que te asigne un polígono.');
+  if(!exigirPoligonoParaTrabajar('registrar o editar elementos')){
     return;
   }
 
@@ -8316,6 +8459,7 @@ function finalizarPanelSync(){
   actualizarProgresoSync();
 }
 function iniciarSincronizacionSegundoPlano(){
+  if(!exigirPoligonoParaTrabajar('enviar datos'))return;
   if(syncEnCurso){mostrarPanelSync();return}
 
   sincronizarPendientesBackground().catch(e=>{
@@ -8330,6 +8474,7 @@ function iniciarSincronizacionSegundoPlano(){
 }
 async function sincronizarPendientesBackground(){
   if(syncEnCurso)return;
+  if(!exigirPoligonoParaTrabajar('enviar datos'))return;
   if(!proyectoActivo){alert('Selecciona un proyecto.');return}
   if(!navigator.onLine){alert('No hay conexión a Internet. Los datos siguen guardados localmente.');return}
 
@@ -9265,7 +9410,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body></html>
-
 
 
 
