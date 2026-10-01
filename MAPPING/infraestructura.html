@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js"></script>
 <style>
 :root{--bg:#07111f;--surface:#0d1b2a;--surface2:#14263a;--border:#29415d;--text:#f8fafc;--muted:#9fb0c4;--primary:#12b8ae;--danger:#ef4444;--warn:#f59e0b;--blue:#38bdf8}
 *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
@@ -1273,6 +1274,54 @@ button.appControlLocked{
   .cxOtroEstado{grid-column:1}
 }
 
+
+/* ===== V91 · CÁMARA IA LOCAL · YOLO11 + ONNX RUNTIME WEB ===== */
+.aiPhotoActions{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:7px}
+.aiPhotoActions .btn{min-width:0}
+.aiAttachBtn{background:#334155!important;padding-left:10px!important;padding-right:10px!important}
+.aiPhotoResult{display:none;margin-top:8px;border:1px solid #334155;border-radius:10px;padding:8px;background:#081420;font-size:10px;line-height:1.35}
+.aiPhotoResult.open{display:block}
+.aiPhotoResult.ok{border-color:#22c55e;color:#bbf7d0}
+.aiPhotoResult.warn{border-color:#f59e0b;color:#fde68a}
+body.lightTheme .aiPhotoResult{background:#f8fafc;color:#334155}
+body.lightTheme .aiPhotoResult.ok{color:#166534}
+body.lightTheme .aiPhotoResult.warn{color:#92400e}
+
+.aiCameraOverlay{display:none;position:fixed;inset:0;z-index:65000;background:#020617;color:#f8fafc;overflow:hidden}
+.aiCameraOverlay.open{display:flex;flex-direction:column}
+.aiCameraHead{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;background:#07111f;border-bottom:1px solid #29415d}
+.aiCameraHeadLeft{min-width:0}
+.aiCameraTitle{font-size:13px;font-weight:1000}
+.aiCameraSub{margin-top:2px;color:#94a3b8;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72vw}
+.aiCameraClose{border:1px solid #7f1d1d;background:#dc2626;color:#fff;border-radius:10px;padding:9px 12px;font-weight:900}
+.aiCameraViewport{position:relative;flex:1 1 auto;min-height:0;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.aiCameraVideo,.aiCameraCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.aiCameraVideo{z-index:1;background:#000}
+.aiCameraCanvas{z-index:2;pointer-events:none}
+.aiCameraHud{position:absolute;left:10px;right:10px;top:10px;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.aiCameraBadge{max-width:72%;background:rgba(2,6,23,.82);border:1px solid #22d3ee;border-radius:999px;padding:6px 9px;color:#cffafe;font-size:9px;font-weight:900;box-shadow:0 5px 16px rgba(0,0,0,.35)}
+.aiCameraFps{background:rgba(2,6,23,.82);border:1px solid #334155;border-radius:999px;padding:6px 8px;color:#cbd5e1;font-size:8px;font-weight:900}
+.aiCameraBottom{flex:0 0 auto;background:#07111f;border-top:1px solid #29415d;padding:9px 10px calc(9px + env(safe-area-inset-bottom));display:grid;gap:7px}
+.aiDetections{display:flex;gap:5px;overflow-x:auto;min-height:25px;scrollbar-width:none}
+.aiDetections::-webkit-scrollbar{display:none}
+.aiDetChip{flex:0 0 auto;border-radius:999px;padding:5px 8px;background:#172033;border:1px solid #475569;color:#e2e8f0;font-size:9px;font-weight:900}
+.aiDetChip.strong{border-color:#22c55e;color:#bbf7d0;background:#052e16}
+.aiAuditBox{border:1px solid #334155;border-radius:10px;background:#0b1928;padding:7px 9px;font-size:9px;line-height:1.35;color:#cbd5e1;max-height:68px;overflow:auto}
+.aiAuditBox.warn{border-color:#f59e0b;color:#fde68a;background:#271a05}
+.aiAuditBox.ok{border-color:#22c55e;color:#bbf7d0;background:#052e16}
+.aiCameraActions{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.aiCameraAction{border:0;border-radius:12px;min-height:46px;padding:10px 12px;font-weight:1000;color:#fff;background:#334155}
+.aiCaptureBtn{background:#0f766e!important;font-size:14px;border:2px solid #5eead4!important}
+.aiCaptureBtn:disabled{opacity:.45}
+.aiModelState{font-size:8px;color:#94a3b8;text-align:center}
+@media(max-width:700px){
+  .aiCameraHead{padding-top:calc(7px + env(safe-area-inset-top))}
+  .aiCameraBottom{padding-left:8px;padding-right:8px}
+  .aiCameraActions{grid-template-columns:62px 1fr 62px}
+  .aiCameraAction{padding:8px 6px;font-size:10px}
+  .aiCaptureBtn{font-size:13px}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1454,6 +1503,35 @@ button.appControlLocked{
 <div class="section" id="secFotos"><h3>5. Registro fotográfico</h3><div class="sectionBody"><div class="photoGrid" id="photoGrid"></div></div></div>
 <div class="actions"><button class="btn gray" onclick="cerrarFormulario()">Cancelar</button><button class="btn" onclick="guardarPunto()">Guardar punto</button></div>
 </div></div></div>
+
+<!-- ===== V91 · CÁMARA IA LOCAL ===== -->
+<div id="aiCameraOverlay" class="aiCameraOverlay" aria-hidden="true">
+  <div class="aiCameraHead">
+    <div class="aiCameraHeadLeft">
+      <div class="aiCameraTitle">🤖 Auditor IA · cámara en vivo</div>
+      <div class="aiCameraSub" id="aiCameraPhotoLabel">Preparando cámara…</div>
+    </div>
+    <button type="button" class="aiCameraClose" onclick="cerrarCamaraIA()">✕</button>
+  </div>
+  <div class="aiCameraViewport" id="aiCameraViewport">
+    <video id="aiCameraVideo" class="aiCameraVideo" autoplay muted playsinline></video>
+    <canvas id="aiCameraCanvas" class="aiCameraCanvas"></canvas>
+    <div class="aiCameraHud">
+      <div class="aiCameraBadge" id="aiCameraStatus">Cargando modelo…</div>
+      <div class="aiCameraFps" id="aiCameraFps">IA --</div>
+    </div>
+  </div>
+  <div class="aiCameraBottom">
+    <div class="aiDetections" id="aiDetections"><span class="aiDetChip">Sin detecciones</span></div>
+    <div class="aiAuditBox" id="aiAuditBox">El auditor comparará lo detectado con los campos diligenciados.</div>
+    <div class="aiCameraActions">
+      <button type="button" class="aiCameraAction" onclick="cambiarCamaraIA()">↻ Cámara</button>
+      <button type="button" class="aiCameraAction aiCaptureBtn" id="aiCaptureBtn" onclick="capturarFotoIA()">📸 CAPTURAR</button>
+      <button type="button" class="aiCameraAction" onclick="toggleIAActiva()" id="aiToggleBtn">IA ON</button>
+    </div>
+    <div class="aiModelState" id="aiModelState">Modelo: YOLO11s · ejecución local · ONNX Runtime Web</div>
+  </div>
+</div>
 
 <div class="overlay" id="recordsOverlay"><div class="modal"><div class="modalHead"><h2>Puntos levantados</h2><button class="close" onclick="cerrarRegistros()">Cerrar</button></div><div class="body"><div class="actions"><button class="btn blue" onclick="exportarGeoJSON()">Exportar GeoJSON</button><button class="btn warn" onclick="exportarJSON()">Exportar JSON</button></div><div id="recordsList"></div></div></div></div>
 
@@ -3244,10 +3322,14 @@ function renderFotos(t){
     photoGrid.insertAdjacentHTML('beforeend',`
       <div class="photoCard" id="photoCard_${id}">
         <label>${label} <span class="req">*</span></label>
-        <button class="btn blue" type="button" onclick="document.getElementById('file_${id}').click()">📷 Tomar/adjuntar foto</button>
+        <div class="aiPhotoActions">
+          <button class="btn blue" type="button" onclick="abrirCamaraIA('${id}', ${'`'}${label}${'`'})">🤖 Cámara IA</button>
+          <button class="btn aiAttachBtn" type="button" onclick="document.getElementById('file_${id}').click()" title="Adjuntar sin IA">📎</button>
+        </div>
         <input id="file_${id}" type="file" accept="image/*" capture="environment" style="display:none" onchange="cargarFoto('${id}',this)">
 
         <div class="photoStatus" id="status_${id}" style="display:none"></div>
+        <div class="aiPhotoResult" id="aiResult_${id}"></div>
 
         <img id="prev_${id}" class="photoPreview" style="display:none" alt="${label}">
 
@@ -9946,6 +10028,380 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 </div>
+
+<script>
+/* ===== V91 · AUDITOR IA LOCAL · YOLO11s / ONNX ===== */
+const MAPPING_AI_MODEL_URL='https://qaypedqascrkmlolmiuf.supabase.co/storage/v1/object/public/modelos-ia/best.onnx';
+const MAPPING_AI_INPUT_SIZE=640;
+const MAPPING_AI_CLASSES=['Corta Circuito','Fuente','Gabinete','Mufla','Nap','Reserva','Transformador'];
+const MAPPING_AI_CONFIDENCE=0.45;
+const MAPPING_AI_STRONG_CONFIDENCE=0.70;
+const MAPPING_AI_NMS_IOU=0.45;
+
+let mappingAISession=null;
+let mappingAILoadPromise=null;
+let mappingAIStream=null;
+let mappingAIPhotoId=null;
+let mappingAIPhotoLabel='';
+let mappingAIDetections=[];
+let mappingAIRunning=false;
+let mappingAIEnabled=true;
+let mappingAIFacingMode='environment';
+let mappingAILastInferenceMs=0;
+let mappingAIInferTimer=null;
+let mappingAIInputName=null;
+let mappingAIOutputName=null;
+let mappingAIOffscreen=null;
+let mappingAIOffCtx=null;
+
+function aiEl(id){return document.getElementById(id)}
+function aiSetStatus(txt,tipo=''){
+  const el=aiEl('aiCameraStatus'); if(!el)return;
+  el.textContent=txt;
+  el.style.borderColor=tipo==='ok'?'#22c55e':tipo==='warn'?'#f59e0b':tipo==='error'?'#ef4444':'#22d3ee';
+  el.style.color=tipo==='ok'?'#bbf7d0':tipo==='warn'?'#fde68a':tipo==='error'?'#fecaca':'#cffafe';
+}
+
+async function cargarModeloIA(){
+  if(mappingAISession)return mappingAISession;
+  if(mappingAILoadPromise)return mappingAILoadPromise;
+  mappingAILoadPromise=(async()=>{
+    if(typeof ort==='undefined')throw new Error('ONNX Runtime Web no pudo cargarse.');
+    aiSetStatus('Descargando modelo IA (~36 MB)…','warn');
+    const t0=performance.now();
+    try{
+      ort.env.wasm.numThreads=1;
+      ort.env.wasm.simd=true;
+    }catch(_){ }
+    mappingAISession=await ort.InferenceSession.create(MAPPING_AI_MODEL_URL,{
+      executionProviders:['wasm'],
+      graphOptimizationLevel:'all'
+    });
+    mappingAIInputName=mappingAISession.inputNames?.[0]||'images';
+    mappingAIOutputName=mappingAISession.outputNames?.[0];
+    const sec=((performance.now()-t0)/1000).toFixed(1);
+    aiEl('aiModelState').textContent=`Modelo listo · YOLO11s · ${sec}s carga inicial · procesamiento local`;
+    aiSetStatus('Modelo IA listo','ok');
+    return mappingAISession;
+  })().catch(e=>{
+    mappingAISession=null; mappingAILoadPromise=null;
+    aiSetStatus('Error cargando modelo: '+(e?.message||e),'error');
+    throw e;
+  });
+  return mappingAILoadPromise;
+}
+
+async function abrirCamaraIA(id,label='Foto'){
+  mappingAIPhotoId=id;
+  mappingAIPhotoLabel=label||id;
+  mappingAIDetections=[];
+  mappingAIEnabled=true;
+  const ov=aiEl('aiCameraOverlay');
+  if(!ov)return;
+  ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+  aiEl('aiCameraPhotoLabel').textContent=`${mappingAIPhotoLabel} · ${id}`;
+  aiEl('aiToggleBtn').textContent='IA ON';
+  renderDeteccionesIA([]);
+  renderAuditoriaIA([]);
+  aiSetStatus('Solicitando cámara…','warn');
+  try{
+    await iniciarStreamCamaraIA();
+    cargarModeloIA().then(()=>iniciarBucleIA()).catch(()=>{});
+  }catch(e){
+    console.error('Cámara IA:',e);
+    aiSetStatus('No fue posible abrir la cámara: '+(e?.message||e),'error');
+    alert('No fue posible abrir la cámara. Verifica el permiso de cámara del navegador. Puedes usar el botón 📎 para adjuntar una foto sin IA.');
+  }
+}
+
+async function iniciarStreamCamaraIA(){
+  detenerStreamCamaraIA();
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('getUserMedia no disponible. Usa HTTPS.');
+  const constraints={
+    audio:false,
+    video:{
+      facingMode:{ideal:mappingAIFacingMode},
+      width:{ideal:1280},
+      height:{ideal:720}
+    }
+  };
+  mappingAIStream=await navigator.mediaDevices.getUserMedia(constraints);
+  const v=aiEl('aiCameraVideo');
+  v.srcObject=mappingAIStream;
+  await new Promise((resolve,reject)=>{
+    const ok=()=>{cleanup();resolve()};
+    const fail=()=>{cleanup();reject(new Error('La cámara no entregó video.'))};
+    const cleanup=()=>{v.removeEventListener('loadedmetadata',ok);v.removeEventListener('error',fail)};
+    v.addEventListener('loadedmetadata',ok,{once:true});
+    v.addEventListener('error',fail,{once:true});
+    if(v.readyState>=1)ok();
+  });
+  await v.play();
+  ajustarCanvasCamaraIA();
+  aiSetStatus('Cámara lista · preparando IA','ok');
+}
+
+function detenerStreamCamaraIA(){
+  try{mappingAIStream?.getTracks?.().forEach(t=>t.stop())}catch(_){ }
+  mappingAIStream=null;
+  const v=aiEl('aiCameraVideo'); if(v)v.srcObject=null;
+}
+
+function cerrarCamaraIA(){
+  mappingAIRunning=false;
+  if(mappingAIInferTimer){clearTimeout(mappingAIInferTimer);mappingAIInferTimer=null}
+  detenerStreamCamaraIA();
+  limpiarCanvasIA();
+  const ov=aiEl('aiCameraOverlay');
+  if(ov){ov.classList.remove('open');ov.setAttribute('aria-hidden','true')}
+  document.body.style.overflow='';
+}
+
+async function cambiarCamaraIA(){
+  mappingAIFacingMode=mappingAIFacingMode==='environment'?'user':'environment';
+  mappingAIRunning=false;
+  if(mappingAIInferTimer){clearTimeout(mappingAIInferTimer);mappingAIInferTimer=null}
+  try{await iniciarStreamCamaraIA(); if(mappingAIEnabled && mappingAISession)iniciarBucleIA()}catch(e){aiSetStatus('No se pudo cambiar de cámara','error')}
+}
+
+function toggleIAActiva(){
+  mappingAIEnabled=!mappingAIEnabled;
+  aiEl('aiToggleBtn').textContent=mappingAIEnabled?'IA ON':'IA OFF';
+  if(!mappingAIEnabled){
+    mappingAIRunning=false;
+    if(mappingAIInferTimer){clearTimeout(mappingAIInferTimer);mappingAIInferTimer=null}
+    mappingAIDetections=[]; limpiarCanvasIA(); renderDeteccionesIA([]); renderAuditoriaIA([]);
+    aiSetStatus('IA pausada · cámara normal','warn');
+  }else{
+    aiSetStatus(mappingAISession?'IA reactivada':'Cargando modelo…','ok');
+    cargarModeloIA().then(()=>iniciarBucleIA()).catch(()=>{});
+  }
+}
+
+function ajustarCanvasCamaraIA(){
+  const v=aiEl('aiCameraVideo'),c=aiEl('aiCameraCanvas'); if(!v||!c)return;
+  const w=v.videoWidth||1280,h=v.videoHeight||720;
+  if(c.width!==w)c.width=w;
+  if(c.height!==h)c.height=h;
+}
+function limpiarCanvasIA(){const c=aiEl('aiCameraCanvas');c?.getContext('2d')?.clearRect(0,0,c.width,c.height)}
+
+function prepararTensorYOLO(video){
+  const S=MAPPING_AI_INPUT_SIZE;
+  if(!mappingAIOffscreen){
+    mappingAIOffscreen=document.createElement('canvas');
+    mappingAIOffscreen.width=S; mappingAIOffscreen.height=S;
+    mappingAIOffCtx=mappingAIOffscreen.getContext('2d',{willReadFrequently:true});
+  }
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const scale=Math.min(S/vw,S/vh);
+  const nw=Math.round(vw*scale),nh=Math.round(vh*scale);
+  const padX=(S-nw)/2,padY=(S-nh)/2;
+  const ctx=mappingAIOffCtx;
+  ctx.fillStyle='#727272';ctx.fillRect(0,0,S,S);
+  ctx.drawImage(video,0,0,vw,vh,padX,padY,nw,nh);
+  const rgba=ctx.getImageData(0,0,S,S).data;
+  const area=S*S;
+  const input=new Float32Array(3*area);
+  for(let i=0,j=0;i<rgba.length;i+=4,j++){
+    input[j]=rgba[i]/255;
+    input[area+j]=rgba[i+1]/255;
+    input[2*area+j]=rgba[i+2]/255;
+  }
+  return {tensor:new ort.Tensor('float32',input,[1,3,S,S]),scale,padX,padY,vw,vh};
+}
+
+function iouIA(a,b){
+  const x1=Math.max(a.x1,b.x1),y1=Math.max(a.y1,b.y1),x2=Math.min(a.x2,b.x2),y2=Math.min(a.y2,b.y2);
+  const inter=Math.max(0,x2-x1)*Math.max(0,y2-y1);
+  const aa=Math.max(0,a.x2-a.x1)*Math.max(0,a.y2-a.y1);
+  const bb=Math.max(0,b.x2-b.x1)*Math.max(0,b.y2-b.y1);
+  return inter/(aa+bb-inter+1e-6);
+}
+function nmsIA(items){
+  const sorted=[...items].sort((a,b)=>b.confidence-a.confidence),keep=[];
+  while(sorted.length){
+    const a=sorted.shift();keep.push(a);
+    for(let i=sorted.length-1;i>=0;i--){
+      if(sorted[i].classId===a.classId && iouIA(a,sorted[i])>MAPPING_AI_NMS_IOU)sorted.splice(i,1);
+    }
+  }
+  return keep.slice(0,40);
+}
+
+function decodificarYOLO(output,meta){
+  const data=output.data,dims=output.dims||[];
+  const expected=4+MAPPING_AI_CLASSES.length;
+  let channels=0,count=0,channelFirst=true;
+  if(dims.length===3){
+    if(dims[1]===expected){channels=dims[1];count=dims[2];channelFirst=true}
+    else if(dims[2]===expected){channels=dims[2];count=dims[1];channelFirst=false}
+  }
+  if(!channels){
+    channels=expected;count=Math.floor(data.length/channels);channelFirst=true;
+  }
+  const at=(box,ch)=>channelFirst?data[ch*count+box]:data[box*channels+ch];
+  const out=[];
+  for(let i=0;i<count;i++){
+    let best=-1,cls=-1;
+    for(let c=0;c<MAPPING_AI_CLASSES.length;c++){
+      const score=at(i,4+c);
+      if(score>best){best=score;cls=c}
+    }
+    if(best<MAPPING_AI_CONFIDENCE)continue;
+    const cx=at(i,0),cy=at(i,1),w=at(i,2),h=at(i,3);
+    let x1=(cx-w/2-meta.padX)/meta.scale;
+    let y1=(cy-h/2-meta.padY)/meta.scale;
+    let x2=(cx+w/2-meta.padX)/meta.scale;
+    let y2=(cy+h/2-meta.padY)/meta.scale;
+    x1=Math.max(0,Math.min(meta.vw,x1));y1=Math.max(0,Math.min(meta.vh,y1));
+    x2=Math.max(0,Math.min(meta.vw,x2));y2=Math.max(0,Math.min(meta.vh,y2));
+    if(x2-x1<2||y2-y1<2)continue;
+    out.push({x1,y1,x2,y2,classId:cls,className:MAPPING_AI_CLASSES[cls],confidence:best});
+  }
+  return nmsIA(out);
+}
+
+async function inferirFrameIA(){
+  const v=aiEl('aiCameraVideo');
+  if(!mappingAISession||!v||v.readyState<2||!v.videoWidth)return;
+  ajustarCanvasCamaraIA();
+  const t0=performance.now();
+  const meta=prepararTensorYOLO(v);
+  const results=await mappingAISession.run({[mappingAIInputName]:meta.tensor});
+  const out=mappingAIOutputName?results[mappingAIOutputName]:results[Object.keys(results)[0]];
+  mappingAIDetections=decodificarYOLO(out,meta);
+  dibujarDeteccionesIA(mappingAIDetections);
+  renderDeteccionesIA(mappingAIDetections);
+  renderAuditoriaIA(mappingAIDetections);
+  const ms=performance.now()-t0;
+  mappingAILastInferenceMs=ms;
+  aiEl('aiCameraFps').textContent=`IA ${(1000/ms).toFixed(1)} FPS · ${Math.round(ms)} ms`;
+  aiSetStatus(mappingAIDetections.length?`${mappingAIDetections.length} detección(es)`:'Buscando elementos…',mappingAIDetections.length?'ok':'');
+}
+
+function iniciarBucleIA(){
+  if(mappingAIRunning||!mappingAIEnabled||!mappingAISession)return;
+  mappingAIRunning=true;
+  const loop=async()=>{
+    if(!mappingAIRunning||!mappingAIEnabled||!aiEl('aiCameraOverlay')?.classList.contains('open')){mappingAIRunning=false;return}
+    try{await inferirFrameIA()}catch(e){console.warn('Inferencia IA:',e);aiSetStatus('IA: '+(e?.message||e),'error')}
+    const espera=Math.max(120,500-Math.min(380,mappingAILastInferenceMs||0));
+    mappingAIInferTimer=setTimeout(loop,espera);
+  };
+  loop();
+}
+
+function colorClaseIA(classId,strong){
+  const pal=['#f97316','#eab308','#22c55e','#a855f7','#06b6d4','#ec4899','#ef4444'];
+  return pal[classId%pal.length]|| (strong?'#22c55e':'#38bdf8');
+}
+function dibujarDeteccionesIA(ds){
+  const c=aiEl('aiCameraCanvas'); if(!c)return;
+  const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+  ctx.lineWidth=Math.max(2,c.width/400);
+  ctx.font=`900 ${Math.max(16,Math.round(c.width/55))}px system-ui`;
+  for(const d of ds){
+    const strong=d.confidence>=MAPPING_AI_STRONG_CONFIDENCE,col=colorClaseIA(d.classId,strong);
+    const x=d.x1,y=d.y1,w=d.x2-d.x1,h=d.y2-d.y1;
+    ctx.strokeStyle=col;ctx.lineWidth=strong?4:2;ctx.strokeRect(x,y,w,h);
+    const text=`${d.className} ${Math.round(d.confidence*100)}%`;
+    const tw=ctx.measureText(text).width+12,th=Math.max(22,Math.round(c.width/42));
+    ctx.fillStyle='rgba(2,6,23,.82)';ctx.fillRect(x,Math.max(0,y-th),tw,th);
+    ctx.fillStyle=col;ctx.fillText(text,x+6,Math.max(th-5,y-5));
+  }
+}
+
+function mejoresPorClaseIA(ds){
+  const m=new Map();
+  for(const d of ds){const p=m.get(d.className);if(!p||d.confidence>p.confidence)m.set(d.className,d)}
+  return [...m.values()].sort((a,b)=>b.confidence-a.confidence);
+}
+function renderDeteccionesIA(ds){
+  const el=aiEl('aiDetections');if(!el)return;
+  const best=mejoresPorClaseIA(ds);
+  el.innerHTML=best.length?best.map(d=>`<span class="aiDetChip ${d.confidence>=MAPPING_AI_STRONG_CONFIDENCE?'strong':''}">${d.className} ${Math.round(d.confidence*100)}%</span>`).join(''):'<span class="aiDetChip">Sin detecciones</span>';
+}
+function valorNumIA(id){return Number(document.getElementById(id)?.value||0)}
+function valorTxtIA(id){return String(document.getElementById(id)?.value||'').trim().toUpperCase()}
+function evaluarAuditoriaIA(ds){
+  const strong=mejoresPorClaseIA(ds).filter(d=>d.confidence>=MAPPING_AI_STRONG_CONFIDENCE);
+  const names=new Set(strong.map(d=>d.className));
+  const issues=[];
+  if(names.has('Transformador') && !valorTxtIA('ELECTRICOS').includes('TRANSFORMADOR'))issues.push('IA detecta TRANSFORMADOR y el formulario no lo declara.');
+  if(names.has('Corta Circuito') && !valorTxtIA('ELECTRICOS').includes('CORTA'))issues.push('IA detecta CORTA CIRCUITO; revisa ELEMENTOS ELÉCTRICOS.');
+  if(names.has('Nap') && valorNumIA('NAPS')===0)issues.push('IA detecta NAP y NAPS EXISTENTES está en 0.');
+  if(names.has('Reserva') && valorNumIA('RESERVAS')===0)issues.push('IA detecta RESERVA y RESERVAS EXISTENTES está en 0.');
+  if(names.has('Fuente') && valorNumIA('FUENTES')===0)issues.push('IA detecta FUENTE y FUENTES está en 0.');
+  if(names.has('Mufla') && valorNumIA('EMPALMES')===0)issues.push('IA detecta MUFLA; revisa EMPALMES EXISTENTES.');
+  if(names.has('Gabinete'))issues.push('IA detecta GABINETE; verifica que quede registrado en observaciones/inventario si aplica.');
+  return {strong,issues};
+}
+function renderAuditoriaIA(ds){
+  const el=aiEl('aiAuditBox');if(!el)return;
+  const {strong,issues}=evaluarAuditoriaIA(ds);
+  if(issues.length){el.className='aiAuditBox warn';el.innerHTML='<b>⚠ Auditoría IA</b><br>'+issues.map(x=>'• '+x).join('<br>');return}
+  if(strong.length){el.className='aiAuditBox ok';el.innerHTML='<b>✓ Sin inconsistencias evidentes</b><br>'+strong.map(d=>`${d.className} ${Math.round(d.confidence*100)}%`).join(' · ');return}
+  el.className='aiAuditBox';el.textContent='El auditor usará detecciones ≥ 70% para generar advertencias.';
+}
+
+async function capturarFotoIA(){
+  const v=aiEl('aiCameraVideo'),btn=aiEl('aiCaptureBtn');
+  if(!v||v.readyState<2)return;
+  btn.disabled=true;btn.textContent='⏳ CAPTURANDO';
+  try{
+    const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+    const blob=await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('No se pudo crear JPG')),'image/jpeg',0.92));
+    const base=(document.getElementById('IDCAMPO')?.value||'PUNTO').replace(/[^a-z0-9_-]+/gi,'_');
+    const nombre=`${base}_${mappingAIPhotoId}_${Date.now()}.jpg`;
+    const file=new File([blob],nombre,{type:'image/jpeg',lastModified:Date.now()});
+    const audit=evaluarAuditoriaIA(mappingAIDetections);
+    await guardarCapturaIAEnFormulario(mappingAIPhotoId,file,mappingAIDetections,audit);
+    cerrarCamaraIA();
+  }catch(e){
+    console.error(e);alert('No fue posible capturar la foto: '+(e?.message||e));
+  }finally{btn.disabled=false;btn.textContent='📸 CAPTURAR'}
+}
+
+async function guardarCapturaIAEnFormulario(id,file,detections,audit){
+  photos[id]={
+    blob:file,
+    nombre_original:file.name||'',
+    ia:{
+      model:'mapping_yolo11s_v1',
+      captured_at:new Date().toISOString(),
+      detections:mejoresPorClaseIA(detections).map(d=>({
+        clase:d.className,
+        confianza:Number(d.confidence.toFixed(4)),
+        x1:Math.round(d.x1),y1:Math.round(d.y1),x2:Math.round(d.x2),y2:Math.round(d.y2)
+      })),
+      inconsistencias:[...audit.issues]
+    }
+  };
+  const status=document.getElementById('status_'+id);
+  if(status){
+    status.textContent=`🤖 Foto IA guardada · ${formatearBytesStorage(file.size)}`;
+    status.className='photoStatus local';status.style.display='inline-flex';
+  }
+  await mostrarPreviewFotoLocal(id,file,'Foto capturada con Auditor IA');
+  const result=document.getElementById('aiResult_'+id);
+  if(result){
+    const best=mejoresPorClaseIA(detections);
+    result.className='aiPhotoResult open '+(audit.issues.length?'warn':'ok');
+    result.innerHTML=(best.length?`<b>IA:</b> ${best.map(d=>`${d.className} ${Math.round(d.confidence*100)}%`).join(' · ')}`:'<b>IA:</b> Sin detecciones')+
+      (audit.issues.length?`<br><b>⚠ Revisar:</b> ${audit.issues.join(' ')}`:'');
+  }
+  const card=document.getElementById('photoCard_'+id);
+  card?.classList.remove('photoRequiredMissing');
+  card?.querySelector('.photoRequiredMsg')?.remove();
+  requestAnimationFrame(actualizarResaltadoObligatorios);
+}
+
+window.addEventListener('resize',()=>{if(aiEl('aiCameraOverlay')?.classList.contains('open'))ajustarCanvasCamaraIA()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&aiEl('aiCameraOverlay')?.classList.contains('open'))cerrarCamaraIA()});
+</script>
 
 </body></html>
 
