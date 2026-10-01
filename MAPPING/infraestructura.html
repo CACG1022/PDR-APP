@@ -1286,7 +1286,7 @@ button.appControlLocked{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · CX1POL–CX4POL progresivos · bloqueo sin polígono</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · CXnPOL con coordenadas destino · bloqueo sin polígono</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -7513,6 +7513,33 @@ async function completarCoordenadasCX(registro){
   return registro;
 }
 
+
+async function completarCoordenadasCXOtroPoligono(registro){
+  if(!registro)return registro;
+
+  const activo=String(registro.CXOTROPOL||'NO').toUpperCase()==='SI';
+
+  for(let i=1;i<=4;i++){
+    const pol=String(registro[`CX${i}POL`]||'').trim();
+    const conse=Number(registro[`CX${i}CONSE`]||0);
+
+    if(activo && pol && pol!=='N/A' && conse>0){
+      const c=await resolverCoordenadasCX(pol,conse);
+
+      registro[`CX${i}LATPOL`]=
+        Number.isFinite(Number(c.latitude)) ? Number(c.latitude) : null;
+
+      registro[`CX${i}LONTPOL`]=
+        Number.isFinite(Number(c.longitude)) ? Number(c.longitude) : null;
+    }else{
+      registro[`CX${i}LATPOL`]=null;
+      registro[`CX${i}LONTPOL`]=null;
+    }
+  }
+
+  return registro;
+}
+
 function prepararRegistroLocalBase(){
   if(!editingId && poligonosAsignados.length){
     if(!poligonosGeoJSON?.features?.length){
@@ -7682,9 +7709,12 @@ guardarPunto=async function(){
   let r=prepararRegistroLocalBase();
   if(!r)return;
 
-  // Calcula LATCX1..4 / LONGTCX1..4 igual que las expresiones de QGIS,
-  // buscando el IDCAMPO POLIGONO-CX dentro del mismo proyecto.
+  // Calcula LATCX1..4 / LONGTCX1..4 para conexiones del mismo polígono.
   r=await completarCoordenadasCX(r);
+
+  // Calcula CX1LATPOL/CX1LONTPOL ... CX4LATPOL/CX4LONTPOL
+  // usando las coordenadas reales del elemento seleccionado en el otro polígono.
+  r=await completarCoordenadasCXOtroPoligono(r);
 
   try{
     await guardarFotosCapturadasIDB(r.offline_id||r.id);
@@ -7708,7 +7738,7 @@ guardarPunto=async function(){
 
 function filaSupabase(r){
   const q={...r};delete q.fotos;delete q.geometry;delete q.sync_status;delete q.supabase_id;delete q.id;delete q.asignacion_id;
-  return {proyecto_id:r.proyecto_id,tecnico_id:mappingUser.id,tecnico_email:mappingUser.email,tecnico_nombre:mappingProfile?.nombre||mappingUser.email,offline_id:r.offline_id,origen_registro:'APP_MOVIL',tipo:r.TIPO,poligono:r.POLIGONO,consecutiv:r.CONSECUTIV,idcampo:r.IDCAMPO,idglobal:r.IDGLOBAL||null,ciudad:r.CIUDAD||null,barrio:r.BARRIO||null,direccion:r.DIRECCION||null,costado:r.COSTADO||null,latitude:r.LATITUDE,longitude:r.LONGITUDE,precision_gps:null,fecha:r.FECHA||null,hora:r.HORA||null,fecha_captura_app:r.fecha_captura_app||new Date().toISOString(),user_agent:navigator.userAgent,propietari:r.PROPIETARI||null,pacvi:r.PACVI||null,tipo_poste:r['TIPO POSTE']||null,rotura:r.ROTURA,material:r.MATERIAL||null,altura:r.ALTURA,estado:r.ESTADO||null,tension:r.TENSION||null,cables:r.CABLES,reservas:r.RESERVAS,empalmes:r.EMPALMES,electricos:r.ELECTRICOS||null,naps:r.NAPS,bajantes:r.BAJANTES,fuentes:r.FUENTES,proempalme:r.PROEMPALME||null,pronap:r.PRONAP||null,rienda:r.RIENDA||null,amplifi:r.AMPLIFI,finder_ed:r.FINDERED||null,existencia:r.EXISTENCIA,tipo_camara:r.TIPOCAMARA||null,conf_ducto:r['CONF DUCTO']||null,ducto_elec:r['DUCTO ELEC']||null,duct_telco:r['DUCT TELCO']||null,duct_libre:r['DUCT LIBRE']||null,duct_util:r['DUCT UTIL']||null,subida_a_p:r['SUBIDA A P']||null,elem_red:r['ELEM RED']||null,cant_reser:r['CANT RESER'],herrajes_retencion:r.HERRAJES_RETENCION??0,herrajes_suspension:r.HERRAJES_SUSPENSION??0,proyeccion_bajante:r.PROY_BAJANTE||'NO',distancia_interna:r.DISTANCIA_INTERNA??0,cx1:r.CX1||0,cx2:r.CX2||0,cx3:r.CX3||0,cx4:r.CX4||0,telcx1:r.TELCX1||0,telcx2:r.TELCX2||0,telcx3:r.TELCX3||0,telcx4:r.TELCX4||0,distodo1:r.DISTODO1,distodo2:r.DISTODO2,distodo3:r.DISTODO3,distodo4:r.DISTODO4,latcx1:r.LATCX1,longtcx1:r.LONGTCX1,latcx2:r.LATCX2,longtcx2:r.LONGTCX2,latcx3:r.LATCX3,longtcx3:r.LONGTCX3,latcx4:r.LATCX4,longtcx4:r.LONGTCX4,cxotropol:r.CXOTROPOL||'NO',cx1pol:r.CX1POL||null,cx2pol:r.CX2POL||null,cx3pol:r.CX3POL||null,cx4pol:r.CX4POL||null,cx1conse:r.CX1CONSE,cx2conse:r.CX2CONSE,cx3conse:r.CX3CONSE,cx4conse:r.CX4CONSE,distodo5:r.DISTODO5,distodo6:r.DISTODO6,distodo7:r.DISTODO7,distodo8:r.DISTODO8,observacio:r.OBSERVACIO||null,datos_qgis:q,editado_en_app:!!r.supabase_id,fecha_ultima_edicion_app:r.supabase_id?new Date().toISOString():null};
+  return {proyecto_id:r.proyecto_id,tecnico_id:mappingUser.id,tecnico_email:mappingUser.email,tecnico_nombre:mappingProfile?.nombre||mappingUser.email,offline_id:r.offline_id,origen_registro:'APP_MOVIL',tipo:r.TIPO,poligono:r.POLIGONO,consecutiv:r.CONSECUTIV,idcampo:r.IDCAMPO,idglobal:r.IDGLOBAL||null,ciudad:r.CIUDAD||null,barrio:r.BARRIO||null,direccion:r.DIRECCION||null,costado:r.COSTADO||null,latitude:r.LATITUDE,longitude:r.LONGITUDE,precision_gps:null,fecha:r.FECHA||null,hora:r.HORA||null,fecha_captura_app:r.fecha_captura_app||new Date().toISOString(),user_agent:navigator.userAgent,propietari:r.PROPIETARI||null,pacvi:r.PACVI||null,tipo_poste:r['TIPO POSTE']||null,rotura:r.ROTURA,material:r.MATERIAL||null,altura:r.ALTURA,estado:r.ESTADO||null,tension:r.TENSION||null,cables:r.CABLES,reservas:r.RESERVAS,empalmes:r.EMPALMES,electricos:r.ELECTRICOS||null,naps:r.NAPS,bajantes:r.BAJANTES,fuentes:r.FUENTES,proempalme:r.PROEMPALME||null,pronap:r.PRONAP||null,rienda:r.RIENDA||null,amplifi:r.AMPLIFI,finder_ed:r.FINDERED||null,existencia:r.EXISTENCIA,tipo_camara:r.TIPOCAMARA||null,conf_ducto:r['CONF DUCTO']||null,ducto_elec:r['DUCTO ELEC']||null,duct_telco:r['DUCT TELCO']||null,duct_libre:r['DUCT LIBRE']||null,duct_util:r['DUCT UTIL']||null,subida_a_p:r['SUBIDA A P']||null,elem_red:r['ELEM RED']||null,cant_reser:r['CANT RESER'],herrajes_retencion:r.HERRAJES_RETENCION??0,herrajes_suspension:r.HERRAJES_SUSPENSION??0,proyeccion_bajante:r.PROY_BAJANTE||'NO',distancia_interna:r.DISTANCIA_INTERNA??0,cx1:r.CX1||0,cx2:r.CX2||0,cx3:r.CX3||0,cx4:r.CX4||0,telcx1:r.TELCX1||0,telcx2:r.TELCX2||0,telcx3:r.TELCX3||0,telcx4:r.TELCX4||0,distodo1:r.DISTODO1,distodo2:r.DISTODO2,distodo3:r.DISTODO3,distodo4:r.DISTODO4,latcx1:r.LATCX1,longtcx1:r.LONGTCX1,latcx2:r.LATCX2,longtcx2:r.LONGTCX2,latcx3:r.LATCX3,longtcx3:r.LONGTCX3,latcx4:r.LATCX4,longtcx4:r.LONGTCX4,cxotropol:r.CXOTROPOL||'NO',cx1pol:r.CX1POL||null,cx2pol:r.CX2POL||null,cx3pol:r.CX3POL||null,cx4pol:r.CX4POL||null,cx1conse:r.CX1CONSE,cx2conse:r.CX2CONSE,cx3conse:r.CX3CONSE,cx4conse:r.CX4CONSE,cx1latpol:r.CX1LATPOL??null,cx1lontpol:r.CX1LONTPOL??null,cx2latpol:r.CX2LATPOL??null,cx2lontpol:r.CX2LONTPOL??null,cx3latpol:r.CX3LATPOL??null,cx3lontpol:r.CX3LONTPOL??null,cx4latpol:r.CX4LATPOL??null,cx4lontpol:r.CX4LONTPOL??null,distodo5:r.DISTODO5,distodo6:r.DISTODO6,distodo7:r.DISTODO7,distodo8:r.DISTODO8,observacio:r.OBSERVACIO||null,datos_qgis:q,editado_en_app:!!r.supabase_id,fecha_ultima_edicion_app:r.supabase_id?new Date().toISOString():null};
 }
 function dataUriBlob(uri){
   const [h,b]=String(uri||'').split(',');
@@ -8968,7 +8998,7 @@ async function reenviarTodo(){
     bloquearSinProyecto('No hay un proyecto activo asignado.');
     return;
   }if(!proyectoActivo)return;registrosProyectoActual().forEach(r=>r.sync_status='pendiente');persist();await sincronizarPendientes()}
-function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,_tecnico_id:e.tecnico_id,_tecnico_email:e.tecnico_email,_tecnico_nombre:e.tecnico_nombre,_created_at:e.created_at||null,fecha_captura_app:q.fecha_captura_app||e.fecha_captura_app||e.created_at||null,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,HERRAJES_RETENCION:q.HERRAJES_RETENCION??e.herrajes_retencion??0,HERRAJES_SUSPENSION:q.HERRAJES_SUSPENSION??e.herrajes_suspension??0,PROY_BAJANTE:q.PROY_BAJANTE||e.proyeccion_bajante||'NO',DISTANCIA_INTERNA:q.DISTANCIA_INTERNA??e.distancia_interna??0,TIPO_PROYECTO:q.TIPO_PROYECTO||proyectoActivo?.tipo_proyecto||'MAPPING',CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null}}
+function remotoALocal(e){const q=e.datos_qgis&&typeof e.datos_qgis==='object'?e.datos_qgis:{};return {...q,id:e.offline_id,offline_id:e.offline_id,supabase_id:e.id,proyecto_id:e.proyecto_id,_tecnico_id:e.tecnico_id,_tecnico_email:e.tecnico_email,_tecnico_nombre:e.tecnico_nombre,_created_at:e.created_at||null,fecha_captura_app:q.fecha_captura_app||e.fecha_captura_app||e.created_at||null,sync_status:'enviado',TIPO:q.TIPO||e.tipo,POLIGONO:q.POLIGONO||e.poligono,CONSECUTIV:Number(q.CONSECUTIV??e.consecutiv),IDCAMPO:q.IDCAMPO||e.idcampo,CIUDAD:q.CIUDAD||e.ciudad||'',BARRIO:q.BARRIO||e.barrio||'',TECNICO:q.TECNICO||e.tecnico_nombre||'',PROYECTO:q.PROYECTO||proyectoActivo?.nombre||proyectoActivo?.codigo||'',LATITUDE:Number(q.LATITUDE??e.latitude),LONGITUDE:Number(q.LONGITUDE??e.longitude),DIRECCION:q.DIRECCION||e.direccion||'',COSTADO:q.COSTADO||e.costado||'',PROPIETARI:q.PROPIETARI||e.propietari||'',ALTURA:q.ALTURA??e.altura,'TIPO POSTE':q['TIPO POSTE']||e.tipo_poste||'',MATERIAL:q.MATERIAL||e.material||'',ROTURA:q.ROTURA??e.rotura,ESTADO:q.ESTADO||e.estado||'',TENSION:q.TENSION||e.tension||'',RIENDA:q.RIENDA||e.rienda||'',ELECTRICOS:q.ELECTRICOS||e.electricos||'',CABLES:q.CABLES??e.cables,RESERVAS:q.RESERVAS??e.reservas,EMPALMES:q.EMPALMES??e.empalmes,NAPS:q.NAPS??e.naps,BAJANTES:q.BAJANTES??e.bajantes,FUENTES:q.FUENTES??e.fuentes,AMPLIFI:q.AMPLIFI??e.amplifi,PACVI:q.PACVI||e.pacvi||'',FINDERED:q.FINDERED||e.finder_ed||'',TIPOCAMARA:q.TIPOCAMARA||e.tipo_camara||'','CONF DUCTO':q['CONF DUCTO']||e.conf_ducto||'','DUCTO ELEC':q['DUCTO ELEC']||e.ducto_elec||'','DUCT TELCO':q['DUCT TELCO']||e.duct_telco||'','DUCT LIBRE':q['DUCT LIBRE']||e.duct_libre||'','DUCT UTIL':q['DUCT UTIL']||e.duct_util||'','SUBIDA A P':q['SUBIDA A P']||e.subida_a_p||'','ELEM RED':q['ELEM RED']||e.elem_red||'',PROEMPALME:q.PROEMPALME||e.proempalme||'',PRONAP:q.PRONAP||e.pronap||'',EXISTENCIA:q.EXISTENCIA??e.existencia,'CANT RESER':q['CANT RESER']??e.cant_reser,HERRAJES_RETENCION:q.HERRAJES_RETENCION??e.herrajes_retencion??0,HERRAJES_SUSPENSION:q.HERRAJES_SUSPENSION??e.herrajes_suspension??0,PROY_BAJANTE:q.PROY_BAJANTE||e.proyeccion_bajante||'NO',DISTANCIA_INTERNA:q.DISTANCIA_INTERNA??e.distancia_interna??0,TIPO_PROYECTO:q.TIPO_PROYECTO||proyectoActivo?.tipo_proyecto||'MAPPING',CXOTROPOL:q.CXOTROPOL||e.cxotropol||'NO',OBSERVACIO:q.OBSERVACIO||e.observacio||'',FECHA:q.FECHA||e.fecha||'',HORA:q.HORA||e.hora||'',IDGLOBAL:q.IDGLOBAL||e.idglobal||'',LATCX1:q.LATCX1??e.latcx1??null,LONGTCX1:q.LONGTCX1??e.longtcx1??null,LATCX2:q.LATCX2??e.latcx2??null,LONGTCX2:q.LONGTCX2??e.longtcx2??null,LATCX3:q.LATCX3??e.latcx3??null,LONGTCX3:q.LONGTCX3??e.longtcx3??null,LATCX4:q.LATCX4??e.latcx4??null,LONGTCX4:q.LONGTCX4??e.longtcx4??null,CX1LATPOL:q.CX1LATPOL??e.cx1latpol??null,CX1LONTPOL:q.CX1LONTPOL??e.cx1lontpol??null,CX2LATPOL:q.CX2LATPOL??e.cx2latpol??null,CX2LONTPOL:q.CX2LONTPOL??e.cx2lontpol??null,CX3LATPOL:q.CX3LATPOL??e.cx3latpol??null,CX3LONTPOL:q.CX3LONTPOL??e.cx3lontpol??null,CX4LATPOL:q.CX4LATPOL??e.cx4latpol??null,CX4LONTPOL:q.CX4LONTPOL??e.cx4lontpol??null}}
 
 
 function tiposFotoRequeridosRegistro(r){
