@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V51 - Fotos editables + archivos POLIGONOS</title>
+<title>Master Mapping & Site Survey - V52 - Ubicación técnicos en tiempo real</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -529,6 +529,103 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   .projectPhotoConfigGrid{grid-template-columns:1fr}
 }
 
+
+/* ===== UBICACIÓN DE TÉCNICOS EN TIEMPO REAL ===== */
+.mapToolbar{
+  width:min(760px,calc(100% - 24px))!important;
+  grid-template-columns:1.25fr 1.25fr 1fr auto auto!important;
+}
+#btnLiveTech.liveOn{background:#16a34a!important}
+#btnLiveTech.liveOff{background:#64748b!important}
+.techLivePanel{
+  position:absolute;
+  z-index:710;
+  right:12px;
+  top:12px;
+  width:min(280px,calc(100% - 24px));
+  background:rgba(7,17,31,.95);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+  color:#e2e8f0;
+}
+.techLivePanel h4{margin:0 0 7px;font-size:12px;color:#bae6fd}
+.techLiveSummary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:5px;
+  margin-bottom:7px;
+}
+.techLiveSummary>div{
+  border:1px solid #29415d;
+  border-radius:9px;
+  padding:5px;
+  text-align:center;
+  background:#07111f;
+}
+.techLiveSummary span{display:block;font-size:8px;color:#94a3b8}
+.techLiveSummary b{display:block;font-size:13px}
+.techLiveList{
+  max-height:190px;
+  overflow:auto;
+  display:grid;
+  gap:5px;
+}
+.techLiveItem{
+  border:1px solid #29415d;
+  border-radius:9px;
+  padding:6px 7px;
+  background:#0d1b2a;
+  cursor:pointer;
+  font-size:9px;
+}
+.techLiveItem:hover{border-color:#38bdf8}
+.techLiveItem b{font-size:10px}
+.techLiveItem small{color:#94a3b8}
+.liveTechIconWrap{
+  background:transparent!important;
+  border:0!important;
+}
+.liveTechMarker{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:3px solid #fff;
+  box-shadow:0 2px 10px rgba(0,0,0,.55);
+  font-size:14px;
+  font-weight:900;
+}
+.liveTechMarker.green{background:#16a34a}
+.liveTechMarker.yellow{background:#f59e0b;color:#111827}
+.liveTechMarker.red{background:#dc2626}
+.liveTechMarker.gray{background:#64748b}
+.liveTechName{
+  background:rgba(7,17,31,.92)!important;
+  color:#fff!important;
+  border:1px solid #334155!important;
+  border-radius:7px!important;
+  box-shadow:none!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  padding:3px 5px!important;
+}
+.liveTechName:before{display:none!important}
+@media(max-width:1050px){
+  .techLivePanel{
+    top:auto;
+    bottom:82px;
+    right:12px;
+  }
+  .mapToolbar{
+    grid-template-columns:1fr 1fr!important;
+    width:min(520px,calc(100% - 24px))!important;
+  }
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -693,7 +790,19 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
     <table><tbody id="tablaAsignaciones"></tbody></table>
   </div>
 </aside>
-<section class="mapPanel"><div id="map"></div><div class="mapToolbar"><select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select><select id="fProyecto" onchange="cargarProyectoMapa()"></select><select id="fTipo" onchange="pintarMapa()"><option value="">Todos los tipos</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select><button onclick="cargarProyectoMapa()">Actualizar mapa</button></div><div class="mapLegend"><div><span class="dot" style="background:#22c55e"></span>Poste</div><div><span class="dot" style="background:#38bdf8"></span>Canalizado</div><div><span class="dot" style="background:#f97316"></span>C. Americano</div><div><span class="dot" style="background:#a855f7"></span>Cercha</div><div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div><div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div></div></section>
+<section class="mapPanel"><div id="map"></div><div class="mapToolbar"><select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select><select id="fProyecto" onchange="cargarProyectoMapa()"></select><select id="fTipo" onchange="pintarMapa()"><option value="">Todos los tipos</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select><button onclick="cargarProyectoMapa()">Actualizar mapa</button><button id="btnLiveTech" class="liveOn" onclick="toggleTecnicosTiempoReal()">📍 Técnicos ON</button></div>
+<div class="techLivePanel" id="techLivePanel">
+  <h4>📍 Técnicos en campo · tiempo real</h4>
+  <div class="techLiveSummary">
+    <div><span>Total</span><b id="techLiveTotal">0</b></div>
+    <div><span>≤ 1 min</span><b id="techLiveGreen">0</b></div>
+    <div><span>1–5 min</span><b id="techLiveYellow">0</b></div>
+    <div><span>&gt; 5 min</span><b id="techLiveOld">0</b></div>
+  </div>
+  <div id="techLiveUpdated" style="font-size:8px;color:#94a3b8;margin-bottom:6px">Sin datos</div>
+  <div class="techLiveList" id="techLiveList"><div class="hint">Selecciona un proyecto.</div></div>
+</div>
+<div class="mapLegend"><div><span class="dot" style="background:#22c55e"></span>Poste</div><div><span class="dot" style="background:#38bdf8"></span>Canalizado</div><div><span class="dot" style="background:#f97316"></span>C. Americano</div><div><span class="dot" style="background:#a855f7"></span>Cercha</div><div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div><div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div></div></section>
 </div>
 <div class="modalOverlay" id="puntosModal"><div class="modal"><div class="modalHead"><h2 id="puntosTitle">Puntos del proyecto</h2><button class="close" onclick="puntosModal.classList.remove('open')">Cerrar</button></div><div class="modalBody"><div class="tableWrap" style="max-height:70vh"><table class="table"><thead><tr><th>ID</th><th>Tipo</th><th>Polígono</th><th>Conexiones</th><th>Técnico</th><th>Dirección</th></tr></thead><tbody id="tablaPuntos"></tbody></table></div></div></div></div>
 <div class="modalOverlay" id="asignacionesModal"><div class="modal wide"><div class="modalHead"><h2>Asignaciones de proyectos</h2><button class="close" onclick="cerrarModalAsignaciones()">Cerrar</button></div><div class="modalBody">
@@ -861,7 +970,21 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 const SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];let map,layer=null,polygonMasterLayer=null;let geojsonProyectoPreview=null;let passwordSesionActual='';let dashboardPuntos=[];let dashboardCharts={};let dashboardMap=null,dashboardMapLayer=null;
+let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];
+let map,layer=null,polygonMasterLayer=null;
+let geojsonProyectoPreview=null;
+let passwordSesionActual='';
+let dashboardPuntos=[];
+let dashboardCharts={};
+let dashboardMap=null,dashboardMapLayer=null;
+
+// Ubicación actual de técnicos
+let ubicacionesTecnicos=[];
+let tecnicoLiveLayer=null;
+let tecnicoRealtimeChannel=null;
+let tecnicoLiveTimer=null;
+let tecnicoLiveProyectoId=null;
+let mostrarTecnicosLive=true;
 Chart.register(ChartDataLabels);
 Chart.defaults.plugins.datalabels = {
   color:'#f8fafc',
@@ -875,7 +998,14 @@ Chart.defaults.plugins.datalabels = {
 };
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function initMap(){map=L.map('map').setView([4.65,-74.1],11);const g=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'});const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'OSM'});g.addTo(map);L.control.layers({'Google Híbrido':g,'Calles':osm}).addTo(map)}
+function initMap(){
+  map=L.map('map').setView([4.65,-74.1],11);
+  const g=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'});
+  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'OSM'});
+  g.addTo(map);
+  L.control.layers({'Google Híbrido':g,'Calles':osm}).addTo(map);
+  tecnicoLiveLayer=L.layerGroup().addTo(map);
+}
 const LOGIN_MASTER_URL='login_master.html';
 
 function paginaActualMaster(){
@@ -950,6 +1080,7 @@ function loginMaster(){
 
 async function logoutMaster(){
   try{
+    detenerSeguimientoTecnicosMaster();
     await sb.auth.signOut();
   }finally{
     irLoginMaster('logout');
@@ -1122,7 +1253,15 @@ function filtrarProyectosPorEmpresa(){
   const empresaId=fEmpresa.value;
   const lista=empresaId?proyectos.filter(p=>p.empresa_id===empresaId):proyectos;
   fProyecto.innerHTML='<option value="">Seleccione...</option>'+lista.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');
-  if(lista.length){fProyecto.value=lista[0].id;cargarProyectoMapa()}else{puntos=[];pintarMapa();kPuntos.textContent=0}
+  if(lista.length){
+    fProyecto.value=lista[0].id;
+    cargarProyectoMapa();
+  }else{
+    puntos=[];
+    pintarMapa();
+    kPuntos.textContent=0;
+    detenerSeguimientoTecnicosMaster();
+  }
 }
 function llenarFiltrosAsignaciones(){if(!document.getElementById('asgFiltroEmpresa'))return;const keepE=asgFiltroEmpresa.value,keepP=asgFiltroProyecto.value,keepT=asgFiltroTecnico.value;asgFiltroEmpresa.innerHTML='<option value="">Todas</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');asgFiltroProyecto.innerHTML='<option value="">Todos</option>'+proyectos.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');asgFiltroTecnico.innerHTML='<option value="">Todos</option>'+usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false).map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)}</option>`).join('');if([...asgFiltroEmpresa.options].some(o=>o.value===keepE))asgFiltroEmpresa.value=keepE;if([...asgFiltroProyecto.options].some(o=>o.value===keepP))asgFiltroProyecto.value=keepP;if([...asgFiltroTecnico.options].some(o=>o.value===keepT))asgFiltroTecnico.value=keepT}
 function actualizarResumenAsignaciones(){if(!document.getElementById('asgTotal'))return;asgTotal.textContent=asignaciones.length;asgAsignadas.textContent=asignaciones.filter(a=>a.tecnico_id).length;asgProceso.textContent=asignaciones.filter(a=>a.estado_asignacion==='en_proceso').length;asgFinalizadas.textContent=asignaciones.filter(a=>a.estado_asignacion==='finalizado').length;const mini=document.getElementById('resumenAsignacionesMini');if(mini)mini.innerHTML=`<b>Total:</b> ${asignaciones.length} · <b>En proceso:</b> ${asgProceso.textContent} · <b>Finalizadas:</b> ${asgFinalizadas.textContent}`}
@@ -2440,12 +2579,300 @@ async function cargarGeoJSONProyectoMaster(proyecto){
   }
 }
 
+
+function minutosDesdeUbicacion(u){
+  const t=new Date(u?.updated_at||0).getTime();
+  if(!Number.isFinite(t)||!t)return Infinity;
+  return Math.max(0,(Date.now()-t)/60000);
+}
+
+function estadoUbicacionTecnico(u){
+  if(u?.activo===false)return 'gray';
+  const min=minutosDesdeUbicacion(u);
+  if(min<=1)return 'green';
+  if(min<=5)return 'yellow';
+  if(min<=15)return 'red';
+  return 'gray';
+}
+
+function textoAntiguedadUbicacion(u){
+  const min=minutosDesdeUbicacion(u);
+  if(!Number.isFinite(min))return 'sin fecha';
+  if(min<1)return `hace ${Math.max(0,Math.round(min*60))} s`;
+  if(min<60)return `hace ${Math.round(min)} min`;
+  const h=min/60;
+  if(h<24)return `hace ${h.toFixed(h<2?1:0)} h`;
+  return `hace ${Math.round(h/24)} d`;
+}
+
+function velocidadTecnicoTexto(speed){
+  const s=Number(speed);
+  if(!Number.isFinite(s)||s<0)return '—';
+  return `${(s*3.6).toFixed(1)} km/h`;
+}
+
+function iconoTecnicoLive(u){
+  const estado=estadoUbicacionTecnico(u);
+  return L.divIcon({
+    className:'liveTechIconWrap',
+    html:`<div class="liveTechMarker ${estado}">👷</div>`,
+    iconSize:[28,28],
+    iconAnchor:[14,14]
+  });
+}
+
+function resumenLiveTecnicos(){
+  const total=ubicacionesTecnicos.length;
+  let green=0,yellow=0,old=0;
+
+  for(const u of ubicacionesTecnicos){
+    const st=estadoUbicacionTecnico(u);
+    if(st==='green')green++;
+    else if(st==='yellow')yellow++;
+    else old++;
+  }
+
+  if(document.getElementById('techLiveTotal'))techLiveTotal.textContent=total;
+  if(document.getElementById('techLiveGreen'))techLiveGreen.textContent=green;
+  if(document.getElementById('techLiveYellow'))techLiveYellow.textContent=yellow;
+  if(document.getElementById('techLiveOld'))techLiveOld.textContent=old;
+
+  const up=document.getElementById('techLiveUpdated');
+  if(up){
+    up.textContent=total
+      ? `Actualizado ${new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`
+      : 'Sin ubicaciones reportadas para este proyecto';
+  }
+}
+
+function centrarTecnicoLive(tecnicoId){
+  const u=ubicacionesTecnicos.find(x=>String(x.tecnico_id)===String(tecnicoId));
+  if(!u)return;
+
+  const lat=Number(u.latitude),lon=Number(u.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+
+  map.setView([lat,lon],Math.max(map.getZoom(),19),{animate:true});
+
+  tecnicoLiveLayer?.eachLayer?.(l=>{
+    if(String(l?.options?.tecnicoId||'')===String(tecnicoId)){
+      try{l.openPopup()}catch(_){}
+    }
+  });
+}
+
+function pintarUbicacionesTecnicos(){
+  if(!map)return;
+
+  if(!tecnicoLiveLayer){
+    tecnicoLiveLayer=L.layerGroup().addTo(map);
+  }
+
+  tecnicoLiveLayer.clearLayers();
+
+  const listaEl=document.getElementById('techLiveList');
+
+  if(!mostrarTecnicosLive){
+    if(listaEl)listaEl.innerHTML='<div class="hint">Visualización de técnicos desactivada.</div>';
+    resumenLiveTecnicos();
+    return;
+  }
+
+  const visibles=ubicacionesTecnicos
+    .filter(u=>Number.isFinite(Number(u.latitude))&&Number.isFinite(Number(u.longitude)))
+    .sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0));
+
+  for(const u of visibles){
+    const lat=Number(u.latitude),lon=Number(u.longitude);
+    const estado=estadoUbicacionTecnico(u);
+    const nombre=u.tecnico_nombre||u.tecnico_email||'Técnico';
+    const precision=Number(u.precision_gps);
+
+    const popup=`
+      <b>👷 ${esc(nombre)}</b><br>
+      ${esc(u.tecnico_email||'')}<br>
+      <b>Estado:</b> ${estado==='green'?'ACTIVO':estado==='yellow'?'SEÑAL RECIENTE':estado==='red'?'SEÑAL ANTIGUA':'SIN SEÑAL'}<br>
+      <b>Última ubicación:</b> ${esc(textoAntiguedadUbicacion(u))}<br>
+      <b>Polígono:</b> ${esc(u.poligono||'Sin detectar')}<br>
+      <b>Precisión:</b> ${Number.isFinite(precision)?`±${Math.round(precision)} m`:'—'}<br>
+      <b>Velocidad:</b> ${esc(velocidadTecnicoTexto(u.speed))}<br>
+      <b>Coordenadas:</b> ${lat.toFixed(7)}, ${lon.toFixed(7)}
+    `;
+
+    const mk=L.marker([lat,lon],{
+      icon:iconoTecnicoLive(u),
+      zIndexOffset:9000,
+      tecnicoId:u.tecnico_id
+    })
+      .addTo(tecnicoLiveLayer)
+      .bindPopup(popup)
+      .bindTooltip(esc(nombre),{
+        permanent:true,
+        direction:'right',
+        offset:[16,0],
+        className:'liveTechName',
+        opacity:1
+      });
+
+    mk.options.tecnicoId=u.tecnico_id;
+  }
+
+  if(listaEl){
+    listaEl.innerHTML=visibles.length
+      ? visibles.map(u=>{
+          const st=estadoUbicacionTecnico(u);
+          const nombre=u.tecnico_nombre||u.tecnico_email||'Técnico';
+          const etiqueta=
+            st==='green'?'🟢':
+            st==='yellow'?'🟡':
+            st==='red'?'🔴':'⚫';
+
+          return `<div class="techLiveItem" onclick="centrarTecnicoLive('${esc(u.tecnico_id)}')">
+            <b>${etiqueta} ${esc(nombre)}</b><br>
+            <small>${esc(u.poligono||'Sin polígono')} · ${esc(textoAntiguedadUbicacion(u))}</small>
+          </div>`;
+        }).join('')
+      : '<div class="hint">Ningún técnico ha reportado ubicación todavía.</div>';
+  }
+
+  resumenLiveTecnicos();
+}
+
+async function cargarUbicacionesTecnicos(proyectoId=tecnicoLiveProyectoId||fProyecto?.value){
+  const id=String(proyectoId||'');
+  if(!id){
+    ubicacionesTecnicos=[];
+    pintarUbicacionesTecnicos();
+    return [];
+  }
+
+  const {data,error}=await sb
+    .from('mapping_tecnico_ubicacion')
+    .select('*')
+    .eq('proyecto_id',id)
+    .order('updated_at',{ascending:false});
+
+  if(error){
+    console.warn('No se pudieron cargar ubicaciones de técnicos:',error.message||error);
+    const list=document.getElementById('techLiveList');
+    if(list)list.innerHTML='<div class="hint">No fue posible consultar las ubicaciones. Verifica el SQL/RLS.</div>';
+    return [];
+  }
+
+  ubicacionesTecnicos=data||[];
+  pintarUbicacionesTecnicos();
+  return ubicacionesTecnicos;
+}
+
+function detenerSeguimientoTecnicosMaster(){
+  if(tecnicoRealtimeChannel){
+    try{sb.removeChannel(tecnicoRealtimeChannel)}catch(_){}
+    tecnicoRealtimeChannel=null;
+  }
+
+  if(tecnicoLiveTimer){
+    clearInterval(tecnicoLiveTimer);
+    tecnicoLiveTimer=null;
+  }
+
+  tecnicoLiveProyectoId=null;
+  ubicacionesTecnicos=[];
+
+  if(tecnicoLiveLayer)tecnicoLiveLayer.clearLayers();
+  pintarUbicacionesTecnicos();
+}
+
+async function iniciarSeguimientoTecnicosMaster(proyectoId){
+  const id=String(proyectoId||'');
+
+  if(!id){
+    detenerSeguimientoTecnicosMaster();
+    return;
+  }
+
+  if(tecnicoLiveProyectoId===id && tecnicoRealtimeChannel){
+    await cargarUbicacionesTecnicos(id);
+    return;
+  }
+
+  if(tecnicoRealtimeChannel){
+    try{sb.removeChannel(tecnicoRealtimeChannel)}catch(_){}
+    tecnicoRealtimeChannel=null;
+  }
+
+  if(tecnicoLiveTimer){
+    clearInterval(tecnicoLiveTimer);
+    tecnicoLiveTimer=null;
+  }
+
+  tecnicoLiveProyectoId=id;
+  await cargarUbicacionesTecnicos(id);
+
+  tecnicoRealtimeChannel=sb
+    .channel(`mapping_tecnico_ubicacion_${id}`)
+    .on(
+      'postgres_changes',
+      {
+        event:'*',
+        schema:'public',
+        table:'mapping_tecnico_ubicacion',
+        filter:`proyecto_id=eq.${id}`
+      },
+      payload=>{
+        const nuevo=payload?.new;
+        const viejo=payload?.old;
+
+        if(payload.eventType==='DELETE'){
+          const tid=viejo?.tecnico_id;
+          ubicacionesTecnicos=ubicacionesTecnicos.filter(
+            x=>String(x.tecnico_id)!==String(tid)
+          );
+        }else if(nuevo){
+          const k=ubicacionesTecnicos.findIndex(
+            x=>String(x.tecnico_id)===String(nuevo.tecnico_id)
+          );
+
+          if(k>=0)ubicacionesTecnicos[k]=nuevo;
+          else ubicacionesTecnicos.push(nuevo);
+        }
+
+        pintarUbicacionesTecnicos();
+      }
+    )
+    .subscribe(status=>{
+      if(status==='CHANNEL_ERROR'){
+        console.warn('Canal Realtime de técnicos no disponible. Se mantiene actualización periódica.');
+      }
+    });
+
+  // Respaldo por consulta periódica, también actualiza los estados por antigüedad.
+  tecnicoLiveTimer=setInterval(()=>{
+    if(String(fProyecto?.value||'')===id){
+      cargarUbicacionesTecnicos(id).catch(()=>{});
+    }
+  },15000);
+}
+
+function toggleTecnicosTiempoReal(){
+  mostrarTecnicosLive=!mostrarTecnicosLive;
+
+  const b=document.getElementById('btnLiveTech');
+  if(b){
+    b.textContent=mostrarTecnicosLive?'📍 Técnicos ON':'📍 Técnicos OFF';
+    b.classList.toggle('liveOn',mostrarTecnicosLive);
+    b.classList.toggle('liveOff',!mostrarTecnicosLive);
+  }
+
+  pintarUbicacionesTecnicos();
+}
+
 async function cargarProyectoMapa(){
   const id=fProyecto.value;
   if(!id){
     puntos=[];
     pintarMapa();
     kPuntos.textContent=0;
+    detenerSeguimientoTecnicosMaster();
     if(polygonMasterLayer){try{map.removeLayer(polygonMasterLayer)}catch(_){} polygonMasterLayer=null;}
     return;
   }
@@ -2460,6 +2887,11 @@ async function cargarProyectoMapa(){
   puntos=data||[];
   kPuntos.textContent=puntos.length;
   pintarMapa();
+
+  // Inicia/actualiza la ubicación en vivo de los técnicos del proyecto.
+  iniciarSeguimientoTecnicosMaster(id).catch(e=>
+    console.warn('Seguimiento técnicos:',e)
+  );
 
   const b=puntos.map(p=>[Number(p.latitude),Number(p.longitude)]).filter(x=>x.every(Number.isFinite));
   if(b.length)map.fitBounds(b,{padding:[45,45],maxZoom:19});
