@@ -1286,7 +1286,7 @@ button.appControlLocked{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · CXnPOL con coordenadas destino · bloqueo sin polígono</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · ubicación técnica en vivo · CXnPOL · bloqueo sin polígono</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1469,6 +1469,15 @@ let registros=JSON.parse(localStorage.getItem('mapping_sitesurvey_registros_v1')
 let map,selectedLat,selectedLng,gpsMarker,gpsAccuracyCircle,editingId=null,photos={};
 let gpsWatchId=null;
 let gpsUltimaPosicion=null;
+
+// ===== UBICACIÓN OPERATIVA EN TIEMPO REAL =====
+// Se reporta una sola fila por técnico en Supabase.
+// El reporte solo funciona con sesión + proyecto + polígono asignado.
+const UBICACION_REPORTE_INTERVALO_MS=10000;
+let ubicacionUltimoEnvioMs=0;
+let ubicacionEnvioEnCurso=false;
+let ubicacionUltimoPayload=null;
+
 let gpsSeguirCentro=false;
 let gpsErrorMostrado=false;
 let gpsActivado=false;
@@ -2348,6 +2357,99 @@ function crearIconoGPS(){
   });
 }
 
+
+function poligonoActualDesdeGPS(lat,lon){
+  try{
+    const d=detectarPoligonoPorCoordenada(Number(lat),Number(lon));
+    return d?.codigo||d?.nombre||null;
+  }catch(_){
+    return null;
+  }
+}
+
+async function reportarUbicacionTecnico(gps,forzar=false){
+  if(
+    !gps ||
+    !mappingUser ||
+    !proyectoActivo ||
+    !trabajoProyectoHabilitado ||
+    !Array.isArray(poligonosAsignados) ||
+    !poligonosAsignados.length ||
+    !navigator.onLine
+  )return false;
+
+  const latitude=Number(gps.latitude);
+  const longitude=Number(gps.longitude);
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return false;
+
+  const ahora=Date.now();
+
+  if(!forzar && ahora-ubicacionUltimoEnvioMs<UBICACION_REPORTE_INTERVALO_MS){
+    return false;
+  }
+
+  if(ubicacionEnvioEnCurso)return false;
+  ubicacionEnvioEnCurso=true;
+
+  const payload={
+    tecnico_id:mappingUser.id,
+    tecnico_nombre:mappingProfile?.nombre||mappingUser.email||'Técnico',
+    tecnico_email:mappingUser.email||mappingProfile?.email||null,
+    proyecto_id:proyectoActivo.proyecto_id||proyectoActivo.id||null,
+    asignacion_id:proyectoActivo.asignacion_id||null,
+    poligono:poligonoActualDesdeGPS(latitude,longitude),
+    latitude,
+    longitude,
+    precision_gps:Number.isFinite(Number(gps.accuracy))?Number(gps.accuracy):null,
+    altitude:Number.isFinite(Number(gps.altitude))?Number(gps.altitude):null,
+    heading:Number.isFinite(Number(gps.heading))?Number(gps.heading):null,
+    speed:Number.isFinite(Number(gps.speed))?Number(gps.speed):null,
+    activo:true,
+    dispositivo:navigator.userAgent||null,
+    updated_at:new Date().toISOString()
+  };
+
+  try{
+    const {error}=await mappingSb
+      .from('mapping_tecnico_ubicacion')
+      .upsert(payload,{onConflict:'tecnico_id'});
+
+    if(error)throw error;
+
+    ubicacionUltimoEnvioMs=Date.now();
+    ubicacionUltimoPayload=payload;
+    return true;
+  }catch(e){
+    // No interrumpe el levantamiento si temporalmente falla el reporte GPS.
+    console.warn('No se pudo reportar ubicación del técnico:',e?.message||e);
+    return false;
+  }finally{
+    ubicacionEnvioEnCurso=false;
+  }
+}
+
+async function marcarUbicacionTecnicoInactiva(){
+  if(!mappingUser?.id || !navigator.onLine)return;
+
+  try{
+    await mappingSb
+      .from('mapping_tecnico_ubicacion')
+      .update({
+        activo:false,
+        updated_at:new Date().toISOString()
+      })
+      .eq('tecnico_id',mappingUser.id);
+  }catch(e){
+    console.warn('No se pudo marcar ubicación inactiva:',e);
+  }
+}
+
+function forzarReporteUbicacionActual(){
+  if(gpsUltimaPosicion){
+    reportarUbicacionTecnico(gpsUltimaPosicion,true).catch(()=>{});
+  }
+}
+
 function actualizarPosicionGPS(pos){
   if(!map||!pos?.coords)return;
 
@@ -2368,6 +2470,10 @@ function actualizarPosicionGPS(pos){
     speed:pos.coords.speed??null,
     timestamp:pos.timestamp||Date.now()
   };
+
+  // Reporte operativo: máximo una actualización cada 10 s.
+  // No bloquea ni afecta el levantamiento si no hay Internet.
+  reportarUbicacionTecnico(gpsUltimaPosicion,false).catch(()=>{});
 
   if(!gpsMarker){
     gpsMarker=L.marker([latitude,longitude],{
@@ -7005,6 +7111,7 @@ async function verificarSesionMapping(){
 }
 async function loginMapping(){irLoginMapping()}
 async function logoutMapping(){
+  await marcarUbicacionTecnicoInactiva().catch(()=>{});
   await mappingSb.auth.signOut().catch(()=>{});
 
   mappingUser=null;
@@ -7251,6 +7358,7 @@ function configurarOverlayBloqueo(tipo='proyecto',mensaje=''){
 }
 
 function bloquearSinPoligonos(mensaje=''){
+  marcarUbicacionTecnicoInactiva().catch(()=>{});
   setControlesTrabajoHabilitados(false);
   configurarOverlayBloqueo('poligono',mensaje);
 
@@ -7291,6 +7399,7 @@ function exigirPoligonoParaTrabajar(accion='realizar esta acción'){
 }
 
 function bloquearSinProyecto(mensaje=''){
+  marcarUbicacionTecnicoInactiva().catch(()=>{});
   proyectoActivo=null;
   poligonosAsignados=[];
   poligonosAsignadosSet=new Set();
@@ -7322,6 +7431,7 @@ function desbloquearProyecto(){
   if(lock)lock.classList.remove('open');
 
   setControlesTrabajoHabilitados(true);
+  setTimeout(forzarReporteUbicacionActual,0);
   return true;
 }
 
