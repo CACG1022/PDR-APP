@@ -1313,6 +1313,12 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
 .aiCameraAction{border:0;border-radius:12px;min-height:46px;padding:10px 12px;font-weight:1000;color:#fff;background:#334155}
 .aiCaptureBtn{background:#0f766e!important;font-size:14px;border:2px solid #5eead4!important}
 .aiCaptureBtn:disabled{opacity:.45}
+.aiZoomControl{display:none;grid-template-columns:auto 1fr auto auto;gap:7px;align-items:center;border:1px solid #29415d;border-radius:10px;background:#0b1928;padding:7px 8px}
+.aiZoomControl.open{display:grid}
+.aiZoomBtn{width:34px;height:34px;border:1px solid #475569;border-radius:9px;background:#172033;color:#fff;font-size:18px;font-weight:1000}
+.aiZoomRange{width:100%;padding:0!important;margin:0!important;accent-color:#22d3ee;background:transparent!important;border:0!important}
+.aiZoomValue{min-width:44px;text-align:center;font-size:9px;font-weight:900;color:#67e8f9}
+.aiAutoApplyNote{font-size:8px;color:#86efac;text-align:center;min-height:10px}
 .aiModelState{font-size:8px;color:#94a3b8;text-align:center}
 @media(max-width:700px){
   .aiCameraHead{padding-top:calc(7px + env(safe-area-inset-top))}
@@ -1524,6 +1530,13 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   <div class="aiCameraBottom">
     <div class="aiDetections" id="aiDetections"><span class="aiDetChip">Sin detecciones</span></div>
     <div class="aiAuditBox" id="aiAuditBox">El auditor comparará lo detectado con los campos diligenciados.</div>
+    <div class="aiZoomControl" id="aiZoomControl">
+      <button type="button" class="aiZoomBtn" onclick="cambiarZoomIA(-1)">−</button>
+      <input id="aiZoomRange" class="aiZoomRange" type="range" min="1" max="1" step="0.1" value="1" oninput="aplicarZoomIA(this.value)">
+      <button type="button" class="aiZoomBtn" onclick="cambiarZoomIA(1)">+</button>
+      <span class="aiZoomValue" id="aiZoomValue">1.0×</span>
+    </div>
+    <div class="aiAutoApplyNote" id="aiAutoApplyNote"></div>
     <div class="aiCameraActions">
       <button type="button" class="aiCameraAction" onclick="cambiarCamaraIA()">↻ Cámara</button>
       <button type="button" class="aiCameraAction aiCaptureBtn" id="aiCaptureBtn" onclick="capturarFotoIA()">📸 CAPTURAR</button>
@@ -10053,6 +10066,9 @@ let mappingAIInputName=null;
 let mappingAIOutputName=null;
 let mappingAIOffscreen=null;
 let mappingAIOffCtx=null;
+let mappingAIVideoTrack=null;
+let mappingAIZoomCapabilities=null;
+let mappingAIZoomValue=1;
 
 function aiEl(id){return document.getElementById(id)}
 function aiSetStatus(txt,tipo=''){
@@ -10104,6 +10120,7 @@ async function abrirCamaraIA(id,label='Foto'){
   aiEl('aiToggleBtn').textContent='IA ON';
   renderDeteccionesIA([]);
   renderAuditoriaIA([]);
+  const autoNote=aiEl('aiAutoApplyNote'); if(autoNote)autoNote.textContent='';
   aiSetStatus('Solicitando cámara…','warn');
   try{
     await iniciarStreamCamaraIA();
@@ -10127,6 +10144,8 @@ async function iniciarStreamCamaraIA(){
     }
   };
   mappingAIStream=await navigator.mediaDevices.getUserMedia(constraints);
+  mappingAIVideoTrack=mappingAIStream.getVideoTracks?.()[0]||null;
+  await configurarZoomCamaraIA();
   const v=aiEl('aiCameraVideo');
   v.srcObject=mappingAIStream;
   await new Promise((resolve,reject)=>{
@@ -10145,7 +10164,52 @@ async function iniciarStreamCamaraIA(){
 function detenerStreamCamaraIA(){
   try{mappingAIStream?.getTracks?.().forEach(t=>t.stop())}catch(_){ }
   mappingAIStream=null;
+  mappingAIVideoTrack=null;
+  mappingAIZoomCapabilities=null;
+  mappingAIZoomValue=1;
+  const zc=aiEl('aiZoomControl'); if(zc)zc.classList.remove('open');
   const v=aiEl('aiCameraVideo'); if(v)v.srcObject=null;
+}
+
+async function configurarZoomCamaraIA(){
+  const ctrl=aiEl('aiZoomControl'),range=aiEl('aiZoomRange'),value=aiEl('aiZoomValue');
+  if(ctrl)ctrl.classList.remove('open');
+  if(!mappingAIVideoTrack?.getCapabilities)return false;
+  try{
+    const caps=mappingAIVideoTrack.getCapabilities();
+    const zoom=caps?.zoom;
+    if(!zoom || !Number.isFinite(Number(zoom.min)) || !Number.isFinite(Number(zoom.max)) || Number(zoom.max)<=Number(zoom.min))return false;
+    mappingAIZoomCapabilities={min:Number(zoom.min),max:Number(zoom.max),step:Number(zoom.step||0.1)};
+    const settings=mappingAIVideoTrack.getSettings?.()||{};
+    mappingAIZoomValue=Math.min(mappingAIZoomCapabilities.max,Math.max(mappingAIZoomCapabilities.min,Number(settings.zoom||mappingAIZoomCapabilities.min)));
+    if(range){
+      range.min=String(mappingAIZoomCapabilities.min);
+      range.max=String(mappingAIZoomCapabilities.max);
+      range.step=String(mappingAIZoomCapabilities.step||0.1);
+      range.value=String(mappingAIZoomValue);
+    }
+    if(value)value.textContent=`${mappingAIZoomValue.toFixed(1)}×`;
+    if(ctrl)ctrl.classList.add('open');
+    return true;
+  }catch(e){console.warn('Zoom cámara no disponible:',e);return false}
+}
+
+async function aplicarZoomIA(raw){
+  if(!mappingAIVideoTrack||!mappingAIZoomCapabilities)return;
+  const z=Math.min(mappingAIZoomCapabilities.max,Math.max(mappingAIZoomCapabilities.min,Number(raw)||mappingAIZoomCapabilities.min));
+  try{
+    await mappingAIVideoTrack.applyConstraints({advanced:[{zoom:z}]});
+    mappingAIZoomValue=z;
+    const range=aiEl('aiZoomRange'),value=aiEl('aiZoomValue');
+    if(range)range.value=String(z);
+    if(value)value.textContent=`${z.toFixed(1)}×`;
+  }catch(e){console.warn('No se pudo aplicar zoom:',e)}
+}
+
+function cambiarZoomIA(dir){
+  if(!mappingAIZoomCapabilities)return;
+  const salto=Math.max(mappingAIZoomCapabilities.step||0.1,(mappingAIZoomCapabilities.max-mappingAIZoomCapabilities.min)/12);
+  aplicarZoomIA(mappingAIZoomValue+(Number(dir)||0)*salto);
 }
 
 function cerrarCamaraIA(){
@@ -10318,32 +10382,72 @@ function mejoresPorClaseIA(ds){
   for(const d of ds){const p=m.get(d.className);if(!p||d.confidence>p.confidence)m.set(d.className,d)}
   return [...m.values()].sort((a,b)=>b.confidence-a.confidence);
 }
+function resumenClasesIA(ds,strongOnly=false){
+  const m=new Map();
+  for(const d of ds){
+    if(strongOnly && d.confidence<MAPPING_AI_STRONG_CONFIDENCE)continue;
+    const r=m.get(d.className)||{className:d.className,count:0,maxConfidence:0,detections:[]};
+    r.count++; r.maxConfidence=Math.max(r.maxConfidence,d.confidence); r.detections.push(d); m.set(d.className,r);
+  }
+  return [...m.values()].sort((a,b)=>b.maxConfidence-a.maxConfidence);
+}
 function renderDeteccionesIA(ds){
   const el=aiEl('aiDetections');if(!el)return;
-  const best=mejoresPorClaseIA(ds);
-  el.innerHTML=best.length?best.map(d=>`<span class="aiDetChip ${d.confidence>=MAPPING_AI_STRONG_CONFIDENCE?'strong':''}">${d.className} ${Math.round(d.confidence*100)}%</span>`).join(''):'<span class="aiDetChip">Sin detecciones</span>';
+  const resumen=resumenClasesIA(ds,false);
+  el.innerHTML=resumen.length?resumen.map(r=>`<span class="aiDetChip ${r.maxConfidence>=MAPPING_AI_STRONG_CONFIDENCE?'strong':''}">${r.className} ×${r.count} · ${Math.round(r.maxConfidence*100)}%</span>`).join(''):'<span class="aiDetChip">Sin detecciones</span>';
 }
 function valorNumIA(id){return Number(document.getElementById(id)?.value||0)}
 function valorTxtIA(id){return String(document.getElementById(id)?.value||'').trim().toUpperCase()}
 function evaluarAuditoriaIA(ds){
+  const resumen=resumenClasesIA(ds,true);
+  const byName=new Map(resumen.map(r=>[r.className,r]));
   const strong=mejoresPorClaseIA(ds).filter(d=>d.confidence>=MAPPING_AI_STRONG_CONFIDENCE);
-  const names=new Set(strong.map(d=>d.className));
   const issues=[];
-  if(names.has('Transformador') && !valorTxtIA('ELECTRICOS').includes('TRANSFORMADOR'))issues.push('IA detecta TRANSFORMADOR y el formulario no lo declara.');
-  if(names.has('Corta Circuito') && !valorTxtIA('ELECTRICOS').includes('CORTA'))issues.push('IA detecta CORTA CIRCUITO; revisa ELEMENTOS ELÉCTRICOS.');
-  if(names.has('Nap') && valorNumIA('NAPS')===0)issues.push('IA detecta NAP y NAPS EXISTENTES está en 0.');
-  if(names.has('Reserva') && valorNumIA('RESERVAS')===0)issues.push('IA detecta RESERVA y RESERVAS EXISTENTES está en 0.');
-  if(names.has('Fuente') && valorNumIA('FUENTES')===0)issues.push('IA detecta FUENTE y FUENTES está en 0.');
-  if(names.has('Mufla') && valorNumIA('EMPALMES')===0)issues.push('IA detecta MUFLA; revisa EMPALMES EXISTENTES.');
-  if(names.has('Gabinete'))issues.push('IA detecta GABINETE; verifica que quede registrado en observaciones/inventario si aplica.');
-  return {strong,issues};
+  const nap=byName.get('Nap')?.count||0, reserva=byName.get('Reserva')?.count||0, fuente=byName.get('Fuente')?.count||0, mufla=byName.get('Mufla')?.count||0;
+  if(byName.has('Transformador') && !valorTxtIA('ELECTRICOS').includes('TRANSFORMADOR'))issues.push('IA detecta TRANSFORMADOR y el formulario no lo declara.');
+  if(byName.has('Corta Circuito') && !valorTxtIA('ELECTRICOS').includes('CORTA'))issues.push('IA detecta CORTA CIRCUITO; revisa ELEMENTOS ELÉCTRICOS.');
+  if(nap && valorNumIA('NAPS')===0)issues.push(`IA detecta ${nap} NAP(s) y NAPS EXISTENTES está en 0.`);
+  if(reserva && valorNumIA('RESERVAS')===0)issues.push(`IA detecta ${reserva} RESERVA(s) y RESERVAS EXISTENTES está en 0.`);
+  if(fuente && valorNumIA('FUENTES')===0)issues.push(`IA detecta ${fuente} FUENTE(s) y FUENTES está en 0.`);
+  if(mufla && valorNumIA('EMPALMES')===0)issues.push(`IA detecta ${mufla} MUFLA(s); EMPALMES EXISTENTES está en 0.`);
+  if(byName.has('Gabinete'))issues.push(`IA detecta ${byName.get('Gabinete').count} GABINETE(s); verifica que quede registrado en observaciones/inventario si aplica.`);
+  return {strong,resumen,issues};
 }
 function renderAuditoriaIA(ds){
   const el=aiEl('aiAuditBox');if(!el)return;
-  const {strong,issues}=evaluarAuditoriaIA(ds);
+  const {resumen,issues}=evaluarAuditoriaIA(ds);
   if(issues.length){el.className='aiAuditBox warn';el.innerHTML='<b>⚠ Auditoría IA</b><br>'+issues.map(x=>'• '+x).join('<br>');return}
-  if(strong.length){el.className='aiAuditBox ok';el.innerHTML='<b>✓ Sin inconsistencias evidentes</b><br>'+strong.map(d=>`${d.className} ${Math.round(d.confidence*100)}%`).join(' · ');return}
+  if(resumen.length){el.className='aiAuditBox ok';el.innerHTML='<b>✓ Sin inconsistencias evidentes</b><br>'+resumen.map(r=>`${r.className} ×${r.count} · ${Math.round(r.maxConfidence*100)}%`).join(' · ');return}
   el.className='aiAuditBox';el.textContent='El auditor usará detecciones ≥ 70% para generar advertencias.';
+}
+
+function setCampoNumeroSiCeroIA(id,cantidad,cambios,etiqueta){
+  const el=document.getElementById(id); if(!el||!cantidad||cantidad<1)return;
+  const actual=Number(el.value||0); if(actual!==0)return;
+  el.value=String(cantidad); el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
+  cambios.push(`${etiqueta}=${cantidad}`);
+}
+function setSelectSiVacioIA(id,valor,cambios,etiqueta,aceptarNinguno=true){
+  const el=document.getElementById(id); if(!el)return;
+  const actual=String(el.value||'').trim().toUpperCase();
+  if(actual && !(aceptarNinguno&&actual==='NINGUNO'))return;
+  const opt=[...el.options].find(o=>String(o.value||o.textContent).trim().toUpperCase()===String(valor).trim().toUpperCase());
+  if(!opt)return;
+  el.value=opt.value; el.dispatchEvent(new Event('change',{bubbles:true})); cambios.push(`${etiqueta}=${opt.textContent.trim()}`);
+}
+function aplicarDeteccionesAlFormularioIA(ds){
+  const {resumen}=evaluarAuditoriaIA(ds); const m=new Map(resumen.map(r=>[r.className,r.count])); const cambios=[];
+  setCampoNumeroSiCeroIA('NAPS',m.get('Nap')||0,cambios,'NAPS');
+  setCampoNumeroSiCeroIA('RESERVAS',m.get('Reserva')||0,cambios,'RESERVAS');
+  setCampoNumeroSiCeroIA('FUENTES',m.get('Fuente')||0,cambios,'FUENTES');
+  setCampoNumeroSiCeroIA('EMPALMES',m.get('Mufla')||0,cambios,'EMPALMES');
+  if(m.get('Transformador'))setSelectSiVacioIA('ELECTRICOS','TRANSFORMADOR',cambios,'ELECTRICOS',true);
+  if(m.get('Corta Circuito'))setSelectSiVacioIA('ELECTRICOS','CAÑUELA /CORTA CIRCUITO',cambios,'ELECTRICOS',true);
+  if(cambios.length){
+    const note=aiEl('aiAutoApplyNote'); if(note)note.textContent='✓ Formulario actualizado automáticamente: '+cambios.join(' · ');
+    try{actualizarResaltadoObligatorios()}catch(_){ }
+  }
+  return cambios;
 }
 
 async function capturarFotoIA(){
@@ -10357,7 +10461,9 @@ async function capturarFotoIA(){
     const base=(document.getElementById('IDCAMPO')?.value||'PUNTO').replace(/[^a-z0-9_-]+/gi,'_');
     const nombre=`${base}_${mappingAIPhotoId}_${Date.now()}.jpg`;
     const file=new File([blob],nombre,{type:'image/jpeg',lastModified:Date.now()});
+    const cambiosIA=aplicarDeteccionesAlFormularioIA(mappingAIDetections);
     const audit=evaluarAuditoriaIA(mappingAIDetections);
+    audit.cambios_aplicados=cambiosIA;
     await guardarCapturaIAEnFormulario(mappingAIPhotoId,file,mappingAIDetections,audit);
     cerrarCamaraIA();
   }catch(e){
@@ -10377,7 +10483,9 @@ async function guardarCapturaIAEnFormulario(id,file,detections,audit){
         confianza:Number(d.confidence.toFixed(4)),
         x1:Math.round(d.x1),y1:Math.round(d.y1),x2:Math.round(d.x2),y2:Math.round(d.y2)
       })),
-      inconsistencias:[...audit.issues]
+      resumen:(audit.resumen||[]).map(r=>({clase:r.className,cantidad:r.count,confianza_max:Number(r.maxConfidence.toFixed(4))})),
+      inconsistencias:[...audit.issues],
+      campos_actualizados:[...(audit.cambios_aplicados||[])]
     }
   };
   const status=document.getElementById('status_'+id);
@@ -10388,9 +10496,10 @@ async function guardarCapturaIAEnFormulario(id,file,detections,audit){
   await mostrarPreviewFotoLocal(id,file,'Foto capturada con Auditor IA');
   const result=document.getElementById('aiResult_'+id);
   if(result){
-    const best=mejoresPorClaseIA(detections);
+    const resumen=resumenClasesIA(detections,true);
     result.className='aiPhotoResult open '+(audit.issues.length?'warn':'ok');
-    result.innerHTML=(best.length?`<b>IA:</b> ${best.map(d=>`${d.className} ${Math.round(d.confidence*100)}%`).join(' · ')}`:'<b>IA:</b> Sin detecciones')+
+    result.innerHTML=(resumen.length?`<b>IA:</b> ${resumen.map(r=>`${r.className} ×${r.count} · ${Math.round(r.maxConfidence*100)}%`).join(' · ')}`:'<b>IA:</b> Sin detecciones ≥70%')+
+      ((audit.cambios_aplicados||[]).length?`<br><b>✓ Autocompletado:</b> ${audit.cambios_aplicados.join(' · ')}`:'')+
       (audit.issues.length?`<br><b>⚠ Revisar:</b> ${audit.issues.join(' ')}`:'');
   }
   const card=document.getElementById('photoCard_'+id);
@@ -10404,6 +10513,5 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
-
 
 
