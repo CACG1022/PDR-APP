@@ -1244,6 +1244,35 @@ button.appControlLocked{
   transform:none!important;
 }
 
+
+/* ===== CONEXIONES PROGRESIVAS ENTRE POLÍGONOS ===== */
+.cxOtroRow{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr auto;
+  gap:10px;
+  align-items:end;
+  width:100%;
+  margin:9px 0;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(15,23,42,.22);
+}
+.cxOtroRowHidden{display:none!important}
+.cxOtroEstado{
+  grid-column:1/-1;
+  font-size:9px;
+  color:#94a3b8;
+  line-height:1.3;
+}
+.cxOtroEstado.ok{color:#86efac}
+.cxOtroEstado.warn{color:#fde68a}
+.cxOtroEstado.error{color:#fca5a5}
+@media(max-width:700px){
+  .cxOtroRow{grid-template-columns:1fr}
+  .cxOtroEstado{grid-column:1}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1257,7 +1286,7 @@ button.appControlLocked{
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · bloqueo total sin polígono · CX1 estable</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · CX1POL–CX4POL progresivos · bloqueo sin polígono</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1384,9 +1413,16 @@ button.appControlLocked{
     <div id="conexionesMismo"></div>
     <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexion" onclick="mostrarSiguienteConexion()">+ Agregar otra conexión</button>
     <div id="wrapCXOtroPol">
-      <label>CONEXION A POSTE DE OTRO POLIGONO?</label>
+      <label>¿CONEXIÓN A ELEMENTO DE OTRO POLÍGONO?</label>
       <select id="CXOTROPOL" onchange="toggleOtroPol()"><option>NO</option><option>SI</option></select>
-      <div id="otroPol" class="hidden"><div class="grid" id="conexionesOtro"></div></div>
+      <div id="otroPol" class="hidden">
+        <div class="hint" style="margin-top:8px">
+          Selecciona el <b>polígono destino</b> y el <b>consecutivo del elemento</b>.
+          CX1POL es obligatorio al activar esta opción. Puedes agregar CX2POL, CX3POL y CX4POL si necesitas más conexiones entre polígonos.
+        </div>
+        <div id="conexionesOtro"></div>
+        <button type="button" class="btn blue addConnectionBtn" id="btnAgregarConexionOtro" onclick="mostrarSiguienteConexionOtro()">+ Agregar otra conexión a otro polígono</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3154,6 +3190,7 @@ async function cargarFoto(id,input){
   requestAnimationFrame(actualizarResaltadoObligatorios);
 }
 let conexionesVisibles=1;
+let conexionesOtroVisibles=1;
 
 function crearConexiones(){
   let a='',b='';
@@ -3180,11 +3217,316 @@ function crearConexiones(){
           <button type="button" class="btn cxRemoveBtn" onclick="quitarConexion(${i})">✕ Quitar conexión</button>
         </div>`:''}
       </div>`;
-    b+=`<div><label>CX${i} POLIGONO</label><select id="CX${i}POL"><option value="N/A">N/A</option>${[1,2,3,4,5,6,7,8,9].map(n=>`<option>POLIGONO${n}</option>`).join('')}</select></div><div><label>CX${i} CONSECUTIVO</label><input id="CX${i}CONSE" type="number" min="1"></div><div><label>Distancia odómetro ${i+4} (m)</label><input id="DISTODO${i+4}" type="number" step="0.001" min="0"></div>`;
+    b+=`
+      <div class="cxOtroRow ${i>1?'cxOtroRowHidden':''}" id="cxOtroRow${i}" data-cx-otro="${i}">
+        <div>
+          <label>CX${i}POL${i===1?' <span class="req">*</span>':''}</label>
+          <select id="CX${i}POL" onchange="precalcularCXOtro(${i})">
+            <option value="">Seleccione polígono...</option>
+          </select>
+        </div>
+        <div>
+          <label>CX${i} CONSECUTIVO${i===1?' <span class="req">*</span>':''}</label>
+          <input id="CX${i}CONSE" type="number" min="1" step="1" placeholder="Consecutivo destino" onchange="precalcularCXOtro(${i})">
+        </div>
+        <div>
+          <label>Distancia odómetro ${i+4} (m)</label>
+          <input id="DISTODO${i+4}" type="number" step="0.001" min="0" value="0">
+        </div>
+        ${i>1?`<div class="cxRemoveCell">
+          <label>&nbsp;</label>
+          <button type="button" class="btn cxRemoveBtn" onclick="quitarConexionOtro(${i})">✕ Quitar conexión</button>
+        </div>`:''}
+        <div class="cxOtroEstado" id="cxOtroEstado${i}">Selecciona polígono y consecutivo destino.</div>
+      </div>`;
   }
   conexionesMismo.innerHTML=a;
   conexionesOtro.innerHTML=b;
   setNumeroConexiones(1,true);
+  setNumeroConexionesOtro(1,true);
+  poblarSelectsPoligonoDestino();
+}
+
+
+function codigosPoligonosProyecto(){
+  const codigos=new Set();
+
+  try{
+    for(const f of poligonosGeoJSON?.features||[]){
+      const p=f?.properties||{};
+      const raw=
+        p.NOMBRE ??
+        p.nombre ??
+        p.POLIGONO ??
+        p.poligono ??
+        p.CODIGO ??
+        p.codigo ??
+        '';
+
+      const c=String(raw||'').trim();
+      if(c)codigos.add(c);
+    }
+  }catch(_){}
+
+  for(const p of poligonosAsignados||[]){
+    const c=String(p?.codigo||p?.nombre||p?.poligono||'').trim();
+    if(c)codigos.add(c);
+  }
+
+  for(const r of registrosProyectoActual()){
+    const c=String(r?.POLIGONO||'').trim();
+    if(c)codigos.add(c);
+  }
+
+  // Compatibilidad cuando todavía no se cargó la geometría.
+  if(!codigos.size){
+    for(let i=1;i<=9;i++)codigos.add(`POLIGONO${i}`);
+  }
+
+  return [...codigos].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+}
+
+function poblarSelectPoligonoDestino(i,valorActual=''){
+  const sel=document.getElementById(`CX${i}POL`);
+  if(!sel)return;
+
+  const actual=String(valorActual||sel.value||'').trim();
+  const origen=String(POLIGONO?.value||'').trim();
+
+  const opciones=codigosPoligonosProyecto()
+    .filter(c=>String(c)!==origen);
+
+  sel.innerHTML=
+    '<option value="">Seleccione polígono...</option>'+
+    opciones.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+  if(actual && opciones.includes(actual)){
+    sel.value=actual;
+  }else if(actual && actual!=='N/A'){
+    sel.insertAdjacentHTML('beforeend',`<option value="${esc(actual)}">${esc(actual)}</option>`);
+    sel.value=actual;
+  }
+}
+
+function poblarSelectsPoligonoDestino(){
+  for(let i=1;i<=4;i++){
+    poblarSelectPoligonoDestino(i);
+  }
+}
+
+function setEstadoCXOtro(i,tipo,texto){
+  const el=document.getElementById(`cxOtroEstado${i}`);
+  if(!el)return;
+  el.className='cxOtroEstado'+(tipo?` ${tipo}`:'');
+  el.textContent=texto||'';
+}
+
+function limpiarConexionOtro(i){
+  const pol=document.getElementById(`CX${i}POL`);
+  const cons=document.getElementById(`CX${i}CONSE`);
+  const dist=document.getElementById(`DISTODO${i+4}`);
+
+  if(pol)pol.value='';
+  if(cons)cons.value='';
+  if(dist)dist.value='0';
+
+  window[`__LATCXOTRO${i}`]=null;
+  window[`__LONGCXOTRO${i}`]=null;
+  setEstadoCXOtro(i,'','Selecciona polígono y consecutivo destino.');
+}
+
+function setNumeroConexionesOtro(cantidad,reiniciarOcultas=false){
+  conexionesOtroVisibles=Math.max(1,Math.min(4,Number(cantidad)||1));
+
+  for(let i=1;i<=4;i++){
+    const mostrar=i<=conexionesOtroVisibles;
+    const row=document.getElementById(`cxOtroRow${i}`);
+
+    if(row){
+      row.classList.toggle('cxOtroRowHidden',!mostrar);
+      row.style.display=mostrar?'grid':'none';
+    }
+
+    if(!mostrar && reiniciarOcultas){
+      limpiarConexionOtro(i);
+    }
+  }
+
+  const btn=document.getElementById('btnAgregarConexionOtro');
+  if(btn){
+    btn.style.display=conexionesOtroVisibles>=4?'none':'block';
+    btn.textContent='+ Agregar otra conexión a otro polígono';
+  }
+}
+
+function mostrarSiguienteConexionOtro(){
+  if(conexionesOtroVisibles>=4)return;
+
+  conexionesOtroVisibles++;
+  setNumeroConexionesOtro(conexionesOtroVisibles,false);
+
+  const i=conexionesOtroVisibles;
+  poblarSelectPoligonoDestino(i);
+
+  const row=document.getElementById(`cxOtroRow${i}`);
+  if(row){
+    row.classList.remove('cxOtroRowHidden');
+    row.style.display='grid';
+  }
+
+  setTimeout(()=>{
+    row?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    document.getElementById(`CX${i}POL`)?.focus();
+  },60);
+
+  actualizarResaltadoObligatorios();
+}
+
+function quitarConexionOtro(indice){
+  const i=Number(indice);
+  if(i<=1 || i>conexionesOtroVisibles)return;
+
+  for(let j=i;j<conexionesOtroVisibles;j++){
+    const pol=document.getElementById(`CX${j}POL`);
+    const cons=document.getElementById(`CX${j}CONSE`);
+    const dist=document.getElementById(`DISTODO${j+4}`);
+
+    const polSig=document.getElementById(`CX${j+1}POL`);
+    const consSig=document.getElementById(`CX${j+1}CONSE`);
+    const distSig=document.getElementById(`DISTODO${j+5}`);
+
+    if(pol)pol.value=polSig?.value||'';
+    if(cons)cons.value=consSig?.value||'';
+    if(dist)dist.value=distSig?.value||'0';
+
+    window[`__LATCXOTRO${j}`]=window[`__LATCXOTRO${j+1}`]??null;
+    window[`__LONGCXOTRO${j}`]=window[`__LONGCXOTRO${j+1}`]??null;
+  }
+
+  limpiarConexionOtro(conexionesOtroVisibles);
+  conexionesOtroVisibles=Math.max(1,conexionesOtroVisibles-1);
+  setNumeroConexionesOtro(conexionesOtroVisibles,false);
+  actualizarResaltadoObligatorios();
+}
+
+async function precalcularCXOtro(i){
+  const pol=String(document.getElementById(`CX${i}POL`)?.value||'').trim();
+  const cons=Number(document.getElementById(`CX${i}CONSE`)?.value||0);
+
+  if(!pol || !cons){
+    window[`__LATCXOTRO${i}`]=null;
+    window[`__LONGCXOTRO${i}`]=null;
+    setEstadoCXOtro(i,'warn','Selecciona polígono y consecutivo destino.');
+    return null;
+  }
+
+  if(pol===String(POLIGONO?.value||'').trim()){
+    setEstadoCXOtro(i,'error','El polígono destino debe ser diferente al polígono actual.');
+    return null;
+  }
+
+  setEstadoCXOtro(i,'warn',`Buscando ${pol}-${cons}...`);
+
+  const c=await resolverCoordenadasCX(pol,cons);
+  window[`__LATCXOTRO${i}`]=c.latitude;
+  window[`__LONGCXOTRO${i}`]=c.longitude;
+
+  if(c.latitude==null || c.longitude==null){
+    setEstadoCXOtro(i,'error',`No se encontró ${pol}-${cons} en este proyecto.`);
+    return null;
+  }
+
+  const latOrigen=Number(LATITUDE?.value);
+  const lonOrigen=Number(LONGITUDE?.value);
+
+  let gpsTxt='';
+  if(Number.isFinite(latOrigen)&&Number.isFinite(lonOrigen)){
+    try{
+      const d=L.latLng(latOrigen,lonOrigen).distanceTo(
+        L.latLng(Number(c.latitude),Number(c.longitude))
+      );
+      gpsTxt=` · GPS ${d<100?d.toFixed(1):Math.round(d)} m`;
+    }catch(_){}
+  }
+
+  setEstadoCXOtro(i,'ok',`✓ Destino encontrado: ${pol}-${cons}${gpsTxt}`);
+  return c;
+}
+
+async function validarConexionesOtroPoligono(){
+  if(String(CXOTROPOL?.value||'NO').toUpperCase()!=='SI')return true;
+
+  for(let i=1;i<=conexionesOtroVisibles;i++){
+    const pol=String(val(`CX${i}POL`)||'').trim();
+    const raw=String(val(`CX${i}CONSE`)||'').trim();
+
+    if(!pol || pol==='N/A'){
+      alert(`Debes seleccionar el polígono destino en CX${i}POL.`);
+      document.getElementById(`CX${i}POL`)?.focus();
+      return false;
+    }
+
+    if(pol===String(POLIGONO?.value||'').trim()){
+      alert(`CX${i}POL debe apuntar a un polígono diferente al polígono actual.`);
+      document.getElementById(`CX${i}POL`)?.focus();
+      return false;
+    }
+
+    const cons=Number(raw);
+    if(raw==='' || !Number.isInteger(cons) || cons<=0){
+      alert(`Debes ingresar un consecutivo destino válido para CX${i}POL.`);
+      document.getElementById(`CX${i}CONSE`)?.focus();
+      return false;
+    }
+
+    const c=await precalcularCXOtro(i);
+    if(!c){
+      alert(`No se encontró el elemento destino ${pol}-${cons}. Verifica el polígono y el consecutivo.`);
+      document.getElementById(`CX${i}CONSE`)?.focus();
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function ajustarConexionesOtroEdicion(r){
+  const activo=String(r?.CXOTROPOL||'NO').toUpperCase()==='SI';
+  if(CXOTROPOL)CXOTROPOL.value=activo?'SI':'NO';
+
+  let max=1;
+  if(activo){
+    for(let i=1;i<=4;i++){
+      const pol=String(r?.[`CX${i}POL`]||'').trim();
+      const cons=Number(r?.[`CX${i}CONSE`]||0);
+      if(pol && pol!=='N/A' && cons>0)max=i;
+    }
+  }
+
+  conexionesOtroVisibles=max;
+  setNumeroConexionesOtro(max,false);
+
+  for(let i=1;i<=4;i++){
+    const pol=String(r?.[`CX${i}POL`]||'').trim();
+    const cons=r?.[`CX${i}CONSE`];
+    const dist=r?.[`DISTODO${i+4}`];
+
+    poblarSelectPoligonoDestino(i,pol==='N/A'?'':pol);
+
+    const p=document.getElementById(`CX${i}POL`);
+    const c=document.getElementById(`CX${i}CONSE`);
+    const d=document.getElementById(`DISTODO${i+4}`);
+
+    if(p)p.value=pol==='N/A'?'':pol;
+    if(c)c.value=Number(cons)>0?String(cons):'';
+    if(d)d.value=Number.isFinite(Number(dist))?String(dist):'0';
+
+    if(activo && i<=max && p?.value && c?.value){
+      setTimeout(()=>precalcularCXOtro(i),0);
+    }
+  }
+
+  toggleOtroPol(false);
 }
 
 function setNumeroConexiones(cantidad,reiniciarOcultas=false){
@@ -3317,7 +3659,8 @@ function limpiarConexionesPrimerElemento(){
 
   if(CXOTROPOL){
     CXOTROPOL.value='NO';
-    toggleOtroPol();
+    conexionesOtroVisibles=1;
+    toggleOtroPol(true);
   }
 }
 
@@ -3392,7 +3735,28 @@ function ajustarConexionesEdicion(r){
 
   actualizarVisibilidadSeccionConexiones();
 }
-function toggleOtroPol(){otroPol.classList.toggle('hidden',CXOTROPOL.value!=='SI')}
+function toggleOtroPol(limpiarAlCerrar=true){
+  const activo=String(CXOTROPOL?.value||'NO').toUpperCase()==='SI';
+  otroPol.classList.toggle('hidden',!activo);
+
+  if(activo){
+    poblarSelectsPoligonoDestino();
+
+    if(!editingId){
+      conexionesOtroVisibles=1;
+      setNumeroConexionesOtro(1,true);
+      poblarSelectPoligonoDestino(1);
+    }else{
+      setNumeroConexionesOtro(conexionesOtroVisibles||1,false);
+    }
+  }else if(limpiarAlCerrar){
+    conexionesOtroVisibles=1;
+    setNumeroConexionesOtro(1,true);
+    for(let i=1;i<=4;i++)limpiarConexionOtro(i);
+  }
+
+  actualizarResaltadoObligatorios();
+}
 function recalcularIds(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const max=registros.filter(r=>r.POLIGONO===pol).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const n=editingId?(Number(CONSECUTIV.value)||max+1):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();if(esProyectoViabilidad())setTimeout(prepararCX1Manual,0);if(esClienteViabilidad())setTimeout(configurarConexionCliente,0);}
 function val(id){return document.getElementById(id)?.value??''}function num(id){const v=val(id);return v===''?null:Number(v)}
 
@@ -3428,6 +3792,12 @@ function obtenerCamposObligatoriosActivos(){
     for(let i=1;i<=conexionesVisibles;i++)ids.push(`CX${i}`);
   }
 
+  if(String(CXOTROPOL?.value||'NO').toUpperCase()==='SI'){
+    for(let i=1;i<=conexionesOtroVisibles;i++){
+      ids.push(`CX${i}POL`,`CX${i}CONSE`);
+    }
+  }
+
   return [...new Set(ids)];
 }
 
@@ -3444,6 +3814,16 @@ function campoEstaVacio(id){
   // CX1 abre vacío para que el técnico lo diligencie manualmente.
   if(/^CX[1-4]$/.test(id)){
     return String(el.value??'').trim()==='';
+  }
+
+  if(/^CX[1-4]POL$/.test(id)){
+    const v=String(el.value??'').trim();
+    return !v || v==='N/A';
+  }
+
+  if(/^CX[1-4]CONSE$/.test(id)){
+    const n=Number(el.value);
+    return !Number.isInteger(n) || n<=0;
   }
 
   if(id==='DIRECCION'){
@@ -4574,7 +4954,7 @@ function obtenerConexionesDelRegistro(r,idx){
       const conse=Number(r[`CX${i}CONSE`]||0);
       if(pol && pol!=='N/A' && conse>0){
         const destino=idx.get(`${pol}__${conse}`);
-        if(destino) conexiones.push({origen:r,destino,modo:'otro',slot:`CX${i}`});
+        if(destino) conexiones.push({origen:r,destino,modo:'otro',slot:`CX${i}POL`});
       }
     }
   }
@@ -4675,8 +5055,8 @@ async function editarPunto(id){
   actualizarAccesoCliente();
   await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
   await renderizarFotosRemotasEnFormulario(r);
-  toggleOtroPol();
   ajustarConexionesEdicion(r);
+  ajustarConexionesOtroEdicion(r);
   sincronizarChecksPin();
   actualizarEstadoDeteccionPoligono(
     'ok',
@@ -7067,7 +7447,7 @@ abrirFormulario=function(){
   programarDireccionAutomaticaFormulario(cDireccion.lat,cDireccion.lng);
   setTimeout(actualizarResaltadoObligatorios,100);
 }
-recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();}
+recalcularIds=function(){const pol=POLIGONO.value;if(!pol){CONSECUTIV.value='';IDCAMPO.value='';actualizarVisibilidadSeccionConexiones();return}const arr=registrosProyectoActual();const max=arr.filter(r=>r.POLIGONO===pol && r.id!==editingId).reduce((m,r)=>Math.max(m,Number(r.CONSECUTIV)||0),0);const actual=editingId?registros.find(r=>r.id===editingId):null;const n=actual?Number(actual.CONSECUTIV):max+1;CONSECUTIV.value=n;IDCAMPO.value=`${pol}-${n}`;actualizarVisibilidadSeccionConexiones();poblarSelectsPoligonoDestino();}
 
 
 async function resolverCoordenadasCX(poligono, consecutivo){
@@ -7174,7 +7554,21 @@ function prepararRegistroLocalBase(){
 
   if(!validar())return null;const ahora=new Date();const old=editingId?registros.find(x=>x.id===editingId):null;const lid=old?.id||crypto.randomUUID();
   const r={id:lid,offline_id:old?.offline_id||lid,supabase_id:old?.supabase_id||null,proyecto_id:proyectoActivo.proyecto_id,asignacion_id:proyectoActivo.asignacion_id,sync_status:'pendiente',geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:val('DIRECCION'),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:fechaISOColombia(ahora),HORA:horaColombia(ahora),fecha_captura_app:old?.fecha_captura_app||ahora.toISOString(),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`};
-  for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}return r;
+  for(let i=1;i<=4;i++){
+    r[`CX${i}`]=num(`CX${i}`)||0;
+    r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);
+    r[`DISTODO${i}`]=num(`DISTODO${i}`);
+
+    const otroActivo=
+      tipoProyectoActivo()!=='VIABILIDAD' &&
+      String(val('CXOTROPOL')||'NO').toUpperCase()==='SI' &&
+      i<=conexionesOtroVisibles;
+
+    r[`CX${i}POL`]=otroActivo?(val(`CX${i}POL`)||'N/A'):'N/A';
+    r[`CX${i}CONSE`]=otroActivo?(num(`CX${i}CONSE`)||0):0;
+    r[`DISTODO${i+4}`]=otroActivo?(num(`DISTODO${i+4}`)||0):0;
+  }
+  return r;
 }
 
 function limpiarMarcasFotosObligatorias(){
@@ -7274,6 +7668,10 @@ async function validarFotosObligatorias(){
 }
 
 guardarPunto=async function(){
+  // Si se activó conexión a otro polígono, valida que cada CXnPOL
+  // apunte a un elemento real del proyecto antes de continuar.
+  if(!(await validarConexionesOtroPoligono()))return;
+
   // Todas las fotografías visibles para el tipo de elemento son obligatorias.
   if(!(await validarFotosObligatorias()))return;
 
