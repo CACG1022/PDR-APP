@@ -1328,6 +1328,23 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   .aiCaptureBtn{font-size:13px}
 }
 
+
+/* ===== CARTOGRAFÍA OPCIONAL DEL PROYECTO ===== */
+#btnCartografiaProyecto.cartographyOn{
+  border-color:#22d3ee!important;
+  color:#cffafe!important;
+  background:#0c4a6e!important;
+}
+#btnCartografiaProyecto:disabled{
+  opacity:.38!important;
+  cursor:not-allowed!important;
+}
+.cartografiaPopup{
+  max-width:260px;
+  font-size:10px;
+  line-height:1.35;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1341,7 +1358,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Canalizado con propietario/inventario · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Cartografía por proyecto · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1397,6 +1414,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   <button onclick="cargarPuntosSupabase();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
   <button onclick="abrirBuscarConsecutivo();toggleSideMenu(false)">🔎 Buscar por consecutivo</button>
   <button id="btnBaseMap" onclick="toggleBaseMap();toggleSideMenu(false)">🌑 Apagar mapa base</button>
+  <button id="btnCartografiaProyecto" onclick="toggleCartografiaProyecto();toggleSideMenu(false)" disabled>🗺️ Cartografía: no disponible</button>
   <button id="btnDistanciasMapa" onclick="toggleDistanciasMapa();toggleSideMenu(false)">📏 Ocultar distancias</button>
   <button onclick="orientarMapaNorte();toggleSideMenu(false)">🧭 Orientar al norte</button>
   <button onclick="abrirDashboardTecnico();toggleSideMenu(false)">📊 Mi avance</button>
@@ -1576,6 +1594,12 @@ let gpsUltimaActualizacionMs=0;
 let gpsWatchdogTimer=null;
 let gpsConsultaEnCurso=false;
 let hyb=null,osm=null,darkBase=null,baseMapApagado=false;
+const CARTOGRAFIA_BUCKET='mapping-cartografia';
+let cartografiaLayer=null;
+let cartografiaGeoJSONCache=null;
+let cartografiaProyectoCacheId=null;
+let cartografiaVisible=false;
+let cartografiaCargando=false;
 let poligonosAsignados=[];
 let poligonosAsignadosSet=new Set();
 let poligonosGeoJSON=null;
@@ -1602,6 +1626,10 @@ function init(){
   const panePoligonos=map.createPane('poligonosPane');
   panePoligonos.classList.add('leaflet-poligonos-pane');
   panePoligonos.style.zIndex='330';
+
+  const paneCartografia=map.createPane('cartografiaPane');
+  paneCartografia.style.zIndex='315';
+  paneCartografia.style.pointerEvents='auto';
 
   const paneGpsAccuracy=map.createPane('gpsAccuracyPane');
   paneGpsAccuracy.style.zIndex='590';
@@ -1652,6 +1680,343 @@ function init(){
   // Si aún no existe permiso, el usuario lo activa tocando 📍.
   setTimeout(prepararGPSInicial,600);
 }
+
+function clavePreferenciaCartografia(){
+  return `mapping_cartografia_visible_${String(proyectoActivo?.proyecto_id||'sin_proyecto')}`;
+}
+
+function proyectoTieneCartografia(){
+  return !!String(proyectoActivo?.cartografia_path||'').trim();
+}
+
+function actualizarBotonCartografiaProyecto(){
+  const btn=document.getElementById('btnCartografiaProyecto');
+  if(!btn)return;
+
+  if(!proyectoTieneCartografia()){
+    btn.disabled=true;
+    btn.classList.remove('cartographyOn');
+    btn.textContent='🗺️ Cartografía: no disponible';
+    return;
+  }
+
+  btn.disabled=false;
+  btn.classList.toggle('cartographyOn',cartografiaVisible);
+  btn.textContent=cartografiaVisible
+    ? '🗺️ Cartografía: ON'
+    : '🗺️ Cartografía: OFF';
+}
+
+function limpiarCartografiaProyecto({limpiarCache=true}={}){
+  if(cartografiaLayer && map){
+    try{map.removeLayer(cartografiaLayer)}catch(_){}
+  }
+  cartografiaLayer=null;
+  cartografiaVisible=false;
+
+  if(limpiarCache){
+    cartografiaGeoJSONCache=null;
+    cartografiaProyectoCacheId=null;
+  }
+
+  actualizarBotonCartografiaProyecto();
+}
+
+function valorColorCartografia(props={}){
+  return (
+    props.stroke ||
+    props.color ||
+    props.COLOR ||
+    props.Color ||
+    '#38bdf8'
+  );
+}
+
+function estiloCartografiaFeature(feature){
+  const p=feature?.properties||{};
+  const color=valorColorCartografia(p);
+  return {
+    pane:'cartografiaPane',
+    color,
+    weight:Number(p['stroke-width']||p.weight||2),
+    opacity:Number(p['stroke-opacity']||p.opacity||0.82),
+    fillColor:p.fill||p.fillColor||color,
+    fillOpacity:Number(p['fill-opacity']||p.fillOpacity||0.08)
+  };
+}
+
+function nombreFeatureCartografia(feature){
+  const p=feature?.properties||{};
+  return String(
+    p.name ?? p.NOMBRE ?? p.nombre ?? p.layer ?? p.Layer ?? p.CAPA ?? ''
+  ).trim();
+}
+
+function htmlPropiedadesCartografia(feature){
+  const p=feature?.properties||{};
+  const nombre=nombreFeatureCartografia(feature);
+  const pares=Object.entries(p)
+    .filter(([k,v])=>
+      v!==null && v!==undefined && String(v).trim()!=='' &&
+      !['styleUrl','styleHash','stroke','fill','fill-opacity','stroke-opacity','stroke-width'].includes(k)
+    )
+    .slice(0,8);
+
+  if(!nombre && !pares.length)return '';
+
+  return `<div class="cartografiaPopup">`+
+    (nombre?`<b>${esc(nombre)}</b><br>`:'')+
+    pares.map(([k,v])=>`<span><b>${esc(k)}:</b> ${esc(v)}</span>`).join('<br>')+
+  `</div>`;
+}
+
+function parsearCoordsKMLGenerico(texto){
+  return String(texto||'')
+    .trim()
+    .split(/\s+/)
+    .map(par=>{
+      const p=par.split(',').map(Number);
+      return [p[0],p[1]];
+    })
+    .filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+}
+
+function propsPlacemarkCartografia(pm){
+  const props={};
+  const name=pm.querySelector(':scope > name')?.textContent?.trim()||
+             pm.getElementsByTagName('name')?.[0]?.textContent?.trim()||'';
+  if(name)props.name=name;
+
+  pm.querySelectorAll('ExtendedData Data').forEach(d=>{
+    const key=d.getAttribute('name');
+    const value=d.querySelector('value')?.textContent?.trim()||'';
+    if(key)props[key]=value;
+  });
+
+  pm.querySelectorAll('ExtendedData SimpleData').forEach(d=>{
+    const key=d.getAttribute('name');
+    const value=d.textContent?.trim()||'';
+    if(key)props[key]=value;
+  });
+
+  return props;
+}
+
+function geometriaKMLCartografia(pm){
+  const geoms=[];
+
+  // Points
+  [...pm.getElementsByTagName('Point')].forEach(g=>{
+    const c=parsearCoordsKMLGenerico(
+      g.getElementsByTagName('coordinates')?.[0]?.textContent||''
+    );
+    if(c[0])geoms.push({type:'Point',coordinates:c[0]});
+  });
+
+  // Lines
+  [...pm.getElementsByTagName('LineString')].forEach(g=>{
+    const c=parsearCoordsKMLGenerico(
+      g.getElementsByTagName('coordinates')?.[0]?.textContent||''
+    );
+    if(c.length>=2)geoms.push({type:'LineString',coordinates:c});
+  });
+
+  // Polygons
+  [...pm.getElementsByTagName('Polygon')].forEach(poly=>{
+    const outerNode=poly.getElementsByTagName('outerBoundaryIs')?.[0];
+    const outer=parsearCoordsKMLGenerico(
+      outerNode?.getElementsByTagName('coordinates')?.[0]?.textContent||''
+    );
+    if(outer.length<4)return;
+
+    const rings=[outer];
+    [...poly.getElementsByTagName('innerBoundaryIs')].forEach(inner=>{
+      const ring=parsearCoordsKMLGenerico(
+        inner.getElementsByTagName('coordinates')?.[0]?.textContent||''
+      );
+      if(ring.length>=4)rings.push(ring);
+    });
+    geoms.push({type:'Polygon',coordinates:rings});
+  });
+
+  if(!geoms.length)return null;
+  if(geoms.length===1)return geoms[0];
+  return {type:'GeometryCollection',geometries:geoms};
+}
+
+function geoJSONCartografiaDesdeKML(kmlText){
+  const xml=new DOMParser().parseFromString(kmlText,'text/xml');
+  if(xml.querySelector('parsererror')){
+    throw new Error('El archivo KML no es válido.');
+  }
+
+  const features=[];
+  [...xml.getElementsByTagName('Placemark')].forEach(pm=>{
+    const geometry=geometriaKMLCartografia(pm);
+    if(!geometry)return;
+    features.push({
+      type:'Feature',
+      properties:propsPlacemarkCartografia(pm),
+      geometry
+    });
+  });
+
+  return {type:'FeatureCollection',features};
+}
+
+async function geoJSONDesdeBlobCartografia(blob,tipo,nombre=''){
+  const ext=String(tipo||'').toLowerCase() || String(nombre).split('.').pop().toLowerCase();
+
+  if(ext==='geojson'||ext==='json'){
+    const text=await blob.text();
+    const data=JSON.parse(text);
+    if(!data || !['FeatureCollection','Feature','GeometryCollection','Point','MultiPoint','LineString','MultiLineString','Polygon','MultiPolygon'].includes(data.type)){
+      throw new Error('El archivo no contiene GeoJSON válido.');
+    }
+    return data;
+  }
+
+  if(ext==='kml'){
+    return geoJSONCartografiaDesdeKML(await blob.text());
+  }
+
+  if(ext==='kmz'){
+    if(typeof JSZip==='undefined')throw new Error('JSZip no está disponible.');
+    const zip=await JSZip.loadAsync(blob);
+    const kmlName=Object.keys(zip.files).find(x=>/\.kml$/i.test(x));
+    if(!kmlName)throw new Error('El KMZ no contiene un archivo KML.');
+    const text=await zip.files[kmlName].async('text');
+    return geoJSONCartografiaDesdeKML(text);
+  }
+
+  throw new Error('Formato de cartografía no soportado.');
+}
+
+function crearLayerCartografia(data){
+  return L.geoJSON(data,{
+    pane:'cartografiaPane',
+    style:estiloCartografiaFeature,
+    pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{
+      pane:'cartografiaPane',
+      radius:5,
+      color:valorColorCartografia(feature?.properties||{}),
+      weight:2,
+      fillColor:valorColorCartografia(feature?.properties||{}),
+      fillOpacity:.72
+    }),
+    onEachFeature:(feature,layer)=>{
+      const html=htmlPropiedadesCartografia(feature);
+      if(html)layer.bindPopup(html,{maxWidth:300});
+    }
+  });
+}
+
+async function cargarCartografiaProyecto(forzar=false){
+  if(!proyectoTieneCartografia()){
+    limpiarCartografiaProyecto();
+    return false;
+  }
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId)return false;
+
+  if(
+    !forzar &&
+    cartografiaGeoJSONCache &&
+    cartografiaProyectoCacheId===proyectoId
+  ){
+    if(cartografiaLayer && map && !map.hasLayer(cartografiaLayer)){
+      cartografiaLayer.addTo(map);
+    }
+    cartografiaVisible=true;
+    localStorage.setItem(clavePreferenciaCartografia(),'1');
+    actualizarBotonCartografiaProyecto();
+    return true;
+  }
+
+  if(cartografiaCargando)return false;
+  cartografiaCargando=true;
+
+  try{
+    const path=String(proyectoActivo.cartografia_path||'').trim();
+
+    const {data,error}=await mappingSb.storage
+      .from(CARTOGRAFIA_BUCKET)
+      .download(path);
+
+    if(error)throw error;
+
+    const geo=await geoJSONDesdeBlobCartografia(
+      data,
+      proyectoActivo.cartografia_tipo,
+      proyectoActivo.cartografia_nombre||path
+    );
+
+    if(cartografiaLayer && map){
+      try{map.removeLayer(cartografiaLayer)}catch(_){}
+    }
+
+    cartografiaGeoJSONCache=geo;
+    cartografiaProyectoCacheId=proyectoId;
+    cartografiaLayer=crearLayerCartografia(geo).addTo(map);
+    cartografiaVisible=true;
+
+    localStorage.setItem(clavePreferenciaCartografia(),'1');
+    actualizarBotonCartografiaProyecto();
+    return true;
+  }catch(e){
+    console.error('Cartografía del proyecto:',e);
+    cartografiaVisible=false;
+    actualizarBotonCartografiaProyecto();
+    alert(
+      'No se pudo cargar la cartografía del proyecto.\n\n'+
+      (e?.message||e)
+    );
+    return false;
+  }finally{
+    cartografiaCargando=false;
+  }
+}
+
+async function toggleCartografiaProyecto(){
+  if(!proyectoTieneCartografia()){
+    actualizarBotonCartografiaProyecto();
+    return alert('Este proyecto no tiene cartografía cargada desde el Master.');
+  }
+
+  if(cartografiaVisible){
+    if(cartografiaLayer && map){
+      try{map.removeLayer(cartografiaLayer)}catch(_){}
+    }
+    cartografiaVisible=false;
+    localStorage.setItem(clavePreferenciaCartografia(),'0');
+    actualizarBotonCartografiaProyecto();
+    return;
+  }
+
+  await cargarCartografiaProyecto(false);
+}
+
+async function prepararCartografiaProyectoSeleccionado(){
+  // Cambiar de proyecto siempre limpia la capa anterior.
+  if(cartografiaLayer && map){
+    try{map.removeLayer(cartografiaLayer)}catch(_){}
+  }
+  cartografiaLayer=null;
+  cartografiaGeoJSONCache=null;
+  cartografiaProyectoCacheId=null;
+  cartografiaVisible=false;
+  actualizarBotonCartografiaProyecto();
+
+  if(!proyectoTieneCartografia())return;
+
+  // Se recuerda la última preferencia del técnico por proyecto.
+  const preferencia=localStorage.getItem(clavePreferenciaCartografia());
+  if(preferencia==='1'){
+    await cargarCartografiaProyecto(false);
+  }
+}
+
 function orientarMapaNorte(){
   if(!map)return;
   if(typeof map.setBearing==='function'){
@@ -7375,6 +7740,7 @@ async function cargarProyectosAsignados(){
 
       setControlesTrabajoHabilitados(false);
       actualizarIndicadorTipoProyecto();
+      await prepararCartografiaProyectoSeleccionado();
 
       const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
       if(!cantidadPoligonos){
@@ -7421,7 +7787,8 @@ function pintarProyectosAsignados(){
       <b>${esc(p.codigo||'SIN CÓDIGO')}</b><br>
       ${esc(p.nombre||'Proyecto')}<br>
       <span class="projectTypeBadge ${String(p.tipo_proyecto||'MAPPING').toUpperCase()==='VIABILIDAD'?'viabilidad':''}">${esc(String(p.tipo_proyecto||'MAPPING').toUpperCase())}</span><br>
-      <small>${esc(p.ciudad||'')} · ${esc(a.estado_asignacion||'')}</small>
+      <small>${esc(p.ciudad||'')} · ${esc(a.estado_asignacion||'')}</small><br>
+      <small style="color:${p.cartografia_path?'#67e8f9':'#94a3b8'}">${p.cartografia_path?'🗺️ Cartografía disponible':'Sin cartografía adicional'}</small>
       <button onclick="seleccionarProyecto('${a.id}')">${act?'Proyecto activo':'Trabajar este proyecto'}</button>
     </div>`;
   }).join('');
@@ -7455,6 +7822,7 @@ async function seleccionarProyecto(asignacionId){
   if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;
   if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
   actualizarIndicadorTipoProyecto();
+  await prepararCartografiaProyectoSeleccionado();
 
   await mappingSb
     .from('mapping_proyecto_tecnicos')
@@ -7578,6 +7946,7 @@ function bloquearSinProyecto(mensaje=''){
   proyectoActivo=null;
   poligonosAsignados=[];
   poligonosAsignadosSet=new Set();
+  limpiarCartografiaProyecto();
   localStorage.removeItem('mapping_proyecto_activo_v1');
 
   setControlesTrabajoHabilitados(false);
@@ -10593,6 +10962,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
 
 
 
