@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V53 - Administración de proyectos</title>
+<title>Master Mapping & Site Survey - V55 - Gestión de roles de usuarios</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -690,6 +690,32 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   .projectDeleteImpact{grid-template-columns:1fr 1fr}
 }
 
+
+/* ===== EDICIÓN DE ROLES DE USUARIO ===== */
+.userRoleEditor{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  min-width:220px;
+}
+.userRoleEditor select{
+  min-width:120px;
+  padding:6px 7px;
+  font-size:10px;
+}
+.userRoleSave{
+  width:auto!important;
+  margin:0!important;
+  padding:6px 8px!important;
+  white-space:nowrap;
+}
+.userRoleCurrent{
+  display:inline-block;
+  margin-top:3px;
+  color:#94a3b8;
+  font-size:9px;
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -765,7 +791,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 </header>
 <div class="layout">
 <aside>
-  <div class="card"><h3>Empresas</h3>
+  <div class="card adminOnly"><h3>Empresas</h3>
   <div class="grid2"><div><label>Nombre empresa *</label><input id="eNombre" placeholder="Ej: Liberty Networks"></div><div><label>Nombre corto</label><input id="eNombreCorto" placeholder="Ej: LIBERTY"></div></div>
   <div class="grid2"><div><label>NIT</label><input id="eNit" placeholder="900123456-7"></div><div><label>Ciudad</label><input id="eCiudad" placeholder="Bogotá D.C"></div></div>
   <button class="btn blue" onclick="crearEmpresa()">Crear empresa</button>
@@ -780,9 +806,9 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   <label>Rol</label><select id="uRol"><option value="tecnico">Técnico</option><option value="coordinador">Coordinador</option><option value="admin">Administrador</option></select>
   <button class="btn purple" onclick="crearUsuarioMapping()">Crear usuario</button>
   <div id="uMsg" class="hint">Los usuarios se crean en Supabase Auth y en mapping_usuarios.</div>
-  <div class="tableWrap userTable"><table class="table" style="min-width:520px"><thead><tr><th>Nombre</th><th>Empresa</th><th>Correo</th><th>Rol</th><th>Estado</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div>
+  <div class="tableWrap userTable"><table class="table" style="min-width:760px"><thead><tr><th>Nombre</th><th>Empresa</th><th>Correo</th><th>Rol actual</th><th>Modificar rol</th><th>Estado</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div>
 </div>
-<div class="card"><h3>Crear proyecto + POLIGONOS.geojson</h3>
+<div class="card"><div class="adminOnly"><h3>Crear proyecto + POLIGONOS.geojson</h3>
   <label>Empresa *</label><select id="pEmpresa"></select>
   <div class="grid2"><div><label>Código *</label><input id="pCodigo" placeholder="EYCO-2026-BTA-01"></div><div><label>Ciudad</label><input id="pCiudad" placeholder="Bogotá D.C"></div></div>
   <div class="grid2">
@@ -825,6 +851,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   </div>
   <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer archivo / actualizar versión</button>
 
+  </div>
   <div class="geoDivider"></div>
   <h4>Actualizar fotografías de proyecto existente</h4>
   <label>Proyecto</label>
@@ -1257,7 +1284,10 @@ async function validarPerfil(){
 
   perfil=data;
   document.getElementById('authChecking')?.classList.add('hide');
-  userTop.textContent=`${perfil.nombre||user.email} · ${perfil.rol}`;
+  const empresaTxt=perfil.rol==='coordinador' && perfil.empresa_id
+    ? ' · Empresa restringida'
+    : '';
+  userTop.textContent=`${perfil.nombre||user.email} · ${perfil.rol}${empresaTxt}`;
   aplicarVisibilidadAdmin();
   await cargarTodo();
   return true;
@@ -1278,7 +1308,10 @@ async function logoutMaster(){
   }
 }
 async function cargarTodo(){
-  await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios(),cargarAsignaciones()]);
+  // Primero se cargan catálogos ya filtrados por empresa.
+  // Después las asignaciones se limitan a esos proyectos visibles.
+  await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios()]);
+  await cargarAsignaciones();
   llenarSelects();
   actualizarKpis();
 
@@ -1300,8 +1333,32 @@ async function cargarTodo(){
   await cargarProyectoMapa();
 }
 async function cargarEmpresas(){
-  const {data,error}=await sb.from('mapping_empresas').select('*').eq('activo',true).order('nombre');
-  if(error){alert('Error cargando empresas: '+error.message);return}
+  let q=sb
+    .from('mapping_empresas')
+    .select('*')
+    .eq('activo',true)
+    .order('nombre');
+
+  if(esCoordinadorMaster()){
+    const empresaId=empresaPerfilMaster();
+
+    if(!empresaId){
+      empresas=[];
+      pintarEmpresas();
+      console.warn('El coordinador no tiene empresa_id configurado.');
+      return;
+    }
+
+    q=q.eq('id',empresaId);
+  }
+
+  const {data,error}=await q;
+
+  if(error){
+    alert('Error cargando empresas: '+error.message);
+    return;
+  }
+
   empresas=data||[];
   pintarEmpresas();
 }
@@ -1310,6 +1367,7 @@ function pintarEmpresas(){
   listaEmpresas.innerHTML=empresas.length?empresas.map(e=>`<div style="padding:5px 0;border-bottom:1px solid #334155"><b>${esc(e.nombre)}</b>${e.nit?` · NIT ${esc(e.nit)}`:''}</div>`).join(''):'No hay empresas creadas.';
 }
 async function crearEmpresa(){
+  if(!exigirAdminMaster('crear empresas'))return;
   const nombre=eNombre.value.trim();if(!nombre)return alert('El nombre de la empresa es obligatorio.');
   const payload={nombre,nombre_corto:eNombreCorto.value.trim()||null,nit:eNit.value.trim()||null,ciudad:eCiudad.value.trim()||null,activo:true};
   const {error}=await sb.from('mapping_empresas').insert(payload);
@@ -1739,17 +1797,32 @@ async function eliminarProyectoDefinitivamente(){
 }
 
 async function cargarProyectos(){
-  const {data,error}=await sb
+  let q=sb
     .from('mapping_proyectos')
     .select('*')
     .order('created_at',{ascending:false});
+
+  if(esCoordinadorMaster()){
+    const empresaId=empresaPerfilMaster();
+
+    if(!empresaId){
+      proyectos=[];
+      kProyectos.textContent='0';
+      console.warn('El coordinador no tiene empresa_id configurado.');
+      return;
+    }
+
+    q=q.eq('empresa_id',empresaId);
+  }
+
+  const {data,error}=await q;
 
   if(error){
     alert(error.message);
     return;
   }
 
-  proyectos=data||[];
+  proyectos=(data||[]).filter(p=>puedeVerProyectoMaster(p));
   kProyectos.textContent=proyectos.length;
 
   if(document.getElementById('adminProyectosModal')?.classList.contains('open')){
@@ -1758,32 +1831,251 @@ async function cargarProyectos(){
   }
 }
 async function cargarUsuarios(){
-  const {data,error}=await sb
+  let q=sb
     .from('mapping_usuarios')
     .select('*,mapping_empresas(id,nombre,nombre_corto,nit)')
     .order('nombre');
-  if(error){alert('Error cargando usuarios: '+error.message);return}
-  usuarios=(data||[]).map(u=>({
-    ...u,
-    empresa_nombre:u.mapping_empresas?.nombre||null,
-    empresa_nombre_corto:u.mapping_empresas?.nombre_corto||null
-  }));
-  kTecnicos.textContent=usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false).length;
+
+  if(esCoordinadorMaster()){
+    const empresaId=empresaPerfilMaster();
+
+    if(!empresaId){
+      usuarios=[];
+      kTecnicos.textContent='0';
+      pintarUsuarios();
+      return;
+    }
+
+    q=q.eq('empresa_id',empresaId);
+  }
+
+  const {data,error}=await q;
+
+  if(error){
+    alert('Error cargando usuarios: '+error.message);
+    return;
+  }
+
+  usuarios=(data||[])
+    .filter(u=>esAdminMaster() || String(u.empresa_id||'')===empresaPerfilMaster())
+    .map(u=>({
+      ...u,
+      empresa_nombre:u.mapping_empresas?.nombre||null,
+      empresa_nombre_corto:u.mapping_empresas?.nombre_corto||null
+    }));
+
+  kTecnicos.textContent=usuarios.filter(
+    u=>u.rol==='tecnico'&&u.activo!==false
+  ).length;
+
   pintarUsuarios();
 }
 function pintarUsuarios(){
-  if(!document.getElementById('tablaUsuarios'))return;
-  tablaUsuarios.innerHTML=usuarios.length
-    ? usuarios.map(u=>`<tr>
-        <td>${esc(u.nombre||'')}</td>
-        <td>${esc(u.empresa_nombre||'SIN EMPRESA')}</td>
-        <td>${esc(u.email)}</td>
-        <td><span class="roleBadge ${esc(u.rol)}">${esc(u.rol)}</span></td>
-        <td>${u.activo===false?'Inactivo':'Activo'}</td>
-      </tr>`).join('')
-    : '<tr><td colspan="5">Sin usuarios.</td></tr>';
+  const tbody=document.getElementById('tablaUsuarios');
+  if(!tbody)return;
+
+  tbody.innerHTML=usuarios.length
+    ? usuarios.map(u=>{
+        const rol=String(u.rol||'tecnico').toLowerCase();
+        const esYo=String(u.id)===String(user?.id);
+
+        return `<tr>
+          <td>
+            ${esc(u.nombre||'')}
+            ${esYo?'<div class="userRoleCurrent">Tu usuario actual</div>':''}
+          </td>
+          <td>${esc(u.empresa_nombre||'SIN EMPRESA')}</td>
+          <td>${esc(u.email)}</td>
+          <td><span class="roleBadge ${esc(rol)}">${esc(rol)}</span></td>
+          <td>
+            <div class="userRoleEditor">
+              <select id="rolUsuario_${esc(u.id)}">
+                <option value="tecnico" ${rol==='tecnico'?'selected':''}>Técnico</option>
+                <option value="coordinador" ${rol==='coordinador'?'selected':''}>Coordinador</option>
+                <option value="admin" ${rol==='admin'?'selected':''}>Administrador</option>
+              </select>
+              <button
+                class="btn small blue userRoleSave"
+                onclick="guardarRolUsuario('${esc(u.id)}')"
+              >
+                Guardar
+              </button>
+            </div>
+          </td>
+          <td>${u.activo===false?'Inactivo':'Activo'}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6">Sin usuarios.</td></tr>';
 }
-function aplicarVisibilidadAdmin(){const ok=perfil?.rol==='admin';document.querySelectorAll('.adminOnly').forEach(el=>el.style.display=ok?'block':'none')}
+
+function esAdminMaster(){
+  return String(perfil?.rol||'').toLowerCase()==='admin';
+}
+
+function esCoordinadorMaster(){
+  return String(perfil?.rol||'').toLowerCase()==='coordinador';
+}
+
+function empresaPerfilMaster(){
+  return String(perfil?.empresa_id||'');
+}
+
+function puedeVerProyectoMaster(proyectoOId){
+  if(esAdminMaster())return true;
+
+  if(!esCoordinadorMaster())return false;
+
+  const empresaId=empresaPerfilMaster();
+  if(!empresaId)return false;
+
+  const p=typeof proyectoOId==='object'
+    ? proyectoOId
+    : proyectos.find(x=>String(x.id)===String(proyectoOId));
+
+  return !!p && String(p.empresa_id||'')===empresaId;
+}
+
+function exigirAdminMaster(accion='realizar esta acción'){
+  if(esAdminMaster())return true;
+
+  alert(`Solo un administrador puede ${accion}.`);
+  return false;
+}
+
+function exigirProyectoPermitidoMaster(proyectoId,accion='consultar este proyecto'){
+  const p=proyectos.find(x=>String(x.id)===String(proyectoId));
+
+  if(p && puedeVerProyectoMaster(p))return p;
+
+  alert(`No tienes permiso para ${accion}.`);
+  return null;
+}
+
+function aplicarVisibilidadAdmin(){
+  const ok=esAdminMaster();
+  document.querySelectorAll('.adminOnly').forEach(el=>{
+    el.style.display=ok?'block':'none';
+  });
+}
+
+async function guardarRolUsuario(usuarioId){
+  if(!esAdminMaster()){
+    alert('Solo un administrador puede modificar roles de usuario.');
+    return;
+  }
+
+  const usuario=usuarios.find(u=>String(u.id)===String(usuarioId));
+  if(!usuario){
+    alert('No se encontró el usuario seleccionado.');
+    return;
+  }
+
+  const select=document.getElementById(`rolUsuario_${usuarioId}`);
+  if(!select)return;
+
+  const rolAnterior=String(usuario.rol||'tecnico').toLowerCase();
+  const nuevoRol=String(select.value||'').toLowerCase();
+
+  if(!['tecnico','coordinador','admin'].includes(nuevoRol)){
+    alert('El rol seleccionado no es válido.');
+    select.value=rolAnterior;
+    return;
+  }
+
+  if(nuevoRol===rolAnterior){
+    alert('El usuario ya tiene ese rol.');
+    return;
+  }
+
+  // Para coordinador, empresa_id es indispensable porque el MASTER
+  // restringe proyectos, técnicos y asignaciones por empresa.
+  if(nuevoRol==='coordinador' && !usuario.empresa_id){
+    alert(
+      'No puedes asignar el rol coordinador a este usuario porque no tiene una empresa asociada.\n\n'+
+      'Primero debe tener empresa_id en mapping_usuarios.'
+    );
+    select.value=rolAnterior;
+    return;
+  }
+
+  const esUsuarioActual=String(usuario.id)===String(user?.id);
+
+  let mensaje=
+    `¿Cambiar el rol de ${usuario.nombre||usuario.email}?\n\n`+
+    `Rol actual: ${rolAnterior}\n`+
+    `Nuevo rol: ${nuevoRol}`;
+
+  if(esUsuarioActual){
+    mensaje+=
+      '\n\n⚠️ Estás modificando tu propio usuario. '+
+      'Si dejas de ser administrador, perderás acceso a las funciones exclusivas de administración.';
+  }
+
+  if(!confirm(mensaje)){
+    select.value=rolAnterior;
+    return;
+  }
+
+  const btn=select.parentElement?.querySelector('button');
+  const textoOriginal=btn?.textContent||'Guardar';
+
+  try{
+    if(btn){
+      btn.disabled=true;
+      btn.textContent='Guardando...';
+    }
+    select.disabled=true;
+
+    const {data,error}=await sb
+      .from('mapping_usuarios')
+      .update({rol:nuevoRol})
+      .eq('id',usuario.id)
+      .select('id,rol,empresa_id')
+      .single();
+
+    if(error)throw error;
+
+    usuario.rol=data?.rol||nuevoRol;
+
+    alert(
+      `Rol actualizado correctamente.\n\n`+
+      `${usuario.nombre||usuario.email}: ${rolAnterior} → ${usuario.rol}`
+    );
+
+    // Si el administrador modificó su propio rol, recargamos el perfil
+    // inmediatamente para aplicar permisos y visibilidad correctos.
+    if(esUsuarioActual){
+      perfil={...perfil,rol:usuario.rol};
+
+      const empresaTxt=perfil.rol==='coordinador' && perfil.empresa_id
+        ? ' · Empresa restringida'
+        : '';
+
+      userTop.textContent=
+        `${perfil.nombre||user.email} · ${perfil.rol}${empresaTxt}`;
+
+      aplicarVisibilidadAdmin();
+
+      // Recarga catálogos con las nuevas restricciones del rol.
+      await cargarTodo();
+    }else{
+      await cargarUsuarios();
+      llenarSelects();
+    }
+
+  }catch(e){
+    console.error('Error actualizando rol:',e);
+    alert('No se pudo actualizar el rol: '+(e?.message||e));
+    select.value=rolAnterior;
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=textoOriginal;
+    }
+    select.disabled=false;
+  }
+}
+
 async function crearUsuarioMapping(){
   if(perfil?.rol!=='admin')return alert('Solo un administrador puede crear usuarios.');
 
@@ -1857,7 +2149,30 @@ async function crearUsuarioMapping(){
   await cargarUsuarios();
   llenarSelects();
 }
-async function cargarAsignaciones(){const {data,error}=await sb.from('v_mapping_proyectos_asignados').select('*').order('fecha_asignacion',{ascending:false});if(error){alert(error.message);return}asignaciones=data||[];asignacionesFiltradas=[...asignaciones];kAsignaciones.textContent=asignaciones.length;pintarAsignaciones();llenarFiltrosAsignaciones();aplicarFiltrosAsignaciones();actualizarResumenAsignaciones()}
+async function cargarAsignaciones(){
+  const {data,error}=await sb
+    .from('v_mapping_proyectos_asignados')
+    .select('*')
+    .order('fecha_asignacion',{ascending:false});
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  const permitidos=new Set(proyectos.map(p=>String(p.id)));
+
+  asignaciones=(data||[]).filter(a=>
+    esAdminMaster() || permitidos.has(String(a.proyecto_id))
+  );
+
+  asignacionesFiltradas=[...asignaciones];
+  kAsignaciones.textContent=asignaciones.length;
+  pintarAsignaciones();
+  llenarFiltrosAsignaciones();
+  aplicarFiltrosAsignaciones();
+  actualizarResumenAsignaciones();
+}
 function llenarSelects(){
   const emp='<option value="">Todas / Seleccione...</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
   pEmpresa.innerHTML='<option value="">Seleccione...</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
@@ -2138,6 +2453,7 @@ async function descargarGeoJSONPublico(url){
 }
 
 async function leerPoligonosDesdeDriveCrear(){
+  if(!exigirAdminMaster('crear proyectos'))return;
   const nombreArchivo=pGeojsonUrl.value.trim();
   const url=urlPublicaPoligonos(nombreArchivo);
   geojsonProyectoPreview=null;
@@ -2185,6 +2501,7 @@ async function registrarCatalogoPoligonos(proyectoId,poligonos){
 }
 
 async function actualizarGeoJSONProyectoExistente(){
+  if(!exigirAdminMaster('actualizar archivos de polígonos'))return;
   const proyectoId=geoProyectoExistente.value;
   const nombreArchivo=geoUrlActualiza.value.trim();
   const url=urlPublicaPoligonos(nombreArchivo);
@@ -2693,7 +3010,9 @@ async function guardarConfigFotosProyectoExistente(){
   if(!proyectoId)return alert('Selecciona el proyecto que deseas actualizar.');
 
   const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
-  if(!proyecto)return alert('No se encontró el proyecto seleccionado.');
+  if(!proyecto || !puedeVerProyectoMaster(proyecto)){
+    return alert('No tienes permiso para modificar este proyecto.');
+  }
 
   const fotos_config=obtenerConfigFotosProyectoExistente();
 
@@ -2720,6 +3039,7 @@ async function guardarConfigFotosProyectoExistente(){
 }
 
 async function crearProyecto(){
+  if(!exigirAdminMaster('crear proyectos'))return;
   const empresa_id=pEmpresa.value;
   const codigo=pCodigo.value.trim();
   const nombre=pNombre.value.trim();
@@ -2844,7 +3164,24 @@ async function asignarProyecto(){
     return alert('Selecciona proyecto y técnico.');
   }
 
+  const proyectoPermitido=exigirProyectoPermitidoMaster(
+    proyecto_id,
+    'asignar este proyecto'
+  );
+  if(!proyectoPermitido)return;
+
   const t=usuarios.find(u=>String(u.id)===String(tecnico_id));
+
+  if(!t){
+    return alert('El técnico seleccionado no pertenece a una empresa permitida.');
+  }
+
+  if(
+    esCoordinadorMaster() &&
+    String(t.empresa_id||'')!==empresaPerfilMaster()
+  ){
+    return alert('Solo puedes asignar técnicos de tu misma empresa.');
+  }
   const disponibles=await obtenerPoligonosProyecto(proyecto_id);
   const seleccionados=poligonosSeleccionados('asigPoly');
 
@@ -2992,6 +3329,11 @@ async function guardarPoligonosAsignacion(){
   const a=asignaciones.find(x=>String(x.asignacion_id)===String(asignacionId));
   if(!a)return;
 
+  if(!exigirProyectoPermitidoMaster(
+    a.proyecto_id,
+    'modificar la asignación de polígonos de este proyecto'
+  ))return;
+
   const seleccionados=poligonosSeleccionados('editPoly');
   const disponibles=await obtenerPoligonosProyecto(a.proyecto_id);
 
@@ -3053,9 +3395,47 @@ async function guardarPoligonosAsignacion(){
   );
 }
 
-function abrirReasignar(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;reasigId.value=id;reasigInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}`;const tecs=usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false);reasigTecnico.innerHTML='<option value="">Seleccione...</option>'+tecs.map(t=>`<option value="${t.id}" ${t.id===a.tecnico_id?'selected':''}>${esc(t.nombre||t.email)} · ${esc(t.email)}</option>`).join('');reasigObs.value='';const hist=Array.isArray(a.historial)?a.historial:[];reasigHistorial.innerHTML=hist.length?'<b>Historial reciente:</b><br>'+hist.slice(-4).map(h=>`• ${formatoFecha(h.fecha)} · ${esc(h.accion||h.evento||'')}`).join('<br>'):'Sin historial previo.';reasignarModal.classList.add('open')}
+function abrirReasignar(id){
+  const a=asignaciones.find(x=>String(x.asignacion_id)===String(id));
+  if(!a)return;
+
+  if(!exigirProyectoPermitidoMaster(
+    a.proyecto_id,
+    'reasignar este proyecto'
+  ))return;
+
+  reasigId.value=id;
+  reasigInfo.innerHTML=
+    `<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br>`+
+    `<b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br>`+
+    `<b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}`;
+
+  const proyecto=proyectos.find(p=>String(p.id)===String(a.proyecto_id));
+  const tecs=usuarios.filter(u=>
+    u.rol==='tecnico' &&
+    u.activo!==false &&
+    (!proyecto?.empresa_id || String(u.empresa_id||'')===String(proyecto.empresa_id))
+  );
+
+  reasigTecnico.innerHTML=
+    '<option value="">Seleccione...</option>'+
+    tecs.map(t=>
+      `<option value="${t.id}" ${String(t.id)===String(a.tecnico_id)?'selected':''}>`+
+      `${esc(t.nombre||t.email)} · ${esc(t.email)}</option>`
+    ).join('');
+
+  reasigObs.value='';
+
+  const hist=Array.isArray(a.historial)?a.historial:[];
+  reasigHistorial.innerHTML=hist.length
+    ? '<b>Historial reciente:</b><br>'+
+      hist.slice(-4).map(h=>`• ${formatoFecha(h.fecha)} · ${esc(h.accion||h.evento||'')}`).join('<br>')
+    : 'Sin historial previo.';
+
+  reasignarModal.classList.add('open');
+}
 function cerrarReasignar(){reasignarModal.classList.remove('open')}
-async function confirmarReasignacion(){const id=reasigId.value,a=asignaciones.find(x=>x.asignacion_id===id),nuevoId=reasigTecnico.value;if(!a||!nuevoId)return alert('Selecciona nuevo técnico.');if(nuevoId===a.tecnico_id)return alert('Ese técnico ya tiene esta asignación.');const nuevo=usuarios.find(u=>u.id===nuevoId);const choque=asignaciones.find(x=>x.proyecto_id===a.proyecto_id&&x.tecnico_id===nuevoId);if(choque)return alert('El técnico seleccionado ya está asignado a este proyecto.');if(!confirm(`¿Reasignar ${a.proyecto_nombre} de ${a.tecnico_nombre||a.tecnico_email} a ${nuevo?.nombre||nuevo?.email}?`))return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:'reasignado',evento:`Reasignado de ${a.tecnico_nombre||a.tecnico_email||'N/A'} a ${nuevo?.nombre||nuevo?.email}`,tecnico_anterior_id:a.tecnico_id,tecnico_anterior_email:a.tecnico_email,tecnico_nuevo_id:nuevoId,tecnico_nuevo_email:nuevo?.email,observacion:reasigObs.value.trim(),usuario_master:user.email};const {error}=await sb.from('mapping_proyecto_tecnicos').update({tecnico_id:nuevoId,tecnico_email:nuevo?.email,tecnico_nombre:nuevo?.nombre||nuevo?.email,estado_asignacion:'asignado',fecha_asignacion:new Date().toISOString(),fecha_finalizacion:null,historial:[...hist,evento]}).eq('id',id);if(error)return alert('Error reasignando: '+error.message);const {error:polyMoveError}=await sb.from('mapping_tecnico_poligonos').update({tecnico_id:nuevoId}).eq('asignacion_id',id);if(polyMoveError)return alert('La asignación cambió, pero no se pudieron transferir sus polígonos: '+polyMoveError.message);cerrarReasignar();await cargarAsignaciones();alert('Proyecto reasignado correctamente, conservando los polígonos asignados.')}
+async function confirmarReasignacion(){const id=reasigId.value,a=asignaciones.find(x=>String(x.asignacion_id)===String(id)),nuevoId=reasigTecnico.value;if(!a||!nuevoId)return alert('Selecciona nuevo técnico.');if(!exigirProyectoPermitidoMaster(a.proyecto_id,'reasignar este proyecto'))return;if(nuevoId===a.tecnico_id)return alert('Ese técnico ya tiene esta asignación.');const nuevo=usuarios.find(u=>String(u.id)===String(nuevoId));if(!nuevo)return alert('El técnico seleccionado no pertenece a una empresa permitida.');const proyecto=proyectos.find(p=>String(p.id)===String(a.proyecto_id));if(proyecto && String(nuevo.empresa_id||'')!==String(proyecto.empresa_id||''))return alert('El técnico debe pertenecer a la misma empresa del proyecto.');const choque=asignaciones.find(x=>x.proyecto_id===a.proyecto_id&&x.tecnico_id===nuevoId);if(choque)return alert('El técnico seleccionado ya está asignado a este proyecto.');if(!confirm(`¿Reasignar ${a.proyecto_nombre} de ${a.tecnico_nombre||a.tecnico_email} a ${nuevo?.nombre||nuevo?.email}?`))return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:'reasignado',evento:`Reasignado de ${a.tecnico_nombre||a.tecnico_email||'N/A'} a ${nuevo?.nombre||nuevo?.email}`,tecnico_anterior_id:a.tecnico_id,tecnico_anterior_email:a.tecnico_email,tecnico_nuevo_id:nuevoId,tecnico_nuevo_email:nuevo?.email,observacion:reasigObs.value.trim(),usuario_master:user.email};const {error}=await sb.from('mapping_proyecto_tecnicos').update({tecnico_id:nuevoId,tecnico_email:nuevo?.email,tecnico_nombre:nuevo?.nombre||nuevo?.email,estado_asignacion:'asignado',fecha_asignacion:new Date().toISOString(),fecha_finalizacion:null,historial:[...hist,evento]}).eq('id',id);if(error)return alert('Error reasignando: '+error.message);const {error:polyMoveError}=await sb.from('mapping_tecnico_poligonos').update({tecnico_id:nuevoId}).eq('asignacion_id',id);if(polyMoveError)return alert('La asignación cambió, pero no se pudieron transferir sus polígonos: '+polyMoveError.message);cerrarReasignar();await cargarAsignaciones();alert('Proyecto reasignado correctamente, conservando los polígonos asignados.')}
 function abrirHistorial(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;historialInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}<br><b>Estado:</b> ${estadoBadge(a.estado_asignacion)}`;const hist=Array.isArray(a.historial)?a.historial:[];const base=[{fecha:a.fecha_asignacion,accion:'asignación',evento:'Asignación registrada',tecnico:a.tecnico_nombre||a.tecnico_email}];const eventos=[...base,...hist].sort((x,y)=>new Date(x.fecha||0)-new Date(y.fecha||0));historialLista.innerHTML=eventos.length?eventos.map(h=>`<div class="historyItem"><small>${formatoFecha(h.fecha)}</small><b>${esc(h.accion||'Evento')}</b><div>${esc(h.evento||'')}</div>${h.tecnico?`<div><b>Técnico:</b> ${esc(h.tecnico)}</div>`:''}${h.observacion?`<div><b>Observación:</b> ${esc(h.observacion)}</div>`:''}${h.usuario_master?`<div><b>Master:</b> ${esc(h.usuario_master)}</div>`:''}</div>`).join(''):'<div class="hint">Sin historial.</div>';historialModal.classList.add('open')}
 async function eliminarAsignacion(id){
   if(!confirm('¿Quitar esta asignación? Los polígonos quedarán libres para otros técnicos. El proyecto y sus puntos NO se eliminarán.'))return;
@@ -3077,7 +3457,11 @@ async function eliminarAsignacion(id){
   await cargarAsignaciones();
   await cargarPoligonosAsignacion();
 }
-function verProyecto(id){fProyecto.value=id;cargarProyectoMapa()}
+function verProyecto(id){
+  if(!exigirProyectoPermitidoMaster(id,'ver este proyecto'))return;
+  fProyecto.value=id;
+  cargarProyectoMapa();
+}
 
 function colorPoligonoPorNombre(nombre){
   const n=String(nombre||'').trim().toUpperCase().replace(/\s+/g,'');
@@ -3376,6 +3760,12 @@ async function cargarUbicacionesTecnicos(proyectoId=tecnicoLiveProyectoId||fProy
     return [];
   }
 
+  if(!exigirProyectoPermitidoMaster(id,'consultar la ubicación de técnicos de este proyecto')){
+    ubicacionesTecnicos=[];
+    pintarUbicacionesTecnicos();
+    return [];
+  }
+
   const {data,error}=await sb
     .from('mapping_tecnico_ubicacion')
     .select('*')
@@ -3507,7 +3897,15 @@ async function cargarProyectoMapa(){
     return;
   }
 
-  const proyecto=proyectos.find(p=>String(p.id)===String(id));
+  const proyecto=exigirProyectoPermitidoMaster(id,'ver este proyecto');
+  if(!proyecto){
+    fProyecto.value='';
+    puntos=[];
+    pintarMapa();
+    detenerSeguimientoTecnicosMaster();
+    return;
+  }
+
   const [{data,error},polyLayer]=await Promise.all([
     sb.from('mapping_puntos').select('*').eq('proyecto_id',id).order('poligono').order('consecutiv'),
     cargarGeoJSONProyectoMaster(proyecto)
@@ -3560,7 +3958,37 @@ function pintarMapa(){
     mk.on('click',()=>abrirDetallePunto(p.id));
   });
 }
-async function abrirPuntos(proyectoId){const p=proyectos.find(x=>x.id===proyectoId);const emp=empresas.find(e=>e.id===p?.empresa_id);puntosTitle.textContent=`Puntos · ${emp?.nombre||'Sin empresa'} · ${p?.codigo||''}`;const {data,error}=await sb.from('mapping_puntos').select('*').eq('proyecto_id',proyectoId).order('poligono').order('consecutiv');if(error)return alert(error.message);const list=data||[],idx=idxPuntos(list);tablaPuntos.innerHTML=list.map(r=>`<tr class="clickablePoint" onclick="abrirDetallePunto('${r.id}')"><td><b>${esc(r.idcampo)}</b></td><td><span class="badge ${String(r.tipo).replace('. ','').replace(' ','')}">${esc(r.tipo)}</span></td><td>${esc(r.poligono)}</td><td>${conexiones(r,idx).map(c=>esc(c.d.idcampo)).join(', ')||'—'}</td><td>${esc(r.tecnico_nombre||r.tecnico_email||'')}</td><td>${esc(r.direccion||'')}</td></tr>`).join('');puntosModal.classList.add('open')}
+async function abrirPuntos(proyectoId){
+  const p=exigirProyectoPermitidoMaster(proyectoId,'consultar los puntos de este proyecto');
+  if(!p)return;
+
+  const emp=empresas.find(e=>String(e.id)===String(p.empresa_id));
+  puntosTitle.textContent=`Puntos · ${emp?.nombre||'Sin empresa'} · ${p?.codigo||''}`;
+
+  const {data,error}=await sb
+    .from('mapping_puntos')
+    .select('*')
+    .eq('proyecto_id',proyectoId)
+    .order('poligono')
+    .order('consecutiv');
+
+  if(error)return alert(error.message);
+
+  const list=data||[];
+  const idx=idxPuntos(list);
+
+  tablaPuntos.innerHTML=list.map(r=>`
+    <tr class="clickablePoint" onclick="abrirDetallePunto('${r.id}')">
+      <td><b>${esc(r.idcampo)}</b></td>
+      <td><span class="badge ${String(r.tipo).replace('. ','').replace(' ','')}">${esc(r.tipo)}</span></td>
+      <td>${esc(r.poligono)}</td>
+      <td>${conexiones(r,idx).map(c=>esc(c.d.idcampo)).join(', ')||'—'}</td>
+      <td>${esc(r.tecnico_nombre||r.tecnico_email||'')}</td>
+      <td>${esc(r.direccion||'')}</td>
+    </tr>`).join('');
+
+  puntosModal.classList.add('open');
+}
 
 
 function xmlEscKMZ(v){
@@ -3912,7 +4340,12 @@ async function exportarKMZProyecto(btn=null){
     return;
   }
 
-  const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
+  const proyecto=exigirProyectoPermitidoMaster(
+    proyectoId,
+    'exportar este proyecto'
+  );
+  if(!proyecto)return;
+
   const textoOriginal=btn?.textContent||'🌐 Exportar KMZ';
 
   try{
@@ -4130,8 +4563,33 @@ function cerrarDashboardAvances(){
 }
 async function cargarDashboardAvances(){
   const proyectoId=dashProyecto.value;
-  let q=sb.from('mapping_puntos').select('*').order('fecha_captura_app',{ascending:true});
-  if(proyectoId)q=q.eq('proyecto_id',proyectoId);
+
+  if(proyectoId && !exigirProyectoPermitidoMaster(
+    proyectoId,
+    'consultar el dashboard de este proyecto'
+  )){
+    return;
+  }
+
+  let q=sb
+    .from('mapping_puntos')
+    .select('*')
+    .order('fecha_captura_app',{ascending:true});
+
+  if(proyectoId){
+    q=q.eq('proyecto_id',proyectoId);
+  }else if(esCoordinadorMaster()){
+    const ids=proyectos.map(p=>p.id);
+
+    if(!ids.length){
+      dashboardPuntos=[];
+      renderDashboardAvances();
+      return;
+    }
+
+    q=q.in('proyecto_id',ids);
+  }
+
   const {data,error}=await q;
   if(error)return alert('Error cargando dashboard: '+error.message);
   dashboardPuntos=data||[];
@@ -5305,11 +5763,11 @@ async function exportarCarteraEMSA(){
       return;
     }
 
-    const proyecto=proyectos.find(p=>String(p.id)===proyectoId);
-    if(!proyecto){
-      alert('No fue posible identificar el proyecto seleccionado.');
-      return;
-    }
+    const proyecto=exigirProyectoPermitidoMaster(
+      proyectoId,
+      'generar entregables de este proyecto'
+    );
+    if(!proyecto)return;
 
     if(String(proyecto.tipo_proyecto||'MAPPING').toUpperCase()!=='VIABILIDAD'){
       alert('La Cartera EMSA está habilitada para proyectos de tipo VIABILIDAD.');
