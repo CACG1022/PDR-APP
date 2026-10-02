@@ -1341,7 +1341,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Login integrado · ubicación técnica en vivo · CXnPOL · bloqueo sin polígono</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Canalizado con propietario/inventario · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1444,7 +1444,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
 <div id="wrapEstado"><label>ESTADO <span class="req">*</span></label><select id="ESTADO"><option value="">Seleccione...</option><option>BUENO</option><option>MALO</option></select></div>
 </div></div></div>
 
-<div class="section hidden" id="secPoste"><h3>2. Datos del poste</h3><div class="sectionBody"><div class="grid3">
+<div class="section hidden" id="secPoste"><h3 id="tituloSecPoste">2. Datos del poste</h3><div class="sectionBody"><div class="grid3">
 <div><label>PROPIETARI <span class="req">*</span></label><select id="PROPIETARI"></select></div><div><label>ALTURA <span class="req">*</span></label><select id="ALTURA"><option value="">Seleccione...</option><option>8</option><option>10</option><option>12</option><option>14</option></select></div><div><label>TIPO POSTE <span class="req">*</span></label><select id="TIPO_POSTE"><option value="">Seleccione...</option><option>SENCILLO</option><option>DOBLE</option><option>TRIPLE</option><option>ALUMBRADO PUBLICO</option></select></div>
 <div><label>MATERIAL <span class="req">*</span></label><select id="MATERIAL"><option value="">Seleccione...</option><option>CONCRETO</option><option>METALICO</option><option>MADERA</option><option value="FIBRA">FIBRA DE VIDRIO</option></select></div><div><label>ROTURA <span class="req">*</span></label><select id="ROTURA"><option value="">Seleccione...</option><option value="510">510</option><option value="750">750</option><option value="1050">1050</option><option value="1310">1310</option></select></div>
 <div><label>TENSION <span class="req">*</span></label><select id="TENSION"><option value="">Seleccione...</option><option>BAJA TENSION</option><option>MEDIA TENSION</option><option>ALTA TENSION</option><option>MEDIA Y BAJA TENSION</option><option>MEDIA Y ALTA TENSION</option><option>N/A</option></select></div><div><label>RIENDA <span class="req">*</span></label><select id="RIENDA"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select></div><div><label>ELECTRICOS <span class="req">*</span></label><select id="ELECTRICOS"><option value="">Seleccione...</option><option>NINGUNO</option><option>TRANSFORMADOR</option><option value="CAÑUELA /CORTA CIRCUITO">CAÑUELA CORTA CIRCUITO</option><option>SUBESTACION CANALIZADA</option></select></div>
@@ -3299,20 +3299,68 @@ const CAMPOS_OCULTOS_CA_CERCHA=[
   'FUENTES','AMPLIFI','PACVI'
 ];
 
+// CANALIZADO reutiliza algunos campos que físicamente están dentro
+// de la sección de POSTE. Solo dejamos visibles los solicitados.
+const CAMPOS_OCULTOS_CANALIZADO=[
+  'ALTURA','TIPO_POSTE','MATERIAL','ROTURA','TENSION','RIENDA','ELECTRICOS',
+  'EMPALMES','FUENTES','FINDERED'
+];
+
+const CAMPOS_VISIBLES_CANALIZADO=[
+  'PROPIETARI','CABLES','RESERVAS','NAPS','BAJANTES','AMPLIFI','PACVI'
+];
+
 function aplicarCamposPorTipoElemento(){
   const t=String(TIPO?.value||'').toUpperCase();
-  const ocultar=t==='C. AMERICANO'||t==='CERCHA';
+  const esCaCercha=t==='C. AMERICANO'||t==='CERCHA';
+  const esCanalizado=t==='CANALIZADO';
 
-  for(const id of CAMPOS_OCULTOS_CA_CERCHA){
+  // Restablecer todos los wrappers que controla esta función.
+  const controlados=new Set([
+    ...CAMPOS_OCULTOS_CA_CERCHA,
+    ...CAMPOS_OCULTOS_CANALIZADO,
+    ...CAMPOS_VISIBLES_CANALIZADO,
+    'PROPIETARI','FINDERED'
+  ]);
+
+  for(const id of controlados){
     const el=document.getElementById(id);
     const wrap=el?.closest('div');
-    if(wrap)wrap.classList.toggle('projectConditionalHidden',ocultar);
+    if(wrap)wrap.classList.remove('projectConditionalHidden');
   }
 
-  // Para registros nuevos evitamos guardar accidentalmente valores fijados
-  // de POSTE en C. AMERICANO o CERCHA.
-  if(ocultar && !editingId){
+  // C. AMERICANO / CERCHA: conserva la regla existente.
+  if(esCaCercha){
     for(const id of CAMPOS_OCULTOS_CA_CERCHA){
+      const el=document.getElementById(id);
+      const wrap=el?.closest('div');
+      if(wrap)wrap.classList.add('projectConditionalHidden');
+    }
+  }
+
+  // CANALIZADO: mostrar solamente propietario e inventario solicitado.
+  if(esCanalizado){
+    for(const id of CAMPOS_OCULTOS_CANALIZADO){
+      const el=document.getElementById(id);
+      const wrap=el?.closest('div');
+      if(wrap)wrap.classList.add('projectConditionalHidden');
+    }
+  }
+
+  const titulo=document.getElementById('tituloSecPoste');
+  if(titulo){
+    titulo.textContent=esCanalizado
+      ? '2A. Propietario / inventario existente'
+      : '2. Datos del poste';
+  }
+
+  // Evitar que un registro nuevo conserve valores de campos que no aplican.
+  if(!editingId){
+    const limpiar=esCaCercha
+      ? CAMPOS_OCULTOS_CA_CERCHA
+      : (esCanalizado ? CAMPOS_OCULTOS_CANALIZADO : []);
+
+    for(const id of limpiar){
       const el=document.getElementById(id);
       if(!el)continue;
 
@@ -3325,7 +3373,32 @@ function aplicarCamposPorTipoElemento(){
   }
 }
 
-function cambiarTipo(){const t=TIPO.value;const cliente=esClienteViabilidad();secPoste.classList.toggle('hidden',cliente||(t!=='POSTE'&&t!=='C. AMERICANO'&&t!=='CERCHA'));secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');if(cliente){photoGrid.innerHTML='';photos={};}else{renderFotos(t);}aplicarConfiguracionTipoProyecto();aplicarCamposPorTipoElemento();if(cliente)configurarConexionCliente();setTimeout(actualizarResaltadoObligatorios,0);}
+function cambiarTipo(){
+  const t=TIPO.value;
+  const cliente=esClienteViabilidad();
+
+  // En CANALIZADO también se abre la sección compartida para mostrar:
+  // PROPIETARI, CABLES, RESERVAS, NAPS, BAJANTES, AMPLIFI y PACVI.
+  secPoste.classList.toggle(
+    'hidden',
+    cliente || !['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(t)
+  );
+
+  secCamara.classList.toggle('hidden',cliente||t!=='CANALIZADO');
+
+  if(cliente){
+    photoGrid.innerHTML='';
+    photos={};
+  }else{
+    renderFotos(t);
+  }
+
+  aplicarConfiguracionTipoProyecto();
+  aplicarCamposPorTipoElemento();
+
+  if(cliente)configurarConexionCliente();
+  setTimeout(actualizarResaltadoObligatorios,0);
+}
 function renderFotos(t){
   liberarTodasPreviewFoto();
   photoGrid.innerHTML='';
@@ -3982,6 +4055,8 @@ function obtenerCamposObligatoriosActivos(){
 
   if(t==='CANALIZADO'){
     ids.push(
+      'PROPIETARI',
+      'CABLES','RESERVAS','NAPS','BAJANTES','AMPLIFI',
       'TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC',
       'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'
     );
@@ -4793,8 +4868,13 @@ function validar(){
   }
 
   if(t==='CANALIZADO'){
-    ['TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'].forEach(id=>{
-      if(!val(id))falt.push(id);
+    [
+      'PROPIETARI',
+      'CABLES','RESERVAS','NAPS','BAJANTES','AMPLIFI',
+      'TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC',
+      'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'
+    ].forEach(id=>{
+      if(val(id)==='')falt.push(id);
     });
     for(const id of ['CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL']){
       if(val(id).includes('-')){
@@ -10513,5 +10593,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
+
+
 
 
