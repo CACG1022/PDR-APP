@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V52 - Ubicación técnicos en tiempo real</title>
+<title>Master Mapping & Site Survey - V53 - Administración de proyectos</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -626,6 +626,70 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   }
 }
 
+
+/* ===== ADMINISTRAR PROYECTOS ===== */
+.projectAdminFilters{
+  display:grid;
+  grid-template-columns:1.6fr 1fr 1fr 1fr auto;
+  gap:8px;
+  align-items:end;
+  margin-bottom:10px;
+}
+.projectAdminSummary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:10px 0;
+}
+.projectAdminSummary .kpi{min-height:58px}
+.projectAdminTable{min-width:980px}
+.projectAdminActions{display:flex;gap:5px;flex-wrap:wrap}
+.projectDeleteWarning{
+  border:1px solid #7f1d1d;
+  background:#2b0b0b;
+  color:#fecaca;
+  border-radius:12px;
+  padding:12px;
+  margin:10px 0;
+  line-height:1.45;
+}
+.projectDeletePhrase{
+  display:block;
+  margin:8px 0;
+  padding:9px 11px;
+  background:#09090b;
+  border:1px dashed #ef4444;
+  border-radius:9px;
+  color:#fca5a5;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-weight:900;
+  user-select:all;
+}
+.projectDeleteImpact{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:10px 0;
+}
+.projectDeleteImpact>div{
+  background:#07111f;
+  border:1px solid #334155;
+  border-radius:10px;
+  padding:9px;
+}
+.projectDeleteImpact span{display:block;color:#94a3b8;font-size:9px}
+.projectDeleteImpact b{font-size:18px}
+#btnConfirmarEliminarProyecto:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+  filter:grayscale(1);
+}
+@media(max-width:900px){
+  .projectAdminFilters{grid-template-columns:1fr}
+  .projectAdminSummary{grid-template-columns:1fr 1fr}
+  .projectDeleteImpact{grid-template-columns:1fr 1fr}
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -669,6 +733,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   <div class="topHeaderActions">
     <button class="topActionBtn" onclick="abrirDashboardAvances()">📊 Reporte de avances</button>
     <button class="topActionBtn" onclick="abrirModalAsignaciones()">👷 Ver / filtrar asignaciones</button>
+    <button class="topActionBtn adminOnly" onclick="abrirAdministrarProyectos()">🗂️ Administrar proyectos</button>
     <div class="deliverablesTop" id="deliverablesTop">
       <button class="topActionBtn deliverablesTrigger" type="button" onclick="toggleEntregables(event)">◇ ENTREGABLES <span class="deliverablesArrow">⌄</span></button>
       <div class="deliverablesDropdown" id="entregablesMenu">
@@ -805,6 +870,127 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 <div class="mapLegend"><div><span class="dot" style="background:#22c55e"></span>Poste</div><div><span class="dot" style="background:#38bdf8"></span>Canalizado</div><div><span class="dot" style="background:#f97316"></span>C. Americano</div><div><span class="dot" style="background:#a855f7"></span>Cercha</div><div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div><div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div></div></section>
 </div>
 <div class="modalOverlay" id="puntosModal"><div class="modal"><div class="modalHead"><h2 id="puntosTitle">Puntos del proyecto</h2><button class="close" onclick="puntosModal.classList.remove('open')">Cerrar</button></div><div class="modalBody"><div class="tableWrap" style="max-height:70vh"><table class="table"><thead><tr><th>ID</th><th>Tipo</th><th>Polígono</th><th>Conexiones</th><th>Técnico</th><th>Dirección</th></tr></thead><tbody id="tablaPuntos"></tbody></table></div></div></div></div>
+
+<!-- ===== ADMINISTRAR PROYECTOS ===== -->
+<div class="modalOverlay" id="adminProyectosModal">
+  <div class="modal wide">
+    <div class="modalHead">
+      <div>
+        <h2>🗂️ Administrar proyectos</h2>
+        <small style="color:var(--muted)">Buscar, filtrar y eliminar proyectos de forma controlada</small>
+      </div>
+      <button class="close" onclick="cerrarAdministrarProyectos()">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <div class="projectAdminFilters">
+        <div>
+          <label>Buscar</label>
+          <input id="admProyBuscar" placeholder="Código, nombre, ciudad, empresa..." oninput="filtrarAdministrarProyectos()">
+        </div>
+        <div>
+          <label>Empresa</label>
+          <select id="admProyEmpresa" onchange="filtrarAdministrarProyectos()"></select>
+        </div>
+        <div>
+          <label>Tipo</label>
+          <select id="admProyTipo" onchange="filtrarAdministrarProyectos()">
+            <option value="">Todos</option>
+            <option value="MAPPING">MAPPING</option>
+            <option value="VIABILIDAD">VIABILIDAD</option>
+          </select>
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="admProyEstado" onchange="filtrarAdministrarProyectos()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <button class="btn blue" style="margin:0" onclick="refrescarAdministrarProyectos()">⟳ Actualizar</button>
+      </div>
+
+      <div class="projectAdminSummary">
+        <div class="kpi"><span>Proyectos totales</span><b id="admProyTotal">0</b></div>
+        <div class="kpi"><span>Resultados</span><b id="admProyResultados">0</b></div>
+        <div class="kpi"><span>MAPPING</span><b id="admProyMapping">0</b></div>
+        <div class="kpi"><span>VIABILIDAD</span><b id="admProyViabilidad">0</b></div>
+      </div>
+
+      <div class="tableWrap" style="max-height:64vh">
+        <table class="table projectAdminTable">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Código</th>
+              <th>Proyecto</th>
+              <th>Ciudad</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Creado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="admProyTabla"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRMACIÓN ELIMINACIÓN TOTAL ===== -->
+<div class="modalOverlay" id="eliminarProyectoModal">
+  <div class="modal" style="width:min(760px,100%)">
+    <div class="modalHead">
+      <div>
+        <h2>⚠️ Eliminar proyecto definitivamente</h2>
+        <small style="color:#fca5a5">Esta operación elimina la información asociada al proyecto</small>
+      </div>
+      <button class="close" onclick="cerrarEliminarProyecto()">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <input type="hidden" id="eliminarProyectoId">
+
+      <div id="eliminarProyectoInfo" class="hint"></div>
+
+      <div class="projectDeleteImpact">
+        <div><span>Puntos</span><b id="delImpactPuntos">—</b></div>
+        <div><span>Fotos</span><b id="delImpactFotos">—</b></div>
+        <div><span>Asignaciones</span><b id="delImpactAsignaciones">—</b></div>
+        <div><span>Polígonos</span><b id="delImpactPoligonos">—</b></div>
+      </div>
+
+      <div class="projectDeleteWarning">
+        <b>Esta eliminación es irreversible desde el MASTER.</b><br>
+        Se eliminarán los puntos levantados, fotografías registradas en Supabase,
+        asignaciones, polígonos del catálogo y ubicación en vivo asociada al proyecto.
+        <br><br>
+        Para confirmar, escribe exactamente:
+        <span class="projectDeletePhrase" id="eliminarProyectoFrase">ELIMINAR CODIGO</span>
+      </div>
+
+      <label>Confirmación de eliminación total</label>
+      <input
+        id="eliminarProyectoConfirmacion"
+        autocomplete="off"
+        placeholder="Escribe aquí la frase exacta"
+        oninput="validarFraseEliminarProyecto()"
+      >
+
+      <div id="eliminarProyectoEstado" class="hint">
+        El botón se habilitará únicamente cuando la frase coincida exactamente.
+      </div>
+
+      <button
+        id="btnConfirmarEliminarProyecto"
+        class="btn danger"
+        disabled
+        onclick="eliminarProyectoDefinitivamente()"
+      >
+        🗑️ ELIMINAR PROYECTO Y TODOS SUS DATOS
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="modalOverlay" id="asignacionesModal"><div class="modal wide"><div class="modalHead"><h2>Asignaciones de proyectos</h2><button class="close" onclick="cerrarModalAsignaciones()">Cerrar</button></div><div class="modalBody">
   <div class="summary4"><div class="kpi"><span>Total</span><b id="asgTotal">0</b></div><div class="kpi"><span>Asignadas</span><b id="asgAsignadas">0</b></div><div class="kpi"><span>En proceso</span><b id="asgProceso">0</b></div><div class="kpi"><span>Finalizadas</span><b id="asgFinalizadas">0</b></div></div>
   <div class="filtersGrid">
@@ -985,6 +1171,11 @@ let tecnicoRealtimeChannel=null;
 let tecnicoLiveTimer=null;
 let tecnicoLiveProyectoId=null;
 let mostrarTecnicosLive=true;
+
+// Administración de proyectos
+let proyectosAdminFiltrados=[];
+let proyectoPendienteEliminar=null;
+let eliminacionProyectoEnCurso=false;
 Chart.register(ChartDataLabels);
 Chart.defaults.plugins.datalabels = {
   color:'#f8fafc',
@@ -1126,7 +1317,446 @@ async function crearEmpresa(){
   eNombre.value='';eNombreCorto.value='';eNit.value='';eCiudad.value='';
   await cargarEmpresas();llenarSelects();alert('Empresa creada.');
 }
-async function cargarProyectos(){const {data,error}=await sb.from('mapping_proyectos').select('*').order('created_at',{ascending:false});if(error){alert(error.message);return}proyectos=data||[];kProyectos.textContent=proyectos.length}
+
+function empresaProyectoAdmin(p){
+  return empresas.find(e=>String(e.id)===String(p?.empresa_id))||null;
+}
+
+function fechaCortaAdmin(v){
+  if(!v)return '—';
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime()))return String(v);
+  return d.toLocaleDateString('es-CO',{
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit'
+  });
+}
+
+function llenarFiltrosAdministrarProyectos(){
+  const emp=document.getElementById('admProyEmpresa');
+  const estado=document.getElementById('admProyEstado');
+  if(!emp||!estado)return;
+
+  const keepEmp=emp.value;
+  const keepEstado=estado.value;
+
+  emp.innerHTML=
+    '<option value="">Todas</option>'+
+    empresas.map(e=>`<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('');
+
+  const estados=[...new Set(
+    proyectos
+      .map(p=>String(p.estado||'').trim())
+      .filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b,'es'));
+
+  estado.innerHTML=
+    '<option value="">Todos</option>'+
+    estados.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+
+  if([...emp.options].some(o=>o.value===keepEmp))emp.value=keepEmp;
+  if([...estado.options].some(o=>o.value===keepEstado))estado.value=keepEstado;
+}
+
+function filtrarAdministrarProyectos(){
+  const q=String(document.getElementById('admProyBuscar')?.value||'')
+    .trim()
+    .toLowerCase();
+  const empresaId=String(document.getElementById('admProyEmpresa')?.value||'');
+  const tipo=String(document.getElementById('admProyTipo')?.value||'').toUpperCase();
+  const estado=String(document.getElementById('admProyEstado')?.value||'');
+
+  proyectosAdminFiltrados=proyectos.filter(p=>{
+    const emp=empresaProyectoAdmin(p);
+    const texto=[
+      p.codigo,
+      p.nombre,
+      p.ciudad,
+      p.estado,
+      p.tipo_proyecto,
+      emp?.nombre,
+      emp?.nombre_corto
+    ].map(x=>String(x||'').toLowerCase()).join(' ');
+
+    return (
+      (!q || texto.includes(q)) &&
+      (!empresaId || String(p.empresa_id)===empresaId) &&
+      (!tipo || String(p.tipo_proyecto||'MAPPING').toUpperCase()===tipo) &&
+      (!estado || String(p.estado||'')===estado)
+    );
+  });
+
+  pintarAdministrarProyectos();
+}
+
+function pintarAdministrarProyectos(){
+  const tbody=document.getElementById('admProyTabla');
+  if(!tbody)return;
+
+  if(document.getElementById('admProyTotal')){
+    admProyTotal.textContent=proyectos.length;
+    admProyResultados.textContent=proyectosAdminFiltrados.length;
+    admProyMapping.textContent=proyectos.filter(
+      p=>String(p.tipo_proyecto||'MAPPING').toUpperCase()==='MAPPING'
+    ).length;
+    admProyViabilidad.textContent=proyectos.filter(
+      p=>String(p.tipo_proyecto||'').toUpperCase()==='VIABILIDAD'
+    ).length;
+  }
+
+  tbody.innerHTML=proyectosAdminFiltrados.length
+    ? proyectosAdminFiltrados.map(p=>{
+        const emp=empresaProyectoAdmin(p);
+
+        return `<tr>
+          <td>${esc(emp?.nombre||'SIN EMPRESA')}</td>
+          <td><b>${esc(p.codigo||'')}</b></td>
+          <td>${esc(p.nombre||'')}</td>
+          <td>${esc(p.ciudad||'—')}</td>
+          <td><span class="roleBadge ${String(p.tipo_proyecto||'').toLowerCase()}">${esc(p.tipo_proyecto||'MAPPING')}</span></td>
+          <td>${esc(p.estado||'—')}</td>
+          <td>${esc(fechaCortaAdmin(p.created_at))}</td>
+          <td>
+            <div class="projectAdminActions">
+              <button class="btn small blue" onclick="verProyectoDesdeAdmin('${esc(p.id)}')">Ver mapa</button>
+              <button class="btn small danger" onclick="prepararEliminarProyecto('${esc(p.id)}')">Eliminar</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8">No hay proyectos que coincidan con los filtros.</td></tr>';
+}
+
+function abrirAdministrarProyectos(){
+  if(perfil?.rol!=='admin'){
+    alert('Solo un administrador puede eliminar proyectos.');
+    return;
+  }
+
+  llenarFiltrosAdministrarProyectos();
+  proyectosAdminFiltrados=[...proyectos];
+  filtrarAdministrarProyectos();
+  document.getElementById('adminProyectosModal')?.classList.add('open');
+}
+
+function cerrarAdministrarProyectos(){
+  document.getElementById('adminProyectosModal')?.classList.remove('open');
+}
+
+async function refrescarAdministrarProyectos(){
+  await cargarProyectos();
+  llenarSelects();
+  llenarFiltrosAdministrarProyectos();
+  filtrarAdministrarProyectos();
+}
+
+function verProyectoDesdeAdmin(proyectoId){
+  const p=proyectos.find(x=>String(x.id)===String(proyectoId));
+  if(!p)return;
+
+  const emp=p.empresa_id||'';
+
+  if(document.getElementById('fEmpresa')){
+    fEmpresa.value=emp;
+    filtrarProyectosPorEmpresa();
+  }
+
+  setTimeout(()=>{
+    if(document.getElementById('fProyecto')){
+      const existe=[...fProyecto.options].some(o=>String(o.value)===String(proyectoId));
+      if(existe){
+        fProyecto.value=proyectoId;
+        cargarProyectoMapa();
+      }
+    }
+  },0);
+
+  cerrarAdministrarProyectos();
+}
+
+async function contarFilasProyecto(tabla,proyectoId){
+  const {count,error}=await sb
+    .from(tabla)
+    .select('*',{count:'exact',head:true})
+    .eq('proyecto_id',proyectoId);
+
+  if(error){
+    console.warn(`No se pudo contar ${tabla}:`,error);
+    return null;
+  }
+
+  return Number(count||0);
+}
+
+async function contarFotosProyecto(proyectoId){
+  const {data:p,error}=await sb
+    .from('mapping_puntos')
+    .select('id')
+    .eq('proyecto_id',proyectoId);
+
+  if(error){
+    console.warn('No se pudieron obtener puntos para contar fotos:',error);
+    return null;
+  }
+
+  const ids=(p||[]).map(x=>x.id).filter(Boolean);
+  if(!ids.length)return 0;
+
+  let total=0;
+  const lote=150;
+
+  for(let i=0;i<ids.length;i+=lote){
+    const parte=ids.slice(i,i+lote);
+
+    const {count,error:err}=await sb
+      .from('mapping_punto_fotos')
+      .select('*',{count:'exact',head:true})
+      .in('punto_id',parte);
+
+    if(err){
+      console.warn('No se pudieron contar fotos:',err);
+      return null;
+    }
+
+    total+=Number(count||0);
+  }
+
+  return total;
+}
+
+async function prepararEliminarProyecto(proyectoId){
+  if(perfil?.rol!=='admin'){
+    alert('Solo un administrador puede eliminar proyectos.');
+    return;
+  }
+
+  const p=proyectos.find(x=>String(x.id)===String(proyectoId));
+  if(!p)return alert('No se encontró el proyecto seleccionado.');
+
+  proyectoPendienteEliminar=p;
+  const emp=empresaProyectoAdmin(p);
+  const frase=`ELIMINAR ${String(p.codigo||'PROYECTO').trim()}`;
+
+  eliminarProyectoId.value=p.id;
+  eliminarProyectoInfo.innerHTML=
+    `<b>${esc(p.codigo||'')}</b> · ${esc(p.nombre||'')}<br>`+
+    `${esc(emp?.nombre||'SIN EMPRESA')} · ${esc(p.ciudad||'')} · ${esc(p.tipo_proyecto||'MAPPING')}`;
+
+  eliminarProyectoFrase.textContent=frase;
+  eliminarProyectoConfirmacion.value='';
+  btnConfirmarEliminarProyecto.disabled=true;
+  eliminarProyectoEstado.textContent='Consultando información asociada al proyecto...';
+
+  delImpactPuntos.textContent='…';
+  delImpactFotos.textContent='…';
+  delImpactAsignaciones.textContent='…';
+  delImpactPoligonos.textContent='…';
+
+  document.getElementById('eliminarProyectoModal')?.classList.add('open');
+
+  const [puntosCount,fotosCount,asigCount,polyCount]=await Promise.all([
+    contarFilasProyecto('mapping_puntos',p.id),
+    contarFotosProyecto(p.id),
+    contarFilasProyecto('mapping_proyecto_tecnicos',p.id),
+    contarFilasProyecto('mapping_poligonos',p.id)
+  ]);
+
+  if(!proyectoPendienteEliminar || String(proyectoPendienteEliminar.id)!==String(p.id))return;
+
+  delImpactPuntos.textContent=puntosCount??'N/D';
+  delImpactFotos.textContent=fotosCount??'N/D';
+  delImpactAsignaciones.textContent=asigCount??'N/D';
+  delImpactPoligonos.textContent=polyCount??'N/D';
+
+  eliminarProyectoEstado.textContent=
+    'Revisa el impacto y escribe exactamente la frase indicada para habilitar la eliminación.';
+}
+
+function cerrarEliminarProyecto(){
+  if(eliminacionProyectoEnCurso)return;
+  document.getElementById('eliminarProyectoModal')?.classList.remove('open');
+  proyectoPendienteEliminar=null;
+  if(document.getElementById('eliminarProyectoConfirmacion')){
+    eliminarProyectoConfirmacion.value='';
+  }
+}
+
+function validarFraseEliminarProyecto(){
+  const p=proyectoPendienteEliminar;
+  const input=document.getElementById('eliminarProyectoConfirmacion');
+  const btn=document.getElementById('btnConfirmarEliminarProyecto');
+  const estado=document.getElementById('eliminarProyectoEstado');
+
+  if(!p||!input||!btn)return false;
+
+  const esperada=`ELIMINAR ${String(p.codigo||'PROYECTO').trim()}`;
+  const coincide=input.value===esperada;
+
+  btn.disabled=!coincide || eliminacionProyectoEnCurso;
+
+  if(estado){
+    estado.textContent=coincide
+      ? '✓ Confirmación correcta. Ya puedes ejecutar la eliminación total.'
+      : 'La frase debe coincidir exactamente, incluyendo espacios y mayúsculas.';
+  }
+
+  return coincide;
+}
+
+async function borrarFotosDePuntos(ids){
+  if(!ids.length)return;
+
+  const lote=100;
+
+  for(let i=0;i<ids.length;i+=lote){
+    const parte=ids.slice(i,i+lote);
+
+    const {error}=await sb
+      .from('mapping_punto_fotos')
+      .delete()
+      .in('punto_id',parte);
+
+    if(error)throw new Error('Fotos: '+error.message);
+  }
+}
+
+async function eliminarProyectoDefinitivamente(){
+  if(eliminacionProyectoEnCurso)return;
+  if(perfil?.rol!=='admin')return alert('Solo un administrador puede eliminar proyectos.');
+
+  const p=proyectoPendienteEliminar;
+  if(!p)return alert('No hay un proyecto seleccionado para eliminar.');
+  if(!validarFraseEliminarProyecto())return;
+
+  const proyectoId=p.id;
+  const codigo=p.codigo||'PROYECTO';
+
+  eliminacionProyectoEnCurso=true;
+  btnConfirmarEliminarProyecto.disabled=true;
+  eliminarProyectoConfirmacion.disabled=true;
+  eliminarProyectoEstado.textContent='Eliminando información asociada... No cierres esta ventana.';
+
+  try{
+    // 1. Obtener IDs de puntos antes de eliminarlos.
+    const {data:puntosProyecto,error:errorIds}=await sb
+      .from('mapping_puntos')
+      .select('id')
+      .eq('proyecto_id',proyectoId);
+
+    if(errorIds)throw new Error('Puntos: '+errorIds.message);
+
+    const ids=(puntosProyecto||[]).map(x=>x.id).filter(Boolean);
+
+    // 2. Fotografías vinculadas a puntos.
+    await borrarFotosDePuntos(ids);
+
+    // 3. Puntos.
+    {
+      const {error}=await sb.from('mapping_puntos').delete().eq('proyecto_id',proyectoId);
+      if(error)throw new Error('Puntos: '+error.message);
+    }
+
+    // 4. Asignaciones de polígonos a técnicos.
+    {
+      const {error}=await sb.from('mapping_tecnico_poligonos').delete().eq('proyecto_id',proyectoId);
+      if(error)throw new Error('Asignaciones de polígonos: '+error.message);
+    }
+
+    // 5. Ubicación en vivo asociada al proyecto.
+    {
+      const {error}=await sb.from('mapping_tecnico_ubicacion').delete().eq('proyecto_id',proyectoId);
+      if(error && !String(error.message||'').toLowerCase().includes('does not exist')){
+        throw new Error('Ubicación de técnicos: '+error.message);
+      }
+    }
+
+    // 6. Asignaciones de proyecto a técnicos.
+    {
+      const {error}=await sb.from('mapping_proyecto_tecnicos').delete().eq('proyecto_id',proyectoId);
+      if(error)throw new Error('Asignaciones de técnicos: '+error.message);
+    }
+
+    // 7. Catálogo de polígonos.
+    {
+      const {error}=await sb.from('mapping_poligonos').delete().eq('proyecto_id',proyectoId);
+      if(error)throw new Error('Polígonos: '+error.message);
+    }
+
+    // 8. Proyecto.
+    {
+      const {error}=await sb.from('mapping_proyectos').delete().eq('id',proyectoId);
+      if(error)throw new Error('Proyecto: '+error.message);
+    }
+
+    // Limpiar seguimiento si era el proyecto visible.
+    if(String(tecnicoLiveProyectoId||'')===String(proyectoId)){
+      detenerSeguimientoTecnicosMaster();
+    }
+
+    proyectoPendienteEliminar=null;
+    document.getElementById('eliminarProyectoModal')?.classList.remove('open');
+
+    alert(
+      `Proyecto eliminado definitivamente.\n\n`+
+      `Código: ${codigo}\n`+
+      `Se eliminaron sus datos asociados en MAPPING.`
+    );
+
+    // Recarga catálogo, asignaciones y mapa.
+    await cargarProyectos();
+    await cargarAsignaciones();
+    llenarSelects();
+    actualizarKpis();
+    llenarFiltrosAdministrarProyectos();
+    filtrarAdministrarProyectos();
+
+    if(!fProyecto.value && proyectos.length){
+      fProyecto.value=proyectos[0].id;
+    }
+
+    await cargarProyectoMapa();
+
+  }catch(e){
+    console.error('Eliminación total de proyecto:',e);
+    eliminarProyectoEstado.innerHTML=
+      `<span style="color:#fca5a5"><b>No se pudo completar la eliminación.</b><br>${esc(e?.message||e)}</span>`;
+
+    alert(
+      'No se pudo completar la eliminación total del proyecto.\n\n'+
+      (e?.message||e)+
+      '\n\nNo vuelvas a confirmar hasta revisar el mensaje mostrado.'
+    );
+  }finally{
+    eliminacionProyectoEnCurso=false;
+
+    if(document.getElementById('eliminarProyectoConfirmacion')){
+      eliminarProyectoConfirmacion.disabled=false;
+    }
+
+    validarFraseEliminarProyecto();
+  }
+}
+
+async function cargarProyectos(){
+  const {data,error}=await sb
+    .from('mapping_proyectos')
+    .select('*')
+    .order('created_at',{ascending:false});
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  proyectos=data||[];
+  kProyectos.textContent=proyectos.length;
+
+  if(document.getElementById('adminProyectosModal')?.classList.contains('open')){
+    llenarFiltrosAdministrarProyectos();
+    filtrarAdministrarProyectos();
+  }
+}
 async function cargarUsuarios(){
   const {data,error}=await sb
     .from('mapping_usuarios')
@@ -5110,4 +5740,5 @@ document.addEventListener('keydown',function(e){
 </script>
 </body>
 </html>
+
 
