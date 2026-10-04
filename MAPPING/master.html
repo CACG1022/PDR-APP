@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V55 - Gestión de roles de usuarios</title>
+<title>Master Mapping & Site Survey - V62 - Filtro y análisis por polígono</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -716,6 +716,747 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   font-size:9px;
 }
 
+
+/* ===== CARTOGRAFÍA DE PROYECTO ===== */
+.cartographyCard{
+  border:1px solid #28506f;
+}
+.cartographyStatus{
+  margin-top:9px;
+  border:1px solid #334155;
+  border-radius:10px;
+  background:#07111f;
+  padding:9px 10px;
+  color:#cbd5e1;
+  font-size:10px;
+  line-height:1.45;
+}
+.cartographyStatus.ok{border-color:#166534;color:#bbf7d0}
+.cartographyStatus.warn{border-color:#92400e;color:#fde68a}
+.cartographyStatus.error{border-color:#991b1b;color:#fecaca}
+.cartographyActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:9px;
+}
+.cartographyMeta{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:8px;
+}
+.cartographyMeta>div{
+  background:#0b1928;
+  border:1px solid #334155;
+  border-radius:9px;
+  padding:7px 8px;
+}
+.cartographyMeta span{display:block;color:#94a3b8;font-size:8px;font-weight:900}
+.cartographyMeta b{display:block;font-size:10px;margin-top:2px;word-break:break-word}
+@media(max-width:760px){
+  .cartographyActions,.cartographyMeta{grid-template-columns:1fr}
+}
+
+
+/* ===== V57 · MENÚ SUPERIOR + GESTIÓN MODULAR ===== */
+.topHeaderActions{
+  overflow-x:auto;
+  scrollbar-width:thin;
+  padding-bottom:2px;
+}
+.topActionBtn.managementBtn{
+  background:#102d46;
+  border-color:#2c6f96;
+}
+.topActionBtn.managementBtn:hover{
+  background:#16466b;
+  border-color:#38bdf8;
+}
+.layout{grid-template-columns:300px 1fr}
+aside.mapFiltersSidebar{padding:12px}
+.mapFilterCard{
+  background:linear-gradient(180deg,#13263a,#0d1b2a);
+  border:1px solid #29415d;
+}
+.mapFilterCard h3{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.mapFilterActions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.mapFilterActions .btn{margin-top:0}
+.sidebarLegend{
+  display:grid;
+  gap:7px;
+  font-size:10px;
+  color:#cbd5e1;
+}
+.sidebarLegend div{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.managementModal{width:min(1420px,98vw);margin:1vh auto}
+.managementIntro{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  border:1px solid #29415d;
+  background:#07111f;
+  border-radius:12px;
+  padding:9px 11px;
+  margin-bottom:10px;
+}
+.managementIntro small{color:#94a3b8}
+.managementGrid2{
+  display:grid;
+  grid-template-columns:minmax(300px,.72fr) minmax(500px,1.28fr);
+  gap:10px;
+}
+.managementPanel{
+  background:#102236;
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:11px;
+  min-width:0;
+}
+.managementPanel h3{margin:0 0 8px;color:#baf7f2;font-size:13px}
+.managementSearch{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:7px;
+  align-items:end;
+  margin-bottom:8px;
+}
+.managementSearch .btn{margin:0}
+.managementTable{min-width:900px}
+.managementTable.users{min-width:1050px}
+.rowActions{display:flex;gap:5px;flex-wrap:wrap}
+.projectTabs{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  padding:8px;
+  border:1px solid var(--line);
+  background:#07111f;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+.projectTabBtn{
+  width:auto;
+  border:1px solid #31506e;
+  border-radius:9px;
+  background:#13263a;
+  color:#e2e8f0;
+  padding:8px 10px;
+  font-weight:900;
+  font-size:10px;
+}
+.projectTabBtn.active{
+  background:#0c7ea0;
+  border-color:#22d3ee;
+  color:#fff;
+}
+.projectTabPanel{display:none}
+.projectTabPanel.active{display:block}
+.projectSectionGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.projectSectionGrid .span2{grid-column:1/-1}
+.projectSubCard{
+  background:#102236;
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:11px;
+}
+.projectSubCard h3,.projectSubCard h4{margin:0 0 8px;color:#baf7f2}
+.projectOverviewActions{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.projectOverviewActions .btn{margin:0}
+.polyDistributionSummary{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:10px 0;
+}
+.polyDistributionSummary .kpi{min-height:56px}
+.polyDistributionGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.polyDistributionItem{
+  border:1px solid #334155;
+  border-radius:11px;
+  background:#07111f;
+  padding:9px;
+  min-width:0;
+}
+.polyDistributionItem.busy{border-color:#f59e0b}
+.polyDistributionItem.free{border-color:#22c55e}
+.polyDistributionItem b{display:block;font-size:11px;color:#fff}
+.polyDistributionItem span{display:block;font-size:9px;color:#94a3b8;margin-top:3px}
+.polyDistributionItem .polyOwner{color:#fde68a;font-weight:800}
+.polyDistributionItem.free .polyOwner{color:#86efac}
+.inlineStatus{
+  display:inline-block;
+  padding:3px 7px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:900;
+}
+.inlineStatus.active{background:#166534}
+.inlineStatus.inactive{background:#7f1d1d}
+.editFormGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+@media(max-width:1000px){
+  .layout{grid-template-columns:260px 1fr}
+  .managementGrid2,.projectSectionGrid{grid-template-columns:1fr}
+  .projectSectionGrid .span2{grid-column:auto}
+  .polyDistributionGrid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  aside.mapFiltersSidebar{height:auto}
+  .polyDistributionGrid{grid-template-columns:1fr}
+  .managementGrid2{grid-template-columns:1fr}
+}
+
+
+#adminProyectosModal .projectTabPanel{display:none!important}
+#adminProyectosModal .projectTabPanel.active{display:block!important}
+#adminProyectosModal .projectTabPanel.adminOnly[style*="display: none"]{display:none!important}
+
+
+/* ===== V58 · MAPA AVANZADO ===== */
+.topHeaderActions{
+  overflow:visible!important;
+}
+.deliverablesTop{z-index:30000!important}
+.deliverablesDropdown{
+  position:fixed!important;
+  top:66px!important;
+  right:14px!important;
+  left:auto!important;
+  z-index:30001!important;
+  max-height:calc(100vh - 82px);
+  overflow-y:auto;
+}
+
+.mapAdvancedFilters{
+  display:grid;
+  gap:7px;
+}
+.mapAdvancedFilters .filterGroup{
+  border:1px solid #29415d;
+  border-radius:11px;
+  padding:8px;
+  background:#081725;
+}
+.mapAdvancedFilters .filterGroup h4{
+  margin:0 0 6px;
+  font-size:10px;
+  color:#7dd3fc;
+}
+.mapAdvancedGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+.mapAdvancedGrid label{
+  margin-top:2px;
+}
+.mapAdvancedGrid select{
+  padding:7px;
+  font-size:10px;
+}
+.mapLayerButtons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+.mapLayerButtons button{
+  margin:0!important;
+}
+.mapLayerButtons button.layerOn{
+  background:#0f766e!important;
+  border:1px solid #2dd4bf!important;
+}
+.mapLayerButtons button.layerOff{
+  background:#334155!important;
+  border:1px solid #64748b!important;
+}
+.mapLayerButtons button:disabled{
+  opacity:.42;
+  cursor:not-allowed;
+}
+.connectionDistanceLabel{
+  background:transparent!important;
+  border:0!important;
+}
+.connectionDistanceLabel:before{display:none!important}
+.connectionDistanceBadge{
+  display:inline-block;
+  transform:translate(-50%,-50%);
+  white-space:nowrap;
+  pointer-events:none;
+  background:rgba(15,23,42,.92);
+  border:1px solid #ff2bd6;
+  color:#ff2bd6;
+  border-radius:7px;
+  padding:3px 6px;
+  font-size:10px;
+  line-height:1.15;
+  font-weight:900;
+  box-shadow:0 1px 5px rgba(0,0,0,.45);
+  text-shadow:0 0 5px rgba(255,43,214,.22);
+}
+.masterCartographyPopup{
+  max-width:280px;
+  font-size:10px;
+  line-height:1.35;
+}
+.mapFilterCounter{
+  font-size:9px;
+  color:#7dd3fc;
+  margin-top:6px;
+  font-weight:800;
+}
+@media(max-width:900px){
+  .deliverablesDropdown{
+    top:66px!important;
+    right:8px!important;
+    left:8px!important;
+    width:auto!important;
+  }
+  .mapAdvancedGrid{grid-template-columns:1fr}
+}
+
+
+/* ===== V59 · HEADER MINIMALISTA FUTURISTA PROFESIONAL ===== */
+.topHeaderActions{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:nowrap!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  padding:4px 2px 5px!important;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(125,211,252,.28) transparent;
+}
+.topHeaderActions::-webkit-scrollbar{height:4px}
+.topHeaderActions::-webkit-scrollbar-track{background:transparent}
+.topHeaderActions::-webkit-scrollbar-thumb{
+  background:rgba(125,211,252,.28);
+  border-radius:999px;
+}
+
+/* Todos los botones superiores comparten exactamente el mismo lenguaje visual */
+.topHeaderActions .topActionBtn,
+.topHeaderActions .deliverablesBtn{
+  position:relative;
+  isolation:isolate;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  min-height:38px!important;
+  padding:9px 13px!important;
+  margin:0!important;
+
+  border:1px solid rgba(125,211,252,.22)!important;
+  border-radius:11px!important;
+  background:
+    linear-gradient(180deg,rgba(18,36,55,.76),rgba(9,22,35,.76))!important;
+  color:#e8f4fb!important;
+
+  font-size:10px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.22px!important;
+  white-space:nowrap!important;
+  text-decoration:none!important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 5px 18px rgba(0,0,0,.16)!important;
+
+  backdrop-filter:blur(10px) saturate(115%);
+  -webkit-backdrop-filter:blur(10px) saturate(115%);
+
+  cursor:pointer!important;
+  overflow:hidden!important;
+  transition:
+    transform .16s ease,
+    border-color .16s ease,
+    background .16s ease,
+    box-shadow .16s ease,
+    color .16s ease!important;
+}
+
+/* Línea tecnológica muy sutil en la parte superior */
+.topHeaderActions .topActionBtn::before,
+.topHeaderActions .deliverablesBtn::before{
+  content:"";
+  position:absolute;
+  left:16%;
+  right:16%;
+  top:0;
+  height:1px;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(103,232,249,.8),
+    transparent
+  );
+  opacity:.34;
+  pointer-events:none;
+  transition:opacity .16s ease,left .16s ease,right .16s ease;
+}
+
+/* Barrido de luz muy controlado */
+.topHeaderActions .topActionBtn::after,
+.topHeaderActions .deliverablesBtn::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 25%,
+      rgba(255,255,255,.035) 45%,
+      rgba(103,232,249,.07) 50%,
+      rgba(255,255,255,.035) 55%,
+      transparent 75%
+    );
+  transform:translateX(-115%);
+  transition:transform .42s ease;
+  pointer-events:none;
+}
+
+.topHeaderActions .topActionBtn:hover,
+.topHeaderActions .deliverablesBtn:hover{
+  transform:translateY(-1px)!important;
+  border-color:rgba(103,232,249,.62)!important;
+  background:
+    linear-gradient(180deg,rgba(20,47,69,.9),rgba(9,28,43,.9))!important;
+  color:#ffffff!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 7px 22px rgba(0,0,0,.2),
+    0 0 0 1px rgba(103,232,249,.07),
+    0 0 18px rgba(34,211,238,.08)!important;
+}
+
+.topHeaderActions .topActionBtn:hover::before,
+.topHeaderActions .deliverablesBtn:hover::before{
+  left:8%;
+  right:8%;
+  opacity:.9;
+}
+
+.topHeaderActions .topActionBtn:hover::after,
+.topHeaderActions .deliverablesBtn:hover::after{
+  transform:translateX(115%);
+}
+
+.topHeaderActions .topActionBtn:active,
+.topHeaderActions .deliverablesBtn:active{
+  transform:translateY(0) scale(.985)!important;
+  box-shadow:
+    inset 0 1px 4px rgba(0,0,0,.25),
+    0 3px 10px rgba(0,0,0,.15)!important;
+}
+
+/* Estado de foco profesional y accesible */
+.topHeaderActions .topActionBtn:focus-visible,
+.topHeaderActions .deliverablesBtn:focus-visible{
+  outline:none!important;
+  border-color:#67e8f9!important;
+  box-shadow:
+    0 0 0 2px rgba(103,232,249,.16),
+    0 0 20px rgba(34,211,238,.09)!important;
+}
+
+/* Eliminar estilos especiales anteriores para Empresas/Usuarios/Proyectos */
+.topActionBtn.managementBtn{
+  background:
+    linear-gradient(180deg,rgba(18,36,55,.76),rgba(9,22,35,.76))!important;
+  border-color:rgba(125,211,252,.22)!important;
+}
+.topActionBtn.managementBtn:hover{
+  background:
+    linear-gradient(180deg,rgba(20,47,69,.9),rgba(9,28,43,.9))!important;
+  border-color:rgba(103,232,249,.62)!important;
+}
+
+/* Entregables debe verse idéntico al resto */
+.deliverablesTop{
+  position:relative!important;
+  display:inline-flex!important;
+  align-items:center!important;
+}
+.deliverablesBtn{
+  width:auto!important;
+}
+
+/* Pequeño indicador de menú desplegable */
+.deliverablesBtn .deliverablesChevron,
+.deliverablesBtn::marker{
+  color:#67e8f9;
+}
+
+/* Menú desplegable coherente con el nuevo header */
+.deliverablesDropdown{
+  border:1px solid rgba(125,211,252,.25)!important;
+  border-radius:13px!important;
+  background:rgba(7,17,31,.97)!important;
+  box-shadow:
+    0 18px 50px rgba(0,0,0,.38),
+    0 0 0 1px rgba(103,232,249,.04)!important;
+  backdrop-filter:blur(14px) saturate(120%);
+  -webkit-backdrop-filter:blur(14px) saturate(120%);
+  padding:7px!important;
+}
+
+.deliverablesDropdown button,
+.deliverablesDropdown .deliverableItem{
+  border:1px solid transparent!important;
+  border-radius:9px!important;
+  background:transparent!important;
+  color:#dbeafe!important;
+  transition:
+    background .14s ease,
+    border-color .14s ease,
+    transform .14s ease!important;
+}
+.deliverablesDropdown button:hover,
+.deliverablesDropdown .deliverableItem:hover{
+  background:rgba(14,116,144,.14)!important;
+  border-color:rgba(103,232,249,.22)!important;
+  transform:translateX(2px);
+}
+
+/* En pantallas angostas conservamos estilo sin deformar */
+@media(max-width:1100px){
+  .topHeaderActions .topActionBtn,
+  .topHeaderActions .deliverablesBtn{
+    min-height:36px!important;
+    padding:8px 11px!important;
+    font-size:9px!important;
+  }
+}
+@media(max-width:700px){
+  .topHeaderActions{
+    gap:6px!important;
+  }
+  .topHeaderActions .topActionBtn,
+  .topHeaderActions .deliverablesBtn{
+    min-height:35px!important;
+    padding:8px 10px!important;
+    border-radius:10px!important;
+  }
+}
+
+/* Respeto a usuarios con reducción de movimiento */
+@media(prefers-reduced-motion:reduce){
+  .topHeaderActions .topActionBtn,
+  .topHeaderActions .deliverablesBtn,
+  .topHeaderActions .topActionBtn::before,
+  .topHeaderActions .deliverablesBtn::before,
+  .topHeaderActions .topActionBtn::after,
+  .topHeaderActions .deliverablesBtn::after{
+    transition:none!important;
+  }
+}
+
+
+.topHeaderActions .headerActionActive{
+  border-color:rgba(103,232,249,.74)!important;
+  color:#ffffff!important;
+  background:
+    linear-gradient(180deg,rgba(15,74,91,.82),rgba(8,39,53,.82))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.055),
+    0 0 0 1px rgba(103,232,249,.08),
+    0 0 18px rgba(34,211,238,.10)!important;
+}
+
+
+/* ===== V60 · HEADER CORPORATIVO PROFESIONAL ===== */
+.topHeaderActions .topActionBtn,
+.topHeaderActions .deliverablesBtn{
+  gap:0!important;
+  min-height:37px!important;
+  padding:9px 15px!important;
+
+  border:1px solid rgba(148,163,184,.24)!important;
+  border-radius:8px!important;
+  background:
+    linear-gradient(180deg,rgba(15,27,42,.94),rgba(9,18,30,.94))!important;
+
+  color:#e5edf5!important;
+  font-size:10px!important;
+  font-weight:750!important;
+  letter-spacing:.34px!important;
+  text-transform:none!important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 4px 14px rgba(0,0,0,.18)!important;
+
+  transition:
+    transform .14s ease,
+    border-color .14s ease,
+    background .14s ease,
+    box-shadow .14s ease,
+    color .14s ease!important;
+}
+
+/* Línea superior casi imperceptible, más ejecutiva */
+.topHeaderActions .topActionBtn::before,
+.topHeaderActions .deliverablesBtn::before{
+  left:20%!important;
+  right:20%!important;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(125,211,252,.48),
+    transparent
+  )!important;
+  opacity:.20!important;
+}
+
+/* Sin barrido animado para evitar apariencia "gaming" */
+.topHeaderActions .topActionBtn::after,
+.topHeaderActions .deliverablesBtn::after{
+  display:none!important;
+}
+
+.topHeaderActions .topActionBtn:hover,
+.topHeaderActions .deliverablesBtn:hover{
+  transform:translateY(-1px)!important;
+  border-color:rgba(125,211,252,.46)!important;
+  background:
+    linear-gradient(180deg,rgba(18,35,52,.98),rgba(10,24,38,.98))!important;
+  color:#ffffff!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 6px 18px rgba(0,0,0,.22),
+    0 0 0 1px rgba(125,211,252,.035)!important;
+}
+
+.topHeaderActions .topActionBtn:hover::before,
+.topHeaderActions .deliverablesBtn:hover::before{
+  opacity:.55!important;
+  left:14%!important;
+  right:14%!important;
+}
+
+.topHeaderActions .headerActionActive{
+  border-color:rgba(103,232,249,.58)!important;
+  color:#ffffff!important;
+  background:
+    linear-gradient(180deg,rgba(12,53,68,.94),rgba(8,31,43,.94))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 0 0 1px rgba(103,232,249,.05),
+    0 0 14px rgba(34,211,238,.06)!important;
+}
+
+/* Las categorías administrativas tampoco llevan iconografía decorativa */
+.topActionBtn.managementBtn{
+  background:
+    linear-gradient(180deg,rgba(15,27,42,.94),rgba(9,18,30,.94))!important;
+  border-color:rgba(148,163,184,.24)!important;
+}
+.topActionBtn.managementBtn:hover{
+  background:
+    linear-gradient(180deg,rgba(18,35,52,.98),rgba(10,24,38,.98))!important;
+  border-color:rgba(125,211,252,.46)!important;
+}
+
+
+/* ===== V61 · BOTONES SUPERIORES EN AZUL PETRÓLEO CORPORATIVO ===== */
+.topHeaderActions .topActionBtn,
+.topHeaderActions .deliverablesBtn{
+  background:#0C7EA0!important;
+  border-color:rgba(255,255,255,.18)!important;
+  color:#ffffff!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 4px 14px rgba(0,0,0,.16)!important;
+}
+
+.topHeaderActions .topActionBtn::before,
+.topHeaderActions .deliverablesBtn::before{
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.52),
+    transparent
+  )!important;
+  opacity:.20!important;
+}
+
+.topHeaderActions .topActionBtn:hover,
+.topHeaderActions .deliverablesBtn:hover{
+  background:#1092B8!important;
+  border-color:rgba(255,255,255,.35)!important;
+  color:#ffffff!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 6px 18px rgba(0,0,0,.20),
+    0 0 14px rgba(12,126,160,.24)!important;
+}
+
+.topHeaderActions .topActionBtn:active,
+.topHeaderActions .deliverablesBtn:active{
+  background:#0A6C89!important;
+}
+
+.topHeaderActions .headerActionActive{
+  background:#095F79!important;
+  border-color:rgba(255,255,255,.38)!important;
+  color:#ffffff!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 0 0 1px rgba(255,255,255,.04),
+    0 0 14px rgba(12,126,160,.28)!important;
+}
+
+/* Empresas / Usuarios / Proyectos quedan exactamente con el mismo fondo */
+.topActionBtn.managementBtn{
+  background:#0C7EA0!important;
+  border-color:rgba(255,255,255,.18)!important;
+}
+.topActionBtn.managementBtn:hover{
+  background:#1092B8!important;
+  border-color:rgba(255,255,255,.35)!important;
+}
+
+
+/* ===== V62 · FILTRO POR POLÍGONO ===== */
+#fPoligono{
+  border-color:rgba(12,126,160,.72);
+}
+#fPoligono:focus{
+  border-color:#38bdf8;
+  box-shadow:0 0 0 2px rgba(56,189,248,.10);
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -755,13 +1496,15 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 <div id="authChecking" class="authChecking">Validando acceso MASTER...</div>
 
 <header>
-  <div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · levantamiento de infraestructura</small></div></div>
+  <div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · filtros avanzados · entregables</small></div></div>
   <div class="topHeaderActions">
-    <button class="topActionBtn" onclick="abrirDashboardAvances()">📊 Reporte de avances</button>
-    <button class="topActionBtn" onclick="abrirModalAsignaciones()">👷 Ver / filtrar asignaciones</button>
-    <button class="topActionBtn adminOnly" onclick="abrirAdministrarProyectos()">🗂️ Administrar proyectos</button>
+    <button class="topActionBtn adminOnly managementBtn" onclick="abrirGestionEmpresas()">Empresas</button>
+    <button class="topActionBtn adminOnly managementBtn" onclick="abrirGestionUsuarios()">Usuarios</button>
+    <button class="topActionBtn managementBtn" onclick="abrirAdministrarProyectos()">Proyectos</button>
+    <button class="topActionBtn" onclick="abrirDashboardAvances()">Reporte de avances</button>
+    <button class="topActionBtn" onclick="abrirModalAsignaciones()">Asignaciones</button>
     <div class="deliverablesTop" id="deliverablesTop">
-      <button class="topActionBtn deliverablesTrigger" type="button" onclick="toggleEntregables(event)">◇ ENTREGABLES <span class="deliverablesArrow">⌄</span></button>
+      <button class="topActionBtn deliverablesTrigger deliverablesBtn" type="button" onclick="toggleEntregables(event)">◇ ENTREGABLES <span class="deliverablesArrow">⌄</span></button>
       <div class="deliverablesDropdown" id="entregablesMenu">
         <div class="deliverablesTitle">CENTRO DE ENTREGABLES</div>
         <a class="deliverableItem" href="https://drive.google.com/uc?export=download&id=1X6Wy1qzVj1OOGBt-jXqzUI7pyLAGdKAd" target="_blank" rel="noopener noreferrer">
@@ -790,100 +1533,97 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   </div>
 </header>
 <div class="layout">
-<aside>
-  <div class="card adminOnly"><h3>Empresas</h3>
-  <div class="grid2"><div><label>Nombre empresa *</label><input id="eNombre" placeholder="Ej: Liberty Networks"></div><div><label>Nombre corto</label><input id="eNombreCorto" placeholder="Ej: LIBERTY"></div></div>
-  <div class="grid2"><div><label>NIT</label><input id="eNit" placeholder="900123456-7"></div><div><label>Ciudad</label><input id="eCiudad" placeholder="Bogotá D.C"></div></div>
-  <button class="btn blue" onclick="crearEmpresa()">Crear empresa</button>
-  <div id="listaEmpresas" class="hint" style="margin-top:10px">Cargando empresas...</div>
-</div>
-<div class="card adminOnly"><h3>Usuarios</h3>
-  <label>Empresa *</label>
-  <select id="uEmpresa"><option value="">Seleccione empresa...</option></select>
-  <label>Nombre</label><input id="uNombre" placeholder="Nombre del usuario">
-  <label>Correo *</label><input id="uEmail" type="email" placeholder="tecnico@empresa.com">
-  <label>Contraseña temporal *</label><input id="uPassword" type="password" placeholder="Mínimo 6 caracteres">
-  <label>Rol</label><select id="uRol"><option value="tecnico">Técnico</option><option value="coordinador">Coordinador</option><option value="admin">Administrador</option></select>
-  <button class="btn purple" onclick="crearUsuarioMapping()">Crear usuario</button>
-  <div id="uMsg" class="hint">Los usuarios se crean en Supabase Auth y en mapping_usuarios.</div>
-  <div class="tableWrap userTable"><table class="table" style="min-width:760px"><thead><tr><th>Nombre</th><th>Empresa</th><th>Correo</th><th>Rol actual</th><th>Modificar rol</th><th>Estado</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div>
-</div>
-<div class="card"><div class="adminOnly"><h3>Crear proyecto + POLIGONOS.geojson</h3>
-  <label>Empresa *</label><select id="pEmpresa"></select>
-  <div class="grid2"><div><label>Código *</label><input id="pCodigo" placeholder="EYCO-2026-BTA-01"></div><div><label>Ciudad</label><input id="pCiudad" placeholder="Bogotá D.C"></div></div>
-  <div class="grid2">
-    <div><label>Nombre *</label><input id="pNombre" placeholder="Mapping Bogotá Veracruz"></div>
-    <div><label>TIPO PROYECTO *</label><select id="pTipoProyecto" onchange="aplicarDefaultFotosProyecto(this.value,true)"><option value="MAPPING">MAPPING</option><option value="VIABILIDAD">VIABILIDAD</option></select></div>
-  </div>
-
-  <div class="projectPhotoConfig" id="pFotoConfigPanel">
-    <div class="projectPhotoConfigHead">
-      <b>📷 Fotografías que verá el técnico</b>
-      <small>
-        Selecciona únicamente las fotografías requeridas por este proyecto.
-        Los campos desmarcados no aparecerán en el formulario del técnico y tampoco serán obligatorios.
-      </small>
+<aside class="mapFiltersSidebar">
+  <div class="card mapFilterCard">
+    <h3>🗺️ Visualización del mapa</h3>
+    <label>Empresa</label>
+    <select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select>
+    <label>Proyecto</label>
+    <select id="fProyecto" onchange="cargarProyectoMapa()"></select>
+    <label>Tipo de elemento</label>
+    <select id="fTipo" onchange="actualizarVisibilidadFiltrosMaster();pintarMapa()">
+      <option value="">Todos los tipos</option>
+      <option>POSTE</option>
+      <option>CANALIZADO</option>
+      <option>C. AMERICANO</option>
+      <option>CERCHA</option>
+    </select>
+    <label>Polígono</label>
+    <select id="fPoligono" onchange="pintarMapa()">
+      <option value="">Todos los polígonos</option>
+    </select>
+    <div class="mapFilterActions" style="margin-top:9px">
+      <button class="btn blue" onclick="cargarProyectoMapa()">⟳ Actualizar mapa</button>
+      <button class="btn liveOn" id="btnLiveTech" onclick="toggleTecnicosTiempoReal()">📍 Técnicos ON</button>
     </div>
-    <div class="projectPhotoConfigGrid" id="pFotoConfigBox"></div>
-    <div class="projectPhotoSummary" id="pFotoConfigResumen">Configurando fotografías...</div>
   </div>
 
-  <label>Descripción</label><textarea id="pDescripcion"></textarea>
-  <label>Nombre del archivo de polígonos *</label>
-  <input id="pGeojsonUrl" placeholder="Ej: POLIGONOS-BTA.geojson o POLIGONOS-BTA.kmz">
-  <div class="hint" style="margin-top:5px">
-    Ruta base automática: <b>https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/</b><br>
-    Puedes escribir solo el nombre del archivo. Si no escribes extensión, se asumirá <b>.geojson</b>.
-  </div>
-  <div class="actions" style="grid-template-columns:1fr 1fr">
-    <button class="btn gray" onclick="leerPoligonosDesdeDriveCrear()">Leer polígonos</button>
-    <button class="btn" onclick="crearProyecto()">Crear proyecto</button>
-  </div>
-  <div id="pGeojsonInfo" class="hint">La URL debe abrir directamente el archivo GeoJSON en el navegador.</div>
-
-  <div class="geoDivider"></div>
-  <h4>Actualizar archivo de polígonos de proyecto existente</h4>
-  <label>Proyecto</label><select id="geoProyectoExistente"></select>
-  <label>Nuevo nombre del archivo de polígonos</label>
-  <input id="geoUrlActualiza" placeholder="Ej: POLIGONOS-BTA-V2.geojson o POLIGONOS-BTA-V2.kmz">
-  <div class="hint" style="margin-top:5px">
-    Se usará automáticamente la ruta <b>https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/</b>
-  </div>
-  <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer archivo / actualizar versión</button>
-
-  </div>
-  <div class="geoDivider"></div>
-  <h4>Actualizar fotografías de proyecto existente</h4>
-  <label>Proyecto</label>
-  <select id="fotoProyectoExistente" onchange="cargarConfigFotosProyectoExistente()"></select>
-  <div class="projectPhotoConfig" id="fotoConfigExistentePanel">
-    <div class="projectPhotoConfigHead">
-      <b>📷 Fotografías habilitadas para el técnico</b>
-      <small>
-        Puedes modificar un proyecto ya creado. Los cambios se aplican cuando el técnico actualiza sus proyectos o vuelve a ingresar.
-      </small>
+  <div class="card mapFilterCard">
+    <h3>🎯 Capas visibles</h3>
+    <div class="mapLayerButtons">
+      <button class="btn layerOn" id="btnConexionesMaster" onclick="toggleConexionesMaster()">🔗 Conexiones ON</button>
+      <button class="btn layerOff" id="btnCartografiaMapaMaster" onclick="toggleCartografiaMapaMaster()" disabled>🗺️ Cartografía OFF</button>
     </div>
-    <div class="projectPhotoConfigGrid" id="fotoConfigExistenteBox"></div>
-    <div class="projectPhotoSummary" id="fotoConfigExistenteResumen">Selecciona un proyecto.</div>
+    <div class="hint" style="margin-top:8px">
+      Las conexiones muestran distancia <b>GPS</b> y, cuando existe, distancia de <b>odómetro</b>.
+      La cartografía corresponde al archivo cargado al proyecto desde el módulo Proyectos.
+    </div>
   </div>
-  <button class="btn blue" onclick="guardarConfigFotosProyectoExistente()">Guardar configuración de fotos</button>
-</div>
-  <div class="card"><h3>Asignar proyecto</h3>
-    <label>Proyecto</label><select id="asigProyecto" onchange="filtrarTecnicosPorProyecto();cargarPoligonosAsignacion()"></select>
-    <label>Técnico</label><select id="asigTecnico" onchange="cargarPoligonosAsignacion()"></select>
-    <label>Polígonos asignados</label>
-    <div id="asigPoligonosBox" class="polyChecks"><div class="hint">Selecciona un proyecto para cargar sus polígonos.</div></div>
-    <button class="btn blue" onclick="asignarProyecto()">Asignar técnico + polígonos</button>
-    <div class="hint">El técnico podrá ver y seleccionar únicamente los polígonos asignados.</div>
+
+  <div class="card mapFilterCard">
+    <h3>🔎 Filtros avanzados</h3>
+    <div class="mapAdvancedFilters">
+
+      <div class="filterGroup" id="masterPosteFilters">
+        <h4>POSTERÍA</h4>
+        <div class="mapAdvancedGrid">
+          <div><label>Rotura</label><select id="mfRotura" onchange="aplicarFiltroPosteMaster(this)"><option value="">Todas</option></select></div>
+          <div><label>Altura</label><select id="mfAltura" onchange="aplicarFiltroPosteMaster(this)"><option value="">Todas</option></select></div>
+          <div><label>Propietario</label><select id="mfPropietarioPoste" onchange="aplicarFiltroPosteMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Nivel de tensión</label><select id="mfTension" onchange="aplicarFiltroPosteMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Material poste</label><select id="mfMaterial" onchange="aplicarFiltroPosteMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Elementos eléctricos</label><select id="mfElectricos" onchange="aplicarFiltroPosteMaster(this)"><option value="">Todos</option></select></div>
+        </div>
+      </div>
+
+      <div class="filterGroup" id="masterCanalizadoFilters">
+        <h4>CANALIZADO</h4>
+        <div class="mapAdvancedGrid">
+          <div><label>Tipo cámara</label><select id="mfTipoCamara" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Propietario</label><select id="mfPropietarioCanal" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Subida a poste</label><select id="mfSubidaPoste" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todas</option></select></div>
+          <div><label>Configuración ductos</label><select id="mfConfDucto" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todas</option></select></div>
+          <div><label>Ducto eléctrico</label><select id="mfDuctoElec" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Ducto TELCO</label><select id="mfDuctoTelco" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Ductos libres</label><select id="mfDuctoLibre" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todos</option></select></div>
+          <div><label>Ducto a utilizar</label><select id="mfDuctoUtil" onchange="aplicarFiltroCanalizadoMaster(this)"><option value="">Todos</option></select></div>
+        </div>
+      </div>
+
+    </div>
+    <button class="btn gray" onclick="limpiarFiltrosAvanzadosMaster()">Limpiar filtros avanzados</button>
+    <div class="mapFilterCounter" id="mapFilterCounter">0 elementos visibles</div>
   </div>
-  <div class="card"><h3>Resumen</h3><div class="kpis"><div class="kpi"><span>Proyectos</span><b id="kProyectos">0</b></div><div class="kpi"><span>Técnicos</span><b id="kTecnicos">0</b></div><div class="kpi"><span>Asignaciones</span><b id="kAsignaciones">0</b></div><div class="kpi"><span>Puntos</span><b id="kPuntos">0</b></div></div></div>
+
+  <div class="card mapFilterCard">
+    <h3>📌 Convenciones</h3>
+    <div class="sidebarLegend">
+      <div><span class="dot" style="background:#22c55e"></span>Poste</div>
+      <div><span class="dot" style="background:#38bdf8"></span>Canalizado</div>
+      <div><span class="dot" style="background:#f97316"></span>C. Americano</div>
+      <div><span class="dot" style="background:#a855f7"></span>Cercha</div>
+      <div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div>
+      <div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div>
+    </div>
+  </div>
+
   <div style="display:none" aria-hidden="true">
+    <div id="listaEmpresas"></div>
     <div id="resumenAsignacionesMini"></div>
     <table><tbody id="tablaAsignaciones"></tbody></table>
   </div>
 </aside>
-<section class="mapPanel"><div id="map"></div><div class="mapToolbar"><select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select><select id="fProyecto" onchange="cargarProyectoMapa()"></select><select id="fTipo" onchange="pintarMapa()"><option value="">Todos los tipos</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option></select><button onclick="cargarProyectoMapa()">Actualizar mapa</button><button id="btnLiveTech" class="liveOn" onclick="toggleTecnicosTiempoReal()">📍 Técnicos ON</button></div>
-<div class="techLivePanel" id="techLivePanel">
+<section class="mapPanel"><div id="map"></div><div class="techLivePanel" id="techLivePanel">
   <h4>📍 Técnicos en campo · tiempo real</h4>
   <div class="techLiveSummary">
     <div><span>Total</span><b id="techLiveTotal">0</b></div>
@@ -894,70 +1634,349 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
   <div id="techLiveUpdated" style="font-size:8px;color:#94a3b8;margin-bottom:6px">Sin datos</div>
   <div class="techLiveList" id="techLiveList"><div class="hint">Selecciona un proyecto.</div></div>
 </div>
-<div class="mapLegend"><div><span class="dot" style="background:#22c55e"></span>Poste</div><div><span class="dot" style="background:#38bdf8"></span>Canalizado</div><div><span class="dot" style="background:#f97316"></span>C. Americano</div><div><span class="dot" style="background:#a855f7"></span>Cercha</div><div><span style="color:#ef4444;font-weight:900">━</span> CX mismo polígono</div><div><span style="color:#f59e0b;font-weight:900">┄</span> Otro polígono</div></div></section>
+</section>
 </div>
 <div class="modalOverlay" id="puntosModal"><div class="modal"><div class="modalHead"><h2 id="puntosTitle">Puntos del proyecto</h2><button class="close" onclick="puntosModal.classList.remove('open')">Cerrar</button></div><div class="modalBody"><div class="tableWrap" style="max-height:70vh"><table class="table"><thead><tr><th>ID</th><th>Tipo</th><th>Polígono</th><th>Conexiones</th><th>Técnico</th><th>Dirección</th></tr></thead><tbody id="tablaPuntos"></tbody></table></div></div></div></div>
 
-<!-- ===== ADMINISTRAR PROYECTOS ===== -->
-<div class="modalOverlay" id="adminProyectosModal">
-  <div class="modal wide">
+
+<!-- ===== GESTIÓN DE EMPRESAS ===== -->
+<div class="modalOverlay" id="empresasModal">
+  <div class="modal managementModal">
     <div class="modalHead">
       <div>
-        <h2>🗂️ Administrar proyectos</h2>
-        <small style="color:var(--muted)">Buscar, filtrar y eliminar proyectos de forma controlada</small>
+        <h2>Empresas</h2>
+        <small style="color:var(--muted)">Crear, buscar, editar y administrar empresas</small>
+      </div>
+      <button class="close" onclick="cerrarGestionEmpresas()">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <div class="managementGrid2">
+        <div class="managementPanel">
+          <h3>Nueva empresa</h3>
+          <div class="grid2">
+            <div><label>Nombre empresa *</label><input id="eNombre" placeholder="Ej: Liberty Networks"></div>
+            <div><label>Nombre corto</label><input id="eNombreCorto" placeholder="Ej: LIBERTY"></div>
+          </div>
+          <div class="grid2">
+            <div><label>NIT</label><input id="eNit" placeholder="900123456-7"></div>
+            <div><label>Ciudad</label><input id="eCiudad" placeholder="Bogotá D.C"></div>
+          </div>
+          <button class="btn blue" onclick="crearEmpresa()">Crear empresa</button>
+          <div class="hint">Las empresas desactivadas se conservan para mantener la trazabilidad histórica.</div>
+        </div>
+
+        <div class="managementPanel">
+          <h3>Empresas registradas</h3>
+          <div class="managementSearch">
+            <div>
+              <label>Buscar empresa</label>
+              <input id="empresaBuscar" placeholder="Nombre, NIT, ciudad..." oninput="pintarEmpresasGestion()">
+            </div>
+            <button class="btn blue" onclick="cargarEmpresasGestion()">⟳ Actualizar</button>
+          </div>
+          <div class="tableWrap" style="max-height:62vh">
+            <table class="table managementTable">
+              <thead><tr><th>Empresa</th><th>Nombre corto</th><th>NIT</th><th>Ciudad</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="tablaEmpresasGestion"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDITAR EMPRESA ===== -->
+<div class="modalOverlay" id="editarEmpresaModal">
+  <div class="modal" style="width:min(720px,96vw)">
+    <div class="modalHead"><h2>✏️ Editar empresa</h2><button class="close" onclick="editarEmpresaModal.classList.remove('open')">Cerrar</button></div>
+    <div class="modalBody">
+      <input type="hidden" id="editEmpresaId">
+      <div class="editFormGrid">
+        <div><label>Nombre *</label><input id="editEmpresaNombre"></div>
+        <div><label>Nombre corto</label><input id="editEmpresaCorto"></div>
+        <div><label>NIT</label><input id="editEmpresaNit"></div>
+        <div><label>Ciudad</label><input id="editEmpresaCiudad"></div>
+      </div>
+      <label>Estado</label>
+      <select id="editEmpresaActivo"><option value="true">Activa</option><option value="false">Inactiva</option></select>
+      <button class="btn blue" onclick="guardarEdicionEmpresa()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GESTIÓN DE USUARIOS ===== -->
+<div class="modalOverlay" id="usuariosModal">
+  <div class="modal managementModal">
+    <div class="modalHead">
+      <div>
+        <h2>Usuarios</h2>
+        <small style="color:var(--muted)">Crear usuarios y administrar empresa, rol y acceso</small>
+      </div>
+      <button class="close" onclick="cerrarGestionUsuarios()">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <div class="managementGrid2">
+        <div class="managementPanel">
+          <h3>Nuevo usuario</h3>
+          <label>Empresa *</label>
+          <select id="uEmpresa"><option value="">Seleccione empresa...</option></select>
+          <label>Nombre</label><input id="uNombre" placeholder="Nombre del usuario">
+          <label>Correo *</label><input id="uEmail" type="email" placeholder="tecnico@empresa.com">
+          <label>Contraseña temporal *</label><input id="uPassword" type="password" placeholder="Mínimo 6 caracteres">
+          <label>Rol</label>
+          <select id="uRol">
+            <option value="tecnico">Técnico</option>
+            <option value="coordinador">Coordinador</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <button class="btn purple" onclick="crearUsuarioMapping()">Crear usuario</button>
+          <div id="uMsg" class="hint">Los usuarios se crean en Supabase Auth y en mapping_usuarios.</div>
+        </div>
+
+        <div class="managementPanel">
+          <h3>Usuarios registrados</h3>
+          <div class="managementSearch">
+            <div>
+              <label>Buscar usuario</label>
+              <input id="usuarioBuscar" placeholder="Nombre, correo, empresa o rol..." oninput="pintarUsuarios()">
+            </div>
+            <button class="btn blue" onclick="cargarUsuarios()">⟳ Actualizar</button>
+          </div>
+          <div class="tableWrap userTable" style="max-height:62vh">
+            <table class="table managementTable users">
+              <thead><tr><th>Nombre</th><th>Empresa</th><th>Correo</th><th>Rol</th><th>Modificar rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="tablaUsuarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDITAR USUARIO ===== -->
+<div class="modalOverlay" id="editarUsuarioModal">
+  <div class="modal" style="width:min(760px,96vw)">
+    <div class="modalHead"><h2>✏️ Editar usuario</h2><button class="close" onclick="editarUsuarioModal.classList.remove('open')">Cerrar</button></div>
+    <div class="modalBody">
+      <input type="hidden" id="editUsuarioId">
+      <div class="editFormGrid">
+        <div><label>Nombre</label><input id="editUsuarioNombre"></div>
+        <div><label>Correo</label><input id="editUsuarioEmail" readonly></div>
+        <div><label>Empresa *</label><select id="editUsuarioEmpresa"></select></div>
+        <div><label>Rol</label><select id="editUsuarioRol"><option value="tecnico">Técnico</option><option value="coordinador">Coordinador</option><option value="admin">Administrador</option></select></div>
+      </div>
+      <label>Estado de acceso</label>
+      <select id="editUsuarioActivo"><option value="true">Activo</option><option value="false">Inactivo</option></select>
+      <button class="btn blue" onclick="guardarEdicionUsuario()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GESTIÓN INTEGRAL DE PROYECTOS ===== -->
+<div class="modalOverlay" id="adminProyectosModal">
+  <div class="modal managementModal">
+    <div class="modalHead">
+      <div>
+        <h2>Proyectos</h2>
+        <small style="color:var(--muted)">Creación, edición, polígonos, fotografías, cartografía y asignaciones</small>
       </div>
       <button class="close" onclick="cerrarAdministrarProyectos()">Cerrar</button>
     </div>
     <div class="modalBody">
-      <div class="projectAdminFilters">
-        <div>
-          <label>Buscar</label>
-          <input id="admProyBuscar" placeholder="Código, nombre, ciudad, empresa..." oninput="filtrarAdministrarProyectos()">
-        </div>
-        <div>
-          <label>Empresa</label>
-          <select id="admProyEmpresa" onchange="filtrarAdministrarProyectos()"></select>
-        </div>
-        <div>
-          <label>Tipo</label>
-          <select id="admProyTipo" onchange="filtrarAdministrarProyectos()">
-            <option value="">Todos</option>
-            <option value="MAPPING">MAPPING</option>
-            <option value="VIABILIDAD">VIABILIDAD</option>
-          </select>
-        </div>
-        <div>
-          <label>Estado</label>
-          <select id="admProyEstado" onchange="filtrarAdministrarProyectos()">
-            <option value="">Todos</option>
-          </select>
-        </div>
-        <button class="btn blue" style="margin:0" onclick="refrescarAdministrarProyectos()">⟳ Actualizar</button>
+      <div class="projectTabs">
+        <button class="projectTabBtn active" data-project-tab="overview" onclick="cambiarTabProyecto('overview',this)">📋 Proyectos</button>
+        <button class="projectTabBtn adminOnly" data-project-tab="crear" onclick="cambiarTabProyecto('crear',this)">＋ Crear</button>
+        <button class="projectTabBtn" data-project-tab="poligonos" onclick="cambiarTabProyecto('poligonos',this)">⬡ Polígonos</button>
+        <button class="projectTabBtn" data-project-tab="fotos" onclick="cambiarTabProyecto('fotos',this)">📷 Fotografías</button>
+        <button class="projectTabBtn" data-project-tab="cartografia" onclick="cambiarTabProyecto('cartografia',this)">🗺️ Cartografía</button>
+        <button class="projectTabBtn" data-project-tab="asignaciones" onclick="cambiarTabProyecto('asignaciones',this)">👷 Asignaciones</button>
       </div>
 
-      <div class="projectAdminSummary">
-        <div class="kpi"><span>Proyectos totales</span><b id="admProyTotal">0</b></div>
-        <div class="kpi"><span>Resultados</span><b id="admProyResultados">0</b></div>
-        <div class="kpi"><span>MAPPING</span><b id="admProyMapping">0</b></div>
-        <div class="kpi"><span>VIABILIDAD</span><b id="admProyViabilidad">0</b></div>
+      <!-- OVERVIEW -->
+      <div class="projectTabPanel active" id="projectTab_overview">
+        <div class="projectAdminFilters">
+          <div><label>Buscar</label><input id="admProyBuscar" placeholder="Código, nombre, ciudad, empresa..." oninput="filtrarAdministrarProyectos()"></div>
+          <div><label>Empresa</label><select id="admProyEmpresa" onchange="filtrarAdministrarProyectos()"></select></div>
+          <div><label>Tipo</label><select id="admProyTipo" onchange="filtrarAdministrarProyectos()"><option value="">Todos</option><option value="MAPPING">MAPPING</option><option value="VIABILIDAD">VIABILIDAD</option></select></div>
+          <div><label>Estado</label><select id="admProyEstado" onchange="filtrarAdministrarProyectos()"><option value="">Todos</option></select></div>
+          <button class="btn blue" style="margin:0" onclick="refrescarAdministrarProyectos()">⟳ Actualizar</button>
+        </div>
+
+        <div class="projectAdminSummary">
+          <div class="kpi"><span>Proyectos totales</span><b id="admProyTotal">0</b></div>
+          <div class="kpi"><span>Resultados</span><b id="admProyResultados">0</b></div>
+          <div class="kpi"><span>MAPPING</span><b id="admProyMapping">0</b></div>
+          <div class="kpi"><span>VIABILIDAD</span><b id="admProyViabilidad">0</b></div>
+        </div>
+
+        <div class="tableWrap" style="max-height:62vh">
+          <table class="table projectAdminTable">
+            <thead><tr><th>Empresa</th><th>Código</th><th>Proyecto</th><th>Ciudad</th><th>Tipo</th><th>Estado</th><th>Creado</th><th>Acciones</th></tr></thead>
+            <tbody id="admProyTabla"></tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="tableWrap" style="max-height:64vh">
-        <table class="table projectAdminTable">
-          <thead>
-            <tr>
-              <th>Empresa</th>
-              <th>Código</th>
-              <th>Proyecto</th>
-              <th>Ciudad</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th>Creado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="admProyTabla"></tbody>
-        </table>
+      <!-- CREATE -->
+      <div class="projectTabPanel adminOnly" id="projectTab_crear">
+        <div class="projectSubCard">
+          <h3>＋ Crear proyecto</h3>
+          <label>Empresa *</label><select id="pEmpresa"></select>
+          <div class="grid2"><div><label>Código *</label><input id="pCodigo" placeholder="EYCO-2026-BTA-01"></div><div><label>Ciudad</label><input id="pCiudad" placeholder="Bogotá D.C"></div></div>
+          <div class="grid2">
+            <div><label>Nombre *</label><input id="pNombre" placeholder="Mapping Bogotá Veracruz"></div>
+            <div><label>TIPO PROYECTO *</label><select id="pTipoProyecto" onchange="aplicarDefaultFotosProyecto(this.value,true)"><option value="MAPPING">MAPPING</option><option value="VIABILIDAD">VIABILIDAD</option></select></div>
+          </div>
+
+          <div class="projectPhotoConfig" id="pFotoConfigPanel">
+            <div class="projectPhotoConfigHead">
+              <b>📷 Fotografías que verá el técnico</b>
+              <small>Selecciona únicamente las fotografías requeridas por este proyecto.</small>
+            </div>
+            <div class="projectPhotoConfigGrid" id="pFotoConfigBox"></div>
+            <div class="projectPhotoSummary" id="pFotoConfigResumen">Configurando fotografías...</div>
+          </div>
+
+          <label>Descripción</label><textarea id="pDescripcion"></textarea>
+          <label>Nombre del archivo de polígonos *</label>
+          <input id="pGeojsonUrl" placeholder="Ej: POLIGONOS-BTA.geojson o POLIGONOS-BTA.kmz">
+          <div class="hint">Ruta base automática: <b>https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/</b>. Si no escribes extensión se asumirá <b>.geojson</b>.</div>
+          <div class="actions">
+            <button class="btn gray" onclick="leerPoligonosDesdeDriveCrear()">Leer polígonos</button>
+            <button class="btn" onclick="crearProyecto()">Crear proyecto</button>
+          </div>
+          <div id="pGeojsonInfo" class="hint">La URL debe abrir directamente el archivo GeoJSON en el navegador.</div>
+        </div>
+      </div>
+
+      <!-- POLYGONS -->
+      <div class="projectTabPanel" id="projectTab_poligonos">
+        <div class="projectSectionGrid">
+          <div class="projectSubCard">
+            <h3>⬡ Distribución de polígonos</h3>
+            <label>Proyecto</label>
+            <select id="distribucionProyectoSelect"></select>
+            <button class="btn blue" onclick="abrirDistribucionPoligonos(distribucionProyectoSelect.value)">Ver distribución</button>
+            <div class="hint">Consulta qué técnico tiene cada polígono y cuáles permanecen libres.</div>
+          </div>
+
+          <div class="projectSubCard adminOnly">
+            <h3>Actualizar archivo de polígonos</h3>
+            <label>Proyecto</label><select id="geoProyectoExistente"></select>
+            <label>Nuevo nombre del archivo</label>
+            <input id="geoUrlActualiza" placeholder="Ej: POLIGONOS-BTA-V2.geojson o POLIGONOS-BTA-V2.kmz">
+            <div class="hint">Se usará automáticamente la ruta pública configurada para POLIGONOS.</div>
+            <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer archivo / actualizar versión</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHOTOS -->
+      <div class="projectTabPanel" id="projectTab_fotos">
+        <div class="projectSubCard">
+          <h3>📷 Fotografías de proyecto existente</h3>
+          <label>Proyecto</label>
+          <select id="fotoProyectoExistente" onchange="cargarConfigFotosProyectoExistente()"></select>
+          <div class="projectPhotoConfig" id="fotoConfigExistentePanel">
+            <div class="projectPhotoConfigHead">
+              <b>Fotografías habilitadas para el técnico</b>
+              <small>Los cambios se aplican cuando el técnico actualiza sus proyectos o vuelve a ingresar.</small>
+            </div>
+            <div class="projectPhotoConfigGrid" id="fotoConfigExistenteBox"></div>
+            <div class="projectPhotoSummary" id="fotoConfigExistenteResumen">Selecciona un proyecto.</div>
+          </div>
+          <button class="btn blue" onclick="guardarConfigFotosProyectoExistente()">Guardar configuración de fotos</button>
+        </div>
+      </div>
+
+      <!-- CARTOGRAPHY -->
+      <div class="projectTabPanel" id="projectTab_cartografia">
+        <div class="projectSubCard cartographyCard">
+          <h3>🗺️ Cartografía del proyecto</h3>
+          <div class="hint">Opcional. Formatos soportados: <b>GeoJSON / JSON / KML / KMZ</b>.</div>
+          <label>Proyecto</label>
+          <select id="cartografiaProyecto" onchange="actualizarEstadoCartografiaMaster()"></select>
+          <label>Archivo de cartografía</label>
+          <input id="cartografiaArchivo" type="file" accept=".geojson,.json,.kml,.kmz,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz">
+          <div class="cartographyActions">
+            <button class="btn blue" type="button" onclick="subirCartografiaProyecto()">☁ Subir / reemplazar</button>
+            <button class="btn danger" type="button" onclick="eliminarCartografiaProyecto()">🗑 Quitar cartografía</button>
+          </div>
+          <div id="cartografiaMasterEstado" class="cartographyStatus">Selecciona un proyecto para consultar su cartografía.</div>
+        </div>
+      </div>
+
+      <!-- ASSIGNMENTS -->
+      <div class="projectTabPanel" id="projectTab_asignaciones">
+        <div class="projectSectionGrid">
+          <div class="projectSubCard">
+            <h3>👷 Asignar proyecto y polígonos</h3>
+            <label>Proyecto</label><select id="asigProyecto" onchange="filtrarTecnicosPorProyecto();cargarPoligonosAsignacion()"></select>
+            <label>Técnico</label><select id="asigTecnico" onchange="cargarPoligonosAsignacion()"></select>
+            <label>Polígonos asignados</label>
+            <div id="asigPoligonosBox" class="polyChecks"><div class="hint">Selecciona un proyecto para cargar sus polígonos.</div></div>
+            <button class="btn blue" onclick="asignarProyecto()">Asignar técnico + polígonos</button>
+            <div class="hint">Un polígono no puede estar asignado simultáneamente a dos técnicos.</div>
+          </div>
+          <div class="projectSubCard">
+            <h3>Resumen operativo</h3>
+            <div class="kpis">
+              <div class="kpi"><span>Proyectos</span><b id="kProyectos">0</b></div>
+              <div class="kpi"><span>Técnicos</span><b id="kTecnicos">0</b></div>
+              <div class="kpi"><span>Asignaciones</span><b id="kAsignaciones">0</b></div>
+              <div class="kpi"><span>Puntos</span><b id="kPuntos">0</b></div>
+            </div>
+            <button class="btn gray" onclick="abrirModalAsignaciones()">Ver / filtrar todas las asignaciones</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDITAR PROYECTO ===== -->
+<div class="modalOverlay" id="editarProyectoModal">
+  <div class="modal" style="width:min(820px,96vw)">
+    <div class="modalHead"><h2>✏️ Editar proyecto</h2><button class="close" onclick="editarProyectoModal.classList.remove('open')">Cerrar</button></div>
+    <div class="modalBody">
+      <input type="hidden" id="editProyectoId">
+      <div class="editFormGrid">
+        <div><label>Código *</label><input id="editProyectoCodigo"></div>
+        <div><label>Nombre *</label><input id="editProyectoNombre"></div>
+        <div><label>Ciudad</label><input id="editProyectoCiudad"></div>
+        <div><label>Tipo</label><select id="editProyectoTipo"><option value="MAPPING">MAPPING</option><option value="VIABILIDAD">VIABILIDAD</option></select></div>
+        <div><label>Estado</label><select id="editProyectoEstado"><option value="activo">Activo</option><option value="finalizado">Finalizado</option><option value="cancelado">Cancelado</option></select></div>
+      </div>
+      <label>Descripción</label><textarea id="editProyectoDescripcion"></textarea>
+      <button class="btn blue" onclick="guardarEdicionProyecto()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DISTRIBUCIÓN DE POLÍGONOS ===== -->
+<div class="modalOverlay" id="distribucionPoligonosModal">
+  <div class="modal wide">
+    <div class="modalHead">
+      <div><h2>⬡ Distribución de polígonos</h2><small id="distPolyProyectoInfo" style="color:var(--muted)"></small></div>
+      <button class="close" onclick="distribucionPoligonosModal.classList.remove('open')">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <input type="hidden" id="distPolyProyectoId">
+      <div class="polyDistributionSummary">
+        <div class="kpi"><span>Total polígonos</span><b id="distPolyTotal">0</b></div>
+        <div class="kpi"><span>Asignados</span><b id="distPolyAsignados">0</b></div>
+        <div class="kpi"><span>Libres</span><b id="distPolyLibres">0</b></div>
+      </div>
+
+      <div id="distPolyGrid" class="polyDistributionGrid"><div class="hint">Cargando distribución...</div></div>
+
+      <div class="projectSubCard adminOnly" style="margin-top:12px">
+        <h3>Actualizar archivo de polígonos desde este proyecto</h3>
+        <label>Nuevo archivo</label>
+        <input id="distPolyArchivo" placeholder="Ej: POLIGONOS-BTA-V3.geojson o .kmz">
+        <button class="btn gray" onclick="actualizarPoligonosDesdeDistribucion()">Leer archivo / actualizar versión</button>
       </div>
     </div>
   </div>
@@ -1133,7 +2152,7 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
       <div class="chartsGrid">
         <div class="chartCard span2"><h3>Cantidad de infraestructura por día</h3><div class="chartBox"><canvas id="chTotalDia"></canvas></div></div>
         <div class="chartCard span2"><h3>Producción diaria por tipo</h3><div class="chartBox"><canvas id="chDiario"></canvas></div></div>
-        <div class="chartCard"><h3>Cantidad de infraestructura por polígono</h3><div class="chartBox"><canvas id="chPoligonos"></canvas></div></div>
+        <div class="chartCard span2"><h3>Elementos por polígono y tipo de infraestructura</h3><div class="chartBox"><canvas id="chPoligonos"></canvas></div></div>
         <div class="chartCard"><h3>Histórico cantidad de infraestructura x técnico</h3><div class="chartBox"><canvas id="chTecnicos"></canvas></div></div>
         <div class="chartCard span2"><h3>Cant de infraestructura levantada x técnico x día</h3><div class="chartBox"><canvas id="chTecnicoDia"></canvas></div></div>
         <div class="chartCard span2">
@@ -1183,8 +2202,13 @@ label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:7px
 const SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+const CARTOGRAFIA_BUCKET='mapping-cartografia';
 let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];
 let map,layer=null,polygonMasterLayer=null;
+let cartografiaMapaMasterLayer=null;
+let cartografiaMapaMasterCache=new Map();
+let mostrarConexionesMaster=localStorage.getItem('master_mostrar_conexiones_v1')!=='0';
+let mostrarCartografiaMapaMaster=localStorage.getItem('master_mostrar_cartografia_v1')==='1';
 let geojsonProyectoPreview=null;
 let passwordSesionActual='';
 let dashboardPuntos=[];
@@ -1223,6 +2247,8 @@ function initMap(){
   g.addTo(map);
   L.control.layers({'Google Híbrido':g,'Calles':osm}).addTo(map);
   tecnicoLiveLayer=L.layerGroup().addTo(map);
+  actualizarBotonesCapasMapaMaster();
+  actualizarVisibilidadFiltrosMaster();
 }
 const LOGIN_MASTER_URL='login_master.html';
 
@@ -1273,6 +2299,12 @@ async function validarPerfil(){
     console.error('Perfil Master no disponible:',error);
     await sb.auth.signOut();
     irLoginMaster('sin_perfil');
+    return false;
+  }
+
+  if(data.activo===false){
+    await sb.auth.signOut();
+    irLoginMaster('usuario_inactivo');
     return false;
   }
 
@@ -1363,8 +2395,13 @@ async function cargarEmpresas(){
   pintarEmpresas();
 }
 function pintarEmpresas(){
-  if(!document.getElementById('listaEmpresas'))return;
-  listaEmpresas.innerHTML=empresas.length?empresas.map(e=>`<div style="padding:5px 0;border-bottom:1px solid #334155"><b>${esc(e.nombre)}</b>${e.nit?` · NIT ${esc(e.nit)}`:''}</div>`).join(''):'No hay empresas creadas.';
+  const lista=document.getElementById('listaEmpresas');
+  if(lista){
+    lista.innerHTML=empresas.length?empresas.map(e=>`<div style="padding:5px 0;border-bottom:1px solid #334155"><b>${esc(e.nombre)}</b>${e.nit?` · NIT ${esc(e.nit)}`:''}</div>`).join(''):'No hay empresas creadas.';
+  }
+  if(document.getElementById('tablaEmpresasGestion') && empresasGestion.length){
+    pintarEmpresasGestion();
+  }
 }
 async function crearEmpresa(){
   if(!exigirAdminMaster('crear empresas'))return;
@@ -1373,7 +2410,10 @@ async function crearEmpresa(){
   const {error}=await sb.from('mapping_empresas').insert(payload);
   if(error)return alert('Error creando empresa: '+error.message);
   eNombre.value='';eNombreCorto.value='';eNit.value='';eCiudad.value='';
-  await cargarEmpresas();llenarSelects();alert('Empresa creada.');
+  await cargarEmpresas();
+  llenarSelects();
+  if(document.getElementById('empresasModal')?.classList.contains('open'))await cargarEmpresasGestion();
+  alert('Empresa creada.');
 }
 
 function empresaProyectoAdmin(p){
@@ -1478,7 +2518,9 @@ function pintarAdministrarProyectos(){
           <td>
             <div class="projectAdminActions">
               <button class="btn small blue" onclick="verProyectoDesdeAdmin('${esc(p.id)}')">Ver mapa</button>
-              <button class="btn small danger" onclick="prepararEliminarProyecto('${esc(p.id)}')">Eliminar</button>
+              <button class="btn small gray" onclick="abrirEditarProyecto('${esc(p.id)}')">Editar</button>
+              <button class="btn small purple" onclick="abrirDistribucionPoligonos('${esc(p.id)}')">Polígonos</button>
+              ${esAdminMaster()?`<button class="btn small danger" onclick="prepararEliminarProyecto('${esc(p.id)}')">Eliminar</button>`:''}
             </div>
           </td>
         </tr>`;
@@ -1487,14 +2529,12 @@ function pintarAdministrarProyectos(){
 }
 
 function abrirAdministrarProyectos(){
-  if(perfil?.rol!=='admin'){
-    alert('Solo un administrador puede eliminar proyectos.');
-    return;
-  }
-
   llenarFiltrosAdministrarProyectos();
   proyectosAdminFiltrados=[...proyectos];
   filtrarAdministrarProyectos();
+  llenarSelectsGestionProyectos();
+  cambiarTabProyecto('overview');
+  aplicarVisibilidadAdmin();
   document.getElementById('adminProyectosModal')?.classList.add('open');
 }
 
@@ -1741,7 +2781,18 @@ async function eliminarProyectoDefinitivamente(){
       if(error)throw new Error('Polígonos: '+error.message);
     }
 
-    // 8. Proyecto.
+    // 8. Cartografía del proyecto en Supabase Storage.
+    if(p.cartografia_path){
+      const {error:cartError}=await sb.storage
+        .from(CARTOGRAFIA_BUCKET)
+        .remove([p.cartografia_path]);
+
+      if(cartError){
+        console.warn('No se pudo borrar la cartografía del proyecto:',cartError);
+      }
+    }
+
+    // 9. Proyecto.
     {
       const {error}=await sb.from('mapping_proyectos').delete().eq('id',proyectoId);
       if(error)throw new Error('Proyecto: '+error.message);
@@ -1874,16 +2925,22 @@ function pintarUsuarios(){
   const tbody=document.getElementById('tablaUsuarios');
   if(!tbody)return;
 
-  tbody.innerHTML=usuarios.length
-    ? usuarios.map(u=>{
+  const q=String(document.getElementById('usuarioBuscar')?.value||'').trim().toLowerCase();
+  const lista=usuarios.filter(u=>{
+    const txt=[
+      u.nombre,u.email,u.rol,u.empresa_nombre,u.empresa_nombre_corto,
+      u.activo===false?'inactivo':'activo'
+    ].map(x=>String(x||'').toLowerCase()).join(' ');
+    return !q||txt.includes(q);
+  });
+
+  tbody.innerHTML=lista.length
+    ? lista.map(u=>{
         const rol=String(u.rol||'tecnico').toLowerCase();
         const esYo=String(u.id)===String(user?.id);
 
         return `<tr>
-          <td>
-            ${esc(u.nombre||'')}
-            ${esYo?'<div class="userRoleCurrent">Tu usuario actual</div>':''}
-          </td>
+          <td>${esc(u.nombre||'')}${esYo?'<div class="userRoleCurrent">Tu usuario actual</div>':''}</td>
           <td>${esc(u.empresa_nombre||'SIN EMPRESA')}</td>
           <td>${esc(u.email)}</td>
           <td><span class="roleBadge ${esc(rol)}">${esc(rol)}</span></td>
@@ -1894,18 +2951,19 @@ function pintarUsuarios(){
                 <option value="coordinador" ${rol==='coordinador'?'selected':''}>Coordinador</option>
                 <option value="admin" ${rol==='admin'?'selected':''}>Administrador</option>
               </select>
-              <button
-                class="btn small blue userRoleSave"
-                onclick="guardarRolUsuario('${esc(u.id)}')"
-              >
-                Guardar
-              </button>
+              <button class="btn small blue userRoleSave" onclick="guardarRolUsuario('${esc(u.id)}')">Guardar</button>
             </div>
           </td>
-          <td>${u.activo===false?'Inactivo':'Activo'}</td>
+          <td><span class="inlineStatus ${u.activo===false?'inactive':'active'}">${u.activo===false?'Inactivo':'Activo'}</span></td>
+          <td>
+            <div class="rowActions">
+              <button class="btn small gray" onclick="abrirEditarUsuario('${esc(u.id)}')">Editar</button>
+              ${esYo?'':`<button class="btn small danger" onclick="eliminarUsuarioMapping('${esc(u.id)}')">Eliminar</button>`}
+            </div>
+          </td>
         </tr>`;
       }).join('')
-    : '<tr><td colspan="6">Sin usuarios.</td></tr>';
+    : '<tr><td colspan="7">Sin usuarios que coincidan con la búsqueda.</td></tr>';
 }
 
 function esAdminMaster(){
@@ -1954,7 +3012,15 @@ function exigirProyectoPermitidoMaster(proyectoId,accion='consultar este proyect
 function aplicarVisibilidadAdmin(){
   const ok=esAdminMaster();
   document.querySelectorAll('.adminOnly').forEach(el=>{
-    el.style.display=ok?'block':'none';
+    if(!ok){
+      el.style.display='none';
+      return;
+    }
+    if(el.classList.contains('projectTabPanel')){
+      el.style.display='';
+    }else{
+      el.style.display='';
+    }
   });
 }
 
@@ -2191,8 +3257,20 @@ function llenarSelects(){
       fotoProyectoExistente.value=keepFoto;
     }
   }
-  const tec=usuarios.filter(u=>u.rol==='tecnico');
-  asigTecnico.innerHTML='<option value="">Seleccione...</option>'+tec.map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)} · ${esc(u.email)} · ${esc(u.empresa_nombre||'SIN EMPRESA')}</option>`).join('')
+  if(document.getElementById('cartografiaProyecto')){
+    const sel=document.getElementById('cartografiaProyecto');
+    const keep=sel.value;
+    sel.innerHTML=po;
+    if([...sel.options].some(o=>o.value===keep)){
+      sel.value=keep;
+    }else if(proyectos.length){
+      sel.value=proyectos[0].id;
+    }
+    setTimeout(actualizarEstadoCartografiaMaster,0);
+  }
+  const tec=usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false);
+  asigTecnico.innerHTML='<option value="">Seleccione...</option>'+tec.map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)} · ${esc(u.email)} · ${esc(u.empresa_nombre||'SIN EMPRESA')}</option>`).join('');
+  llenarSelectsGestionProyectos();
 }
 function filtrarProyectosPorEmpresa(){
   const empresaId=fEmpresa.value;
@@ -2203,9 +3281,12 @@ function filtrarProyectosPorEmpresa(){
     cargarProyectoMapa();
   }else{
     puntos=[];
+    limpiarCartografiaMapaMaster();
+    actualizarFiltrosAvanzadosMaster();
     pintarMapa();
     kPuntos.textContent=0;
     detenerSeguimientoTecnicosMaster();
+    actualizarBotonesCapasMapaMaster();
   }
 }
 function llenarFiltrosAsignaciones(){if(!document.getElementById('asgFiltroEmpresa'))return;const keepE=asgFiltroEmpresa.value,keepP=asgFiltroProyecto.value,keepT=asgFiltroTecnico.value;asgFiltroEmpresa.innerHTML='<option value="">Todas</option>'+empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');asgFiltroProyecto.innerHTML='<option value="">Todos</option>'+proyectos.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');asgFiltroTecnico.innerHTML='<option value="">Todos</option>'+usuarios.filter(u=>u.rol==='tecnico'&&u.activo!==false).map(u=>`<option value="${u.id}">${esc(u.nombre||u.email)}</option>`).join('');if([...asgFiltroEmpresa.options].some(o=>o.value===keepE))asgFiltroEmpresa.value=keepE;if([...asgFiltroProyecto.options].some(o=>o.value===keepP))asgFiltroProyecto.value=keepP;if([...asgFiltroTecnico.options].some(o=>o.value===keepT))asgFiltroTecnico.value=keepT}
@@ -3003,6 +4084,200 @@ function actualizarResumenConfigFotosExistente(){
     `<b>${esc(proyecto.codigo||'')}</b> · ${esc(proyecto.tipo_proyecto||'MAPPING')}<br>`+
     partes.join(' · ')+
     '<br><span style="color:#94a3b8">Al guardar, esta configuración reemplaza la anterior del proyecto.</span>';
+}
+
+
+function extensionCartografia(nombre){
+  const m=String(nombre||'').trim().toLowerCase().match(/\.([a-z0-9]+)$/);
+  return m?m[1]:'';
+}
+
+function formatoCartografiaValido(nombre){
+  return ['geojson','json','kml','kmz'].includes(extensionCartografia(nombre));
+}
+
+function nombreArchivoCartografiaSeguro(nombre){
+  const ext=extensionCartografia(nombre);
+  const base=String(nombre||'cartografia')
+    .replace(/\.[^.]+$/,'')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Za-z0-9_-]+/g,'_')
+    .replace(/^_+|_+$/g,'')
+    .slice(0,80)||'cartografia';
+  return `${base}.${ext}`;
+}
+
+function proyectoCartografiaSeleccionado(){
+  const id=document.getElementById('cartografiaProyecto')?.value||'';
+  return proyectos.find(p=>String(p.id)===String(id))||null;
+}
+
+function actualizarEstadoCartografiaMaster(){
+  const box=document.getElementById('cartografiaMasterEstado');
+  if(!box)return;
+
+  const p=proyectoCartografiaSeleccionado();
+  if(!p){
+    box.className='cartographyStatus';
+    box.innerHTML='Selecciona un proyecto para consultar su cartografía.';
+    return;
+  }
+
+  if(!puedeVerProyectoMaster(p)){
+    box.className='cartographyStatus error';
+    box.textContent='No tienes permiso para gestionar este proyecto.';
+    return;
+  }
+
+  if(!p.cartografia_path){
+    box.className='cartographyStatus warn';
+    box.innerHTML=
+      `<b>${esc(p.codigo||p.nombre||'Proyecto')}</b><br>`+
+      'Este proyecto no tiene cartografía cargada. Es completamente opcional.';
+    return;
+  }
+
+  box.className='cartographyStatus ok';
+  box.innerHTML=
+    `<b>✓ Cartografía disponible</b>`+
+    `<div class="cartographyMeta">`+
+      `<div><span>ARCHIVO</span><b>${esc(p.cartografia_nombre||p.cartografia_path)}</b></div>`+
+      `<div><span>FORMATO</span><b>${esc(String(p.cartografia_tipo||'').toUpperCase()||'—')}</b></div>`+
+      `<div><span>ACTUALIZADA</span><b>${esc(formatoFecha(p.cartografia_updated_at))}</b></div>`+
+      `<div><span>STORAGE</span><b>${esc(CARTOGRAFIA_BUCKET)}</b></div>`+
+    `</div>`;
+}
+
+async function subirCartografiaProyecto(){
+  const p=proyectoCartografiaSeleccionado();
+  if(!p)return alert('Selecciona el proyecto.');
+
+  if(!exigirProyectoPermitidoMaster(p.id,'gestionar la cartografía de este proyecto'))return;
+
+  const input=document.getElementById('cartografiaArchivo');
+  const archivo=input?.files?.[0];
+
+  if(!archivo)return alert('Selecciona un archivo GeoJSON, JSON, KML o KMZ.');
+
+  if(!formatoCartografiaValido(archivo.name)){
+    return alert('Formato no soportado. Usa GeoJSON, JSON, KML o KMZ.');
+  }
+
+  const ext=extensionCartografia(archivo.name);
+  const nombreSeguro=nombreArchivoCartografiaSeguro(archivo.name);
+  const path=`${p.id}/${Date.now()}_${nombreSeguro}`;
+
+  const box=document.getElementById('cartografiaMasterEstado');
+  if(box){
+    box.className='cartographyStatus';
+    box.textContent='Subiendo cartografía a Supabase Storage...';
+  }
+
+  try{
+    const {error:upError}=await sb.storage
+      .from(CARTOGRAFIA_BUCKET)
+      .upload(path,archivo,{
+        cacheControl:'3600',
+        upsert:false,
+        contentType:archivo.type||undefined
+      });
+
+    if(upError)throw upError;
+
+    const anterior=p.cartografia_path||null;
+
+    const {error:updateError}=await sb
+      .from('mapping_proyectos')
+      .update({
+        cartografia_path:path,
+        cartografia_nombre:archivo.name,
+        cartografia_tipo:ext,
+        cartografia_updated_at:new Date().toISOString()
+      })
+      .eq('id',p.id);
+
+    if(updateError){
+      await sb.storage.from(CARTOGRAFIA_BUCKET).remove([path]).catch(()=>{});
+      throw updateError;
+    }
+
+    // El archivo anterior se borra únicamente después de actualizar el proyecto.
+    if(anterior && anterior!==path){
+      const {error:removeOld}=await sb.storage
+        .from(CARTOGRAFIA_BUCKET)
+        .remove([anterior]);
+      if(removeOld)console.warn('No se pudo borrar cartografía anterior:',removeOld);
+    }
+
+    if(input)input.value='';
+
+    await cargarProyectos();
+    llenarSelects();
+
+    const sel=document.getElementById('cartografiaProyecto');
+    if(sel)sel.value=p.id;
+    actualizarEstadoCartografiaMaster();
+
+    alert(`Cartografía cargada correctamente para ${p.codigo||p.nombre}.`);
+  }catch(e){
+    console.error('Cartografía:',e);
+    if(box){
+      box.className='cartographyStatus error';
+      box.textContent='No se pudo cargar la cartografía: '+(e?.message||e);
+    }
+    alert('No se pudo cargar la cartografía: '+(e?.message||e));
+  }
+}
+
+async function eliminarCartografiaProyecto(){
+  const p=proyectoCartografiaSeleccionado();
+  if(!p)return alert('Selecciona el proyecto.');
+
+  if(!exigirProyectoPermitidoMaster(p.id,'gestionar la cartografía de este proyecto'))return;
+
+  if(!p.cartografia_path){
+    return alert('Este proyecto no tiene cartografía cargada.');
+  }
+
+  if(!confirm(
+    `¿Quitar la cartografía del proyecto ${p.codigo||p.nombre}?\n\n`+
+    'El levantamiento, los polígonos y los puntos NO se eliminarán.'
+  ))return;
+
+  try{
+    const path=p.cartografia_path;
+
+    const {error:removeError}=await sb.storage
+      .from(CARTOGRAFIA_BUCKET)
+      .remove([path]);
+
+    if(removeError)throw removeError;
+
+    const {error:updateError}=await sb
+      .from('mapping_proyectos')
+      .update({
+        cartografia_path:null,
+        cartografia_nombre:null,
+        cartografia_tipo:null,
+        cartografia_updated_at:null
+      })
+      .eq('id',p.id);
+
+    if(updateError)throw updateError;
+
+    await cargarProyectos();
+    llenarSelects();
+
+    const sel=document.getElementById('cartografiaProyecto');
+    if(sel)sel.value=p.id;
+    actualizarEstadoCartografiaMaster();
+
+    alert('Cartografía eliminada del proyecto.');
+  }catch(e){
+    console.error('Eliminar cartografía:',e);
+    alert('No se pudo quitar la cartografía: '+(e?.message||e));
+  }
 }
 
 async function guardarConfigFotosProyectoExistente(){
@@ -3886,14 +5161,426 @@ function toggleTecnicosTiempoReal(){
   pintarUbicacionesTecnicos();
 }
 
+
+function valorPuntoMaster(p,dbKey,qgisKey=''){
+  const q=(p?.datos_qgis&&typeof p.datos_qgis==='object')?p.datos_qgis:{};
+  const keys=[qgisKey,dbKey].filter(Boolean);
+  for(const k of keys){
+    if(q[k]!==undefined&&q[k]!==null&&String(q[k]).trim()!=='')return q[k];
+  }
+  if(p?.[dbKey]!==undefined&&p?.[dbKey]!==null)return p[dbKey];
+  return '';
+}
+
+function normalizarFiltroMaster(v){
+  return String(v??'').trim().toUpperCase();
+}
+
+function valoresUnicosMaster(lista,dbKey,qgisKey=''){
+  const m=new Map();
+  lista.forEach(p=>{
+    const raw=valorPuntoMaster(p,dbKey,qgisKey);
+    const txt=String(raw??'').trim();
+    if(!txt)return;
+    const key=normalizarFiltroMaster(txt);
+    if(!m.has(key))m.set(key,txt);
+  });
+  return [...m.values()].sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true}));
+}
+
+function llenarFiltroMaster(id,valores,texto='Todos'){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const keep=el.value;
+  el.innerHTML=`<option value="">${texto}</option>`+
+    valores.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  if([...el.options].some(o=>o.value===keep))el.value=keep;
+}
+
+
+function actualizarFiltroPoligonoMaster(){
+  const el=document.getElementById('fPoligono');
+  if(!el)return;
+
+  const keep=String(el.value||'');
+  const valores=[...new Set(
+    puntos
+      .map(p=>String(p?.poligono||'').trim())
+      .filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b,'es',{numeric:true,sensitivity:'base'}));
+
+  el.innerHTML=
+    '<option value="">Todos los polígonos</option>'+
+    valores.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+
+  if(valores.includes(keep))el.value=keep;
+}
+
+function actualizarFiltrosAvanzadosMaster(){
+  actualizarFiltroPoligonoMaster();
+
+  const postes=puntos.filter(p=>normalizarFiltroMaster(p.tipo)==='POSTE');
+  const canal=puntos.filter(p=>normalizarFiltroMaster(p.tipo)==='CANALIZADO');
+
+  llenarFiltroMaster('mfRotura',valoresUnicosMaster(postes,'rotura','ROTURA'),'Todas');
+  llenarFiltroMaster('mfAltura',valoresUnicosMaster(postes,'altura','ALTURA'),'Todas');
+  llenarFiltroMaster('mfPropietarioPoste',valoresUnicosMaster(postes,'propietari','PROPIETARI'),'Todos');
+  llenarFiltroMaster('mfTension',valoresUnicosMaster(postes,'tension','TENSION'),'Todos');
+  llenarFiltroMaster('mfMaterial',valoresUnicosMaster(postes,'material','MATERIAL'),'Todos');
+  llenarFiltroMaster('mfElectricos',valoresUnicosMaster(postes,'electricos','ELECTRICOS'),'Todos');
+
+  llenarFiltroMaster('mfTipoCamara',valoresUnicosMaster(canal,'tipo_camara','TIPOCAMARA'),'Todos');
+  llenarFiltroMaster('mfPropietarioCanal',valoresUnicosMaster(canal,'propietari','PROPIETARI'),'Todos');
+  llenarFiltroMaster('mfSubidaPoste',valoresUnicosMaster(canal,'subida_a_p','SUBIDA A P'),'Todas');
+  llenarFiltroMaster('mfConfDucto',valoresUnicosMaster(canal,'conf_ducto','CONF DUCTO'),'Todas');
+  llenarFiltroMaster('mfDuctoElec',valoresUnicosMaster(canal,'ducto_elec','DUCTO ELEC'),'Todos');
+  llenarFiltroMaster('mfDuctoTelco',valoresUnicosMaster(canal,'duct_telco','DUCT TELCO'),'Todos');
+  llenarFiltroMaster('mfDuctoLibre',valoresUnicosMaster(canal,'duct_libre','DUCT LIBRE'),'Todos');
+  llenarFiltroMaster('mfDuctoUtil',valoresUnicosMaster(canal,'duct_util','DUCT UTIL'),'Todos');
+
+  actualizarVisibilidadFiltrosMaster();
+}
+
+function actualizarVisibilidadFiltrosMaster(){
+  const tipo=normalizarFiltroMaster(document.getElementById('fTipo')?.value);
+  const p=document.getElementById('masterPosteFilters');
+  const c=document.getElementById('masterCanalizadoFilters');
+  if(p)p.style.opacity=(!tipo||tipo==='POSTE')?'1':'.42';
+  if(c)c.style.opacity=(!tipo||tipo==='CANALIZADO')?'1':'.42';
+}
+
+function aplicarFiltroPosteMaster(el){
+  if(el?.value){
+    const tipo=document.getElementById('fTipo');
+    if(tipo)tipo.value='POSTE';
+  }
+  actualizarVisibilidadFiltrosMaster();
+  pintarMapa();
+}
+
+function aplicarFiltroCanalizadoMaster(el){
+  if(el?.value){
+    const tipo=document.getElementById('fTipo');
+    if(tipo)tipo.value='CANALIZADO';
+  }
+  actualizarVisibilidadFiltrosMaster();
+  pintarMapa();
+}
+
+function limpiarFiltrosAvanzadosMaster(){
+  [
+    'mfRotura','mfAltura','mfPropietarioPoste','mfTension','mfMaterial','mfElectricos',
+    'mfTipoCamara','mfPropietarioCanal','mfSubidaPoste','mfConfDucto',
+    'mfDuctoElec','mfDuctoTelco','mfDuctoLibre','mfDuctoUtil'
+  ].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  pintarMapa();
+}
+
+function coincideFiltroMaster(p,id,dbKey,qgisKey=''){
+  const filtro=String(document.getElementById(id)?.value||'').trim();
+  if(!filtro)return true;
+  return normalizarFiltroMaster(valorPuntoMaster(p,dbKey,qgisKey))===normalizarFiltroMaster(filtro);
+}
+
+function puntoCumpleFiltrosMaster(p){
+  const tipo=normalizarFiltroMaster(document.getElementById('fTipo')?.value);
+  const poligono=normalizarFiltroMaster(document.getElementById('fPoligono')?.value);
+  const t=normalizarFiltroMaster(p?.tipo);
+  const pol=normalizarFiltroMaster(p?.poligono);
+
+  if(tipo&&t!==tipo)return false;
+  if(poligono&&pol!==poligono)return false;
+
+  if(t==='POSTE'){
+    return (
+      coincideFiltroMaster(p,'mfRotura','rotura','ROTURA') &&
+      coincideFiltroMaster(p,'mfAltura','altura','ALTURA') &&
+      coincideFiltroMaster(p,'mfPropietarioPoste','propietari','PROPIETARI') &&
+      coincideFiltroMaster(p,'mfTension','tension','TENSION') &&
+      coincideFiltroMaster(p,'mfMaterial','material','MATERIAL') &&
+      coincideFiltroMaster(p,'mfElectricos','electricos','ELECTRICOS')
+    );
+  }
+
+  if(t==='CANALIZADO'){
+    return (
+      coincideFiltroMaster(p,'mfTipoCamara','tipo_camara','TIPOCAMARA') &&
+      coincideFiltroMaster(p,'mfPropietarioCanal','propietari','PROPIETARI') &&
+      coincideFiltroMaster(p,'mfSubidaPoste','subida_a_p','SUBIDA A P') &&
+      coincideFiltroMaster(p,'mfConfDucto','conf_ducto','CONF DUCTO') &&
+      coincideFiltroMaster(p,'mfDuctoElec','ducto_elec','DUCTO ELEC') &&
+      coincideFiltroMaster(p,'mfDuctoTelco','duct_telco','DUCT TELCO') &&
+      coincideFiltroMaster(p,'mfDuctoLibre','duct_libre','DUCT LIBRE') &&
+      coincideFiltroMaster(p,'mfDuctoUtil','duct_util','DUCT UTIL')
+    );
+  }
+
+  return true;
+}
+
+function toggleConexionesMaster(){
+  mostrarConexionesMaster=!mostrarConexionesMaster;
+  localStorage.setItem('master_mostrar_conexiones_v1',mostrarConexionesMaster?'1':'0');
+  actualizarBotonesCapasMapaMaster();
+  pintarMapa();
+}
+
+function actualizarBotonesCapasMapaMaster(){
+  const bc=document.getElementById('btnConexionesMaster');
+  if(bc){
+    bc.textContent=mostrarConexionesMaster?'🔗 Conexiones ON':'🔗 Conexiones OFF';
+    bc.classList.toggle('layerOn',mostrarConexionesMaster);
+    bc.classList.toggle('layerOff',!mostrarConexionesMaster);
+  }
+
+  const b=document.getElementById('btnCartografiaMapaMaster');
+  const p=proyectos.find(x=>String(x.id)===String(document.getElementById('fProyecto')?.value||''));
+  const disponible=!!String(p?.cartografia_path||'').trim();
+
+  if(b){
+    b.disabled=!disponible;
+    b.textContent=!disponible
+      ? '🗺️ Sin cartografía'
+      : (mostrarCartografiaMapaMaster?'🗺️ Cartografía ON':'🗺️ Cartografía OFF');
+    b.classList.toggle('layerOn',disponible&&mostrarCartografiaMapaMaster);
+    b.classList.toggle('layerOff',!disponible||!mostrarCartografiaMapaMaster);
+  }
+}
+
+function limpiarCartografiaMapaMaster(){
+  if(cartografiaMapaMasterLayer&&map){
+    try{map.removeLayer(cartografiaMapaMasterLayer)}catch(_){}
+  }
+  cartografiaMapaMasterLayer=null;
+}
+
+function parseCoordsCartografiaMaster(texto){
+  return String(texto||'').trim().split(/\s+/).map(par=>{
+    const v=par.split(',').map(Number);
+    return [v[0],v[1]];
+  }).filter(v=>Number.isFinite(v[0])&&Number.isFinite(v[1]));
+}
+
+function propsKMLCartografiaMaster(pm){
+  const props={};
+  const name=pm.querySelector(':scope > name')?.textContent?.trim()||
+    pm.getElementsByTagName('name')?.[0]?.textContent?.trim()||'';
+  if(name)props.name=name;
+
+  pm.querySelectorAll('ExtendedData Data').forEach(d=>{
+    const k=d.getAttribute('name');
+    const v=d.querySelector('value')?.textContent?.trim()||'';
+    if(k)props[k]=v;
+  });
+  pm.querySelectorAll('ExtendedData SimpleData').forEach(d=>{
+    const k=d.getAttribute('name');
+    const v=d.textContent?.trim()||'';
+    if(k)props[k]=v;
+  });
+  return props;
+}
+
+function geoJSONCartografiaMasterDesdeKML(text){
+  const xml=new DOMParser().parseFromString(text,'text/xml');
+  if(xml.querySelector('parsererror'))throw new Error('KML inválido.');
+
+  const features=[];
+  [...xml.getElementsByTagName('Placemark')].forEach(pm=>{
+    const geoms=[];
+
+    [...pm.getElementsByTagName('Point')].forEach(g=>{
+      const c=parseCoordsCartografiaMaster(g.getElementsByTagName('coordinates')?.[0]?.textContent||'');
+      if(c[0])geoms.push({type:'Point',coordinates:c[0]});
+    });
+
+    [...pm.getElementsByTagName('LineString')].forEach(g=>{
+      const c=parseCoordsCartografiaMaster(g.getElementsByTagName('coordinates')?.[0]?.textContent||'');
+      if(c.length>=2)geoms.push({type:'LineString',coordinates:c});
+    });
+
+    [...pm.getElementsByTagName('Polygon')].forEach(poly=>{
+      const outer=parseCoordsCartografiaMaster(
+        poly.getElementsByTagName('outerBoundaryIs')?.[0]?.getElementsByTagName('coordinates')?.[0]?.textContent||''
+      );
+      if(outer.length<4)return;
+      const rings=[outer];
+      [...poly.getElementsByTagName('innerBoundaryIs')].forEach(inner=>{
+        const r=parseCoordsCartografiaMaster(inner.getElementsByTagName('coordinates')?.[0]?.textContent||'');
+        if(r.length>=4)rings.push(r);
+      });
+      geoms.push({type:'Polygon',coordinates:rings});
+    });
+
+    if(!geoms.length)return;
+    features.push({
+      type:'Feature',
+      properties:propsKMLCartografiaMaster(pm),
+      geometry:geoms.length===1?geoms[0]:{type:'GeometryCollection',geometries:geoms}
+    });
+  });
+
+  return {type:'FeatureCollection',features};
+}
+
+async function blobCartografiaMasterAGeoJSON(blob,tipo,nombre=''){
+  const ext=String(tipo||'').toLowerCase()||String(nombre||'').split('.').pop().toLowerCase();
+
+  if(ext==='geojson'||ext==='json'){
+    const obj=JSON.parse(await blob.text());
+    if(!obj?.type)throw new Error('GeoJSON inválido.');
+    return obj;
+  }
+  if(ext==='kml')return geoJSONCartografiaMasterDesdeKML(await blob.text());
+  if(ext==='kmz'){
+    const zip=await JSZip.loadAsync(blob);
+    const kml=Object.keys(zip.files).find(x=>/\.kml$/i.test(x));
+    if(!kml)throw new Error('KMZ sin KML.');
+    return geoJSONCartografiaMasterDesdeKML(await zip.files[kml].async('text'));
+  }
+  throw new Error('Formato de cartografía no soportado.');
+}
+
+function popupCartografiaMaster(feature){
+  const p=feature?.properties||{};
+  const arr=Object.entries(p).filter(([,v])=>v!==null&&v!==undefined&&String(v).trim()!=='').slice(0,8);
+  if(!arr.length)return '';
+  return `<div class="masterCartographyPopup">${arr.map(([k,v])=>`<b>${esc(k)}:</b> ${esc(v)}`).join('<br>')}</div>`;
+}
+
+async function cargarCartografiaMapaMaster(proyecto){
+  limpiarCartografiaMapaMaster();
+  if(!mostrarCartografiaMapaMaster||!proyecto?.cartografia_path)return null;
+
+  try{
+    let geo=cartografiaMapaMasterCache.get(String(proyecto.id));
+
+    if(!geo){
+      const {data,error}=await sb.storage
+        .from(CARTOGRAFIA_BUCKET)
+        .download(proyecto.cartografia_path);
+      if(error)throw error;
+
+      geo=await blobCartografiaMasterAGeoJSON(
+        data,
+        proyecto.cartografia_tipo,
+        proyecto.cartografia_nombre||proyecto.cartografia_path
+      );
+
+      cartografiaMapaMasterCache.set(String(proyecto.id),geo);
+    }
+
+    cartografiaMapaMasterLayer=L.geoJSON(geo,{
+      style:()=>({
+        color:'#ffffff',
+        weight:2,
+        opacity:.95,
+        fillColor:'#ffffff',
+        fillOpacity:.05
+      }),
+      pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{
+        radius:4,
+        color:'#ffffff',
+        weight:2,
+        fillColor:'#ffffff',
+        fillOpacity:.8
+      }),
+      onEachFeature:(feature,l)=>{
+        const h=popupCartografiaMaster(feature);
+        if(h)l.bindPopup(h);
+      }
+    }).addTo(map);
+
+    cartografiaMapaMasterLayer.eachLayer?.(l=>{
+      try{l.bringToBack?.()}catch(_){}
+    });
+
+    return cartografiaMapaMasterLayer;
+
+  }catch(e){
+    console.warn('Cartografía MASTER:',e);
+    alert('No fue posible visualizar la cartografía del proyecto.\n\n'+(e?.message||e));
+    mostrarCartografiaMapaMaster=false;
+    localStorage.setItem('master_mostrar_cartografia_v1','0');
+    actualizarBotonesCapasMapaMaster();
+    return null;
+  }
+}
+
+async function toggleCartografiaMapaMaster(){
+  const id=document.getElementById('fProyecto')?.value||'';
+  const p=proyectos.find(x=>String(x.id)===String(id));
+  if(!p?.cartografia_path){
+    mostrarCartografiaMapaMaster=false;
+    actualizarBotonesCapasMapaMaster();
+    return alert('Este proyecto no tiene cartografía cargada.');
+  }
+
+  mostrarCartografiaMapaMaster=!mostrarCartografiaMapaMaster;
+  localStorage.setItem('master_mostrar_cartografia_v1',mostrarCartografiaMapaMaster?'1':'0');
+  actualizarBotonesCapasMapaMaster();
+
+  if(mostrarCartografiaMapaMaster)await cargarCartografiaMapaMaster(p);
+  else limpiarCartografiaMapaMaster();
+}
+
+function distanciaConexionGPSMaster(a,b){
+  const lat1=Number(a?.latitude),lon1=Number(a?.longitude);
+  const lat2=Number(b?.latitude),lon2=Number(b?.longitude);
+  if(![lat1,lon1,lat2,lon2].every(Number.isFinite))return 0;
+  const R=6371000,rad=x=>x*Math.PI/180;
+  const dLat=rad(lat2-lat1),dLon=rad(lon2-lon1);
+  const q=Math.sin(dLat/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+
+function distanciaOdoConexionMaster(p,slot){
+  const n=Number(valorPuntoMaster(p,`distodo${slot}`,`DISTODO${slot}`));
+  return Number.isFinite(n)&&n>0?n:0;
+}
+
+function textoDistanciaConexionMaster(origen,destino,distSlot){
+  const gps=distanciaConexionGPSMaster(origen,destino);
+  const odo=distanciaOdoConexionMaster(origen,distSlot);
+  const fmt=n=>new Intl.NumberFormat('es-CO',{maximumFractionDigits:1}).format(n||0);
+  if(odo>0)return `GPS ${fmt(gps)} m / Odo ${fmt(odo)} m`;
+  return `GPS ${fmt(gps)} m`;
+}
+
+function agregarEtiquetaDistanciaMaster(origen,destino,distSlot,grupo){
+  const lat1=Number(origen.latitude),lon1=Number(origen.longitude);
+  const lat2=Number(destino.latitude),lon2=Number(destino.longitude);
+  if(![lat1,lon1,lat2,lon2].every(Number.isFinite))return;
+
+  const mid=[(lat1+lat2)/2,(lon1+lon2)/2];
+  const txt=textoDistanciaConexionMaster(origen,destino,distSlot);
+
+  L.marker(mid,{
+    interactive:false,
+    icon:L.divIcon({
+      className:'connectionDistanceLabel',
+      html:`<span class="connectionDistanceBadge">${esc(txt)}</span>`,
+      iconSize:[1,1],
+      iconAnchor:[0,0]
+    })
+  }).addTo(grupo);
+}
+
 async function cargarProyectoMapa(){
   const id=fProyecto.value;
+
+  limpiarCartografiaMapaMaster();
+
   if(!id){
     puntos=[];
+    actualizarFiltrosAvanzadosMaster();
     pintarMapa();
     kPuntos.textContent=0;
     detenerSeguimientoTecnicosMaster();
     if(polygonMasterLayer){try{map.removeLayer(polygonMasterLayer)}catch(_){} polygonMasterLayer=null;}
+    actualizarBotonesCapasMapaMaster();
     return;
   }
 
@@ -3901,8 +5588,10 @@ async function cargarProyectoMapa(){
   if(!proyecto){
     fProyecto.value='';
     puntos=[];
+    actualizarFiltrosAvanzadosMaster();
     pintarMapa();
     detenerSeguimientoTecnicosMaster();
+    actualizarBotonesCapasMapaMaster();
     return;
   }
 
@@ -3912,11 +5601,18 @@ async function cargarProyectoMapa(){
   ]);
 
   if(error)return alert(error.message);
+
   puntos=data||[];
   kPuntos.textContent=puntos.length;
+
+  actualizarFiltrosAvanzadosMaster();
+  actualizarBotonesCapasMapaMaster();
   pintarMapa();
 
-  // Inicia/actualiza la ubicación en vivo de los técnicos del proyecto.
+  if(mostrarCartografiaMapaMaster){
+    cargarCartografiaMapaMaster(proyecto).catch(e=>console.warn('Cartografía:',e));
+  }
+
   iniciarSeguimientoTecnicosMaster(id).catch(e=>
     console.warn('Seguimiento técnicos:',e)
   );
@@ -3927,7 +5623,28 @@ async function cargarProyectoMapa(){
 }
 
 function idxPuntos(lista){const m=new Map();lista.forEach(p=>m.set(`${p.poligono}__${Number(p.consecutiv)||0}`,p));return m}
-function conexiones(p,idx){const out=[];for(let i=1;i<=4;i++){const c=Number(p['cx'+i]||0);if(c>0){const d=idx.get(`${p.poligono}__${c}`);if(d)out.push({d,otro:false,slot:'CX'+i})}}if(p.cxotropol==='SI'){for(let i=1;i<=4;i++){const pol=p['cx'+i+'pol'],c=Number(p['cx'+i+'conse']||0);if(pol&&c>0){const d=idx.get(`${pol}__${c}`);if(d)out.push({d,otro:true,slot:'CX'+i})}}}return out}
+function conexiones(p,idx){
+  const out=[];
+  for(let i=1;i<=4;i++){
+    const c=Number(p['cx'+i]||0);
+    if(c>0){
+      const d=idx.get(`${p.poligono}__${c}`);
+      if(d)out.push({d,otro:false,slot:'CX'+i,distSlot:i});
+    }
+  }
+
+  if(String(p.cxotropol||'').toUpperCase()==='SI'){
+    for(let i=1;i<=4;i++){
+      const pol=p['cx'+i+'pol'];
+      const c=Number(p['cx'+i+'conse']||0);
+      if(pol&&c>0){
+        const d=idx.get(`${pol}__${c}`);
+        if(d)out.push({d,otro:true,slot:'CX'+i,distSlot:i+4});
+      }
+    }
+  }
+  return out;
+}
 function colorTipoMaster(){return '#ef4444'}
 function simboloTipoMaster(tipo,color){
   if(tipo==='CANALIZADO')return `<div style="width:16px;height:16px;background:${color};border:2px solid white"></div>`;
@@ -3938,26 +5655,74 @@ function simboloTipoMaster(tipo,color){
 function pintarMapa(){
   if(!map)return;
   if(layer)layer.remove();
-  layer=L.layerGroup().addTo(map);
-  const tipo=fTipo.value;
-  const lista=puntos.filter(p=>!tipo||p.tipo===tipo),idx=idxPuntos(puntos),lineas=new Set();
 
-  lista.forEach(p=>conexiones(p,idx).forEach(c=>{
-    const key=[p.idcampo,c.d.idcampo,c.otro].sort().join('|');
-    if(lineas.has(key))return;
-    lineas.add(key);
-    L.polyline([[p.latitude,p.longitude],[c.d.latitude,c.d.longitude]],{color:'#48d1cc',weight:4,opacity:.95,dashArray:'10,6'})
-      .addTo(layer).bindPopup(`<b>${esc(c.slot)}</b><br>${esc(p.idcampo)} ↔ ${esc(c.d.idcampo)}`);
-  }));
+  layer=L.layerGroup().addTo(map);
+
+  const lista=puntos.filter(puntoCumpleFiltrosMaster);
+  const idx=idxPuntos(puntos);
+  const idsVisibles=new Set(lista.map(p=>String(p.id)));
+  const lineas=new Set();
+
+  if(mostrarConexionesMaster){
+    lista.forEach(p=>conexiones(p,idx).forEach(c=>{
+      if(!idsVisibles.has(String(c.d.id)))return;
+
+      const key=[p.idcampo,c.d.idcampo,c.otro].sort().join('|');
+      if(lineas.has(key))return;
+      lineas.add(key);
+
+      const linea=L.polyline(
+        [[p.latitude,p.longitude],[c.d.latitude,c.d.longitude]],
+        {
+          color:'#48d1cc',
+          weight:4,
+          opacity:.95,
+          dashArray:'10,6'
+        }
+      ).addTo(layer)
+       .bindPopup(
+         `<b>${esc(c.slot)}</b><br>`+
+         `${esc(p.idcampo)} ↔ ${esc(c.d.idcampo)}<br>`+
+         `<b>${esc(textoDistanciaConexionMaster(p,c.d,c.distSlot))}</b>`
+       );
+
+      agregarEtiquetaDistanciaMaster(p,c.d,c.distSlot,layer);
+    }));
+  }
 
   lista.forEach(p=>{
-    const icon=L.divIcon({className:'',html:simboloTipoMaster(p.tipo,colorTipoMaster()),iconSize:[20,20],iconAnchor:[10,10]});
-    const mk=L.marker([p.latitude,p.longitude],{icon})
+    const lat=Number(p.latitude),lon=Number(p.longitude);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+
+    const icon=L.divIcon({
+      className:'',
+      html:simboloTipoMaster(p.tipo,colorTipoMaster()),
+      iconSize:[20,20],
+      iconAnchor:[10,10]
+    });
+
+    const mk=L.marker([lat,lon],{icon})
       .addTo(layer)
-      .bindTooltip(String(p.consecutiv||''),{permanent:['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(p.tipo),direction:'right',offset:[9,0],className:'posteLabel',opacity:1});
+      .bindTooltip(
+        String(p.consecutiv||''),
+        {
+          permanent:['POSTE','C. AMERICANO','CERCHA','CANALIZADO'].includes(p.tipo),
+          direction:'right',
+          offset:[9,0],
+          className:'posteLabel',
+          opacity:1
+        }
+      );
+
     mk.on('click',()=>abrirDetallePunto(p.id));
   });
+
+  const counter=document.getElementById('mapFilterCounter');
+  if(counter)counter.textContent=`${lista.length} de ${puntos.length} elementos visibles`;
+
+  actualizarBotonesCapasMapaMaster();
 }
+
 async function abrirPuntos(proyectoId){
   const p=exigirProyectoPermitidoMaster(proyectoId,'consultar los puntos de este proyecto');
   if(!p)return;
@@ -4834,8 +6599,20 @@ function renderDashboardAvances(){
     if(!porTec.has(tec))porTec.set(tec,{tecnico:tec,total:0,dias:new Set(),POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
     const x=porTec.get(tec);x.total++;x.dias.add(f);if(x[t]!=null)x[t]++;
 
-    if(!porPoligono.has(pol))porPoligono.set(pol,0);
-    porPoligono.set(pol,porPoligono.get(pol)+1);
+    if(!porPoligono.has(pol)){
+      porPoligono.set(pol,{
+        poligono:pol,
+        total:0,
+        POSTE:0,
+        CANALIZADO:0,
+        'C. AMERICANO':0,
+        CERCHA:0,
+        CLIENTE:0
+      });
+    }
+    const pp=porPoligono.get(pol);
+    pp.total++;
+    if(pp[t]!=null)pp[t]++;
 
     if(!porCiudad.has(ciudad))porCiudad.set(ciudad,0);
     porCiudad.set(ciudad,porCiudad.get(ciudad)+1);
@@ -4857,7 +6634,8 @@ function renderDashboardAvances(){
 
   const dias=[...porDia.values()].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const tecnicos=[...porTec.values()].sort((a,b)=>b.total-a.total);
-  const poligonos=[...porPoligono.entries()].map(([poligono,total])=>({poligono,total})).sort((a,b)=>b.total-a.total);
+  const poligonos=[...porPoligono.values()]
+    .sort((a,b)=>String(a.poligono).localeCompare(String(b.poligono),'es',{numeric:true,sensitivity:'base'}));
   const ciudades=[...porCiudad.entries()].map(([ciudad,total])=>({ciudad,total})).sort((a,b)=>b.total-a.total);
   const fechas=[...new Set(dias.map(d=>d.fecha))].filter(f=>f && f!=='Sin fecha').sort();
   const total=arr.length;
@@ -4913,8 +6691,57 @@ function renderDashboardAvances(){
 
   crearChart('chPoligonos',{
     type:'bar',
-    data:{labels:poligonos.map(p=>p.poligono),datasets:[{label:'CONSECUTIV',data:poligonos.map(p=>p.total),backgroundColor:'#facc15',borderColor:'#eab308',borderWidth:1,maxBarThickness:42}]},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{display:false},datalabels:{display:true,color:'#111827',anchor:'end',align:'start',offset:-2,formatter:(v)=>v||''}}}
+    data:{
+      labels:poligonos.map(p=>p.poligono),
+      datasets:[
+        {label:'Postes',data:poligonos.map(p=>p.POSTE),backgroundColor:'#3b82f6',stack:'infra'},
+        {label:'Canalizados / Cámaras',data:poligonos.map(p=>p.CANALIZADO),backgroundColor:'#f59e0b',stack:'infra'},
+        {label:'C. Americanos',data:poligonos.map(p=>p['C. AMERICANO']),backgroundColor:'#a855f7',stack:'infra'},
+        {label:'Cerchas',data:poligonos.map(p=>p.CERCHA),backgroundColor:'#84cc16',stack:'infra'},
+        {label:'Clientes',data:poligonos.map(p=>p.CLIENTE),backgroundColor:'#06b6d4',stack:'infra'}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:18}},
+      scales:{
+        x:{
+          stacked:true,
+          ticks:{color:'#64748b',maxRotation:45,minRotation:0}
+        },
+        y:{
+          stacked:true,
+          beginAtZero:true,
+          ticks:{precision:0,color:'#64748b'}
+        }
+      },
+      plugins:{
+        legend:{
+          display:true,
+          position:'top',
+          align:'start',
+          labels:{color:chartText,boxWidth:16}
+        },
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#ffffff',
+          anchor:'center',
+          align:'center',
+          font:{size:9,weight:'bold'},
+          formatter:(v)=>v||''
+        },
+        tooltip:{
+          callbacks:{
+            footer:(items)=>{
+              if(!items?.length)return '';
+              const i=items[0].dataIndex;
+              return `Total polígono: ${poligonos[i]?.total||0}`;
+            }
+          }
+        }
+      }
+    }
   });
 
   crearChart('chTecnicos',{
@@ -6183,7 +8010,22 @@ window.addEventListener('load',async()=>{
 
 function toggleEntregables(ev){
   if(ev){ev.preventDefault();ev.stopPropagation();}
-  document.getElementById('deliverablesTop')?.classList.toggle('open');
+  const root=document.getElementById('deliverablesTop');
+  if(!root)return;
+
+  root.classList.toggle('open');
+
+  const btn=root.querySelector('.deliverablesBtn');
+  if(btn){
+    btn.classList.toggle('headerActionActive',root.classList.contains('open'));
+  }
+
+  // El menú es fixed para que nunca vuelva a quedar recortado
+  // por el contenedor horizontal de acciones del header.
+  const menu=document.getElementById('entregablesMenu');
+  if(root.classList.contains('open')&&menu){
+    menu.scrollTop=0;
+  }
 }
 function cerrarEntregables(){
   document.getElementById('deliverablesTop')?.classList.remove('open');
@@ -6195,6 +8037,365 @@ document.addEventListener('click',function(e){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape') cerrarEntregables();
 });
+
+// ============================================================
+// V57 · GESTIÓN SUPERIOR ORGANIZADA
+// ============================================================
+let empresasGestion=[];
+
+function cambiarTabProyecto(tab,boton=null){
+  document.querySelectorAll('#adminProyectosModal .projectTabPanel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('#adminProyectosModal .projectTabBtn').forEach(x=>x.classList.remove('active'));
+
+  document.getElementById(`projectTab_${tab}`)?.classList.add('active');
+
+  const btn=boton || document.querySelector(`#adminProyectosModal .projectTabBtn[data-project-tab="${tab}"]`);
+  btn?.classList.add('active');
+
+  if(tab==='poligonos'){
+    llenarSelectsGestionProyectos();
+  }else if(tab==='fotos'){
+    cargarConfigFotosProyectoExistente();
+  }else if(tab==='cartografia'){
+    actualizarEstadoCartografiaMaster();
+  }else if(tab==='asignaciones'){
+    cargarPoligonosAsignacion();
+  }
+}
+
+function llenarSelectsGestionProyectos(){
+  const po='<option value="">Seleccione...</option>'+proyectos.map(p=>{
+    const e=empresas.find(x=>String(x.id)===String(p.empresa_id));
+    return `<option value="${p.id}">${esc(e?.nombre_corto||e?.nombre||'SIN EMPRESA')} · ${esc(p.codigo||'')} · ${esc(p.nombre||'')}</option>`;
+  }).join('');
+
+  const d=document.getElementById('distribucionProyectoSelect');
+  if(d){
+    const keep=d.value;
+    d.innerHTML=po;
+    if([...d.options].some(o=>o.value===keep))d.value=keep;
+  }
+}
+
+function abrirGestionEmpresas(){
+  if(!esAdminMaster())return alert('Solo un administrador puede gestionar empresas.');
+  document.getElementById('empresasModal')?.classList.add('open');
+  cargarEmpresasGestion();
+}
+function cerrarGestionEmpresas(){
+  document.getElementById('empresasModal')?.classList.remove('open');
+}
+
+async function cargarEmpresasGestion(){
+  if(!esAdminMaster())return;
+
+  const {data,error}=await sb
+    .from('mapping_empresas')
+    .select('*')
+    .order('nombre');
+
+  if(error){
+    alert('Error cargando empresas: '+error.message);
+    return;
+  }
+
+  empresasGestion=data||[];
+  pintarEmpresasGestion();
+}
+
+function pintarEmpresasGestion(){
+  const tbody=document.getElementById('tablaEmpresasGestion');
+  if(!tbody)return;
+
+  const q=String(document.getElementById('empresaBuscar')?.value||'').trim().toLowerCase();
+
+  const lista=empresasGestion.filter(e=>{
+    const txt=[e.nombre,e.nombre_corto,e.nit,e.ciudad,e.activo===false?'inactiva':'activa']
+      .map(x=>String(x||'').toLowerCase()).join(' ');
+    return !q||txt.includes(q);
+  });
+
+  tbody.innerHTML=lista.length?lista.map(e=>`
+    <tr>
+      <td><b>${esc(e.nombre||'')}</b></td>
+      <td>${esc(e.nombre_corto||'—')}</td>
+      <td>${esc(e.nit||'—')}</td>
+      <td>${esc(e.ciudad||'—')}</td>
+      <td><span class="inlineStatus ${e.activo===false?'inactive':'active'}">${e.activo===false?'Inactiva':'Activa'}</span></td>
+      <td>
+        <div class="rowActions">
+          <button class="btn small gray" onclick="abrirEditarEmpresa('${esc(e.id)}')">Editar</button>
+          ${e.activo===false
+            ? `<button class="btn small blue" onclick="cambiarEstadoEmpresa('${esc(e.id)}',true)">Reactivar</button>`
+            : `<button class="btn small danger" onclick="eliminarEmpresaMapping('${esc(e.id)}')">Eliminar</button>`}
+        </div>
+      </td>
+    </tr>
+  `).join(''):'<tr><td colspan="6">Sin empresas que coincidan con la búsqueda.</td></tr>';
+}
+
+function abrirEditarEmpresa(id){
+  const e=empresasGestion.find(x=>String(x.id)===String(id));
+  if(!e)return;
+  editEmpresaId.value=e.id;
+  editEmpresaNombre.value=e.nombre||'';
+  editEmpresaCorto.value=e.nombre_corto||'';
+  editEmpresaNit.value=e.nit||'';
+  editEmpresaCiudad.value=e.ciudad||'';
+  editEmpresaActivo.value=e.activo===false?'false':'true';
+  editarEmpresaModal.classList.add('open');
+}
+
+async function guardarEdicionEmpresa(){
+  if(!exigirAdminMaster('editar empresas'))return;
+
+  const id=editEmpresaId.value;
+  const nombre=editEmpresaNombre.value.trim();
+  if(!id||!nombre)return alert('El nombre de la empresa es obligatorio.');
+
+  const {error}=await sb
+    .from('mapping_empresas')
+    .update({
+      nombre,
+      nombre_corto:editEmpresaCorto.value.trim()||null,
+      nit:editEmpresaNit.value.trim()||null,
+      ciudad:editEmpresaCiudad.value.trim()||null,
+      activo:editEmpresaActivo.value==='true'
+    })
+    .eq('id',id);
+
+  if(error)return alert('No se pudo actualizar la empresa: '+error.message);
+
+  editarEmpresaModal.classList.remove('open');
+  await cargarEmpresas();
+  await cargarEmpresasGestion();
+  llenarSelects();
+  alert('Empresa actualizada.');
+}
+
+async function cambiarEstadoEmpresa(id,activo){
+  if(!exigirAdminMaster('modificar empresas'))return;
+  const {error}=await sb.from('mapping_empresas').update({activo:!!activo}).eq('id',id);
+  if(error)return alert('No se pudo actualizar la empresa: '+error.message);
+  await cargarEmpresas();
+  await cargarEmpresasGestion();
+  llenarSelects();
+}
+
+async function eliminarEmpresaMapping(id){
+  if(!exigirAdminMaster('eliminar empresas'))return;
+  const e=empresasGestion.find(x=>String(x.id)===String(id));
+  if(!e)return;
+
+  const [proyRes,userRes]=await Promise.all([
+    sb.from('mapping_proyectos').select('*',{count:'exact',head:true}).eq('empresa_id',id),
+    sb.from('mapping_usuarios').select('*',{count:'exact',head:true}).eq('empresa_id',id)
+  ]);
+
+  const proyectosAsociados=Number(proyRes.count||0);
+  const usuariosAsociados=Number(userRes.count||0);
+
+  const msg=
+    `¿Eliminar la empresa "${e.nombre}" del catálogo activo?\n\n`+
+    `Proyectos asociados: ${proyectosAsociados}\n`+
+    `Usuarios asociados: ${usuariosAsociados}\n\n`+
+    `Para no romper el historial, la empresa se marcará como INACTIVA.`;
+
+  if(!confirm(msg))return;
+  await cambiarEstadoEmpresa(id,false);
+}
+
+function abrirGestionUsuarios(){
+  if(!esAdminMaster())return alert('Solo un administrador puede gestionar usuarios.');
+  llenarSelects();
+  pintarUsuarios();
+  document.getElementById('usuariosModal')?.classList.add('open');
+}
+function cerrarGestionUsuarios(){
+  document.getElementById('usuariosModal')?.classList.remove('open');
+}
+
+function abrirEditarUsuario(id){
+  if(!esAdminMaster())return;
+  const u=usuarios.find(x=>String(x.id)===String(id));
+  if(!u)return;
+
+  editUsuarioId.value=u.id;
+  editUsuarioNombre.value=u.nombre||'';
+  editUsuarioEmail.value=u.email||'';
+  editUsuarioRol.value=String(u.rol||'tecnico').toLowerCase();
+  editUsuarioActivo.value=u.activo===false?'false':'true';
+
+  editUsuarioEmpresa.innerHTML=
+    '<option value="">Seleccione...</option>'+
+    empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  editUsuarioEmpresa.value=u.empresa_id||'';
+
+  editarUsuarioModal.classList.add('open');
+}
+
+async function guardarEdicionUsuario(){
+  if(!exigirAdminMaster('editar usuarios'))return;
+
+  const id=editUsuarioId.value;
+  const u=usuarios.find(x=>String(x.id)===String(id));
+  if(!u)return alert('No se encontró el usuario.');
+
+  if(String(id)===String(user?.id) && editUsuarioActivo.value==='false'){
+    return alert('No puedes desactivar tu propio usuario mientras estás usando el MASTER.');
+  }
+
+  const empresa_id=editUsuarioEmpresa.value||null;
+  const rol=editUsuarioRol.value;
+  if(rol==='coordinador'&&!empresa_id){
+    return alert('Un coordinador debe tener una empresa asignada.');
+  }
+
+  const {error}=await sb
+    .from('mapping_usuarios')
+    .update({
+      nombre:editUsuarioNombre.value.trim()||u.email,
+      empresa_id,
+      rol,
+      activo:editUsuarioActivo.value==='true'
+    })
+    .eq('id',id);
+
+  if(error)return alert('No se pudo actualizar el usuario: '+error.message);
+
+  editarUsuarioModal.classList.remove('open');
+  await cargarUsuarios();
+  llenarSelects();
+  alert('Usuario actualizado.');
+}
+
+async function eliminarUsuarioMapping(id){
+  if(!exigirAdminMaster('eliminar usuarios'))return;
+  if(String(id)===String(user?.id))return alert('No puedes eliminar tu propio acceso.');
+
+  const u=usuarios.find(x=>String(x.id)===String(id));
+  if(!u)return;
+
+  if(!confirm(
+    `¿Eliminar el acceso de ${u.nombre||u.email}?\n\n`+
+    `El usuario quedará INACTIVO en MAPPING y conservará su historial de levantamientos y asignaciones.`
+  ))return;
+
+  const {error}=await sb
+    .from('mapping_usuarios')
+    .update({activo:false})
+    .eq('id',id);
+
+  if(error)return alert('No se pudo eliminar/desactivar el usuario: '+error.message);
+
+  await cargarUsuarios();
+  llenarSelects();
+}
+
+function abrirEditarProyecto(id){
+  const p=exigirProyectoPermitidoMaster(id,'editar este proyecto');
+  if(!p)return;
+
+  editProyectoId.value=p.id;
+  editProyectoCodigo.value=p.codigo||'';
+  editProyectoNombre.value=p.nombre||'';
+  editProyectoCiudad.value=p.ciudad||'';
+  editProyectoTipo.value=String(p.tipo_proyecto||'MAPPING').toUpperCase();
+  editProyectoEstado.value=String(p.estado||'activo').toLowerCase();
+  editProyectoDescripcion.value=p.descripcion||'';
+  editarProyectoModal.classList.add('open');
+}
+
+async function guardarEdicionProyecto(){
+  const id=editProyectoId.value;
+  const p=exigirProyectoPermitidoMaster(id,'editar este proyecto');
+  if(!p)return;
+
+  const codigo=editProyectoCodigo.value.trim();
+  const nombre=editProyectoNombre.value.trim();
+  if(!codigo||!nombre)return alert('Código y nombre son obligatorios.');
+
+  if(codigo!==String(p.codigo||'')){
+    const {data:dup,error:eDup}=await sb
+      .from('mapping_proyectos')
+      .select('id')
+      .eq('codigo',codigo)
+      .neq('id',id)
+      .limit(1);
+
+    if(eDup)return alert('No se pudo validar el código: '+eDup.message);
+    if((dup||[]).length)return alert('Ya existe otro proyecto con ese código.');
+  }
+
+  const payload={
+    codigo,
+    nombre,
+    ciudad:editProyectoCiudad.value.trim()||null,
+    tipo_proyecto:editProyectoTipo.value,
+    estado:editProyectoEstado.value,
+    descripcion:editProyectoDescripcion.value.trim()||null
+  };
+
+  const {error}=await sb.from('mapping_proyectos').update(payload).eq('id',id);
+  if(error)return alert('No se pudo actualizar el proyecto: '+error.message);
+
+  editarProyectoModal.classList.remove('open');
+  await cargarProyectos();
+  llenarSelects();
+  llenarSelectsGestionProyectos();
+  filtrarAdministrarProyectos();
+  alert('Proyecto actualizado.');
+}
+
+async function abrirDistribucionPoligonos(proyectoId){
+  if(!proyectoId)return alert('Selecciona un proyecto.');
+
+  const p=exigirProyectoPermitidoMaster(proyectoId,'consultar la distribución de polígonos');
+  if(!p)return;
+
+  distPolyProyectoId.value=p.id;
+  distPolyProyectoInfo.textContent=`${p.codigo||''} · ${p.nombre||''}`;
+  distPolyGrid.innerHTML='<div class="hint">Cargando distribución...</div>';
+  distribucionPoligonosModal.classList.add('open');
+
+  const [poligonos,ocupacion]=await Promise.all([
+    obtenerPoligonosProyecto(p.id),
+    obtenerOcupacionPoligonos(p.id)
+  ]);
+
+  const asignados=poligonos.filter(x=>ocupacion.has(String(x.id))).length;
+  distPolyTotal.textContent=poligonos.length;
+  distPolyAsignados.textContent=asignados;
+  distPolyLibres.textContent=Math.max(0,poligonos.length-asignados);
+
+  distPolyGrid.innerHTML=poligonos.length?poligonos.map(poly=>{
+    const o=ocupacion.get(String(poly.id));
+    return `<div class="polyDistributionItem ${o?'busy':'free'}">
+      <b>${esc(poly.codigo||poly.nombre||'POLÍGONO')}</b>
+      <span>${esc(poly.nombre||'')}</span>
+      <span class="polyOwner">${o
+        ? `👷 ${esc(o.tecnico_nombre||o.tecnico_email||'Asignado')}`
+        : '✓ Libre'}</span>
+    </div>`;
+  }).join(''):'<div class="hint">Este proyecto no tiene polígonos activos en el catálogo.</div>';
+}
+
+async function actualizarPoligonosDesdeDistribucion(){
+  if(!esAdminMaster())return alert('Solo un administrador puede modificar el archivo maestro de polígonos.');
+
+  const proyectoId=distPolyProyectoId.value;
+  const archivo=distPolyArchivo.value.trim();
+  if(!proyectoId||!archivo)return alert('Ingresa el nuevo archivo de polígonos.');
+
+  geoProyectoExistente.value=proyectoId;
+  geoUrlActualiza.value=archivo;
+  await actualizarGeoJSONProyectoExistente();
+
+  distPolyArchivo.value='';
+  await abrirDistribucionPoligonos(proyectoId);
+}
+
+
 </script>
 </body>
 </html>
