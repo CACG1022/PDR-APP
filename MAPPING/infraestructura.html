@@ -1358,7 +1358,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Cartografía por proyecto · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Cartografía blanca offline · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1600,6 +1600,8 @@ let cartografiaGeoJSONCache=null;
 let cartografiaProyectoCacheId=null;
 let cartografiaVisible=false;
 let cartografiaCargando=false;
+let cartografiaCargaProgramadaTimer=null;
+let seleccionProyectoEnCurso=false;
 let poligonosAsignados=[];
 let poligonosAsignadosSet=new Set();
 let poligonosGeoJSON=null;
@@ -1623,13 +1625,6 @@ function init(){
     }
   }).setView([4.65,-74.1],17);
 
-  const panePoligonos=map.createPane('poligonosPane');
-  panePoligonos.classList.add('leaflet-poligonos-pane');
-  panePoligonos.style.zIndex='330';
-
-  const paneCartografia=map.createPane('cartografiaPane');
-  paneCartografia.style.zIndex='315';
-  paneCartografia.style.pointerEvents='auto';
 
   const paneGpsAccuracy=map.createPane('gpsAccuracyPane');
   paneGpsAccuracy.style.zIndex='590';
@@ -1723,25 +1718,20 @@ function limpiarCartografiaProyecto({limpiarCache=true}={}){
 }
 
 function valorColorCartografia(props={}){
-  return (
-    props.stroke ||
-    props.color ||
-    props.COLOR ||
-    props.Color ||
-    '#38bdf8'
-  );
+  // La cartografía del proyecto se muestra siempre en blanco
+  // para mantener una visualización uniforme sobre cualquier mapa base.
+  return '#ffffff';
 }
 
 function estiloCartografiaFeature(feature){
   const p=feature?.properties||{};
-  const color=valorColorCartografia(p);
+  const color='#ffffff';
   return {
-    pane:'cartografiaPane',
     color,
     weight:Number(p['stroke-width']||p.weight||2),
-    opacity:Number(p['stroke-opacity']||p.opacity||0.82),
-    fillColor:p.fill||p.fillColor||color,
-    fillOpacity:Number(p['fill-opacity']||p.fillOpacity||0.08)
+    opacity:0.95,
+    fillColor:'#ffffff',
+    fillOpacity:0.06
   };
 }
 
@@ -1805,7 +1795,6 @@ function propsPlacemarkCartografia(pm){
 function geometriaKMLCartografia(pm){
   const geoms=[];
 
-  // Points
   [...pm.getElementsByTagName('Point')].forEach(g=>{
     const c=parsearCoordsKMLGenerico(
       g.getElementsByTagName('coordinates')?.[0]?.textContent||''
@@ -1813,7 +1802,6 @@ function geometriaKMLCartografia(pm){
     if(c[0])geoms.push({type:'Point',coordinates:c[0]});
   });
 
-  // Lines
   [...pm.getElementsByTagName('LineString')].forEach(g=>{
     const c=parsearCoordsKMLGenerico(
       g.getElementsByTagName('coordinates')?.[0]?.textContent||''
@@ -1821,7 +1809,6 @@ function geometriaKMLCartografia(pm){
     if(c.length>=2)geoms.push({type:'LineString',coordinates:c});
   });
 
-  // Polygons
   [...pm.getElementsByTagName('Polygon')].forEach(poly=>{
     const outerNode=poly.getElementsByTagName('outerBoundaryIs')?.[0];
     const outer=parsearCoordsKMLGenerico(
@@ -1830,12 +1817,14 @@ function geometriaKMLCartografia(pm){
     if(outer.length<4)return;
 
     const rings=[outer];
+
     [...poly.getElementsByTagName('innerBoundaryIs')].forEach(inner=>{
       const ring=parsearCoordsKMLGenerico(
         inner.getElementsByTagName('coordinates')?.[0]?.textContent||''
       );
       if(ring.length>=4)rings.push(ring);
     });
+
     geoms.push({type:'Polygon',coordinates:rings});
   });
 
@@ -1846,14 +1835,17 @@ function geometriaKMLCartografia(pm){
 
 function geoJSONCartografiaDesdeKML(kmlText){
   const xml=new DOMParser().parseFromString(kmlText,'text/xml');
+
   if(xml.querySelector('parsererror')){
     throw new Error('El archivo KML no es válido.');
   }
 
   const features=[];
+
   [...xml.getElementsByTagName('Placemark')].forEach(pm=>{
     const geometry=geometriaKMLCartografia(pm);
     if(!geometry)return;
+
     features.push({
       type:'Feature',
       properties:propsPlacemarkCartografia(pm),
@@ -1865,14 +1857,25 @@ function geoJSONCartografiaDesdeKML(kmlText){
 }
 
 async function geoJSONDesdeBlobCartografia(blob,tipo,nombre=''){
-  const ext=String(tipo||'').toLowerCase() || String(nombre).split('.').pop().toLowerCase();
+  const ext=
+    String(tipo||'').toLowerCase() ||
+    String(nombre||'').split('.').pop().toLowerCase();
 
   if(ext==='geojson'||ext==='json'){
     const text=await blob.text();
     const data=JSON.parse(text);
-    if(!data || !['FeatureCollection','Feature','GeometryCollection','Point','MultiPoint','LineString','MultiLineString','Polygon','MultiPolygon'].includes(data.type)){
+
+    if(
+      !data ||
+      ![
+        'FeatureCollection','Feature','GeometryCollection',
+        'Point','MultiPoint','LineString','MultiLineString',
+        'Polygon','MultiPolygon'
+      ].includes(data.type)
+    ){
       throw new Error('El archivo no contiene GeoJSON válido.');
     }
+
     return data;
   }
 
@@ -1881,10 +1884,17 @@ async function geoJSONDesdeBlobCartografia(blob,tipo,nombre=''){
   }
 
   if(ext==='kmz'){
-    if(typeof JSZip==='undefined')throw new Error('JSZip no está disponible.');
+    if(typeof JSZip==='undefined'){
+      throw new Error('JSZip no está disponible.');
+    }
+
     const zip=await JSZip.loadAsync(blob);
     const kmlName=Object.keys(zip.files).find(x=>/\.kml$/i.test(x));
-    if(!kmlName)throw new Error('El KMZ no contiene un archivo KML.');
+
+    if(!kmlName){
+      throw new Error('El KMZ no contiene un archivo KML.');
+    }
+
     const text=await zip.files[kmlName].async('text');
     return geoJSONCartografiaDesdeKML(text);
   }
@@ -1893,22 +1903,152 @@ async function geoJSONDesdeBlobCartografia(blob,tipo,nombre=''){
 }
 
 function crearLayerCartografia(data){
-  return L.geoJSON(data,{
-    pane:'cartografiaPane',
-    style:estiloCartografiaFeature,
+  // IMPORTANTE:
+  // No se asigna ningún pane personalizado.
+  // leaflet-rotate aplica correctamente rotación/zoom a los vectores
+  // cuando permanecen en el overlayPane normal de Leaflet.
+  const layer=L.geoJSON(data,{
+    style:feature=>{
+      const estilo=estiloCartografiaFeature(feature);
+      const limpio={...estilo};
+      delete limpio.pane;
+      return limpio;
+    },
     pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{
-      pane:'cartografiaPane',
       radius:5,
       color:valorColorCartografia(feature?.properties||{}),
       weight:2,
       fillColor:valorColorCartografia(feature?.properties||{}),
       fillOpacity:.72
     }),
-    onEachFeature:(feature,layer)=>{
-      const html=htmlPropiedadesCartografia(feature);
-      if(html)layer.bindPopup(html,{maxWidth:300});
+    onEachFeature:(feature,capa)=>{
+      const contenido=htmlPropiedadesCartografia(feature);
+      if(contenido)capa.bindPopup(contenido,{maxWidth:300});
     }
   });
+
+  // Dentro del overlayPane normal se mantiene detrás de otros vectores.
+  layer.on('add',()=>{
+    requestAnimationFrame(()=>{
+      layer.eachLayer(c=>{
+        try{c.bringToBack?.()}catch(_){}
+      });
+    });
+  });
+
+  return layer;
+}
+
+function versionCartografiaProyecto(){
+  return String(
+    proyectoActivo?.cartografia_updated_at ||
+    proyectoActivo?.cartografia_path ||
+    ''
+  );
+}
+
+function cacheCartografiaCoincide(cache){
+  if(!cache||!proyectoActivo)return false;
+  return (
+    String(cache.path||'')===String(proyectoActivo.cartografia_path||'') &&
+    String(cache.version||'')===versionCartografiaProyecto() &&
+    cache.blob instanceof Blob
+  );
+}
+
+async function descargarCartografiaYGuardarLocal(){
+  if(!proyectoTieneCartografia()){
+    throw new Error('El proyecto no tiene cartografía configurada.');
+  }
+
+  if(!navigator.onLine){
+    throw new Error('Sin Internet para descargar la cartografía por primera vez.');
+  }
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  const path=String(proyectoActivo?.cartografia_path||'').trim();
+
+  const {data,error}=await mappingSb.storage
+    .from(CARTOGRAFIA_BUCKET)
+    .download(path);
+
+  if(error)throw error;
+
+  try{
+    await guardarCacheCartografia(proyectoId,{
+      path,
+      version:versionCartografiaProyecto(),
+      nombre:proyectoActivo.cartografia_nombre||path,
+      tipo:proyectoActivo.cartografia_tipo||'',
+      blob:data
+    });
+  }catch(e){
+    console.warn('No se pudo guardar la cartografía en IndexedDB:',e);
+  }
+
+  return {blob:data,origen:'supabase',actual:true};
+}
+
+async function obtenerBlobCartografiaProyecto({forzarDescarga=false}={}){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId)return null;
+
+  let cache=null;
+  try{
+    cache=await obtenerCacheCartografia(proyectoId);
+  }catch(e){
+    console.warn('No se pudo leer caché de cartografía:',e);
+  }
+
+  if(!forzarDescarga && cacheCartografiaCoincide(cache)){
+    return {
+      blob:cache.blob,
+      origen:'indexeddb',
+      actual:true,
+      cache
+    };
+  }
+
+  if(navigator.onLine){
+    try{
+      return await descargarCartografiaYGuardarLocal();
+    }catch(e){
+      console.warn('No se pudo actualizar cartografía desde Supabase:',e);
+      if(cache?.blob instanceof Blob){
+        return {
+          blob:cache.blob,
+          origen:'indexeddb-stale',
+          actual:false,
+          cache
+        };
+      }
+      throw e;
+    }
+  }
+
+  if(cache?.blob instanceof Blob){
+    return {
+      blob:cache.blob,
+      origen:'indexeddb-offline',
+      actual:cacheCartografiaCoincide(cache),
+      cache
+    };
+  }
+
+  throw new Error(
+    'Esta cartografía aún no está guardada en el celular y actualmente no hay conexión a Internet.'
+  );
+}
+
+async function asegurarCartografiaLocalProyecto(){
+  if(!proyectoTieneCartografia())return false;
+  try{
+    await obtenerBlobCartografiaProyecto({forzarDescarga:false});
+    return true;
+  }catch(e){
+    console.warn('No fue posible preparar cartografía local:',e?.message||e);
+    return false;
+  }
 }
 
 async function cargarCartografiaProyecto(forzar=false){
@@ -1927,7 +2067,11 @@ async function cargarCartografiaProyecto(forzar=false){
   ){
     if(cartografiaLayer && map && !map.hasLayer(cartografiaLayer)){
       cartografiaLayer.addTo(map);
+      cartografiaLayer.eachLayer?.(c=>{
+        try{c.bringToBack?.()}catch(_){}
+      });
     }
+
     cartografiaVisible=true;
     localStorage.setItem(clavePreferenciaCartografia(),'1');
     actualizarBotonCartografiaProyecto();
@@ -1938,16 +2082,17 @@ async function cargarCartografiaProyecto(forzar=false){
   cartografiaCargando=true;
 
   try{
+    const origen=await obtenerBlobCartografiaProyecto({
+      forzarDescarga:!!forzar
+    });
+
+    if(!origen?.blob){
+      throw new Error('No fue posible obtener la cartografía.');
+    }
+
     const path=String(proyectoActivo.cartografia_path||'').trim();
-
-    const {data,error}=await mappingSb.storage
-      .from(CARTOGRAFIA_BUCKET)
-      .download(path);
-
-    if(error)throw error;
-
     const geo=await geoJSONDesdeBlobCartografia(
-      data,
+      origen.blob,
       proyectoActivo.cartografia_tipo,
       proyectoActivo.cartografia_nombre||path
     );
@@ -1959,10 +2104,21 @@ async function cargarCartografiaProyecto(forzar=false){
     cartografiaGeoJSONCache=geo;
     cartografiaProyectoCacheId=proyectoId;
     cartografiaLayer=crearLayerCartografia(geo).addTo(map);
-    cartografiaVisible=true;
 
+    cartografiaLayer.eachLayer?.(c=>{
+      try{c.bringToBack?.()}catch(_){}
+    });
+
+    cartografiaVisible=true;
     localStorage.setItem(clavePreferenciaCartografia(),'1');
     actualizarBotonCartografiaProyecto();
+
+    console.info(
+      'Cartografía cargada:',
+      origen.origen,
+      origen.actual?'versión actual':'copia local anterior'
+    );
+
     return true;
   }catch(e){
     console.error('Cartografía del proyecto:',e);
@@ -1998,23 +2154,50 @@ async function toggleCartografiaProyecto(){
 }
 
 async function prepararCartografiaProyectoSeleccionado(){
-  // Cambiar de proyecto siempre limpia la capa anterior.
+  if(cartografiaCargaProgramadaTimer){
+    clearTimeout(cartografiaCargaProgramadaTimer);
+    cartografiaCargaProgramadaTimer=null;
+  }
+
   if(cartografiaLayer && map){
     try{map.removeLayer(cartografiaLayer)}catch(_){}
   }
+
   cartografiaLayer=null;
   cartografiaGeoJSONCache=null;
   cartografiaProyectoCacheId=null;
   cartografiaVisible=false;
   actualizarBotonCartografiaProyecto();
 
-  if(!proyectoTieneCartografia())return;
+  // No descargar ni parsear aquí.
+  // La prioridad es terminar de cargar polígonos, puntos y centrar el mapa.
+}
 
-  // Se recuerda la última preferencia del técnico por proyecto.
-  const preferencia=localStorage.getItem(clavePreferenciaCartografia());
-  if(preferencia==='1'){
-    await cargarCartografiaProyecto(false);
+function programarCartografiaProyectoSegundoPlano(delay=700){
+  if(cartografiaCargaProgramadaTimer){
+    clearTimeout(cartografiaCargaProgramadaTimer);
   }
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId || !proyectoTieneCartografia())return;
+
+  cartografiaCargaProgramadaTimer=setTimeout(async()=>{
+    cartografiaCargaProgramadaTimer=null;
+
+    // Si mientras esperábamos cambió el proyecto, abortamos.
+    if(String(proyectoActivo?.proyecto_id||'')!==proyectoId)return;
+
+    // Primero garantiza una copia local. Si ya está actualizada en IndexedDB,
+    // esta operación no descarga nada.
+    await asegurarCartografiaLocalProyecto();
+
+    if(String(proyectoActivo?.proyecto_id||'')!==proyectoId)return;
+
+    const preferencia=localStorage.getItem(clavePreferenciaCartografia());
+    if(preferencia==='1'){
+      await cargarCartografiaProyecto(false);
+    }
+  },Math.max(0,Number(delay)||0));
 }
 
 function orientarMapaNorte(){
@@ -5798,6 +5981,10 @@ const POLY_DB_NAME='mapping_sitesurvey_poligonos_v1';
 const POLY_DB_VERSION=1;
 const POLY_STORE='proyectos';
 
+const CARTO_DB_NAME='mapping_sitesurvey_cartografia_v1';
+const CARTO_DB_VERSION=1;
+const CARTO_STORE='proyectos';
+
 function abrirDBPoligonos(){
   return new Promise((resolve,reject)=>{
     const req=indexedDB.open(POLY_DB_NAME,POLY_DB_VERSION);
@@ -5835,6 +6022,61 @@ async function obtenerCachePoligonos(proyectoId){
     req.onsuccess=()=>resolve(req.result||null);
     req.onerror=()=>reject(req.error);
     tx.oncomplete=()=>db.close();
+  });
+}
+
+
+function abrirDBCartografia(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(CARTO_DB_NAME,CARTO_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(CARTO_STORE)){
+        db.createObjectStore(CARTO_STORE,{keyPath:'proyecto_id'});
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+async function guardarCacheCartografia(proyectoId,datos={}){
+  const db=await abrirDBCartografia();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(CARTO_STORE,'readwrite');
+    tx.objectStore(CARTO_STORE).put({
+      proyecto_id:String(proyectoId),
+      path:String(datos.path||''),
+      version:String(datos.version||''),
+      nombre:String(datos.nombre||''),
+      tipo:String(datos.tipo||''),
+      blob:datos.blob||null,
+      size:Number(datos.blob?.size||0),
+      downloaded_at:new Date().toISOString()
+    });
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+async function obtenerCacheCartografia(proyectoId){
+  const db=await abrirDBCartografia();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(CARTO_STORE,'readonly');
+    const req=tx.objectStore(CARTO_STORE).get(String(proyectoId));
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function eliminarCacheCartografia(proyectoId){
+  const db=await abrirDBCartografia();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(CARTO_STORE,'readwrite');
+    tx.objectStore(CARTO_STORE).delete(String(proyectoId));
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
   });
 }
 
@@ -7081,7 +7323,6 @@ function pintarPoligonosAsignados(obj){
 
   let __polyTechIndex=0;
   poligonoLayer=L.geoJSON(obj,{
-    pane:'poligonosPane',
     style:(feature)=>{
       const nombre=
         nombreExplicitoFeaturePoligonoApp(feature) ||
@@ -7698,8 +7939,6 @@ async function cargarProyectosAsignados(){
     return;
   }
 
-  // Solo estas asignaciones habilitan trabajo.
-  // Una asignación finalizada no permite modificar ni registrar.
   proyectosAsignados=(data||[]).filter(a=>
     ['asignado','en_proceso'].includes(
       String(a.estado_asignacion||'').toLowerCase()
@@ -7713,12 +7952,13 @@ async function cargarProyectosAsignados(){
     poligonosAsignados=[];
     poligonosAsignadosSet=new Set();
     limpiarCapaPoligonos();
+    limpiarCartografiaProyecto();
     localStorage.removeItem('mapping_proyecto_activo_v1');
     bloquearSinProyecto();
     return;
   }
 
-  // Valida que el proyecto guardado en caché siga realmente asignado.
+  // Valida el proyecto guardado sin iniciar una segunda selección paralela.
   if(proyectoActivo){
     const a=proyectosAsignados.find(x=>
       String(x.proyecto_id)===String(proyectoActivo.proyecto_id)
@@ -7740,7 +7980,9 @@ async function cargarProyectosAsignados(){
 
       setControlesTrabajoHabilitados(false);
       actualizarIndicadorTipoProyecto();
-      await prepararCartografiaProyectoSeleccionado();
+
+      // Solo limpia/prepara el estado visual; NO descarga cartografía aquí.
+      prepararCartografiaProyectoSeleccionado();
 
       const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
       if(!cantidadPoligonos){
@@ -7748,9 +7990,13 @@ async function cargarProyectosAsignados(){
         return;
       }
 
+      // false = no fitBounds. Después hacemos un único centrado.
       await cargarPuntosSupabase(false);
       ubicarEnUltimoElementoRegistrado();
       actualizarEstadoSync();
+
+      // La cartografía se resuelve después, sin bloquear la carga principal.
+      programarCartografiaProyectoSegundoPlano(700);
       return;
     }
 
@@ -7795,6 +8041,8 @@ function pintarProyectosAsignados(){
 }
 
 async function seleccionarProyecto(asignacionId){
+  if(seleccionProyectoEnCurso)return;
+
   const a=proyectosAsignados.find(x=>String(x.id)===String(asignacionId));
 
   if(!a){
@@ -7802,49 +8050,77 @@ async function seleccionarProyecto(asignacionId){
     return;
   }
 
-  const p=a.mapping_proyectos||{};
-
-  proyectoActivo={
-    ...a,
-    ...p,
-    empresa:p.mapping_empresas||null,
-    proyecto_id:a.proyecto_id,
-    asignacion_id:a.id
-  };
-
-  localStorage.setItem(
-    'mapping_proyecto_activo_v1',
-    JSON.stringify(proyectoActivo)
-  );
-
-  if(PROYECTO)PROYECTO.value=p.nombre||p.codigo||'';
-  if(TIPO_PROYECTO)TIPO_PROYECTO.value=String(p.tipo_proyecto||'MAPPING').toUpperCase();
-  if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;
-  if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
-  actualizarIndicadorTipoProyecto();
-  await prepararCartografiaProyectoSeleccionado();
-
-  await mappingSb
-    .from('mapping_proyecto_tecnicos')
-    .update({
-      estado_asignacion:'en_proceso',
-      fecha_inicio:a.fecha_inicio||new Date().toISOString()
-    })
-    .eq('id',a.id);
-
-  cerrarPanelProyectos();
-  setControlesTrabajoHabilitados(false);
-  sincronizarChecksPin();
-
-  const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
-  if(!cantidadPoligonos){
-    actualizarEstadoSync();
+  // Si el mismo proyecto ya está activo y operativo, no recargar todo.
+  if(
+    proyectoActivo &&
+    String(proyectoActivo.asignacion_id||'')===String(a.id) &&
+    trabajoProyectoHabilitado
+  ){
+    cerrarPanelProyectos();
     return;
   }
 
-  await cargarPuntosSupabase();
-  ubicarEnUltimoElementoRegistrado();
-  actualizarEstadoSync();
+  seleccionProyectoEnCurso=true;
+
+  try{
+    const p=a.mapping_proyectos||{};
+
+    proyectoActivo={
+      ...a,
+      ...p,
+      empresa:p.mapping_empresas||null,
+      proyecto_id:a.proyecto_id,
+      asignacion_id:a.id
+    };
+
+    localStorage.setItem(
+      'mapping_proyecto_activo_v1',
+      JSON.stringify(proyectoActivo)
+    );
+
+    if(PROYECTO)PROYECTO.value=p.nombre||p.codigo||'';
+    if(TIPO_PROYECTO)TIPO_PROYECTO.value=String(p.tipo_proyecto||'MAPPING').toUpperCase();
+    if(CIUDAD&&p.ciudad)CIUDAD.value=p.ciudad;
+    if(TECNICO)TECNICO.value=mappingProfile?.nombre||mappingUser?.email||'';
+
+    actualizarIndicadorTipoProyecto();
+
+    // Solo reinicia la capa; no descarga ni parsea cartografía todavía.
+    prepararCartografiaProyectoSeleccionado();
+
+    // Actualización administrativa de la asignación.
+    await mappingSb
+      .from('mapping_proyecto_tecnicos')
+      .update({
+        estado_asignacion:'en_proceso',
+        fecha_inicio:a.fecha_inicio||new Date().toISOString()
+      })
+      .eq('id',a.id);
+
+    cerrarPanelProyectos();
+    setControlesTrabajoHabilitados(false);
+    sincronizarChecksPin();
+
+    const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
+    if(!cantidadPoligonos){
+      actualizarEstadoSync();
+      return;
+    }
+
+    // Muy importante: false evita fitBounds de todos los puntos.
+    await cargarPuntosSupabase(false);
+
+    // ÚNICO movimiento automático del mapa al seleccionar proyecto.
+    ubicarEnUltimoElementoRegistrado();
+
+    actualizarEstadoSync();
+
+    // Cache/render de cartografía después de terminar la carga operativa.
+    programarCartografiaProyectoSegundoPlano(700);
+
+  }finally{
+    seleccionProyectoEnCurso=false;
+  }
 }
 
 
@@ -10962,6 +11238,9 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
+
+
 
 
 
