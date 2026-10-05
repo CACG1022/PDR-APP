@@ -7,11 +7,16 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/pmtiles@4.5.0/dist/pmtiles.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js"></script>
 <style>
 :root{--bg:#07111f;--surface:#0d1b2a;--surface2:#14263a;--border:#29415d;--text:#f8fafc;--muted:#9fb0c4;--primary:#12b8ae;--danger:#ef4444;--warn:#f59e0b;--blue:#38bdf8}
@@ -1345,6 +1350,332 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   line-height:1.35;
 }
 
+
+/* ===== V96 · PROYECTO / MAPA BASE OFFLINE PMTILES ===== */
+.offlineMapModal{width:min(980px,97vw)}
+.offlineSummaryGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:10px;
+}
+.offlineSummaryCard{
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#0b1928;
+  padding:9px;
+}
+.offlineSummaryCard span{
+  display:block;
+  color:#94a3b8;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.offlineSummaryCard b{
+  display:block;
+  margin-top:4px;
+  font-size:17px;
+  color:#f8fafc;
+}
+.offlineActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0;
+}
+.offlineGlobalProgress{
+  border:1px solid #29415d;
+  border-radius:12px;
+  background:#07111f;
+  padding:10px;
+  margin:10px 0;
+}
+.offlineGlobalProgressTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  font-size:10px;
+  font-weight:900;
+}
+.offlineGlobalTrack{
+  height:10px;
+  border-radius:999px;
+  overflow:hidden;
+  background:#172033;
+  margin-top:7px;
+}
+.offlineGlobalBar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#0ea5e9,#14b8a6);
+  transition:width .25s ease;
+}
+.offlinePolygonList{display:grid;gap:8px}
+.offlinePolygonCard{
+  border:1px solid #334155;
+  border-radius:12px;
+  background:#0b1928;
+  padding:10px;
+}
+.offlinePolygonCard.ready{border-color:#22c55e}
+.offlinePolygonCard.update{border-color:#f59e0b}
+.offlinePolygonCard.error{border-color:#ef4444}
+.offlinePolygonTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.offlinePolygonTitle b{display:block;font-size:12px}
+.offlinePolygonTitle small{display:block;color:#94a3b8;font-size:8px;margin-top:2px}
+.offlineBadge{
+  flex:0 0 auto;
+  border-radius:999px;
+  padding:4px 7px;
+  font-size:8px;
+  font-weight:1000;
+  background:#334155;
+  color:#e2e8f0;
+}
+.offlineBadge.ready{background:#166534;color:#dcfce7}
+.offlineBadge.update{background:#92400e;color:#fef3c7}
+.offlineBadge.missing{background:#7f1d1d;color:#fee2e2}
+.offlinePolygonMeta{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin:8px 0;
+}
+.offlinePolygonMeta>div{
+  background:#07111f;
+  border-radius:8px;
+  padding:6px 7px;
+}
+.offlinePolygonMeta span{display:block;color:#94a3b8;font-size:7px;text-transform:uppercase;font-weight:900}
+.offlinePolygonMeta b{display:block;color:#f8fafc;font-size:9px;margin-top:2px;word-break:break-word}
+.offlinePolygonActions{display:flex;gap:6px;flex-wrap:wrap}
+.offlinePolygonActions .btn{width:auto;margin:0;padding:8px 9px;font-size:9px}
+.offlineImportCard{
+  border:1px dashed #475569;
+  border-radius:12px;
+  padding:10px;
+  margin-top:12px;
+  background:#081420;
+}
+.offlineImportGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.offlineStorageNote{
+  margin-top:9px;
+  font-size:9px;
+  color:#94a3b8;
+}
+#btnOfflineProject.offlineReady{
+  border-color:#22c55e!important;
+  color:#bbf7d0!important;
+}
+.baseMapChoices button.offlineUnavailable{opacity:.45}
+body.lightTheme .offlineSummaryCard,
+body.lightTheme .offlinePolygonCard,
+body.lightTheme .offlineGlobalProgress,
+body.lightTheme .offlineImportCard{
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border-color:#94a3b8!important;
+}
+body.lightTheme .offlineSummaryCard b,
+body.lightTheme .offlinePolygonMeta b{color:#0f172a!important}
+body.lightTheme .offlinePolygonMeta>div{background:#e2e8f0!important}
+@media(max-width:700px){
+  .offlineSummaryGrid{grid-template-columns:repeat(2,1fr)}
+  .offlineActions,.offlineImportGrid{grid-template-columns:1fr}
+  .offlinePolygonMeta{grid-template-columns:1fr}
+}
+
+
+/* ===== V97 · DESCARGA DIRECTA DE MAPA BASE + SATÉLITE ===== */
+.directOfflineCard{
+  border:1px solid #31506e;
+  border-radius:13px;
+  background:#0a1725;
+  padding:11px;
+  margin:10px 0;
+}
+.directOfflineCard h3{margin:0 0 7px;color:#dff8ff;font-size:12px}
+.directOfflineGrid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:9px;
+}
+.directOfflineProvider{
+  border:1px solid #334155;
+  border-radius:11px;
+  padding:9px;
+  background:#07111f;
+}
+.directOfflineProvider h4{margin:0 0 5px;font-size:11px;color:#fff}
+.directOfflineProvider small{display:block;color:#94a3b8;font-size:8px;line-height:1.35}
+.directKeyRow{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:7px;
+  align-items:end;
+  margin-top:8px;
+}
+.directKeyRow .btn{width:auto;margin:0}
+.directDownloadActions{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+  margin-top:9px;
+}
+.directDownloadActions .btn{margin:0}
+.directPolyList{display:grid;gap:8px;margin-top:10px}
+.directPolyCard{
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:9px;
+  background:#081522;
+}
+.directPolyTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+.directPolyTop b{font-size:11px}
+.directPolyTop small{display:block;color:#94a3b8;font-size:8px}
+.directPolyPackages{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:8px;
+}
+.directPkg{
+  border:1px solid #25384e;
+  border-radius:9px;
+  padding:7px;
+  background:#06101b;
+}
+.directPkg.ready{border-color:#22c55e}
+.directPkg.partial{border-color:#f59e0b}
+.directPkg span{display:block;font-size:8px;color:#94a3b8;font-weight:900;text-transform:uppercase}
+.directPkg b{display:block;font-size:9px;color:#f8fafc;margin-top:2px}
+.directPkg small{display:block;font-size:7px;color:#94a3b8;margin-top:2px}
+.directPolyActions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+.directPolyActions .btn{width:auto;margin:0;padding:7px 8px;font-size:8px}
+.directLegal{
+  margin-top:8px;
+  padding:8px;
+  border-left:3px solid #38bdf8;
+  background:#07111f;
+  color:#94a3b8;
+  font-size:8px;
+  line-height:1.45;
+}
+.directZoomInfo{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:6px;
+}
+.directZoomChip{
+  padding:4px 7px;
+  border-radius:999px;
+  background:#172033;
+  color:#cbd5e1;
+  font-size:8px;
+  font-weight:900;
+}
+.baseMapChoices button.directReady{
+  border-color:#22c55e!important;
+}
+body.lightTheme .directOfflineCard,
+body.lightTheme .directOfflineProvider,
+body.lightTheme .directPolyCard,
+body.lightTheme .directPkg,
+body.lightTheme .directLegal{
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border-color:#94a3b8!important;
+}
+body.lightTheme .directPolyTop b,
+body.lightTheme .directPkg b,
+body.lightTheme .directOfflineProvider h4{color:#0f172a!important}
+@media(max-width:700px){
+  .directOfflineGrid,.directPolyPackages{grid-template-columns:1fr}
+  .directDownloadActions{grid-template-columns:1fr}
+  .directKeyRow{grid-template-columns:1fr}
+}
+
+
+/* ===== V98 · OFFLINE SIMPLE ===== */
+.offlineSimpleStatus{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.offlineSimpleStatus>div{
+  border:1px solid #29415d;
+  border-radius:11px;
+  background:#07111f;
+  padding:9px;
+  text-align:center;
+}
+.offlineSimpleStatus span{
+  display:block;
+  color:#94a3b8;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.offlineSimpleStatus b{
+  display:block;
+  color:#f8fafc;
+  font-size:17px;
+  margin-top:4px;
+}
+body.lightTheme .offlineSimpleStatus>div{
+  background:#f8fafc!important;
+  border-color:#94a3b8!important;
+}
+body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
+@media(max-width:650px){
+  .offlineSimpleStatus{grid-template-columns:1fr}
+}
+
+
+/* ===== V99 · OFFLINE BASE + SATÉLITE IGAC ===== */
+.offlineSimpleStatus{
+  grid-template-columns:repeat(4,1fr)!important;
+}
+.offlineSimpleActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+}
+.offlineSimpleActions .btn{
+  margin:0;
+  min-height:42px;
+}
+#baseMapOfflineSatelliteChoice.directReady{
+  border-color:#a855f7!important;
+}
+@media(max-width:760px){
+  .offlineSimpleStatus{grid-template-columns:1fr 1fr!important}
+  .offlineSimpleActions{grid-template-columns:1fr}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1358,7 +1689,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   ></iframe>
 </div>
 
-<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Cartografía blanca offline · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
+<header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Base + satélite IGAC offline · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
 <div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -1415,6 +1746,7 @@ body.lightTheme .aiPhotoResult.warn{color:#92400e}
   <button onclick="abrirBuscarConsecutivo();toggleSideMenu(false)">🔎 Buscar por consecutivo</button>
   <button id="btnBaseMap" onclick="toggleBaseMap();toggleSideMenu(false)">🌑 Apagar mapa base</button>
   <button id="btnCartografiaProyecto" onclick="toggleCartografiaProyecto();toggleSideMenu(false)" disabled>🗺️ Cartografía: no disponible</button>
+  <button id="btnOfflineProject" onclick="abrirPrepararProyectoOffline();toggleSideMenu(false)">📦 Preparar proyecto offline</button>
   <button id="btnDistanciasMapa" onclick="toggleDistanciasMapa();toggleSideMenu(false)">📏 Ocultar distancias</button>
   <button onclick="orientarMapaNorte();toggleSideMenu(false)">🧭 Orientar al norte</button>
   <button onclick="abrirDashboardTecnico();toggleSideMenu(false)">📊 Mi avance</button>
@@ -1594,6 +1926,44 @@ let gpsUltimaActualizacionMs=0;
 let gpsWatchdogTimer=null;
 let gpsConsultaEnCurso=false;
 let hyb=null,osm=null,darkBase=null,baseMapApagado=false;
+let baseLayerControl=null;
+let offlineBaseGroup=null;
+let offlineBaseActivo=false;
+let offlineBaseLayers=[];
+let offlineRemoteIndex=null;
+let offlineRemoteIndexProyectoId=null;
+
+let offlineVectorDirectLayer=null;
+let offlineSatelliteDirectLayer=null;
+let offlineDirectTipoActivo='';
+let offlineDirectDescargaEnCurso=false;
+
+const OFFLINE_MAP_BUCKET='mapping-offline-maps';
+const OFFLINE_VECTOR_FAKE_PREFIX='https://mapping-offline.local/protomaps/';
+const PROTOMAPS_API_URL='https://api.protomaps.com/tiles/v4/{z}/{x}/{y}.mvt';
+const EOX_SATELLITE_URL='https://e.tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg';
+const DIRECT_VECTOR_MINZOOM=11;
+const DIRECT_VECTOR_MAXZOOM=15;
+const DIRECT_SAT_MINZOOM=10;
+const DIRECT_SAT_MAXZOOM=13;
+const DIRECT_BUFFER_METERS=350;
+const DIRECT_MAX_TILES_PER_POLYGON_PROVIDER=3500;
+const OSM_OFFLINE_PROVIDER='osm_openfreemap';
+const OSM_OFFLINE_STYLE_URL='https://tiles.openfreemap.org/styles/liberty';
+const OSM_OFFLINE_MINZOOM=10;
+const OSM_OFFLINE_MAXZOOM=14;
+const OSM_OFFLINE_BUFFER_METERS=350;
+const OSM_OFFLINE_MAX_TILES_PER_POLYGON=3500;
+let osmOfflineMapLibreLayer=null;
+let osmOfflineTileTemplateCache='';
+let osmOfflineProtocolInstalled=false;
+const IGAC_OFFLINE_PROVIDER='satellite_igac';
+const IGAC_ORTHO_EXPORT_URL='https://mapas.igac.gov.co/server/rest/services/otros/ortocolombia/MapServer/export';
+const IGAC_OFFLINE_MINZOOM=12;
+const IGAC_OFFLINE_MAXZOOM=17;
+const IGAC_OFFLINE_BUFFER_METERS=350;
+const IGAC_OFFLINE_MAX_TILES_PER_POLYGON=2600;
+let igacOfflineLayer=null;
 const CARTOGRAFIA_BUCKET='mapping-cartografia';
 let cartografiaLayer=null;
 let cartografiaGeoJSONCache=null;
@@ -1641,13 +2011,15 @@ function init(){
     maxZoom:22,attribution:'© OpenStreetMap'
   });
   darkBase=L.layerGroup();
+  offlineBaseGroup=L.layerGroup();
 
   const baseGuardado=localStorage.getItem('mapping_base_map_v1')||'hyb';
+  // El mapa offline se restaura cuando ya conocemos proyecto y polígonos.
   if(baseGuardado==='osm')osm.addTo(map);
   else if(baseGuardado==='dark'){darkBase.addTo(map);baseMapApagado=true;}
   else hyb.addTo(map);
 
-  L.control.layers({
+  baseLayerControl=L.control.layers({
     'Google Satélite Híbrido':hyb,
     'OpenStreetMap':osm,
     'Fondo oscuro (sin mapa base)':darkBase
@@ -1655,8 +2027,10 @@ function init(){
 
   map.on('baselayerchange',e=>{
     baseMapApagado=(e.layer===darkBase);
+    offlineBaseActivo=(e.layer===offlineBaseGroup);
     document.getElementById('map')?.classList.toggle('basemapOff',baseMapApagado);
     actualizarBotonBaseMap();
+    actualizarEstadoSelectorMapaBase();
   });
 
   map.on('move moveend zoom',actualizarCentro);
@@ -2661,6 +3035,8 @@ function cerrarSelectorMapaBase(){
 }
 
 function mapaBaseActual(){
+  if(igacOfflineLayer&&map?.hasLayer(igacOfflineLayer))return 'offline_sat_igac';
+  if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer))return 'offline_osm';
   if(map?.hasLayer(hyb))return 'hyb';
   if(map?.hasLayer(osm))return 'osm';
   return 'dark';
@@ -2673,12 +3049,29 @@ function actualizarEstadoSelectorMapaBase(){
   });
 }
 
-function seleccionarMapaBase(tipo){
+async function seleccionarMapaBase(tipo){
   if(!map)return;
 
-  [hyb,osm,darkBase].forEach(capa=>{
-    if(capa && map.hasLayer(capa))map.removeLayer(capa);
+  if(tipo==='offline_osm'){
+    await activarMapaOSMOffline(true);
+    return;
+  }
+
+  if(tipo==='offline_sat_igac'){
+    await activarSateliteIGACOffline(true);
+    return;
+  }
+
+  [hyb,osm,darkBase,offlineBaseGroup].forEach(capa=>{
+    if(capa&&map.hasLayer(capa))map.removeLayer(capa);
   });
+
+  quitarMapasBaseDirectos();
+  quitarMapaOSMOffline();
+  quitarSateliteIGACOffline();
+
+  offlineBaseActivo=false;
+  offlineDirectTipoActivo='';
 
   if(tipo==='osm'){
     osm.addTo(map);
@@ -2689,6 +3082,7 @@ function seleccionarMapaBase(tipo){
   }else{
     hyb.addTo(map);
     baseMapApagado=false;
+    tipo='hyb';
   }
 
   document.getElementById('map')?.classList.toggle('basemapOff',baseMapApagado);
@@ -5985,6 +6379,15 @@ const CARTO_DB_NAME='mapping_sitesurvey_cartografia_v1';
 const CARTO_DB_VERSION=1;
 const CARTO_STORE='proyectos';
 
+const OFFLINE_DB_NAME='mapping_sitesurvey_mapas_offline_v1';
+const OFFLINE_DB_VERSION=1;
+const OFFLINE_STORE='mapas';
+
+const DIRECT_DB_NAME='mapping_sitesurvey_tiles_directos_v1';
+const DIRECT_DB_VERSION=1;
+const DIRECT_TILE_STORE='tiles';
+const DIRECT_PACKAGE_STORE='packages';
+
 function abrirDBPoligonos(){
   return new Promise((resolve,reject)=>{
     const req=indexedDB.open(POLY_DB_NAME,POLY_DB_VERSION);
@@ -6075,6 +6478,249 @@ async function eliminarCacheCartografia(proyectoId){
   return new Promise((resolve,reject)=>{
     const tx=db.transaction(CARTO_STORE,'readwrite');
     tx.objectStore(CARTO_STORE).delete(String(proyectoId));
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+
+function abrirDBMapasOffline(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(OFFLINE_DB_NAME,OFFLINE_DB_VERSION);
+
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(OFFLINE_STORE)){
+        const store=db.createObjectStore(OFFLINE_STORE,{keyPath:'key'});
+        store.createIndex('proyecto_id','proyecto_id',{unique:false});
+        store.createIndex('poligono_id','poligono_id',{unique:false});
+      }
+    };
+
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+function claveMapaOffline(proyectoId,poligonoId){
+  return `${String(proyectoId)}__${String(poligonoId)}`;
+}
+
+async function guardarMapaOfflineIDB(datos){
+  const db=await abrirDBMapasOffline();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(OFFLINE_STORE,'readwrite');
+    tx.objectStore(OFFLINE_STORE).put({
+      key:claveMapaOffline(datos.proyecto_id,datos.poligono_id),
+      proyecto_id:String(datos.proyecto_id),
+      poligono_id:String(datos.poligono_id),
+      poligono_codigo:String(datos.poligono_codigo||''),
+      poligono_nombre:String(datos.poligono_nombre||''),
+      remote_path:String(datos.remote_path||''),
+      remote_version:String(datos.remote_version||''),
+      source_kind:String(datos.source_kind||'supabase'),
+      filename:String(datos.filename||'mapa.pmtiles'),
+      blob:datos.blob,
+      size:Number(datos.blob?.size||0),
+      header:datos.header||null,
+      downloaded_at:new Date().toISOString()
+    });
+
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+async function obtenerMapaOfflineIDB(proyectoId,poligonoId){
+  const db=await abrirDBMapasOffline();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(OFFLINE_STORE,'readonly');
+    const req=tx.objectStore(OFFLINE_STORE).get(claveMapaOffline(proyectoId,poligonoId));
+
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function listarMapasOfflineProyecto(proyectoId){
+  const db=await abrirDBMapasOffline();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(OFFLINE_STORE,'readonly');
+    const idx=tx.objectStore(OFFLINE_STORE).index('proyecto_id');
+    const req=idx.getAll(String(proyectoId));
+
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function eliminarMapaOfflineIDB(proyectoId,poligonoId){
+  const db=await abrirDBMapasOffline();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(OFFLINE_STORE,'readwrite');
+    tx.objectStore(OFFLINE_STORE).delete(claveMapaOffline(proyectoId,poligonoId));
+
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+class BlobPMTilesSource{
+  constructor(blob,key){
+    this.blob=blob;
+    this.key=String(key||'offline.pmtiles');
+  }
+
+  getKey(){
+    return this.key;
+  }
+
+  async getBytes(offset,length,signal){
+    if(signal?.aborted){
+      throw new DOMException('Operación cancelada','AbortError');
+    }
+
+    const data=await this.blob.slice(offset,offset+length).arrayBuffer();
+    return {data};
+  }
+}
+
+
+function abrirDBTilesDirectos(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DIRECT_DB_NAME,DIRECT_DB_VERSION);
+
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+
+      if(!db.objectStoreNames.contains(DIRECT_TILE_STORE)){
+        const s=db.createObjectStore(DIRECT_TILE_STORE,{keyPath:'key'});
+        s.createIndex('package_key','package_key',{unique:false});
+        s.createIndex('proyecto_id','proyecto_id',{unique:false});
+      }
+
+      if(!db.objectStoreNames.contains(DIRECT_PACKAGE_STORE)){
+        const p=db.createObjectStore(DIRECT_PACKAGE_STORE,{keyPath:'package_key'});
+        p.createIndex('proyecto_id','proyecto_id',{unique:false});
+        p.createIndex('poligono_id','poligono_id',{unique:false});
+      }
+    };
+
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+function packageKeyDirecto(proyectoId,poligonoId,provider){
+  return `${String(proyectoId)}__${String(poligonoId)}__${String(provider)}`;
+}
+
+function tileKeyDirecto(proyectoId,poligonoId,provider,z,x,y){
+  return `${packageKeyDirecto(proyectoId,poligonoId,provider)}__${z}__${x}__${y}`;
+}
+
+async function guardarLoteTilesDirectos(items){
+  if(!items?.length)return true;
+  const db=await abrirDBTilesDirectos();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DIRECT_TILE_STORE,'readwrite');
+    const s=tx.objectStore(DIRECT_TILE_STORE);
+    items.forEach(x=>s.put(x));
+
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+async function guardarPaqueteDirecto(meta){
+  const db=await abrirDBTilesDirectos();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DIRECT_PACKAGE_STORE,'readwrite');
+    tx.objectStore(DIRECT_PACKAGE_STORE).put(meta);
+
+    tx.oncomplete=()=>{db.close();resolve(true)};
+    tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
+  });
+}
+
+async function obtenerPaqueteDirecto(proyectoId,poligonoId,provider){
+  const db=await abrirDBTilesDirectos();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DIRECT_PACKAGE_STORE,'readonly');
+    const req=tx.objectStore(DIRECT_PACKAGE_STORE)
+      .get(packageKeyDirecto(proyectoId,poligonoId,provider));
+
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function listarPaquetesDirectosProyecto(proyectoId){
+  const db=await abrirDBTilesDirectos();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DIRECT_PACKAGE_STORE,'readonly');
+    const idx=tx.objectStore(DIRECT_PACKAGE_STORE).index('proyecto_id');
+    const req=idx.getAll(String(proyectoId));
+
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function obtenerTileDirecto(proyectoId,poligonoId,provider,z,x,y){
+  const db=await abrirDBTilesDirectos();
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(DIRECT_TILE_STORE,'readonly');
+    const req=tx.objectStore(DIRECT_TILE_STORE)
+      .get(tileKeyDirecto(proyectoId,poligonoId,provider,z,x,y));
+
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+async function obtenerTileDirectoCualquierPoligono(proyectoId,provider,z,x,y){
+  for(const poly of poligonosAsignados||[]){
+    const r=await obtenerTileDirecto(proyectoId,poly.id,provider,z,x,y).catch(()=>null);
+    if(r?.blob)return r;
+  }
+  return null;
+}
+
+async function eliminarPaqueteDirecto(proyectoId,poligonoId,provider){
+  const db=await abrirDBTilesDirectos();
+  const pkey=packageKeyDirecto(proyectoId,poligonoId,provider);
+
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction([DIRECT_TILE_STORE,DIRECT_PACKAGE_STORE],'readwrite');
+    const tiles=tx.objectStore(DIRECT_TILE_STORE);
+    const idx=tiles.index('package_key');
+    const req=idx.openCursor(IDBKeyRange.only(pkey));
+
+    req.onsuccess=()=>{
+      const cur=req.result;
+      if(cur){
+        cur.delete();
+        cur.continue();
+      }
+    };
+
+    tx.objectStore(DIRECT_PACKAGE_STORE).delete(pkey);
+
     tx.oncomplete=()=>{db.close();resolve(true)};
     tx.onerror=()=>{const e=tx.error;db.close();reject(e)};
   });
@@ -7539,7 +8185,7 @@ async function cargarPoligonosAsignadosTecnico(){
 
   const {data,error}=await mappingSb
     .from('mapping_tecnico_poligonos')
-    .select('poligono_id,mapping_poligonos(id,codigo,nombre,feature_index,activo)')
+    .select('poligono_id,mapping_poligonos(*)')
     .eq('proyecto_id',proyectoActivo.proyecto_id)
     .eq('tecnico_id',mappingUser.id);
 
@@ -7639,9 +8285,2401 @@ function persist(){
   actualizarEstadoSync();
 }
 
+
+
+
+// ============================================================
+// V98 · OPENSTREETMAP OFFLINE SIMPLE (OPENFREEMAP)
+// ============================================================
+
+async function resolverPlantillaOpenFreeMap(){
+  if(osmOfflineTileTemplateCache)return osmOfflineTileTemplateCache;
+
+  const resp=await fetch(OSM_OFFLINE_STYLE_URL,{cache:'default'});
+  if(!resp.ok)throw new Error(`No se pudo consultar OpenFreeMap (HTTP ${resp.status}).`);
+
+  const style=await resp.json();
+  const sources=Object.values(style?.sources||{});
+
+  for(const source of sources){
+    if(source?.type!=='vector')continue;
+
+    if(Array.isArray(source.tiles)&&source.tiles.length){
+      osmOfflineTileTemplateCache=source.tiles[0];
+      return osmOfflineTileTemplateCache;
+    }
+
+    if(source.url){
+      const tj=await fetch(source.url,{cache:'default'});
+      if(!tj.ok)continue;
+
+      const tilejson=await tj.json();
+      if(Array.isArray(tilejson?.tiles)&&tilejson.tiles.length){
+        osmOfflineTileTemplateCache=tilejson.tiles[0];
+        return osmOfflineTileTemplateCache;
+      }
+    }
+  }
+
+  throw new Error('OpenFreeMap no devolvió una fuente vectorial compatible.');
+}
+
+function urlOpenFreeMapTile(template,tile){
+  return String(template)
+    .replace('{z}',tile.z)
+    .replace('{x}',tile.x)
+    .replace('{y}',tile.y);
+}
+
+async function descargarTileOpenFreeMap(template,tile){
+  const resp=await fetch(urlOpenFreeMapTile(template,tile),{
+    method:'GET',
+    mode:'cors',
+    cache:'default'
+  });
+
+  if(resp.status===204||resp.status===404)return null;
+  if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+
+  const blob=await resp.blob();
+  return blob?.size?blob:null;
+}
+
+function estiloMapLibreOSMOffline(){
+  return {
+    version:8,
+    sources:{
+      osmoffline:{
+        type:'vector',
+        tiles:['mappingosm://tiles/{z}/{x}/{y}'],
+        minzoom:OSM_OFFLINE_MINZOOM,
+        maxzoom:OSM_OFFLINE_MAXZOOM,
+        attribution:'© OpenStreetMap contributors · OpenFreeMap'
+      }
+    },
+    layers:[
+      {
+        id:'background',
+        type:'background',
+        paint:{'background-color':'#eef2f3'}
+      },
+      {
+        id:'landcover',
+        type:'fill',
+        source:'osmoffline',
+        'source-layer':'landcover',
+        paint:{
+          'fill-color':[
+            'match',['get','class'],
+            'wood','#d8ead0',
+            'grass','#dff0d3',
+            'farmland','#eef0d7',
+            '#e9ece8'
+          ],
+          'fill-opacity':0.75
+        }
+      },
+      {
+        id:'landuse',
+        type:'fill',
+        source:'osmoffline',
+        'source-layer':'landuse',
+        paint:{
+          'fill-color':[
+            'match',['get','class'],
+            'residential','#e8e8e8',
+            'industrial','#e2dddd',
+            'park','#d8eed0',
+            'cemetery','#d8e5d2',
+            '#ececec'
+          ],
+          'fill-opacity':0.62
+        }
+      },
+      {
+        id:'water',
+        type:'fill',
+        source:'osmoffline',
+        'source-layer':'water',
+        paint:{'fill-color':'#9ecae1'}
+      },
+      {
+        id:'waterway',
+        type:'line',
+        source:'osmoffline',
+        'source-layer':'waterway',
+        paint:{'line-color':'#7db7d8','line-width':1.2}
+      },
+      {
+        id:'buildings',
+        type:'fill',
+        source:'osmoffline',
+        'source-layer':'building',
+        minzoom:13,
+        paint:{
+          'fill-color':'#d3c8bd',
+          'fill-outline-color':'#b8ada2',
+          'fill-opacity':0.85
+        }
+      },
+      {
+        id:'roads-casing',
+        type:'line',
+        source:'osmoffline',
+        'source-layer':'transportation',
+        minzoom:10,
+        paint:{
+          'line-color':'#c3c6c9',
+          'line-width':['interpolate',['linear'],['zoom'],10,1.2,14,4.8,18,11]
+        }
+      },
+      {
+        id:'roads',
+        type:'line',
+        source:'osmoffline',
+        'source-layer':'transportation',
+        minzoom:10,
+        paint:{
+          'line-color':[
+            'match',['get','class'],
+            'motorway','#f2a65a',
+            'trunk','#f3ba78',
+            'primary','#f7d08a',
+            'secondary','#fff0b3',
+            'tertiary','#ffffff',
+            '#ffffff'
+          ],
+          'line-width':['interpolate',['linear'],['zoom'],10,0.8,14,3.4,18,8.5]
+        }
+      },
+      {
+        id:'boundaries',
+        type:'line',
+        source:'osmoffline',
+        'source-layer':'boundary',
+        paint:{
+          'line-color':'#94a3b8',
+          'line-width':1,
+          'line-dasharray':[4,3]
+        }
+      }
+    ]
+  };
+}
+
+function instalarProtocoloOSMOffline(){
+  if(osmOfflineProtocolInstalled)return true;
+  if(!window.maplibregl?.addProtocol)return false;
+
+  maplibregl.addProtocol('mappingosm',async(params)=>{
+    const m=String(params.url||'').match(/mappingosm:\/\/tiles\/(\d+)\/(\d+)\/(\d+)/);
+
+    if(!m)throw new Error('Tile offline inválido.');
+
+    const z=Number(m[1]);
+    const x=Number(m[2]);
+    const y=Number(m[3]);
+    const proyectoId=String(proyectoActivo?.proyecto_id||'');
+
+    const rec=await obtenerTileDirectoCualquierPoligono(
+      proyectoId,OSM_OFFLINE_PROVIDER,z,x,y
+    );
+
+    if(!rec?.blob)return {data:new ArrayBuffer(0)};
+
+    return {data:await rec.blob.arrayBuffer()};
+  });
+
+  osmOfflineProtocolInstalled=true;
+  return true;
+}
+
+async function resumenOSMOffline(){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+
+  if(!proyectoId){
+    return {descargados:0,total:0,size:0,paquetes:[]};
+  }
+
+  const paquetes=(await listarPaquetesDirectosProyecto(proyectoId).catch(()=>[]))
+    .filter(p=>p.provider===OSM_OFFLINE_PROVIDER);
+
+  const ids=new Set(poligonosAsignados.map(p=>String(p.id)));
+  const validos=paquetes.filter(p=>ids.has(String(p.poligono_id)));
+
+  return {
+    descargados:validos.length,
+    total:poligonosAsignados.length,
+    size:validos.reduce((s,p)=>s+Number(p.size||0),0),
+    paquetes:validos
+  };
+}
+
+async function refrescarOSMOfflineUIBase(){
+  const r=await resumenOSMOffline();
+
+  const a=document.getElementById('offlineSimplePoligonos');
+  const b=document.getElementById('offlineSimpleDescargados');
+  const c=document.getElementById('offlineSimpleSize');
+  const d=document.getElementById('offlineSimpleDetalle');
+  const choice=document.getElementById('baseMapOfflineChoice');
+  const choiceText=document.getElementById('baseMapOfflineChoiceText');
+
+  if(a)a.textContent=r.total;
+  if(b)b.textContent=r.descargados;
+  if(c)c.textContent=bytesOffline(r.size);
+
+  if(d){
+    d.innerHTML=
+      r.total===0
+        ? 'No tienes polígonos asignados.'
+        : r.descargados===r.total
+          ? '<b style="color:#86efac">✅ Proyecto listo para usar el mapa base sin Internet.</b>'
+          : `Faltan <b>${Math.max(0,r.total-r.descargados)}</b> polígono(s) por descargar.`;
+  }
+
+  if(choice)choice.classList.toggle('directReady',r.descargados>0);
+
+  if(choiceText){
+    choiceText.textContent=
+      r.descargados
+        ? `${r.descargados}/${r.total} polígono(s) disponibles offline`
+        : 'Descarga primero el mapa del proyecto';
+  }
+
+  return r;
+}
+
+
+async function refrescarOSMOfflineUI(){
+  return refrescarResumenOfflineSimple();
+}
+
+async function descargarMapaBaseOSMOffline(){
+  if(offlineDirectDescargaEnCurso)return;
+
+  if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
+  if(!poligonosAsignados.length)return alert('No tienes polígonos asignados.');
+  if(!navigator.onLine)return alert('Necesitas Internet para descargar o actualizar el mapa.');
+
+  offlineDirectDescargaEnCurso=true;
+
+  const btn=document.getElementById('btnDescargarOSMOffline');
+  if(btn)btn.disabled=true;
+
+  try{
+    try{
+      if(navigator.storage?.persist)await navigator.storage.persist();
+    }catch(_){}
+
+    setProgresoOffline(1,'Consultando OpenFreeMap…');
+    const template=await resolverPlantillaOpenFreeMap();
+    const proyectoId=String(proyectoActivo.proyecto_id);
+    const fallos=[];
+
+    for(let pi=0;pi<poligonosAsignados.length;pi++){
+      const poly=poligonosAsignados[pi];
+      const feature=featureDePoligonoOffline(poly);
+
+      if(!feature){
+        fallos.push(`${poly.codigo||poly.nombre}: no se encontró geometría.`);
+        continue;
+      }
+
+      const bounds=expandirBoundsMetrosOffline(
+        boundsFeatureOffline(feature),
+        OSM_OFFLINE_BUFFER_METERS
+      );
+
+      const tiles=tilesParaBoundsOffline(
+        bounds,
+        OSM_OFFLINE_MINZOOM,
+        OSM_OFFLINE_MAXZOOM
+      );
+
+      if(tiles.length>OSM_OFFLINE_MAX_TILES_PER_POLYGON){
+        fallos.push(
+          `${poly.codigo||poly.nombre}: requiere ${tiles.length} teselas y supera el límite de ${OSM_OFFLINE_MAX_TILES_PER_POLYGON}.`
+        );
+        continue;
+      }
+
+      await eliminarPaqueteDirecto(
+        proyectoId,poly.id,OSM_OFFLINE_PROVIDER
+      ).catch(()=>{});
+
+      const pkey=packageKeyDirecto(
+        proyectoId,poly.id,OSM_OFFLINE_PROVIDER
+      );
+
+      let tileCount=0;
+      let totalBytes=0;
+      let failed=0;
+
+      for(let i=0;i<tiles.length;i+=8){
+        const lote=tiles.slice(i,i+8);
+
+        const resultados=await Promise.all(lote.map(async tile=>{
+          try{
+            const blob=await descargarTileOpenFreeMap(template,tile);
+            return {tile,blob};
+          }catch(e){
+            console.warn('OpenFreeMap tile:',tile,e);
+            return {tile,blob:null};
+          }
+        }));
+
+        const registros=[];
+
+        for(const r of resultados){
+          if(r.blob){
+            tileCount++;
+            totalBytes+=r.blob.size;
+
+            registros.push({
+              key:tileKeyDirecto(
+                proyectoId,poly.id,OSM_OFFLINE_PROVIDER,
+                r.tile.z,r.tile.x,r.tile.y
+              ),
+              package_key:pkey,
+              proyecto_id:proyectoId,
+              poligono_id:String(poly.id),
+              provider:OSM_OFFLINE_PROVIDER,
+              z:r.tile.z,
+              x:r.tile.x,
+              y:r.tile.y,
+              blob:r.blob,
+              size:r.blob.size
+            });
+          }else{
+            failed++;
+          }
+        }
+
+        await guardarLoteTilesDirectos(registros);
+
+        const pct=
+          ((pi + Math.min(1,(i+lote.length)/Math.max(tiles.length,1))) /
+          poligonosAsignados.length)*100;
+
+        setProgresoOffline(
+          pct,
+          `${poly.codigo||poly.nombre}: ${Math.min(i+lote.length,tiles.length)}/${tiles.length}`
+        );
+      }
+
+      if(tileCount){
+        await guardarPaqueteDirecto({
+          package_key:pkey,
+          proyecto_id:proyectoId,
+          poligono_id:String(poly.id),
+          poligono_codigo:String(poly.codigo||''),
+          poligono_nombre:String(poly.nombre||''),
+          provider:OSM_OFFLINE_PROVIDER,
+          min_zoom:OSM_OFFLINE_MINZOOM,
+          max_zoom:OSM_OFFLINE_MAXZOOM,
+          tile_count:tileCount,
+          expected_tiles:tiles.length,
+          failed_tiles:failed,
+          size:totalBytes,
+          bounds,
+          attribution:'© OpenStreetMap contributors · OpenFreeMap',
+          downloaded_at:new Date().toISOString(),
+          source_version:'openfreemap-liberty'
+        });
+      }else{
+        fallos.push(`${poly.codigo||poly.nombre}: no se descargaron teselas.`);
+      }
+    }
+
+    setProgresoOffline(
+      100,
+      fallos.length
+        ? `Terminó con ${fallos.length} pendiente(s).`
+        : '✅ Mapa base descargado correctamente.'
+    );
+
+    await refrescarResumenOfflineSimple();
+
+    if(fallos.length){
+      alert('Algunos polígonos no pudieron prepararse:\n\n'+fallos.join('\n'));
+    }
+
+  }catch(e){
+    console.error('Descarga OSM offline:',e);
+    setProgresoOffline(0,'No se pudo completar la descarga.');
+    alert(e?.message||e);
+  }finally{
+    offlineDirectDescargaEnCurso=false;
+    if(btn)btn.disabled=false;
+  }
+}
+
+function quitarMapaOSMOffline(){
+  if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer)){
+    map.removeLayer(osmOfflineMapLibreLayer);
+  }
+  osmOfflineMapLibreLayer=null;
+}
+
+async function activarMapaOSMOffline(mostrarAlerta=true){
+  const r=await resumenOSMOffline();
+
+  if(!r.descargados){
+    if(mostrarAlerta){
+      alert('Todavía no has descargado el mapa base offline de este proyecto.');
+    }
+    return false;
+  }
+
+  if(!window.L?.maplibreGL||!window.maplibregl){
+    if(mostrarAlerta)alert('No fue posible cargar el motor del mapa offline.');
+    return false;
+  }
+
+  if(!instalarProtocoloOSMOffline()){
+    if(mostrarAlerta)alert('No fue posible iniciar el modo offline.');
+    return false;
+  }
+
+  [hyb,osm,darkBase,offlineBaseGroup].forEach(layer=>{
+    if(layer&&map.hasLayer(layer))map.removeLayer(layer);
+  });
+
+  quitarMapasBaseDirectos();
+  quitarMapaOSMOffline();
+
+  osmOfflineMapLibreLayer=L.maplibreGL({
+    style:estiloMapLibreOSMOffline(),
+    interactive:false,
+    attribution:'© OpenStreetMap contributors · OpenFreeMap',
+    maxZoom:22
+  });
+
+  osmOfflineMapLibreLayer.addTo(map);
+
+  offlineBaseActivo=false;
+  offlineDirectTipoActivo='osm';
+  baseMapApagado=false;
+
+  localStorage.setItem('mapping_base_map_v1','offline_osm');
+
+  document.getElementById('map')?.classList.remove('basemapOff');
+  actualizarBotonBaseMap();
+  actualizarEstadoSelectorMapaBase();
+  cerrarSelectorMapaBase();
+
+  return true;
+}
+
+async function restaurarMapaOSMOfflineSiPreferido(){
+  if(localStorage.getItem('mapping_base_map_v1')!=='offline_osm'){
+    return false;
+  }
+  return activarMapaOSMOffline(false);
+}
+
+
+// ============================================================
+// V99 · SATÉLITE / ORTOIMAGEN OFFLINE IGAC
+// ============================================================
+
+function tileBBox3857(z,x,y){
+  const originShift=20037508.342789244;
+  const n=2**z;
+
+  const minX=(x/n)*2*originShift-originShift;
+  const maxX=((x+1)/n)*2*originShift-originShift;
+
+  const maxY=originShift-(y/n)*2*originShift;
+  const minY=originShift-((y+1)/n)*2*originShift;
+
+  return {minX,minY,maxX,maxY};
+}
+
+function urlIGACOfflineTile(tile){
+  const b=tileBBox3857(tile.z,tile.x,tile.y);
+
+  const params=new URLSearchParams({
+    bbox:`${b.minX},${b.minY},${b.maxX},${b.maxY}`,
+    bboxSR:'3857',
+    imageSR:'3857',
+    size:'256,256',
+    format:'jpg',
+    transparent:'false',
+    dpi:'96',
+    f:'image'
+  });
+
+  return `${IGAC_ORTHO_EXPORT_URL}?${params.toString()}`;
+}
+
+async function descargarTileIGAC(tile){
+  const resp=await fetch(urlIGACOfflineTile(tile),{
+    method:'GET',
+    mode:'cors',
+    cache:'default'
+  });
+
+  if(resp.status===204||resp.status===404)return null;
+  if(!resp.ok)throw new Error(`IGAC HTTP ${resp.status}`);
+
+  const blob=await resp.blob();
+
+  if(!blob?.size)return null;
+
+  const tipo=String(blob.type||'').toLowerCase();
+  if(tipo.includes('json')||tipo.includes('html')){
+    return null;
+  }
+
+  return blob;
+}
+
+async function resumenIGACOffline(){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+
+  if(!proyectoId){
+    return {descargados:0,total:0,size:0,paquetes:[]};
+  }
+
+  const paquetes=(await listarPaquetesDirectosProyecto(proyectoId).catch(()=>[]))
+    .filter(p=>p.provider===IGAC_OFFLINE_PROVIDER);
+
+  const ids=new Set(poligonosAsignados.map(p=>String(p.id)));
+  const validos=paquetes.filter(p=>ids.has(String(p.poligono_id)));
+
+  return {
+    descargados:validos.length,
+    total:poligonosAsignados.length,
+    size:validos.reduce((s,p)=>s+Number(p.size||0),0),
+    paquetes:validos
+  };
+}
+
+async function refrescarResumenOfflineSimple(){
+  const base=await resumenOSMOffline();
+  const sat=await resumenIGACOffline();
+
+  const a=document.getElementById('offlineSimplePoligonos');
+  const b=document.getElementById('offlineSimpleDescargados');
+  const c=document.getElementById('offlineSatelliteDescargados');
+  const d=document.getElementById('offlineSimpleSize');
+  const info=document.getElementById('offlineSimpleDetalle');
+
+  if(a)a.textContent=base.total;
+  if(b)b.textContent=`${base.descargados}/${base.total}`;
+  if(c)c.textContent=`${sat.descargados}/${sat.total}`;
+  if(d)d.textContent=bytesOffline(base.size+sat.size);
+
+  const baseReady=base.total>0&&base.descargados===base.total;
+  const satReady=sat.total>0&&sat.descargados===sat.total;
+
+  if(info){
+    const partes=[];
+    partes.push(
+      baseReady
+        ? '✅ Mapa base listo'
+        : `Mapa base pendiente: ${Math.max(0,base.total-base.descargados)}`
+    );
+    partes.push(
+      satReady
+        ? '✅ Satélite listo'
+        : `Satélite pendiente: ${Math.max(0,sat.total-sat.descargados)}`
+    );
+    info.innerHTML=partes.join(' · ');
+  }
+
+  const baseChoice=document.getElementById('baseMapOfflineChoice');
+  const baseText=document.getElementById('baseMapOfflineChoiceText');
+  if(baseChoice)baseChoice.classList.toggle('directReady',base.descargados>0);
+  if(baseText){
+    baseText.textContent=base.descargados
+      ? `${base.descargados}/${base.total} polígono(s) disponibles offline`
+      : 'Descarga primero el mapa del proyecto';
+  }
+
+  const satChoice=document.getElementById('baseMapOfflineSatelliteChoice');
+  const satText=document.getElementById('baseMapOfflineSatelliteText');
+  if(satChoice)satChoice.classList.toggle('directReady',sat.descargados>0);
+  if(satText){
+    satText.textContent=sat.descargados
+      ? `${sat.descargados}/${sat.total} polígono(s) disponibles offline`
+      : 'Descarga primero la ortoimagen del proyecto';
+  }
+
+  return {base,sat};
+}
+
+async function descargarSateliteIGACOffline(){
+  if(offlineDirectDescargaEnCurso)return;
+
+  if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
+  if(!poligonosAsignados.length)return alert('No tienes polígonos asignados.');
+  if(!navigator.onLine)return alert('Necesitas Internet para descargar o actualizar el satélite.');
+
+  offlineDirectDescargaEnCurso=true;
+
+  const btn=document.getElementById('btnDescargarIGACOffline');
+  if(btn)btn.disabled=true;
+
+  try{
+    try{
+      if(navigator.storage?.persist)await navigator.storage.persist();
+    }catch(_){}
+
+    const proyectoId=String(proyectoActivo.proyecto_id);
+    const fallos=[];
+
+    setProgresoOffline(1,'Preparando ortoimagen IGAC…');
+
+    for(let pi=0;pi<poligonosAsignados.length;pi++){
+      const poly=poligonosAsignados[pi];
+      const feature=featureDePoligonoOffline(poly);
+
+      if(!feature){
+        fallos.push(`${poly.codigo||poly.nombre}: no se encontró geometría.`);
+        continue;
+      }
+
+      const bounds=expandirBoundsMetrosOffline(
+        boundsFeatureOffline(feature),
+        IGAC_OFFLINE_BUFFER_METERS
+      );
+
+      const tiles=tilesParaBoundsOffline(
+        bounds,
+        IGAC_OFFLINE_MINZOOM,
+        IGAC_OFFLINE_MAXZOOM
+      );
+
+      if(tiles.length>IGAC_OFFLINE_MAX_TILES_PER_POLYGON){
+        fallos.push(
+          `${poly.codigo||poly.nombre}: requiere ${tiles.length} imágenes y supera el límite de ${IGAC_OFFLINE_MAX_TILES_PER_POLYGON}.`
+        );
+        continue;
+      }
+
+      await eliminarPaqueteDirecto(
+        proyectoId,poly.id,IGAC_OFFLINE_PROVIDER
+      ).catch(()=>{});
+
+      const pkey=packageKeyDirecto(
+        proyectoId,poly.id,IGAC_OFFLINE_PROVIDER
+      );
+
+      let tileCount=0;
+      let totalBytes=0;
+      let failed=0;
+
+      for(let i=0;i<tiles.length;i+=5){
+        const lote=tiles.slice(i,i+5);
+
+        const resultados=await Promise.all(lote.map(async tile=>{
+          try{
+            const blob=await descargarTileIGAC(tile);
+            return {tile,blob};
+          }catch(e){
+            console.warn('IGAC tile:',tile,e);
+            return {tile,blob:null};
+          }
+        }));
+
+        const registros=[];
+
+        for(const r of resultados){
+          if(r.blob){
+            tileCount++;
+            totalBytes+=r.blob.size;
+
+            registros.push({
+              key:tileKeyDirecto(
+                proyectoId,poly.id,IGAC_OFFLINE_PROVIDER,
+                r.tile.z,r.tile.x,r.tile.y
+              ),
+              package_key:pkey,
+              proyecto_id:proyectoId,
+              poligono_id:String(poly.id),
+              provider:IGAC_OFFLINE_PROVIDER,
+              z:r.tile.z,
+              x:r.tile.x,
+              y:r.tile.y,
+              blob:r.blob,
+              size:r.blob.size
+            });
+          }else{
+            failed++;
+          }
+        }
+
+        await guardarLoteTilesDirectos(registros);
+
+        const pct=
+          ((pi + Math.min(1,(i+lote.length)/Math.max(tiles.length,1))) /
+          poligonosAsignados.length)*100;
+
+        setProgresoOffline(
+          pct,
+          `Satélite ${poly.codigo||poly.nombre}: ${Math.min(i+lote.length,tiles.length)}/${tiles.length}`
+        );
+      }
+
+      if(tileCount){
+        await guardarPaqueteDirecto({
+          package_key:pkey,
+          proyecto_id:proyectoId,
+          poligono_id:String(poly.id),
+          poligono_codigo:String(poly.codigo||''),
+          poligono_nombre:String(poly.nombre||''),
+          provider:IGAC_OFFLINE_PROVIDER,
+          min_zoom:IGAC_OFFLINE_MINZOOM,
+          max_zoom:IGAC_OFFLINE_MAXZOOM,
+          tile_count:tileCount,
+          expected_tiles:tiles.length,
+          failed_tiles:failed,
+          size:totalBytes,
+          bounds,
+          attribution:'OrtoColombia 2023 · IGAC',
+          downloaded_at:new Date().toISOString(),
+          source_version:'igac-ortocolombia-2023'
+        });
+      }else{
+        fallos.push(`${poly.codigo||poly.nombre}: no se descargaron imágenes.`);
+      }
+    }
+
+    setProgresoOffline(
+      100,
+      fallos.length
+        ? `Terminó con ${fallos.length} pendiente(s).`
+        : '✅ Satélite IGAC descargado correctamente.'
+    );
+
+    await refrescarResumenOfflineSimple();
+
+    if(fallos.length){
+      alert('Algunos polígonos no pudieron preparar la ortoimagen:\n\n'+fallos.join('\n'));
+    }
+
+  }catch(e){
+    console.error('Descarga satélite IGAC:',e);
+    setProgresoOffline(0,'No se pudo completar la descarga.');
+    alert(e?.message||e);
+  }finally{
+    offlineDirectDescargaEnCurso=false;
+    if(btn)btn.disabled=false;
+  }
+}
+
+const IGACOfflineLayer=L.GridLayer.extend({
+  createTile:function(coords,done){
+    const img=document.createElement('img');
+    img.alt='';
+    img.setAttribute('role','presentation');
+    img.style.width='256px';
+    img.style.height='256px';
+
+    const proyectoId=String(proyectoActivo?.proyecto_id||'');
+
+    obtenerTileDirectoCualquierPoligono(
+      proyectoId,IGAC_OFFLINE_PROVIDER,
+      coords.z,coords.x,coords.y
+    ).then(rec=>{
+      if(!rec?.blob){
+        done(null,img);
+        return;
+      }
+
+      const url=URL.createObjectURL(rec.blob);
+
+      img.onload=()=>{
+        URL.revokeObjectURL(url);
+        done(null,img);
+      };
+
+      img.onerror=()=>{
+        URL.revokeObjectURL(url);
+        done(null,img);
+      };
+
+      img.src=url;
+
+    }).catch(()=>done(null,img));
+
+    return img;
+  }
+});
+
+function quitarSateliteIGACOffline(){
+  if(igacOfflineLayer&&map?.hasLayer(igacOfflineLayer)){
+    map.removeLayer(igacOfflineLayer);
+  }
+  igacOfflineLayer=null;
+}
+
+async function activarSateliteIGACOffline(mostrarAlerta=true){
+  const r=await resumenIGACOffline();
+
+  if(!r.descargados){
+    if(mostrarAlerta){
+      alert('Todavía no has descargado el satélite offline de este proyecto.');
+    }
+    return false;
+  }
+
+  [hyb,osm,darkBase,offlineBaseGroup].forEach(layer=>{
+    if(layer&&map.hasLayer(layer))map.removeLayer(layer);
+  });
+
+  quitarMapasBaseDirectos();
+  quitarMapaOSMOffline();
+  quitarSateliteIGACOffline();
+
+  igacOfflineLayer=new IGACOfflineLayer({
+    minZoom:IGAC_OFFLINE_MINZOOM,
+    maxNativeZoom:IGAC_OFFLINE_MAXZOOM,
+    maxZoom:22,
+    noWrap:true,
+    attribution:'OrtoColombia 2023 · IGAC'
+  });
+
+  igacOfflineLayer.addTo(map);
+
+  offlineBaseActivo=false;
+  offlineDirectTipoActivo='igac_sat';
+  baseMapApagado=false;
+
+  localStorage.setItem('mapping_base_map_v1','offline_sat_igac');
+
+  document.getElementById('map')?.classList.remove('basemapOff');
+  actualizarBotonBaseMap();
+  actualizarEstadoSelectorMapaBase();
+  cerrarSelectorMapaBase();
+
+  return true;
+}
+
+async function restaurarSateliteIGACSiPreferido(){
+  if(localStorage.getItem('mapping_base_map_v1')!=='offline_sat_igac'){
+    return false;
+  }
+  return activarSateliteIGACOffline(false);
+}
+
+// ============================================================
+// V97 · DESCARGA DIRECTA DE MAPA BASE + SATÉLITE
+// ============================================================
+
+const __mappingFetchOriginal=window.fetch.bind(window);
+
+function guardarClaveProtomapsOffline(){
+  const el=document.getElementById('offlineProtomapsKey');
+  const key=String(el?.value||'').trim();
+
+  if(!key){
+    localStorage.removeItem('mapping_protomaps_api_key_v1');
+    alert('Se eliminó la API key guardada.');
+    return;
+  }
+
+  localStorage.setItem('mapping_protomaps_api_key_v1',key);
+  alert('API key guardada en este dispositivo.');
+}
+
+function claveProtomapsOffline(){
+  return String(
+    proyectoActivo?.protomaps_api_key ||
+    localStorage.getItem('mapping_protomaps_api_key_v1') ||
+    ''
+  ).trim();
+}
+
+function instalarFetchVectorOffline(){
+  if(window.__mappingVectorOfflineFetchInstalled)return;
+  window.__mappingVectorOfflineFetchInstalled=true;
+
+  window.fetch=async function(input,init){
+    const url=typeof input==='string' ? input : (input?.url||'');
+
+    if(String(url).startsWith(OFFLINE_VECTOR_FAKE_PREFIX)){
+      try{
+        const path=String(url).slice(OFFLINE_VECTOR_FAKE_PREFIX.length).split('?')[0];
+        const m=path.match(/^(\d+)\/(\d+)\/(\d+)\.mvt$/);
+
+        if(!m)return new Response(null,{status:404});
+
+        const z=Number(m[1]);
+        const x=Number(m[2]);
+        const y=Number(m[3]);
+        const proyectoId=String(proyectoActivo?.proyecto_id||'');
+
+        const tile=await obtenerTileDirectoCualquierPoligono(
+          proyectoId,'vector',z,x,y
+        );
+
+        if(!tile?.blob)return new Response(null,{status:204});
+
+        return new Response(tile.blob,{
+          status:200,
+          headers:{
+            'Content-Type':'application/vnd.mapbox-vector-tile',
+            'Cache-Control':'no-store'
+          }
+        });
+
+      }catch(e){
+        console.warn('Tile vector offline:',e);
+        return new Response(null,{status:204});
+      }
+    }
+
+    return __mappingFetchOriginal(input,init);
+  };
+}
+instalarFetchVectorOffline();
+
+function lonATileX(lon,z){
+  const n=2**z;
+  return Math.max(0,Math.min(n-1,Math.floor((Number(lon)+180)/360*n)));
+}
+
+function latATileY(lat,z){
+  const n=2**z;
+  const clamped=Math.max(-85.05112878,Math.min(85.05112878,Number(lat)));
+  const rad=clamped*Math.PI/180;
+  const y=(1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*n;
+  return Math.max(0,Math.min(n-1,Math.floor(y)));
+}
+
+function boundsFeatureOffline(feature){
+  let west=Infinity,south=Infinity,east=-Infinity,north=-Infinity;
+
+  const recorrer=(coords)=>{
+    if(!Array.isArray(coords))return;
+
+    if(
+      coords.length>=2 &&
+      Number.isFinite(Number(coords[0])) &&
+      Number.isFinite(Number(coords[1]))
+    ){
+      const lon=Number(coords[0]);
+      const lat=Number(coords[1]);
+      west=Math.min(west,lon);
+      east=Math.max(east,lon);
+      south=Math.min(south,lat);
+      north=Math.max(north,lat);
+      return;
+    }
+
+    coords.forEach(recorrer);
+  };
+
+  recorrer(feature?.geometry?.coordinates);
+
+  if(![west,south,east,north].every(Number.isFinite))return null;
+
+  return {west,south,east,north};
+}
+
+function expandirBoundsMetrosOffline(bounds,metros=DIRECT_BUFFER_METERS){
+  if(!bounds)return null;
+
+  const latMed=(bounds.south+bounds.north)/2;
+  const dLat=metros/111320;
+  const cos=Math.max(.15,Math.cos(latMed*Math.PI/180));
+  const dLon=metros/(111320*cos);
+
+  return {
+    west:Math.max(-180,bounds.west-dLon),
+    east:Math.min(180,bounds.east+dLon),
+    south:Math.max(-85,bounds.south-dLat),
+    north:Math.min(85,bounds.north+dLat)
+  };
+}
+
+function featureDePoligonoOffline(poly){
+  const codigo=normalizarCodigoPoligonoApp(poly?.codigo||poly?.nombre);
+
+  return (poligonosGeoJSON?.features||[]).find(f=>{
+    const n=
+      normalizarCodigoPoligonoApp(f?.properties?.__codigo_mapping) ||
+      normalizarCodigoPoligonoApp(nombreExplicitoFeaturePoligonoApp(f)) ||
+      normalizarCodigoPoligonoApp(f?.properties?.POLIGONO) ||
+      normalizarCodigoPoligonoApp(f?.properties?.NOMBRE);
+
+    return n===codigo;
+  })||null;
+}
+
+function tilesParaBoundsOffline(bounds,minZoom,maxZoom){
+  const out=[];
+
+  for(let z=minZoom;z<=maxZoom;z++){
+    const x1=lonATileX(bounds.west,z);
+    const x2=lonATileX(bounds.east,z);
+    const y1=latATileY(bounds.north,z);
+    const y2=latATileY(bounds.south,z);
+
+    for(let x=Math.min(x1,x2);x<=Math.max(x1,x2);x++){
+      for(let y=Math.min(y1,y2);y<=Math.max(y1,y2);y++){
+        out.push({z,x,y});
+      }
+    }
+  }
+
+  return out;
+}
+
+function configProveedorDirecto(provider){
+  if(provider==='vector'){
+    return {
+      provider:'vector',
+      label:'Mapa base Protomaps',
+      minZoom:DIRECT_VECTOR_MINZOOM,
+      maxZoom:DIRECT_VECTOR_MAXZOOM,
+      contentType:'application/vnd.mapbox-vector-tile',
+      attribution:'© OpenStreetMap contributors · Protomaps',
+      necesitaKey:true
+    };
+  }
+
+  return {
+    provider:'satellite',
+    label:'Sentinel-2 Cloudless 2016',
+    minZoom:DIRECT_SAT_MINZOOM,
+    maxZoom:DIRECT_SAT_MAXZOOM,
+    contentType:'image/jpeg',
+    attribution:'Sentinel-2 cloudless – EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016 & 2017)',
+    necesitaKey:false
+  };
+}
+
+function urlTileDirecto(provider,tile){
+  if(provider==='vector'){
+    const key=claveProtomapsOffline();
+    if(!key)throw new Error(
+      'Falta la API key de Protomaps. Guárdala primero en el módulo offline.'
+    );
+
+    return PROTOMAPS_API_URL
+      .replace('{z}',tile.z)
+      .replace('{x}',tile.x)
+      .replace('{y}',tile.y)+`?key=${encodeURIComponent(key)}`;
+  }
+
+  return EOX_SATELLITE_URL
+    .replace('{z}',tile.z)
+    .replace('{x}',tile.x)
+    .replace('{y}',tile.y);
+}
+
+async function descargarTileDirecto(provider,tile){
+  const url=urlTileDirecto(provider,tile);
+  const resp=await __mappingFetchOriginal(url,{
+    method:'GET',
+    mode:'cors',
+    cache:'no-store'
+  });
+
+  if(resp.status===204 || resp.status===404)return null;
+
+  if(!resp.ok){
+    throw new Error(`HTTP ${resp.status}`);
+  }
+
+  const blob=await resp.blob();
+
+  if(!blob?.size)return null;
+
+  return blob;
+}
+
+async function ejecutarEnLotes(items,tam,fn){
+  for(let i=0;i<items.length;i+=tam){
+    const lote=items.slice(i,i+tam);
+    await Promise.all(lote.map(fn));
+  }
+}
+
+async function descargarPaqueteDirectoPoligono(poly,provider,{silencioso=false}={}){
+  if(offlineDirectDescargaEnCurso && !silencioso){
+    return false;
+  }
+
+  if(!navigator.onLine){
+    throw new Error('Necesitas conexión a Internet para descargar el mapa.');
+  }
+
+  const cfg=configProveedorDirecto(provider);
+  if(cfg.necesitaKey&&!claveProtomapsOffline()){
+    throw new Error('Debes guardar primero tu API key de Protomaps.');
+  }
+
+  const feature=featureDePoligonoOffline(poly);
+  if(!feature){
+    throw new Error(`No se encontró la geometría de ${poly.codigo||poly.nombre}.`);
+  }
+
+  const bounds=expandirBoundsMetrosOffline(
+    boundsFeatureOffline(feature),
+    DIRECT_BUFFER_METERS
+  );
+
+  const tiles=tilesParaBoundsOffline(bounds,cfg.minZoom,cfg.maxZoom);
+
+  if(tiles.length>DIRECT_MAX_TILES_PER_POLYGON_PROVIDER){
+    throw new Error(
+      `${poly.codigo||poly.nombre} requiere ${tiles.length} teselas para ${cfg.label}. `+
+      `El límite de seguridad es ${DIRECT_MAX_TILES_PER_POLYGON_PROVIDER}. `+
+      `Reduce el tamaño del polígono o prepara un PMTiles específico.`
+    );
+  }
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  const pkey=packageKeyDirecto(proyectoId,poly.id,provider);
+
+  // Reemplazo limpio de versión anterior.
+  await eliminarPaqueteDirecto(proyectoId,poly.id,provider).catch(()=>{});
+
+  let descargadas=0;
+  let bytes=0;
+  let fallos=0;
+
+  // Descarga en bloques pequeños para no saturar red/memoria.
+  for(let i=0;i<tiles.length;i+=8){
+    const lote=tiles.slice(i,i+8);
+
+    const resultados=await Promise.all(lote.map(async tile=>{
+      try{
+        const blob=await descargarTileDirecto(provider,tile);
+        return {tile,blob};
+      }catch(e){
+        console.warn('Tile offline falló',provider,tile,e);
+        return {tile,blob:null,error:e};
+      }
+    }));
+
+    const registros=[];
+
+    for(const r of resultados){
+      if(r.blob){
+        descargadas++;
+        bytes+=r.blob.size;
+
+        registros.push({
+          key:tileKeyDirecto(
+            proyectoId,poly.id,provider,
+            r.tile.z,r.tile.x,r.tile.y
+          ),
+          package_key:pkey,
+          proyecto_id:proyectoId,
+          poligono_id:String(poly.id),
+          provider,
+          z:r.tile.z,
+          x:r.tile.x,
+          y:r.tile.y,
+          blob:r.blob,
+          size:r.blob.size
+        });
+      }else{
+        fallos++;
+      }
+    }
+
+    await guardarLoteTilesDirectos(registros);
+
+    const avance=(i+lote.length)/Math.max(tiles.length,1);
+    setProgresoOffline(
+      Math.min(99,avance*100),
+      `${cfg.label} · ${poly.codigo||poly.nombre}: ${Math.min(i+lote.length,tiles.length)}/${tiles.length}`
+    );
+  }
+
+  if(!descargadas){
+    await eliminarPaqueteDirecto(proyectoId,poly.id,provider).catch(()=>{});
+    throw new Error(`No se pudo descargar ninguna tesela de ${cfg.label}.`);
+  }
+
+  await guardarPaqueteDirecto({
+    package_key:pkey,
+    proyecto_id:proyectoId,
+    poligono_id:String(poly.id),
+    poligono_codigo:String(poly.codigo||''),
+    poligono_nombre:String(poly.nombre||''),
+    provider,
+    min_zoom:cfg.minZoom,
+    max_zoom:cfg.maxZoom,
+    tile_count:descargadas,
+    expected_tiles:tiles.length,
+    failed_tiles:fallos,
+    size:bytes,
+    bounds,
+    attribution:cfg.attribution,
+    downloaded_at:new Date().toISOString(),
+    source_version:provider==='vector'?'protomaps-v4':'sentinel2-cloudless-2016'
+  });
+
+  return true;
+}
+
+async function descargarDirectoPoligonoUI(poligonoId,provider){
+  if(offlineDirectDescargaEnCurso)return;
+
+  const poly=poligonosAsignados.find(x=>String(x.id)===String(poligonoId));
+  if(!poly)return;
+
+  offlineDirectDescargaEnCurso=true;
+
+  try{
+    try{
+      if(navigator.storage?.persist)await navigator.storage.persist();
+    }catch(_){}
+
+    setProgresoOffline(1,`Preparando ${poly.codigo||poly.nombre}…`);
+    await descargarPaqueteDirectoPoligono(poly,provider,{silencioso:true});
+    setProgresoOffline(100,'✅ Descarga completada.');
+    await refrescarDirectOfflineUI();
+    await actualizarEstadoSelectorOfflineDirecto();
+
+  }catch(e){
+    setProgresoOffline(0,'Error en la descarga.');
+    alert(e?.message||e);
+  }finally{
+    offlineDirectDescargaEnCurso=false;
+  }
+}
+
+async function descargarDirectoAmbosPoligonoUI(poligonoId){
+  if(offlineDirectDescargaEnCurso)return;
+
+  const poly=poligonosAsignados.find(x=>String(x.id)===String(poligonoId));
+  if(!poly)return;
+
+  offlineDirectDescargaEnCurso=true;
+
+  try{
+    try{
+      if(navigator.storage?.persist)await navigator.storage.persist();
+    }catch(_){}
+
+    if(claveProtomapsOffline()){
+      setProgresoOffline(1,`Mapa base · ${poly.codigo||poly.nombre}`);
+      await descargarPaqueteDirectoPoligono(poly,'vector',{silencioso:true});
+    }
+
+    setProgresoOffline(50,`Satélite · ${poly.codigo||poly.nombre}`);
+    await descargarPaqueteDirectoPoligono(poly,'satellite',{silencioso:true});
+
+    setProgresoOffline(100,'✅ Mapas descargados.');
+    await refrescarDirectOfflineUI();
+    await actualizarEstadoSelectorOfflineDirecto();
+
+  }catch(e){
+    alert(e?.message||e);
+  }finally{
+    offlineDirectDescargaEnCurso=false;
+  }
+}
+
+async function descargarDirectoTodos(tipo='ambos'){
+  if(offlineDirectDescargaEnCurso)return;
+
+  if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
+  if(!poligonosAsignados.length)return alert('No tienes polígonos asignados.');
+
+  if((tipo==='vector'||tipo==='ambos')&&!claveProtomapsOffline()){
+    if(tipo==='vector'){
+      return alert('Guarda primero tu API key de Protomaps.');
+    }
+
+    if(!confirm(
+      'No hay API key de Protomaps guardada.\n\n'+
+      'Se descargará únicamente el mapa SATELITAL. ¿Continuar?'
+    ))return;
+  }
+
+  offlineDirectDescargaEnCurso=true;
+
+  try{
+    try{
+      if(navigator.storage?.persist)await navigator.storage.persist();
+    }catch(_){}
+
+    const tareas=[];
+
+    for(const poly of poligonosAsignados){
+      if(tipo==='vector'||(tipo==='ambos'&&claveProtomapsOffline())){
+        tareas.push({poly,provider:'vector'});
+      }
+      if(tipo==='satellite'||tipo==='ambos'){
+        tareas.push({poly,provider:'satellite'});
+      }
+    }
+
+    const fallos=[];
+
+    for(let i=0;i<tareas.length;i++){
+      const t=tareas[i];
+      const cfg=configProveedorDirecto(t.provider);
+
+      setProgresoOffline(
+        (i/Math.max(tareas.length,1))*100,
+        `${cfg.label} · ${t.poly.codigo||t.poly.nombre}`
+      );
+
+      try{
+        await descargarPaqueteDirectoPoligono(
+          t.poly,t.provider,{silencioso:true}
+        );
+      }catch(e){
+        fallos.push(
+          `${t.poly.codigo||t.poly.nombre} / ${cfg.label}: ${e?.message||e}`
+        );
+      }
+    }
+
+    setProgresoOffline(
+      100,
+      fallos.length
+        ? `Terminado con ${fallos.length} pendiente(s).`
+        : '✅ Descargas terminadas.'
+    );
+
+    await refrescarDirectOfflineUI();
+    await actualizarEstadoSelectorOfflineDirecto();
+
+    if(fallos.length){
+      alert('Algunas descargas no pudieron completarse:\n\n'+fallos.join('\n\n'));
+    }
+
+  }finally{
+    offlineDirectDescargaEnCurso=false;
+  }
+}
+
+async function eliminarDirectoPoligono(poligonoId,provider){
+  const poly=poligonosAsignados.find(x=>String(x.id)===String(poligonoId));
+  if(!poly)return;
+
+  const cfg=configProveedorDirecto(provider);
+
+  if(!confirm(
+    `¿Eliminar del celular ${cfg.label} de ${poly.codigo||poly.nombre}?`
+  ))return;
+
+  await eliminarPaqueteDirecto(
+    proyectoActivo.proyecto_id,poly.id,provider
+  );
+
+  if(provider==='vector'&&offlineDirectTipoActivo==='vector'){
+    quitarMapasBaseDirectos();
+  }
+  if(provider==='satellite'&&offlineDirectTipoActivo==='satellite'){
+    quitarMapasBaseDirectos();
+  }
+
+  await refrescarDirectOfflineUI();
+  await actualizarEstadoSelectorOfflineDirecto();
+}
+
+async function refrescarDirectOfflineUI(){
+  const cont=document.getElementById('directOfflinePolyList');
+  if(!cont||!proyectoActivo)return;
+
+  const proyectoId=String(proyectoActivo.proyecto_id);
+  const paquetes=await listarPaquetesDirectosProyecto(proyectoId).catch(()=>[]);
+  const mapa=new Map(
+    paquetes.map(p=>[
+      `${String(p.poligono_id)}__${p.provider}`,p
+    ])
+  );
+
+  const cards=[];
+
+  for(const poly of poligonosAsignados){
+    const vector=mapa.get(`${String(poly.id)}__vector`);
+    const sat=mapa.get(`${String(poly.id)}__satellite`);
+
+    cards.push(`
+      <div class="directPolyCard">
+        <div class="directPolyTop">
+          <div>
+            <b>${esc(poly.codigo||poly.nombre||'POLÍGONO')}</b>
+            <small>${esc(poly.nombre||'')}</small>
+          </div>
+        </div>
+
+        <div class="directPolyPackages">
+          <div class="directPkg ${vector?'ready':''}">
+            <span>🗺️ Mapa base</span>
+            <b>${vector?'✅ Descargado':'⬇ Pendiente'}</b>
+            <small>${vector
+              ? `${vector.tile_count||0} teselas · ${bytesOffline(vector.size||0)}`
+              : `Zoom ${DIRECT_VECTOR_MINZOOM}–${DIRECT_VECTOR_MAXZOOM}`}</small>
+          </div>
+
+          <div class="directPkg ${sat?'ready':''}">
+            <span>🛰️ Satélite</span>
+            <b>${sat?'✅ Descargado':'⬇ Pendiente'}</b>
+            <small>${sat
+              ? `${sat.tile_count||0} teselas · ${bytesOffline(sat.size||0)}`
+              : `Zoom ${DIRECT_SAT_MINZOOM}–${DIRECT_SAT_MAXZOOM}`}</small>
+          </div>
+        </div>
+
+        <div class="directPolyActions">
+          <button class="btn blue" onclick="descargarDirectoPoligonoUI('${esc(poly.id)}','vector')">⬇ Base</button>
+          <button class="btn purple" onclick="descargarDirectoPoligonoUI('${esc(poly.id)}','satellite')">⬇ Satélite</button>
+          <button class="btn" onclick="descargarDirectoAmbosPoligonoUI('${esc(poly.id)}')">📦 Ambos</button>
+          ${vector?`<button class="btn danger" onclick="eliminarDirectoPoligono('${esc(poly.id)}','vector')">🗑 Base</button>`:''}
+          ${sat?`<button class="btn danger" onclick="eliminarDirectoPoligono('${esc(poly.id)}','satellite')">🗑 Sat</button>`:''}
+        </div>
+      </div>
+    `);
+  }
+
+  cont.innerHTML=cards.length
+    ? cards.join('')
+    : '<div class="hint">No hay polígonos asignados.</div>';
+}
+
+const OfflineSatelliteLayer=L.GridLayer.extend({
+  createTile:function(coords,done){
+    const img=document.createElement('img');
+    img.alt='';
+    img.setAttribute('role','presentation');
+    img.style.width='256px';
+    img.style.height='256px';
+
+    const proyectoId=String(proyectoActivo?.proyecto_id||'');
+
+    obtenerTileDirectoCualquierPoligono(
+      proyectoId,'satellite',coords.z,coords.x,coords.y
+    ).then(rec=>{
+      if(!rec?.blob){
+        done(null,img);
+        return;
+      }
+
+      const url=URL.createObjectURL(rec.blob);
+
+      img.onload=()=>{
+        URL.revokeObjectURL(url);
+        done(null,img);
+      };
+
+      img.onerror=()=>{
+        URL.revokeObjectURL(url);
+        done(null,img);
+      };
+
+      img.src=url;
+
+    }).catch(()=>done(null,img));
+
+    return img;
+  }
+});
+
+function quitarMapasBaseDirectos(){
+  if(offlineVectorDirectLayer&&map?.hasLayer(offlineVectorDirectLayer)){
+    map.removeLayer(offlineVectorDirectLayer);
+  }
+
+  if(offlineSatelliteDirectLayer&&map?.hasLayer(offlineSatelliteDirectLayer)){
+    map.removeLayer(offlineSatelliteDirectLayer);
+  }
+
+  offlineDirectTipoActivo='';
+}
+
+async function activarMapaVectorDirectoOffline(mostrarAlerta=true){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId)return false;
+
+  const paquetes=await listarPaquetesDirectosProyecto(proyectoId).catch(()=>[]);
+  const ids=new Set(poligonosAsignados.map(p=>String(p.id)));
+  const disponibles=paquetes.filter(
+    p=>p.provider==='vector'&&ids.has(String(p.poligono_id))
+  );
+
+  if(!disponibles.length){
+    if(mostrarAlerta)alert('No hay mapa base vectorial descargado para este proyecto.');
+    return false;
+  }
+
+  if(!window.protomapsL?.leafletLayer){
+    if(mostrarAlerta)alert('No fue posible cargar el renderer vectorial Protomaps.');
+    return false;
+  }
+
+  [hyb,osm,darkBase,offlineBaseGroup].forEach(capa=>{
+    if(capa&&map.hasLayer(capa))map.removeLayer(capa);
+  });
+  quitarMapasBaseDirectos();
+
+  offlineVectorDirectLayer=protomapsL.leafletLayer({
+    url:OFFLINE_VECTOR_FAKE_PREFIX+'{z}/{x}/{y}.mvt',
+    flavor:'light',
+    lang:'es',
+    maxDataZoom:DIRECT_VECTOR_MAXZOOM
+  });
+
+  offlineVectorDirectLayer.addTo(map);
+  offlineDirectTipoActivo='vector';
+  offlineBaseActivo=false;
+  baseMapApagado=false;
+
+  localStorage.setItem('mapping_base_map_v1','offline_vector');
+
+  document.getElementById('map')?.classList.remove('basemapOff');
+  actualizarBotonBaseMap();
+  actualizarEstadoSelectorMapaBase();
+  cerrarSelectorMapaBase();
+
+  return true;
+}
+
+async function activarMapaSatelitalDirectoOffline(mostrarAlerta=true){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId)return false;
+
+  const paquetes=await listarPaquetesDirectosProyecto(proyectoId).catch(()=>[]);
+  const ids=new Set(poligonosAsignados.map(p=>String(p.id)));
+  const disponibles=paquetes.filter(
+    p=>p.provider==='satellite'&&ids.has(String(p.poligono_id))
+  );
+
+  if(!disponibles.length){
+    if(mostrarAlerta)alert('No hay mapa satelital descargado para este proyecto.');
+    return false;
+  }
+
+  [hyb,osm,darkBase,offlineBaseGroup].forEach(capa=>{
+    if(capa&&map.hasLayer(capa))map.removeLayer(capa);
+  });
+  quitarMapasBaseDirectos();
+
+  offlineSatelliteDirectLayer=new OfflineSatelliteLayer({
+    minZoom:DIRECT_SAT_MINZOOM,
+    maxNativeZoom:DIRECT_SAT_MAXZOOM,
+    maxZoom:22,
+    noWrap:true,
+    attribution:'Sentinel-2 cloudless – EOX IT Services GmbH · Contains modified Copernicus Sentinel data 2016 & 2017'
+  });
+
+  offlineSatelliteDirectLayer.addTo(map);
+  offlineDirectTipoActivo='satellite';
+  offlineBaseActivo=false;
+  baseMapApagado=false;
+
+  localStorage.setItem('mapping_base_map_v1','offline_satellite');
+
+  document.getElementById('map')?.classList.remove('basemapOff');
+  actualizarBotonBaseMap();
+  actualizarEstadoSelectorMapaBase();
+  cerrarSelectorMapaBase();
+
+  return true;
+}
+
+async function actualizarEstadoSelectorOfflineDirecto(){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  const vectorBtn=document.getElementById('baseMapOfflineVectorChoice');
+  const satBtn=document.getElementById('baseMapOfflineSatelliteChoice');
+  const vectorTxt=document.getElementById('baseMapOfflineVectorText');
+  const satTxt=document.getElementById('baseMapOfflineSatelliteText');
+
+  if(!vectorBtn||!satBtn||!vectorTxt||!satTxt)return;
+
+  if(!proyectoId){
+    vectorBtn.classList.remove('directReady');
+    satBtn.classList.remove('directReady');
+    vectorTxt.textContent='Selecciona primero un proyecto';
+    satTxt.textContent='Selecciona primero un proyecto';
+    return;
+  }
+
+  const paquetes=await listarPaquetesDirectosProyecto(proyectoId).catch(()=>[]);
+  const ids=new Set(poligonosAsignados.map(p=>String(p.id)));
+
+  const vect=paquetes.filter(p=>p.provider==='vector'&&ids.has(String(p.poligono_id)));
+  const sats=paquetes.filter(p=>p.provider==='satellite'&&ids.has(String(p.poligono_id)));
+
+  vectorBtn.classList.toggle('directReady',!!vect.length);
+  satBtn.classList.toggle('directReady',!!sats.length);
+
+  vectorTxt.textContent=vect.length
+    ? `${vect.length} polígono(s) disponibles offline`
+    : 'Protomaps · requiere descarga previa';
+
+  satTxt.textContent=sats.length
+    ? `${sats.length} polígono(s) disponibles offline`
+    : 'Sentinel‑2 Cloudless · requiere descarga previa';
+}
+
+async function restaurarMapaDirectoSiPreferido(){
+  const pref=localStorage.getItem('mapping_base_map_v1');
+
+  if(pref==='offline_vector'){
+    return activarMapaVectorDirectoOffline(false);
+  }
+
+  if(pref==='offline_satellite'){
+    return activarMapaSatelitalDirectoOffline(false);
+  }
+
+  return false;
+}
+
+// ============================================================
+// V96 · MAPA BASE OFFLINE PMTILES
+// ============================================================
+
+function bytesOffline(n){
+  const x=Number(n)||0;
+  if(x<1024)return `${x} B`;
+  if(x<1024*1024)return `${(x/1024).toFixed(1)} KB`;
+  if(x<1024*1024*1024)return `${(x/1024/1024).toFixed(1)} MB`;
+  return `${(x/1024/1024/1024).toFixed(2)} GB`;
+}
+
+function normalizarCodigoOffline(v){
+  return String(v||'')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/\.pmtiles$/i,'')
+    .replace(/[^A-Z0-9]+/gi,'')
+    .toUpperCase();
+}
+
+function rutaConvencionMapaOffline(poly){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  const codigo=String(poly?.codigo||poly?.nombre||poly?.id||'POLIGONO').trim();
+  return `${proyectoId}/${codigo}.pmtiles`;
+}
+
+function metadataMapaOfflinePoligono(poly){
+  const path=
+    poly?.offline_map_path ||
+    poly?.mapa_offline_path ||
+    poly?.pmtiles_path ||
+    poly?.offline_pmtiles_path ||
+    '';
+
+  const version=
+    poly?.offline_map_updated_at ||
+    poly?.mapa_offline_updated_at ||
+    poly?.offline_map_version ||
+    poly?.mapa_offline_version ||
+    '';
+
+  const size=Number(
+    poly?.offline_map_size ||
+    poly?.mapa_offline_size ||
+    0
+  )||0;
+
+  return {path:String(path||''),version:String(version||''),size};
+}
+
+async function cargarIndiceRemotoMapasOffline(forzar=false){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId)return new Map();
+
+  if(
+    !forzar &&
+    offlineRemoteIndex &&
+    offlineRemoteIndexProyectoId===proyectoId
+  ){
+    return offlineRemoteIndex;
+  }
+
+  const index=new Map();
+
+  try{
+    const {data,error}=await mappingSb.storage
+      .from(OFFLINE_MAP_BUCKET)
+      .list(proyectoId,{
+        limit:200,
+        sortBy:{column:'name',order:'asc'}
+      });
+
+    if(error)throw error;
+
+    for(const item of data||[]){
+      if(!/\.pmtiles$/i.test(item?.name||''))continue;
+
+      const key=normalizarCodigoOffline(item.name);
+      index.set(key,{
+        path:`${proyectoId}/${item.name}`,
+        filename:item.name,
+        version:String(item.updated_at||item.created_at||item.id||''),
+        size:Number(item.metadata?.size||0)||0,
+        exists:true
+      });
+    }
+  }catch(e){
+    console.warn('No se pudo listar mapas offline en Supabase:',e?.message||e);
+  }
+
+  offlineRemoteIndex=index;
+  offlineRemoteIndexProyectoId=proyectoId;
+  return index;
+}
+
+async function obtenerInfoRemotaMapaOffline(poly){
+  const explicit=metadataMapaOfflinePoligono(poly);
+  const index=await cargarIndiceRemotoMapasOffline(false);
+  const code=normalizarCodigoOffline(poly?.codigo||poly?.nombre);
+  const listed=index.get(code);
+
+  if(listed){
+    return {...listed,configured:true};
+  }
+
+  if(explicit.path){
+    return {
+      path:explicit.path,
+      filename:explicit.path.split('/').pop()||`${poly.codigo}.pmtiles`,
+      version:explicit.version,
+      size:explicit.size,
+      exists:null,
+      configured:true
+    };
+  }
+
+  return {
+    path:rutaConvencionMapaOffline(poly),
+    filename:`${poly?.codigo||poly?.nombre||'POLIGONO'}.pmtiles`,
+    version:'',
+    size:0,
+    exists:false,
+    configured:false
+  };
+}
+
+function mapaLocalCoincideRemoto(local,remote){
+  if(!local)return false;
+
+  // Archivo importado manualmente: se considera válido mientras el usuario
+  // no lo reemplace expresamente.
+  if(local.source_kind==='manual')return true;
+
+  if(remote?.path && String(local.remote_path||'')!==String(remote.path||'')){
+    return false;
+  }
+
+  // Si Supabase expone una versión/fecha, la comparamos.
+  if(remote?.version){
+    return String(local.remote_version||'')===String(remote.version);
+  }
+
+  return true;
+}
+
+async function validarPMTilesRaster(blob,key='offline.pmtiles'){
+  if(!window.pmtiles?.PMTiles){
+    throw new Error('La librería PMTiles no está disponible.');
+  }
+
+  const source=new BlobPMTilesSource(blob,key);
+  const archive=new pmtiles.PMTiles(source);
+  const header=await archive.getHeader();
+
+  // PMTiles: 1=MVT y 6=MLT son vectores.
+  if(Number(header.tileType)===1 || Number(header.tileType)===6){
+    throw new Error(
+      'Este archivo PMTiles contiene teselas vectoriales. Esta versión del MAPPING utiliza PMTiles raster (PNG, JPEG, WebP o AVIF) como mapa base.'
+    );
+  }
+
+  if(![2,3,4,5].includes(Number(header.tileType))){
+    throw new Error('El archivo PMTiles no contiene un formato raster compatible.');
+  }
+
+  return {
+    specVersion:header.specVersion,
+    tileType:header.tileType,
+    minZoom:header.minZoom,
+    maxZoom:header.maxZoom,
+    minLon:header.minLon,
+    minLat:header.minLat,
+    maxLon:header.maxLon,
+    maxLat:header.maxLat,
+    centerZoom:header.centerZoom,
+    centerLon:header.centerLon,
+    centerLat:header.centerLat
+  };
+}
+
+async function descargarBlobMapaOffline(path){
+  // Se usa Storage autenticado. Si el bucket es privado, Supabase devuelve
+  // el Blob al usuario según sus políticas RLS de storage.objects.
+  const {data,error}=await mappingSb.storage
+    .from(OFFLINE_MAP_BUCKET)
+    .download(path);
+
+  if(error)throw error;
+  if(!(data instanceof Blob))throw new Error('Supabase no devolvió un archivo válido.');
+  return data;
+}
+
+async function descargarMapaOfflinePoligono(poly,{refrescar=true}={}){
+  if(!proyectoActivo||!poly)return false;
+  if(!navigator.onLine){
+    throw new Error('Necesitas Internet para descargar este mapa por primera vez.');
+  }
+
+  const proyectoId=String(proyectoActivo.proyecto_id);
+  const remote=await obtenerInfoRemotaMapaOffline(poly);
+
+  actualizarCardMapaOffline(poly.id,{
+    estado:'download',
+    texto:'Descargando…'
+  });
+
+  let blob;
+  try{
+    blob=await descargarBlobMapaOffline(remote.path);
+  }catch(e){
+    // Si se estaba usando la ruta por convención, refrescamos el índice
+    // por si el nombre real del archivo cambió.
+    await cargarIndiceRemotoMapasOffline(true);
+    const remote2=await obtenerInfoRemotaMapaOffline(poly);
+
+    if(remote2.path!==remote.path){
+      blob=await descargarBlobMapaOffline(remote2.path);
+      Object.assign(remote,remote2);
+    }else{
+      throw new Error(
+        `No se encontró el mapa para ${poly.codigo||poly.nombre} en el bucket ${OFFLINE_MAP_BUCKET}. Ruta esperada: ${remote.path}. ${e?.message||''}`
+      );
+    }
+  }
+
+  const header=await validarPMTilesRaster(
+    blob,
+    `${proyectoId}/${poly.codigo||poly.id}`
+  );
+
+  await guardarMapaOfflineIDB({
+    proyecto_id:proyectoId,
+    poligono_id:poly.id,
+    poligono_codigo:poly.codigo||'',
+    poligono_nombre:poly.nombre||'',
+    remote_path:remote.path,
+    remote_version:remote.version||'',
+    source_kind:'supabase',
+    filename:remote.filename||remote.path.split('/').pop(),
+    blob,
+    header
+  });
+
+  if(refrescar){
+    await refrescarPanelOffline();
+  }
+
+  return true;
+}
+
+async function eliminarMapaOfflinePoligono(poligonoId){
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId||!poligonoId)return;
+
+  const poly=poligonosAsignados.find(x=>String(x.id)===String(poligonoId));
+  if(!confirm(`¿Eliminar del celular el mapa offline de ${poly?.codigo||poly?.nombre||'este polígono'}?`))return;
+
+  await eliminarMapaOfflineIDB(proyectoId,poligonoId);
+  await reconstruirMapaBaseOfflineLocal();
+
+  if(offlineBaseActivo && !offlineBaseLayers.length){
+    await seleccionarMapaBase('dark');
+  }
+
+  await refrescarPanelOffline();
+}
+
+function actualizarCardMapaOffline(poligonoId,{estado='',texto=''}={}){
+  const card=document.getElementById(`offlinePoly_${poligonoId}`);
+  if(!card)return;
+
+  if(estado){
+    card.classList.remove('ready','update','error');
+    if(estado==='error')card.classList.add('error');
+  }
+
+  const badge=card.querySelector('.offlineBadge');
+  if(badge&&texto)badge.textContent=texto;
+}
+
+async function pintarListaMapasOffline(){
+  const cont=document.getElementById('offlinePolygonList');
+  if(!cont)return;
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId){
+    cont.innerHTML='<div class="hint">Selecciona primero un proyecto.</div>';
+    return;
+  }
+
+  const locales=await listarMapasOfflineProyecto(proyectoId).catch(()=>[]);
+  const localMap=new Map(locales.map(x=>[String(x.poligono_id),x]));
+  const index=await cargarIndiceRemotoMapasOffline(false);
+
+  let listos=0;
+  let totalSize=0;
+
+  const htmlCards=[];
+
+  for(const poly of poligonosAsignados){
+    const local=localMap.get(String(poly.id))||null;
+    const remote=await obtenerInfoRemotaMapaOffline(poly);
+    const actual=mapaLocalCoincideRemoto(local,remote);
+
+    if(local){
+      listos++;
+      totalSize+=Number(local.size||local.blob?.size||0);
+    }
+
+    const clase=local?(actual?'ready':'update'):'';
+    const badgeClase=local?(actual?'ready':'update'):'missing';
+    const badgeTexto=local
+      ? (actual?'✅ Guardado':'⚠ Actualizar')
+      : (remote.exists===true?'⬇ Disponible':'⬇ No descargado');
+
+    htmlCards.push(`
+      <div class="offlinePolygonCard ${clase}" id="offlinePoly_${esc(poly.id)}">
+        <div class="offlinePolygonTop">
+          <div class="offlinePolygonTitle">
+            <b>${esc(poly.codigo||poly.nombre||'POLÍGONO')}</b>
+            <small>${esc(poly.nombre||'')}</small>
+          </div>
+          <span class="offlineBadge ${badgeClase}">${badgeTexto}</span>
+        </div>
+
+        <div class="offlinePolygonMeta">
+          <div><span>Local</span><b>${local?bytesOffline(local.size||local.blob?.size):'No descargado'}</b></div>
+          <div><span>Servidor</span><b>${remote.size?bytesOffline(remote.size):(remote.exists===true?'Disponible':'Ruta '+esc(remote.path))}</b></div>
+          <div><span>Descargado</span><b>${local?.downloaded_at?new Date(local.downloaded_at).toLocaleString():'—'}</b></div>
+        </div>
+
+        <div class="offlinePolygonActions">
+          <button class="btn blue" type="button" onclick="descargarMapaOfflineDesdeUI('${esc(poly.id)}')">
+            ${local?(actual?'⟳ Reemplazar':'⬇ Actualizar'):'⬇ Descargar'}
+          </button>
+          ${local?`<button class="btn danger" type="button" onclick="eliminarMapaOfflinePoligono('${esc(poly.id)}')">🗑 Eliminar local</button>`:''}
+        </div>
+      </div>
+    `);
+  }
+
+  cont.innerHTML=htmlCards.length
+    ? htmlCards.join('')
+    : '<div class="hint">No tienes polígonos asignados.</div>';
+
+  offlineCountPoligonos.textContent=poligonosAsignados.length;
+  offlineCountMapas.textContent=listos;
+  offlineTotalSize.textContent=bytesOffline(totalSize);
+  offlineEstadoGeneral.textContent=
+    poligonosAsignados.length && listos===poligonosAsignados.length
+      ? '✅ LISTO'
+      : 'Pendiente';
+
+  const b=document.getElementById('btnOfflineProject');
+  b?.classList.toggle(
+    'offlineReady',
+    !!poligonosAsignados.length && listos===poligonosAsignados.length
+  );
+
+  await actualizarEstadoSelectorOffline();
+}
+
+async function descargarMapaOfflineDesdeUI(poligonoId){
+  const poly=poligonosAsignados.find(x=>String(x.id)===String(poligonoId));
+  if(!poly)return;
+
+  try{
+    await descargarMapaOfflinePoligono(poly,{refrescar:true});
+  }catch(e){
+    console.error(e);
+    actualizarCardMapaOffline(poly.id,{estado:'error',texto:'❌ Error'});
+    alert(e?.message||e);
+  }
+}
+
+function setProgresoOffline(pct,texto){
+  const p=Math.max(0,Math.min(100,Number(pct)||0));
+  const bar=document.getElementById('offlineProgressBar');
+  const label=document.getElementById('offlineProgressPct');
+  const txt=document.getElementById('offlineProgressText');
+
+  if(bar)bar.style.width=`${p}%`;
+  if(label)label.textContent=`${Math.round(p)}%`;
+  if(txt&&texto)txt.textContent=texto;
+}
+
+async function prepararProyectoOfflineCompleto(){
+  if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
+  if(!poligonosAsignados.length)return alert('No tienes polígonos asignados en este proyecto.');
+
+  // Pedimos almacenamiento persistente cuando el navegador lo permite.
+  try{
+    if(navigator.storage?.persist){
+      await navigator.storage.persist();
+    }
+  }catch(_){}
+
+  setProgresoOffline(2,'Preparando recursos del proyecto…');
+
+  // 1. Polígonos: ya existe lógica de caché IndexedDB.
+  try{
+    await descargarGeoJSONProyecto();
+  }catch(e){
+    console.warn('Polígonos offline:',e);
+  }
+
+  setProgresoOffline(8,'Guardando cartografía del proyecto…');
+
+  // 2. Cartografía: reutiliza la caché IndexedDB existente.
+  if(proyectoTieneCartografia()){
+    try{
+      await asegurarCartografiaLocalProyecto();
+    }catch(e){
+      console.warn('Cartografía offline:',e);
+    }
+  }
+
+  await cargarIndiceRemotoMapasOffline(true);
+
+  const proyectoId=String(proyectoActivo.proyecto_id);
+  const total=poligonosAsignados.length;
+  let completados=0;
+  let fallos=[];
+
+  for(const poly of poligonosAsignados){
+    setProgresoOffline(
+      10+(completados/Math.max(total,1))*85,
+      `Preparando ${poly.codigo||poly.nombre}…`
+    );
+
+    try{
+      const local=await obtenerMapaOfflineIDB(proyectoId,poly.id);
+      const remote=await obtenerInfoRemotaMapaOffline(poly);
+
+      if(!local || !mapaLocalCoincideRemoto(local,remote)){
+        await descargarMapaOfflinePoligono(poly,{refrescar:false});
+      }
+    }catch(e){
+      fallos.push(`${poly.codigo||poly.nombre}: ${e?.message||e}`);
+    }
+
+    completados++;
+  }
+
+  await reconstruirMapaBaseOfflineLocal();
+  await refrescarPanelOffline();
+
+  setProgresoOffline(
+    100,
+    fallos.length
+      ? `Preparación terminada con ${fallos.length} mapa(s) pendiente(s).`
+      : '✅ Proyecto preparado para trabajo offline.'
+  );
+
+  if(fallos.length){
+    alert(
+      'El proyecto quedó parcialmente preparado.\n\n'+
+      fallos.join('\n\n')
+    );
+  }
+}
+
+async function importarMapaOfflineManual(){
+  if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
+
+  const poligonoId=offlineImportPoligono.value;
+  const file=offlineImportFile.files?.[0];
+
+  if(!poligonoId)return alert('Selecciona el polígono.');
+  if(!file)return alert('Selecciona un archivo .pmtiles.');
+
+  const poly=poligonosAsignados.find(x=>String(x.id)===String(poligonoId));
+  if(!poly)return alert('Ese polígono no pertenece a tu asignación.');
+
+  try{
+    const header=await validarPMTilesRaster(file,file.name);
+
+    await guardarMapaOfflineIDB({
+      proyecto_id:proyectoActivo.proyecto_id,
+      poligono_id:poly.id,
+      poligono_codigo:poly.codigo||'',
+      poligono_nombre:poly.nombre||'',
+      remote_path:'',
+      remote_version:'',
+      source_kind:'manual',
+      filename:file.name,
+      blob:file,
+      header
+    });
+
+    offlineImportFile.value='';
+    await reconstruirMapaBaseOfflineLocal();
+    await refrescarPanelOffline();
+    alert('Mapa offline importado correctamente.');
+  }catch(e){
+    alert('No se pudo importar el PMTiles.\n\n'+(e?.message||e));
+  }
+}
+
+async function crearLayerPMTilesLocal(registro){
+  if(!registro?.blob)return null;
+  if(!window.pmtiles?.PMTiles||!window.pmtiles?.leafletRasterLayer){
+    throw new Error('PMTiles no está disponible.');
+  }
+
+  const source=new BlobPMTilesSource(
+    registro.blob,
+    `idb://${registro.key}/${registro.downloaded_at||''}`
+  );
+
+  const archive=new pmtiles.PMTiles(source);
+  const header=await archive.getHeader();
+
+  if([1,6].includes(Number(header.tileType))){
+    throw new Error(`${registro.poligono_codigo}: PMTiles vector no soportado como base raster.`);
+  }
+
+  const bounds=[
+    [Number(header.minLat),Number(header.minLon)],
+    [Number(header.maxLat),Number(header.maxLon)]
+  ];
+
+  const layer=pmtiles.leafletRasterLayer(archive,{
+    minZoom:Number(header.minZoom)||0,
+    maxNativeZoom:Number(header.maxZoom)||22,
+    maxZoom:22,
+    bounds,
+    noWrap:true,
+    attribution:'Mapa offline PMTiles'
+  });
+
+  return {layer,header};
+}
+
+async function reconstruirMapaBaseOfflineLocal(){
+  if(!offlineBaseGroup)return false;
+
+  const estabaActivo=map?.hasLayer(offlineBaseGroup);
+  if(estabaActivo)map.removeLayer(offlineBaseGroup);
+
+  offlineBaseGroup.clearLayers();
+  offlineBaseLayers=[];
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId){
+    actualizarEstadoSelectorOffline();
+    return false;
+  }
+
+  for(const poly of poligonosAsignados){
+    const registro=await obtenerMapaOfflineIDB(proyectoId,poly.id).catch(()=>null);
+    if(!registro?.blob)continue;
+
+    try{
+      const creado=await crearLayerPMTilesLocal(registro);
+      if(creado?.layer){
+        creado.layer.addTo(offlineBaseGroup);
+        offlineBaseLayers.push({
+          poligono_id:poly.id,
+          codigo:poly.codigo,
+          layer:creado.layer,
+          header:creado.header
+        });
+      }
+    }catch(e){
+      console.warn('Mapa offline local inválido:',e);
+    }
+  }
+
+  if(offlineBaseLayers.length){
+    try{
+      if(baseLayerControl && !baseLayerControl._layers?.some?.(x=>x.layer===offlineBaseGroup)){
+        baseLayerControl.addBaseLayer(offlineBaseGroup,'Mapa Offline');
+      }
+    }catch(_){}
+  }
+
+  if(estabaActivo && offlineBaseLayers.length){
+    offlineBaseGroup.addTo(map);
+    offlineBaseActivo=true;
+  }
+
+  await actualizarEstadoSelectorOffline();
+  return offlineBaseLayers.length>0;
+}
+
+async function activarMapaBaseOffline(mostrarAlerta=true){
+  const ok=await reconstruirMapaBaseOfflineLocal();
+
+  if(!ok){
+    if(mostrarAlerta){
+      alert('Todavía no hay mapas offline descargados para tus polígonos asignados.');
+    }
+    return false;
+  }
+
+  [hyb,osm,darkBase].forEach(layer=>{
+    if(layer&&map.hasLayer(layer))map.removeLayer(layer);
+  });
+
+  if(!map.hasLayer(offlineBaseGroup))offlineBaseGroup.addTo(map);
+
+  offlineBaseActivo=true;
+  baseMapApagado=false;
+  localStorage.setItem('mapping_base_map_v1','offline');
+  document.getElementById('map')?.classList.remove('basemapOff');
+
+  actualizarBotonBaseMap();
+  actualizarEstadoSelectorMapaBase();
+  cerrarSelectorMapaBase();
+  return true;
+}
+
+function limpiarMapaBaseOfflineVisual(){
+  if(offlineBaseGroup&&map?.hasLayer(offlineBaseGroup)){
+    map.removeLayer(offlineBaseGroup);
+  }
+
+  quitarMapasBaseDirectos();
+  quitarMapaOSMOffline();
+  quitarSateliteIGACOffline();
+
+  offlineBaseGroup?.clearLayers?.();
+  offlineBaseLayers=[];
+  offlineBaseActivo=false;
+  offlineDirectTipoActivo='';
+  offlineRemoteIndex=null;
+  offlineRemoteIndexProyectoId=null;
+}
+
+async function restaurarMapaOfflineSiPreferido(){
+  const pref=localStorage.getItem('mapping_base_map_v1');
+
+  if(pref==='offline_osm'){
+    return restaurarMapaOSMOfflineSiPreferido();
+  }
+
+  if(pref==='offline_sat_igac'){
+    return restaurarSateliteIGACSiPreferido();
+  }
+
+  return false;
+}
+
+async function actualizarEstadoSelectorOffline(){
+  const choice=document.getElementById('baseMapOfflineChoice');
+  const text=document.getElementById('baseMapOfflineChoiceText');
+  if(!choice||!text)return;
+
+  const proyectoId=String(proyectoActivo?.proyecto_id||'');
+  if(!proyectoId){
+    choice.classList.add('offlineUnavailable');
+    text.textContent='Selecciona un proyecto primero';
+    return;
+  }
+
+  const locales=await listarMapasOfflineProyecto(proyectoId).catch(()=>[]);
+  const idsAsignados=new Set(poligonosAsignados.map(x=>String(x.id)));
+  const validos=locales.filter(x=>idsAsignados.has(String(x.poligono_id)));
+
+  choice.classList.toggle('offlineUnavailable',!validos.length);
+  text.textContent=validos.length
+    ? `${validos.length} mapa(s) guardado(s) en el dispositivo`
+    : 'Requiere descargar el mapa del proyecto';
+}
+
+async function refrescarPanelOffline(){
+  if(!proyectoActivo)return;
+
+  offlineProjectSubtitle.textContent=
+    `${proyectoActivo.codigo||''} · ${proyectoActivo.nombre||''}`;
+
+  offlineImportPoligono.innerHTML=
+    '<option value="">Seleccione...</option>'+
+    poligonosAsignados.map(p=>
+      `<option value="${esc(p.id)}">${esc(p.codigo||p.nombre||'POLÍGONO')}</option>`
+    ).join('');
+
+  await pintarListaMapasOffline();
+  await refrescarDirectOfflineUI();
+  await actualizarEstadoSelectorOfflineDirecto();
+  await actualizarNotaAlmacenamientoOffline();
+}
+
+async function actualizarNotaAlmacenamientoOffline(){
+  const el=document.getElementById('offlineStorageNote');
+  if(!el)return;
+
+  try{
+    const est=await navigator.storage?.estimate?.();
+    const usage=Number(est?.usage||0);
+    const quota=Number(est?.quota||0);
+
+    if(quota){
+      el.textContent=
+        `Almacenamiento del navegador: ${bytesOffline(usage)} usados de ${bytesOffline(quota)} disponibles.`;
+    }else{
+      el.textContent='El tamaño disponible depende del almacenamiento que el navegador asigne a este sitio.';
+    }
+  }catch(_){
+    el.textContent='El mapa se almacena localmente en IndexedDB.';
+  }
+}
+
+async function abrirPrepararProyectoOffline(){
+  if(!exigirPoligonoParaTrabajar('preparar el proyecto offline'))return;
+
+  const subtitle=document.getElementById('offlineProjectSubtitle');
+  if(subtitle){
+    subtitle.textContent=`${proyectoActivo?.codigo||''} · ${proyectoActivo?.nombre||''}`;
+  }
+
+  offlineProjectOverlay.classList.add('open');
+  setProgresoOffline(0,'Consultando almacenamiento local…');
+
+  await refrescarResumenOfflineSimple();
+
+  setProgresoOffline(0,'Listo para descargar.');
+}
+
+function cerrarPrepararProyectoOffline(){
+  offlineProjectOverlay.classList.remove('open');
+}
+
+window.addEventListener('offline',()=>{
+  restaurarMapaOfflineSiPreferido().catch(()=>{});
+});
+
+window.addEventListener('online',()=>{
+  refrescarResumenOfflineSimple().catch(()=>{});
+});
+
 function actualizarBotonBaseMap(){
   const b=document.getElementById('btnBaseMap');
   if(!b)return;
+
+  if(igacOfflineLayer&&map?.hasLayer(igacOfflineLayer)){
+    b.textContent='🛰️ Satélite IGAC offline activo';
+    return;
+  }
+
+  if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer)){
+    b.textContent='📦 OpenStreetMap offline activo';
+    return;
+  }
+
   b.textContent=baseMapApagado?'🗺️ Encender mapa base':'🌑 Apagar mapa base';
 }
 
@@ -7649,13 +10687,35 @@ function toggleBaseMap(){
   if(!map)return;
 
   if(!baseMapApagado){
-    if(hyb && map.hasLayer(hyb))map.removeLayer(hyb);
-    if(osm && map.hasLayer(osm))map.removeLayer(osm);
-    if(darkBase && !map.hasLayer(darkBase))darkBase.addTo(map);
+    [hyb,osm,offlineBaseGroup].forEach(layer=>{
+      if(layer&&map.hasLayer(layer))map.removeLayer(layer);
+    });
+
+    quitarMapasBaseDirectos();
+    quitarMapaOSMOffline();
+    quitarSateliteIGACOffline();
+
+    if(darkBase&&!map.hasLayer(darkBase))darkBase.addTo(map);
     baseMapApagado=true;
+
   }else{
-    if(darkBase && map.hasLayer(darkBase))map.removeLayer(darkBase);
-    if(hyb && !map.hasLayer(hyb))hyb.addTo(map);
+    if(darkBase&&map.hasLayer(darkBase))map.removeLayer(darkBase);
+
+    const pref=localStorage.getItem('mapping_base_map_v1');
+
+    if(pref==='offline_osm'){
+      baseMapApagado=false;
+      activarMapaOSMOffline(false).catch(()=>{});
+      return;
+    }
+
+    if(pref==='offline_sat_igac'){
+      baseMapApagado=false;
+      activarSateliteIGACOffline(false).catch(()=>{});
+      return;
+    }
+
+    hyb.addTo(map);
     baseMapApagado=false;
   }
 
@@ -7953,6 +11013,7 @@ async function cargarProyectosAsignados(){
     poligonosAsignadosSet=new Set();
     limpiarCapaPoligonos();
     limpiarCartografiaProyecto();
+    limpiarMapaBaseOfflineVisual();
     localStorage.removeItem('mapping_proyecto_activo_v1');
     bloquearSinProyecto();
     return;
@@ -7994,6 +11055,8 @@ async function cargarProyectosAsignados(){
       await cargarPuntosSupabase(false);
       ubicarEnUltimoElementoRegistrado();
       actualizarEstadoSync();
+
+      setTimeout(()=>restaurarMapaOfflineSiPreferido().catch(()=>{}),250);
 
       // La cartografía se resuelve después, sin bloquear la carga principal.
       programarCartografiaProyectoSegundoPlano(700);
@@ -8085,6 +11148,9 @@ async function seleccionarProyecto(asignacionId){
 
     actualizarIndicadorTipoProyecto();
 
+    // El mapa base offline pertenece al proyecto/polígonos anteriores.
+    limpiarMapaBaseOfflineVisual();
+
     // Solo reinicia la capa; no descarga ni parsea cartografía todavía.
     prepararCartografiaProyectoSeleccionado();
 
@@ -8114,6 +11180,10 @@ async function seleccionarProyecto(asignacionId){
     ubicarEnUltimoElementoRegistrado();
 
     actualizarEstadoSync();
+
+    // Si el técnico había elegido el mapa offline, restaurarlo cuando ya
+    // conocemos los polígonos asignados.
+    setTimeout(()=>restaurarMapaOfflineSiPreferido().catch(()=>{}),250);
 
     // Cache/render de cartografía después de terminar la carga operativa.
     programarCartografiaProyectoSegundoPlano(700);
@@ -10562,10 +13632,92 @@ document.addEventListener('DOMContentLoaded',()=>{
           <b>🗺️ OpenStreetMap</b>
           <span>Mapa de calles y referencias</span>
         </button>
+        <button type="button" data-base-map="offline_osm" id="baseMapOfflineChoice" onclick="seleccionarMapaBase('offline_osm')">
+          <b>📦 OpenStreetMap Offline</b>
+          <span id="baseMapOfflineChoiceText">Descarga primero el mapa del proyecto</span>
+        </button>
+        <button type="button" data-base-map="offline_sat_igac" id="baseMapOfflineSatelliteChoice" onclick="seleccionarMapaBase('offline_sat_igac')">
+          <b>🛰️ Satélite Offline IGAC</b>
+          <span id="baseMapOfflineSatelliteText">Descarga primero la ortoimagen del proyecto</span>
+        </button>
         <button type="button" data-base-map="dark" onclick="seleccionarMapaBase('dark')">
           <b>🌑 Fondo oscuro</b>
           <span>Sin mapa base</span>
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="overlay" id="offlineProjectOverlay">
+  <div class="modal offlineMapModal">
+    <div class="modalHead">
+      <div>
+        <h2>📦 Preparar proyecto offline</h2>
+        <small id="offlineProjectSubtitle" style="color:#94a3b8">Mapas del proyecto</small>
+      </div>
+      <button class="close" onclick="cerrarPrepararProyectoOffline()">Cerrar</button>
+    </div>
+
+    <div class="body">
+      <div class="hint" style="margin-bottom:10px">
+        Descarga únicamente los mapas que necesites para trabajar dentro de tus
+        <b>polígonos asignados</b> sin conexión a Internet.
+      </div>
+
+      <div class="offlineSimpleStatus">
+        <div>
+          <span>Polígonos asignados</span>
+          <b id="offlineSimplePoligonos">0</b>
+        </div>
+        <div>
+          <span>Mapa base</span>
+          <b id="offlineSimpleDescargados">0/0</b>
+        </div>
+        <div>
+          <span>Satélite IGAC</span>
+          <b id="offlineSatelliteDescargados">0/0</b>
+        </div>
+        <div>
+          <span>Espacio local</span>
+          <b id="offlineSimpleSize">0 MB</b>
+        </div>
+      </div>
+
+      <div class="offlineSimpleActions">
+        <button class="btn blue" id="btnDescargarOSMOffline" type="button" onclick="descargarMapaBaseOSMOffline()">
+          ⬇ Descargar / actualizar mapa base offline
+        </button>
+
+        <button class="btn purple" id="btnDescargarIGACOffline" type="button" onclick="descargarSateliteIGACOffline()">
+          🛰️ Descargar / actualizar satélite offline
+        </button>
+
+        <button class="btn" id="btnUsarOSMOffline" type="button" onclick="activarMapaOSMOffline(true)">
+          🗺️ Usar mapa base offline
+        </button>
+
+        <button class="btn" id="btnUsarIGACOffline" type="button" onclick="activarSateliteIGACOffline(true)">
+          🛰️ Usar satélite offline
+        </button>
+      </div>
+
+      <div class="offlineGlobalProgress" style="margin-top:12px">
+        <div class="offlineGlobalProgressTop">
+          <span id="offlineProgressText">Listo para descargar.</span>
+          <b id="offlineProgressPct">0%</b>
+        </div>
+        <div class="offlineGlobalTrack">
+          <div class="offlineGlobalBar" id="offlineProgressBar"></div>
+        </div>
+      </div>
+
+      <div id="offlineSimpleDetalle" class="hint" style="margin-top:10px"></div>
+
+      <div class="hint" style="margin-top:10px">
+        <b>Mapa base:</b> OpenFreeMap / OpenStreetMap.<br>
+        <b>Satélite:</b> OrtoColombia 2023 · Instituto Geográfico Agustín Codazzi (IGAC).
       </div>
     </div>
   </div>
@@ -11238,6 +14390,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
 
 
 
