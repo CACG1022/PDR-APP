@@ -1735,6 +1735,13 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
   }
 }
 
+
+/* ===== MAPA BASE · ÚNICO SELECTOR EN BARRA INFERIOR ===== */
+/* Evita que aparezca el botón de capas apiladas de Leaflet. */
+.leaflet-control-layers{
+  display:none!important;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1799,11 +1806,10 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
 
 <div class="sideMenu" id="sideMenu">
   <button onclick="abrirPanelProyectos();toggleSideMenu(false)">👷 Mis proyectos</button>
-  <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
+  <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">---------</div>
   <button onclick="reenviarTodo();toggleSideMenu(false)">⟳ Reenviar todo</button>
   <button onclick="cargarPuntosSupabase();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
   <button onclick="abrirBuscarConsecutivo();toggleSideMenu(false)">🔎 Buscar por consecutivo</button>
-  <button id="btnBaseMap" onclick="toggleBaseMap();toggleSideMenu(false)">🌑 Apagar mapa base</button>
   <button id="btnCartografiaProyecto" onclick="toggleCartografiaProyecto();toggleSideMenu(false)" disabled>🗺️ Cartografía: no disponible</button>
   <button id="btnOfflineProject" onclick="abrirPrepararProyectoOffline();toggleSideMenu(false)">📦 Preparar proyecto offline</button>
   <button id="btnDistanciasMapa" onclick="toggleDistanciasMapa();toggleSideMenu(false)">📏 Ocultar distancias</button>
@@ -2078,11 +2084,13 @@ function init(){
   else if(baseGuardado==='dark'){darkBase.addTo(map);baseMapApagado=true;}
   else hyb.addTo(map);
 
+  // El selector visual de capas de Leaflet se mantiene oculto.
+  // El único selector de mapa base visible está en la barra inferior.
   baseLayerControl=L.control.layers({
     'Google Satélite Híbrido':hyb,
     'OpenStreetMap':osm,
     'Fondo oscuro (sin mapa base)':darkBase
-  }).addTo(map);
+  });
 
   map.on('baselayerchange',e=>{
     baseMapApagado=(e.layer===darkBase);
