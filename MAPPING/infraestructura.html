@@ -1676,6 +1676,65 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
   .offlineSimpleActions{grid-template-columns:1fr}
 }
 
+
+/* ===== GPS INFERIOR IZQUIERDO · ENVÍO SOLO EN MENÚ ===== */
+
+/* GPS: misma apariencia del antiguo FAB "Enviar datos". */
+.gpsFab{
+  left:17px!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:142px!important;
+  width:48px!important;
+  height:48px!important;
+  border-radius:50%!important;
+  border:0!important;
+  background:#f59e0b!important;
+  color:#111827!important;
+  font-size:22px!important;
+  font-weight:900!important;
+  z-index:2500!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.32)!important;
+  cursor:pointer!important;
+}
+
+/* Estado GPS junto al botón inferior izquierdo. */
+.gpsStatusPill{
+  left:73px!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:151px!important;
+  max-width:170px!important;
+}
+
+/* Ya no existe el FAB de sincronización; el menú queda como único control superior. */
+.syncFab{
+  display:none!important;
+}
+
+/* El botón de menú ocupa ahora la primera posición disponible arriba a la derecha. */
+.menuFab{
+  top:82px!important;
+}
+
+/* En pantallas pequeñas se mantienen separados de la barra inferior y de Mira central. */
+@media(max-width:700px){
+  .gpsFab{
+    left:14px!important;
+    bottom:140px!important;
+  }
+  .gpsStatusPill{
+    left:68px!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:149px!important;
+    max-width:145px!important;
+  }
+  .menuFab{
+    top:82px!important;
+  }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1691,8 +1750,8 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
 
 <header><div class="brand"><div class="logo"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Base + satélite IGAC offline · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
-<button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">📍</button>
-<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="syncFab" id="btnEnviarDatosFab" onclick="iniciarSincronizacionSegundoPlano()" title="Enviar datos">➤</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
+<button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">➤</button>
+<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav>
@@ -3373,11 +3432,9 @@ function setEstadoGPS(tipo,texto){
   const btn=document.getElementById('gpsFabBtn');
   if(btn){
     btn.title=texto;
-    btn.style.background=tipo==='error'
-      ? '#dc2626'
-      : tipo==='ok'
-        ? '#0891b2'
-        : '#0ea5e9';
+    // El GPS conserva siempre el estilo amarillo del antiguo botón "Enviar datos".
+    btn.style.background='#f59e0b';
+    btn.style.color='#111827';
   }
 }
 
@@ -11218,7 +11275,7 @@ let trabajoProyectoHabilitado=false;
 function setControlesTrabajoHabilitados(habilitado){
   trabajoProyectoHabilitado=!!habilitado;
 
-  const ids=['fabAgregar','btnEnviarDatosFab','btnMenuPrincipal'];
+  const ids=['fabAgregar','btnMenuPrincipal'];
   for(const id of ids){
     const el=document.getElementById(id);
     if(!el)continue;
@@ -14418,7 +14475,6 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
-
 
 
 
