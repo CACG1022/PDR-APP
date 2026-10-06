@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V62 - Filtro y análisis por polígono</title>
+<title>Master Mapping & Site Survey - V63 - Polígonos en Supabase Storage</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1457,6 +1457,58 @@ aside.mapFiltersSidebar{padding:12px}
   box-shadow:0 0 0 2px rgba(56,189,248,.10);
 }
 
+
+/* ===== V63 · POLÍGONOS EN SUPABASE STORAGE ===== */
+.polygonStorageCard{
+  border:1px solid #28506f;
+}
+.polygonStorageActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:9px;
+}
+.polygonStorageStatus{
+  margin-top:9px;
+  border:1px solid #334155;
+  border-radius:10px;
+  background:#07111f;
+  padding:9px 10px;
+  color:#cbd5e1;
+  font-size:10px;
+  line-height:1.45;
+}
+.polygonStorageStatus.ok{border-color:#166534;color:#bbf7d0}
+.polygonStorageStatus.warn{border-color:#92400e;color:#fde68a}
+.polygonStorageStatus.error{border-color:#991b1b;color:#fecaca}
+.polygonStorageMeta{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:8px;
+}
+.polygonStorageMeta>div{
+  background:#0b1928;
+  border:1px solid #334155;
+  border-radius:9px;
+  padding:7px 8px;
+}
+.polygonStorageMeta span{
+  display:block;
+  color:#94a3b8;
+  font-size:8px;
+  font-weight:900;
+}
+.polygonStorageMeta b{
+  display:block;
+  font-size:10px;
+  margin-top:2px;
+  word-break:break-word;
+}
+@media(max-width:760px){
+  .polygonStorageActions,.polygonStorageMeta{grid-template-columns:1fr}
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -1840,14 +1892,31 @@ aside.mapFiltersSidebar{padding:12px}
           </div>
 
           <label>Descripción</label><textarea id="pDescripcion"></textarea>
-          <label>Nombre del archivo de polígonos *</label>
-          <input id="pGeojsonUrl" placeholder="Ej: POLIGONOS-BTA.geojson o POLIGONOS-BTA.kmz">
-          <div class="hint">Ruta base automática: <b>https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/</b>. Si no escribes extensión se asumirá <b>.geojson</b>.</div>
-          <div class="actions">
-            <button class="btn gray" onclick="leerPoligonosDesdeDriveCrear()">Leer polígonos</button>
-            <button class="btn" onclick="crearProyecto()">Crear proyecto</button>
+
+          <div class="projectSubCard polygonStorageCard" style="margin-top:12px">
+            <h3>⬡ Archivo de polígonos</h3>
+            <div class="hint">
+              Selecciona el archivo directamente desde tu computador. El MASTER lo validará y lo
+              almacenará en <b>Supabase Storage</b>; ya no necesitas publicarlo en GitHub.
+            </div>
+
+            <label>Archivo *</label>
+            <input
+              id="pGeojsonUrl"
+              type="file"
+              accept=".geojson,.json,.kml,.kmz,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
+              onchange="leerPoligonosDesdeDriveCrear()"
+            >
+
+            <div class="actions">
+              <button class="btn gray" type="button" onclick="leerPoligonosDesdeDriveCrear()">Validar archivo</button>
+              <button class="btn" type="button" onclick="crearProyecto()">Crear proyecto</button>
+            </div>
+
+            <div id="pGeojsonInfo" class="polygonStorageStatus">
+              Selecciona un archivo GeoJSON, JSON, KML o KMZ.
+            </div>
           </div>
-          <div id="pGeojsonInfo" class="hint">La URL debe abrir directamente el archivo GeoJSON en el navegador.</div>
         </div>
       </div>
 
@@ -1862,13 +1931,27 @@ aside.mapFiltersSidebar{padding:12px}
             <div class="hint">Consulta qué técnico tiene cada polígono y cuáles permanecen libres.</div>
           </div>
 
-          <div class="projectSubCard adminOnly">
-            <h3>Actualizar archivo de polígonos</h3>
-            <label>Proyecto</label><select id="geoProyectoExistente"></select>
-            <label>Nuevo nombre del archivo</label>
-            <input id="geoUrlActualiza" placeholder="Ej: POLIGONOS-BTA-V2.geojson o POLIGONOS-BTA-V2.kmz">
-            <div class="hint">Se usará automáticamente la ruta pública configurada para POLIGONOS.</div>
-            <button class="btn gray" onclick="actualizarGeoJSONProyectoExistente()">Leer archivo / actualizar versión</button>
+          <div class="projectSubCard adminOnly polygonStorageCard">
+            <h3>Administrar archivo de polígonos</h3>
+
+            <label>Proyecto</label>
+            <select id="geoProyectoExistente" onchange="actualizarEstadoPoligonosStorageMaster()"></select>
+
+            <label>Nuevo archivo</label>
+            <input
+              id="geoUrlActualiza"
+              type="file"
+              accept=".geojson,.json,.kml,.kmz,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
+            >
+
+            <div class="polygonStorageActions">
+              <button class="btn blue" type="button" onclick="actualizarGeoJSONProyectoExistente()">☁ Subir / reemplazar</button>
+              <button class="btn danger" type="button" onclick="eliminarArchivoPoligonosProyecto()">🗑 Eliminar archivo</button>
+            </div>
+
+            <div id="poligonosStorageEstado" class="polygonStorageStatus">
+              Selecciona un proyecto para consultar el archivo almacenado.
+            </div>
           </div>
         </div>
       </div>
@@ -1972,11 +2055,18 @@ aside.mapFiltersSidebar{padding:12px}
 
       <div id="distPolyGrid" class="polyDistributionGrid"><div class="hint">Cargando distribución...</div></div>
 
-      <div class="projectSubCard adminOnly" style="margin-top:12px">
-        <h3>Actualizar archivo de polígonos desde este proyecto</h3>
+      <div class="projectSubCard adminOnly polygonStorageCard" style="margin-top:12px">
+        <h3>Archivo de polígonos del proyecto</h3>
         <label>Nuevo archivo</label>
-        <input id="distPolyArchivo" placeholder="Ej: POLIGONOS-BTA-V3.geojson o .kmz">
-        <button class="btn gray" onclick="actualizarPoligonosDesdeDistribucion()">Leer archivo / actualizar versión</button>
+        <input
+          id="distPolyArchivo"
+          type="file"
+          accept=".geojson,.json,.kml,.kmz,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
+        >
+        <div class="polygonStorageActions">
+          <button class="btn blue" type="button" onclick="actualizarPoligonosDesdeDistribucion()">☁ Subir / reemplazar</button>
+          <button class="btn danger" type="button" onclick="eliminarPoligonosDesdeDistribucion()">🗑 Eliminar archivo</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2203,6 +2293,7 @@ const SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 const CARTOGRAFIA_BUCKET='mapping-cartografia';
+const POLIGONOS_BUCKET='mapping-poligonos';
 let user=null,perfil=null,empresas=[],proyectos=[],usuarios=[],asignaciones=[],asignacionesFiltradas=[],puntos=[];
 let map,layer=null,polygonMasterLayer=null;
 let cartografiaMapaMasterLayer=null;
@@ -2781,7 +2872,34 @@ async function eliminarProyectoDefinitivamente(){
       if(error)throw new Error('Polígonos: '+error.message);
     }
 
-    // 8. Cartografía del proyecto en Supabase Storage.
+    // 8. Archivo(s) de polígonos del proyecto en Supabase Storage.
+    try{
+      const {data:polyFiles,error:listPolyError}=await sb.storage
+        .from(POLIGONOS_BUCKET)
+        .list(String(proyectoId),{limit:200});
+
+      if(listPolyError){
+        console.warn('No se pudieron listar archivos de polígonos:',listPolyError);
+      }else{
+        const polyPaths=(polyFiles||[])
+          .filter(x=>x?.name)
+          .map(x=>`${proyectoId}/${x.name}`);
+
+        if(polyPaths.length){
+          const {error:removePolyError}=await sb.storage
+            .from(POLIGONOS_BUCKET)
+            .remove(polyPaths);
+
+          if(removePolyError){
+            console.warn('No se pudieron borrar archivos de polígonos:',removePolyError);
+          }
+        }
+      }
+    }catch(e){
+      console.warn('Limpieza Storage polígonos:',e);
+    }
+
+    // 9. Cartografía del proyecto en Supabase Storage.
     if(p.cartografia_path){
       const {error:cartError}=await sb.storage
         .from(CARTOGRAFIA_BUCKET)
@@ -2792,7 +2910,7 @@ async function eliminarProyectoDefinitivamente(){
       }
     }
 
-    // 9. Proyecto.
+    // 10. Proyecto.
     {
       const {error}=await sb.from('mapping_proyectos').delete().eq('id',proyectoId);
       if(error)throw new Error('Proyecto: '+error.message);
@@ -3249,7 +3367,19 @@ function llenarSelects(){
     return `<option value="${p.id}">${esc(e?.nombre_corto||e?.nombre||'SIN EMPRESA')} · ${esc(p.codigo)} · ${esc(p.nombre)}</option>`
   }).join('');
   asigProyecto.innerHTML=po;fProyecto.innerHTML=po;
-  if(document.getElementById('geoProyectoExistente'))geoProyectoExistente.innerHTML=po;
+  if(document.getElementById('geoProyectoExistente')){
+    const selGeo=document.getElementById('geoProyectoExistente');
+    const keepGeo=selGeo.value;
+    selGeo.innerHTML=po;
+
+    if([...selGeo.options].some(o=>o.value===keepGeo)){
+      selGeo.value=keepGeo;
+    }else if(proyectos.length){
+      selGeo.value=proyectos[0].id;
+    }
+
+    setTimeout(actualizarEstadoPoligonosStorageMaster,0);
+  }
   if(document.getElementById('fotoProyectoExistente')){
     const keepFoto=fotoProyectoExistente.value;
     fotoProyectoExistente.innerHTML=po;
@@ -3297,6 +3427,293 @@ function abrirModalAsignaciones(){llenarFiltrosAsignaciones();aplicarFiltrosAsig
 function formatoFecha(v){if(!v)return '—';try{return new Date(v).toLocaleString('es-CO')}catch{return v}}
 function accionesAsignacion(a){return `<div class="miniActions"><button class="btn small blue" onclick="verProyecto('${a.proyecto_id}')">Ver</button><button class="btn small gray" onclick="abrirPuntos('${a.proyecto_id}')">Puntos</button><button class="btn small blue" onclick="abrirEditarPoligonos('${a.asignacion_id}')">Polígonos</button><button class="btn small purple" onclick="abrirReasignar('${a.asignacion_id}')">Reasignar</button>${a.estado_asignacion==='finalizado'?`<button class="btn small warn" onclick="reabrirAsignacion('${a.asignacion_id}')">Reabrir</button>`:`<button class="btn small" onclick="finalizarAsignacion('${a.asignacion_id}')">Finalizar</button>`}<button class="btn small gray" onclick="abrirHistorial('${a.asignacion_id}')">Historial</button><button class="btn small danger" onclick="eliminarAsignacion('${a.asignacion_id}')">Quitar</button></div>`}
 
+
+
+// ============================================================
+// V63 · POLÍGONOS DIRECTAMENTE EN SUPABASE STORAGE
+// ============================================================
+
+function extensionArchivoPoligonos(nombre=''){
+  const m=String(nombre||'').toLowerCase().match(/\.([a-z0-9]+)$/);
+  return m?.[1]||'';
+}
+
+function formatoArchivoPoligonosValido(nombre=''){
+  return ['geojson','json','kml','kmz'].includes(extensionArchivoPoligonos(nombre));
+}
+
+function nombreArchivoPoligonosSeguro(nombre='poligonos.geojson'){
+  const ext=extensionArchivoPoligonos(nombre);
+  const base=String(nombre||'poligonos')
+    .replace(/\.[^.]+$/,'')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Za-z0-9_-]+/g,'_')
+    .replace(/^_+|_+$/g,'')
+    .slice(0,90)||'poligonos';
+
+  return `${base}.${ext||'geojson'}`;
+}
+
+async function leerArchivoPoligonosLocal(archivo){
+  if(!archivo)throw new Error('Selecciona un archivo de polígonos.');
+
+  if(!formatoArchivoPoligonosValido(archivo.name)){
+    throw new Error('Formato no soportado. Usa GeoJSON, JSON, KML o KMZ.');
+  }
+
+  const ext=extensionArchivoPoligonos(archivo.name);
+  let obj;
+  let text='';
+
+  if(ext==='kmz'){
+    const buffer=await archivo.arrayBuffer();
+    obj=await geoJSONDesdeKMZArrayBuffer(buffer);
+    text=JSON.stringify(obj);
+  }else{
+    text=await archivo.text();
+
+    if(ext==='kml' || /<kml[\s>]/i.test(text)){
+      obj=geoJSONDesdeKMLTexto(text);
+    }else{
+      try{
+        obj=JSON.parse(text);
+      }catch(_){
+        throw new Error('El archivo no contiene GeoJSON/JSON válido.');
+      }
+    }
+  }
+
+  return {
+    ...analizarGeoJSONPoligonos(obj),
+    text,
+    archivo,
+    nombre:archivo.name,
+    extension:ext
+  };
+}
+
+function rutaStoragePoligonos(proyectoId,nombreArchivo){
+  return `${proyectoId}/${Date.now()}_${nombreArchivoPoligonosSeguro(nombreArchivo)}`;
+}
+
+function urlPublicaStoragePoligonos(path){
+  if(!path)return '';
+
+  const {data}=sb.storage
+    .from(POLIGONOS_BUCKET)
+    .getPublicUrl(path);
+
+  return data?.publicUrl||'';
+}
+
+function pathPoligonosDesdeUrl(url){
+  const s=String(url||'').trim();
+  if(!s)return '';
+
+  const token=`/storage/v1/object/public/${POLIGONOS_BUCKET}/`;
+  const pos=s.indexOf(token);
+  if(pos<0)return '';
+
+  try{
+    return decodeURIComponent(s.slice(pos+token.length).split('?')[0]);
+  }catch(_){
+    return s.slice(pos+token.length).split('?')[0];
+  }
+}
+
+function nombrePoligonosDesdeProyecto(p){
+  const url=String(p?.poligonos_url||p?.poligonos_drive_url||'');
+  if(!url)return '';
+
+  try{
+    return decodeURIComponent(new URL(url).pathname.split('/').filter(Boolean).pop()||'');
+  }catch(_){
+    return url.split('/').pop()||url;
+  }
+}
+
+function proyectoPoligonosSeleccionado(){
+  const id=document.getElementById('geoProyectoExistente')?.value||'';
+  return proyectos.find(p=>String(p.id)===String(id))||null;
+}
+
+function actualizarEstadoPoligonosStorageMaster(){
+  const box=document.getElementById('poligonosStorageEstado');
+  if(!box)return;
+
+  const p=proyectoPoligonosSeleccionado();
+
+  if(!p){
+    box.className='polygonStorageStatus';
+    box.textContent='Selecciona un proyecto para consultar el archivo almacenado.';
+    return;
+  }
+
+  const url=p.poligonos_url||p.poligonos_drive_url||'';
+  const path=pathPoligonosDesdeUrl(url);
+
+  if(!url){
+    box.className='polygonStorageStatus warn';
+    box.innerHTML='<b>⚠ Sin archivo de polígonos</b><br>Este proyecto no tiene un archivo activo.';
+    return;
+  }
+
+  const origen=path
+    ? `Supabase Storage · ${POLIGONOS_BUCKET}`
+    : 'URL externa / proyecto legacy';
+
+  box.className='polygonStorageStatus ok';
+  box.innerHTML=
+    `<b>✓ Archivo de polígonos disponible</b>`+
+    `<div class="polygonStorageMeta">`+
+      `<div><span>ARCHIVO</span><b>${esc(nombrePoligonosDesdeProyecto(p)||'—')}</b></div>`+
+      `<div><span>VERSIÓN</span><b>${esc(String(p.poligonos_version||1))}</b></div>`+
+      `<div><span>ACTUALIZADO</span><b>${esc(formatoFecha(p.poligonos_actualizados_at))}</b></div>`+
+      `<div><span>ORIGEN</span><b>${esc(origen)}</b></div>`+
+    `</div>`;
+}
+
+async function subirArchivoPoligonosStorage(proyecto,archivo,analisis=null){
+  if(!proyecto?.id)throw new Error('Proyecto no válido.');
+  if(!archivo)throw new Error('Selecciona el archivo de polígonos.');
+
+  const a=analisis||await leerArchivoPoligonosLocal(archivo);
+  const path=rutaStoragePoligonos(proyecto.id,archivo.name);
+
+  const {error:upError}=await sb.storage
+    .from(POLIGONOS_BUCKET)
+    .upload(path,archivo,{
+      cacheControl:'3600',
+      upsert:false,
+      contentType:archivo.type||undefined
+    });
+
+  if(upError)throw upError;
+
+  const publicUrl=urlPublicaStoragePoligonos(path);
+
+  if(!publicUrl){
+    await sb.storage.from(POLIGONOS_BUCKET).remove([path]).catch(()=>{});
+    throw new Error('No fue posible obtener la URL pública del archivo cargado.');
+  }
+
+  const anteriorUrl=proyecto.poligonos_url||proyecto.poligonos_drive_url||'';
+  const anteriorPath=pathPoligonosDesdeUrl(anteriorUrl);
+  const version=(Number(proyecto.poligonos_version)||0)+1;
+
+  try{
+    // Primero registramos/actualizamos el catálogo. La función conserva IDs
+    // de códigos existentes y por tanto preserva sus asignaciones.
+    await registrarCatalogoPoligonos(proyecto.id,a.poligonos);
+
+    const {error:updateError}=await sb
+      .from('mapping_proyectos')
+      .update({
+        poligonos_url:publicUrl,
+        poligonos_drive_url:publicUrl,
+        poligonos_version:version,
+        poligonos_actualizados_at:new Date().toISOString()
+      })
+      .eq('id',proyecto.id);
+
+    if(updateError)throw updateError;
+
+  }catch(e){
+    await sb.storage.from(POLIGONOS_BUCKET).remove([path]).catch(()=>{});
+    throw e;
+  }
+
+  // Solo eliminamos el archivo anterior después de que la BD ya apunta al nuevo.
+  if(anteriorPath && anteriorPath!==path){
+    const {error:removeOld}=await sb.storage
+      .from(POLIGONOS_BUCKET)
+      .remove([anteriorPath]);
+
+    if(removeOld){
+      console.warn('No se pudo borrar el archivo anterior de polígonos:',removeOld);
+    }
+  }
+
+  return {
+    analisis:a,
+    path,
+    publicUrl,
+    version
+  };
+}
+
+async function eliminarArchivoPoligonosProyecto(proyectoId=null){
+  if(!exigirAdminMaster('eliminar archivos de polígonos'))return false;
+
+  const id=proyectoId||document.getElementById('geoProyectoExistente')?.value||'';
+  if(!id)return alert('Selecciona el proyecto.');
+
+  const p=proyectos.find(x=>String(x.id)===String(id));
+  if(!p)return alert('No se encontró el proyecto.');
+
+  const url=p.poligonos_url||p.poligonos_drive_url||'';
+  if(!url)return alert('Este proyecto no tiene un archivo de polígonos activo.');
+
+  if(!confirm(
+    `¿Eliminar el archivo de polígonos de ${p.codigo||p.nombre}?\n\n`+
+    'Los puntos levantados NO se eliminarán.\n'+
+    'El catálogo de polígonos quedará inactivo hasta que cargues un archivo nuevo.'
+  ))return false;
+
+  const path=pathPoligonosDesdeUrl(url);
+
+  try{
+    if(path){
+      const {error:removeError}=await sb.storage
+        .from(POLIGONOS_BUCKET)
+        .remove([path]);
+
+      if(removeError)throw removeError;
+    }
+
+    const {error:catError}=await sb
+      .from('mapping_poligonos')
+      .update({activo:false})
+      .eq('proyecto_id',p.id);
+
+    if(catError)throw catError;
+
+    const version=(Number(p.poligonos_version)||0)+1;
+
+    const {error:updateError}=await sb
+      .from('mapping_proyectos')
+      .update({
+        poligonos_url:null,
+        poligonos_drive_url:null,
+        poligonos_version:version,
+        poligonos_actualizados_at:new Date().toISOString()
+      })
+      .eq('id',p.id);
+
+    if(updateError)throw updateError;
+
+    await cargarProyectos();
+    llenarSelects();
+
+    const sel=document.getElementById('geoProyectoExistente');
+    if(sel)sel.value=p.id;
+
+    actualizarEstadoPoligonosStorageMaster();
+
+    if(String(document.getElementById('fProyecto')?.value||'')===String(p.id)){
+      await cargarProyectoMapa();
+    }
+
+    alert('Archivo de polígonos eliminado. El proyecto conserva sus puntos y datos históricos.');
+    return true;
+
+  }catch(e){
+    console.error('Eliminar polígonos:',e);
+    alert('No se pudo eliminar el archivo de polígonos: '+(e?.message||e));
+    return false;
+  }
+}
 
 const POLIGONOS_PUBLIC_BASE='https://cacg1022.github.io/PDR-APP/MAPPING/POLIGONOS/';
 
@@ -3494,7 +3911,7 @@ async function descargarGeoJSONPublico(url){
   try{
     resp=await fetch(s,{cache:'no-store'});
   }catch(e){
-    throw new Error('No se pudo acceder al archivo. Verifica que exista en la carpeta pública de POLIGONOS.');
+    throw new Error('No se pudo acceder al archivo de polígonos.');
   }
 
   if(!resp.ok){
@@ -3535,38 +3952,39 @@ async function descargarGeoJSONPublico(url){
 
 async function leerPoligonosDesdeDriveCrear(){
   if(!exigirAdminMaster('crear proyectos'))return;
-  const nombreArchivo=pGeojsonUrl.value.trim();
-  const url=urlPublicaPoligonos(nombreArchivo);
+
+  const input=document.getElementById('pGeojsonUrl');
+  const archivo=input?.files?.[0]||null;
   geojsonProyectoPreview=null;
 
-  if(!url){
-    pGeojsonInfo.className='hint geoError';
-    pGeojsonInfo.textContent='❌ Ingresa el nombre del archivo de polígonos.';
+  if(!archivo){
+    pGeojsonInfo.className='polygonStorageStatus warn';
+    pGeojsonInfo.textContent='⚠ Selecciona un archivo GeoJSON, JSON, KML o KMZ.';
     return;
   }
 
-  pGeojsonInfo.className='hint';
-  pGeojsonInfo.textContent='Leyendo POLIGONOS.geojson...';
+  pGeojsonInfo.className='polygonStorageStatus';
+  pGeojsonInfo.textContent='Validando archivo de polígonos...';
 
   try{
-    const a=await descargarGeoJSONPublico(url);
+    const a=await leerArchivoPoligonosLocal(archivo);
     geojsonProyectoPreview=a;
-    pGeojsonInfo.className='hint geoOk';
-    pGeojsonInfo.innerHTML=`✅ ${a.poligonos.length} polígonos detectados: <b>${a.poligonos.map(x=>esc(x.codigo)).join(', ')}</b><br><small>${esc(url)}</small>`;
+
+    pGeojsonInfo.className='polygonStorageStatus ok';
+    pGeojsonInfo.innerHTML=
+      `<b>✓ Archivo válido</b><br>`+
+      `${a.poligonos.length} polígonos detectados: `+
+      `<b>${a.poligonos.map(x=>esc(x.codigo)).join(', ')}</b><br>`+
+      `<small>${esc(archivo.name)} · ${(archivo.size/1024).toFixed(1)} KB</small>`;
+
   }catch(e){
-    pGeojsonInfo.className='hint geoError';
+    pGeojsonInfo.className='polygonStorageStatus error';
     pGeojsonInfo.textContent='❌ '+(e?.message||e);
   }
 }
 
 async function registrarCatalogoPoligonos(proyectoId,poligonos){
-  const {error:offError}=await sb
-    .from('mapping_poligonos')
-    .update({activo:false})
-    .eq('proyecto_id',proyectoId);
-  if(offError)throw offError;
-
-  const filas=poligonos.map(p=>({
+  const nuevos=(poligonos||[]).map(p=>({
     proyecto_id:proyectoId,
     codigo:p.codigo,
     nombre:p.nombre,
@@ -3575,50 +3993,94 @@ async function registrarCatalogoPoligonos(proyectoId,poligonos){
     activo:true
   }));
 
-  const {error}=await sb
+  if(!nuevos.length){
+    throw new Error('El archivo no contiene polígonos para registrar.');
+  }
+
+  // 1. Upsert primero. Los códigos existentes conservan el mismo ID.
+  const {error:upsertError}=await sb
     .from('mapping_poligonos')
-    .upsert(filas,{onConflict:'proyecto_id,codigo'});
-  if(error)throw error;
+    .upsert(nuevos,{onConflict:'proyecto_id,codigo'});
+
+  if(upsertError)throw upsertError;
+
+  // 2. Después desactivamos únicamente códigos que ya no están en el archivo.
+  const {data:existentes,error:readError}=await sb
+    .from('mapping_poligonos')
+    .select('id,codigo,activo')
+    .eq('proyecto_id',proyectoId);
+
+  if(readError)throw readError;
+
+  const codigosNuevos=new Set(nuevos.map(x=>String(x.codigo)));
+  const obsoletos=(existentes||[])
+    .filter(x=>!codigosNuevos.has(String(x.codigo)))
+    .map(x=>x.id)
+    .filter(Boolean);
+
+  if(obsoletos.length){
+    const {error:offError}=await sb
+      .from('mapping_poligonos')
+      .update({activo:false})
+      .in('id',obsoletos);
+
+    if(offError)throw offError;
+  }
 }
 
 async function actualizarGeoJSONProyectoExistente(){
   if(!exigirAdminMaster('actualizar archivos de polígonos'))return;
-  const proyectoId=geoProyectoExistente.value;
-  const nombreArchivo=geoUrlActualiza.value.trim();
-  const url=urlPublicaPoligonos(nombreArchivo);
+
+  const proyectoId=document.getElementById('geoProyectoExistente')?.value||'';
+  const input=document.getElementById('geoUrlActualiza');
+  const archivo=input?.files?.[0]||null;
 
   if(!proyectoId)return alert('Selecciona el proyecto.');
-  if(!url)return alert('Ingresa el nombre del nuevo archivo de polígonos.');
+  if(!archivo)return alert('Selecciona el nuevo archivo de polígonos.');
 
   const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
-  if(!proyecto)return;
+  if(!proyecto)return alert('No se encontró el proyecto.');
+
+  const box=document.getElementById('poligonosStorageEstado');
+  if(box){
+    box.className='polygonStorageStatus';
+    box.textContent='Validando y subiendo archivo a Supabase Storage...';
+  }
 
   try{
-    const a=await descargarGeoJSONPublico(url);
-    const version=(Number(proyecto.poligonos_version)||0)+1;
+    const analisis=await leerArchivoPoligonosLocal(archivo);
+    const resultado=await subirArchivoPoligonosStorage(proyecto,archivo,analisis);
 
-    await registrarCatalogoPoligonos(proyecto.id,a.poligonos);
+    if(input)input.value='';
 
-    const {error}=await sb
-      .from('mapping_proyectos')
-      .update({
-        poligonos_url:url,
-        poligonos_drive_url:url,
-        poligonos_version:version,
-        poligonos_actualizados_at:new Date().toISOString()
-      })
-      .eq('id',proyecto.id);
-
-    if(error)throw error;
-
-    geoUrlActualiza.value='';
     await cargarProyectos();
     llenarSelects();
+
+    const sel=document.getElementById('geoProyectoExistente');
+    if(sel)sel.value=proyecto.id;
+
+    actualizarEstadoPoligonosStorageMaster();
     await cargarPoligonosAsignacion();
 
-    alert(`GeoJSON actualizado. Versión ${version}. Polígonos: ${a.poligonos.map(x=>x.codigo).join(', ')}`);
+    if(String(document.getElementById('fProyecto')?.value||'')===String(proyecto.id)){
+      await cargarProyectoMapa();
+    }
+
+    alert(
+      `Archivo de polígonos actualizado correctamente.\n\n`+
+      `Versión: ${resultado.version}\n`+
+      `Polígonos: ${resultado.analisis.poligonos.map(x=>x.codigo).join(', ')}`
+    );
+
   }catch(e){
-    alert('No se pudo actualizar el GeoJSON: '+(e?.message||e));
+    console.error('Actualizar polígonos:',e);
+
+    if(box){
+      box.className='polygonStorageStatus error';
+      box.textContent='No se pudo actualizar: '+(e?.message||e);
+    }
+
+    alert('No se pudo actualizar el archivo de polígonos: '+(e?.message||e));
   }
 }
 
@@ -4315,21 +4777,27 @@ async function guardarConfigFotosProyectoExistente(){
 
 async function crearProyecto(){
   if(!exigirAdminMaster('crear proyectos'))return;
+
   const empresa_id=pEmpresa.value;
   const codigo=pCodigo.value.trim();
   const nombre=pNombre.value.trim();
   const tipo_proyecto=String(pTipoProyecto?.value||'MAPPING').trim().toUpperCase();
   const fotos_config=obtenerConfigFotosProyectoCrear();
-  const nombreArchivoPoligonos=pGeojsonUrl.value.trim();
-  const url=urlPublicaPoligonos(nombreArchivoPoligonos);
 
-  if(!empresa_id||!codigo||!nombre||!tipo_proyecto)return alert('Empresa, código, nombre y tipo de proyecto son obligatorios.');
-  if(!['MAPPING','VIABILIDAD'].includes(tipo_proyecto))return alert('TIPO PROYECTO no válido.');
-  if(!url)return alert('Ingresa el nombre del archivo de polígonos.');
+  const archivo=document.getElementById('pGeojsonUrl')?.files?.[0]||null;
 
-  // El campo codigo tiene una restricción UNIQUE en Supabase
-  // (mapping_proyectos_codigo_key). Validamos antes del INSERT para
-  // mostrar un mensaje claro y evitar el error 409 de la API.
+  if(!empresa_id||!codigo||!nombre||!tipo_proyecto){
+    return alert('Empresa, código, nombre y tipo de proyecto son obligatorios.');
+  }
+
+  if(!['MAPPING','VIABILIDAD'].includes(tipo_proyecto)){
+    return alert('TIPO PROYECTO no válido.');
+  }
+
+  if(!archivo){
+    return alert('Selecciona el archivo de polígonos del proyecto.');
+  }
+
   const {data:proyectoExistente,error:errorCodigo}=await sb
     .from('mapping_proyectos')
     .select('id,codigo,nombre,ciudad,estado,tipo_proyecto,empresa_id')
@@ -4355,27 +4823,31 @@ async function crearProyecto(){
   let analisis=geojsonProyectoPreview;
 
   try{
-    if(!analisis || analisis.url!==url){
-      analisis=await descargarGeoJSONPublico(url);
+    if(!analisis || analisis.archivo!==archivo){
+      analisis=await leerArchivoPoligonosLocal(archivo);
     }
   }catch(e){
-    return alert('No se pudo leer el GeoJSON: '+(e?.message||e));
+    return alert('No se pudo validar el archivo de polígonos: '+(e?.message||e));
   }
 
+  // Se crea primero el proyecto para disponer de su UUID y usarlo como carpeta en Storage.
   const {data:proyecto,error}=await sb
     .from('mapping_proyectos')
     .insert({
-      empresa_id,codigo,nombre,tipo_proyecto,
+      empresa_id,
+      codigo,
+      nombre,
+      tipo_proyecto,
       fotos_config,
       ciudad:pCiudad.value.trim()||null,
       descripcion:pDescripcion.value.trim()||null,
       estado:'activo',
       creado_por:user.id,
       creado_por_email:user.email,
-      poligonos_url:url,
-      poligonos_drive_url:url,
-      poligonos_version:1,
-      poligonos_actualizados_at:new Date().toISOString()
+      poligonos_url:null,
+      poligonos_drive_url:null,
+      poligonos_version:0,
+      poligonos_actualizados_at:null
     })
     .select('*')
     .single();
@@ -4396,10 +4868,37 @@ async function crearProyecto(){
   }
 
   try{
-    await registrarCatalogoPoligonos(proyecto.id,analisis.poligonos);
+    await subirArchivoPoligonosStorage(proyecto,archivo,analisis);
+
   }catch(e){
-    try{await sb.from('mapping_proyectos').delete().eq('id',proyecto.id)}catch(_){}
-    return alert('No se pudo registrar el catálogo de polígonos. El proyecto fue revertido. '+(e?.message||e));
+    // Reversión: si no se pudo dejar el archivo + catálogo correctamente,
+    // no dejamos creado un proyecto incompleto.
+    try{
+      const {data:files}=await sb.storage
+        .from(POLIGONOS_BUCKET)
+        .list(String(proyecto.id),{limit:100});
+
+      const paths=(files||[])
+        .filter(x=>x?.name)
+        .map(x=>`${proyecto.id}/${x.name}`);
+
+      if(paths.length){
+        await sb.storage.from(POLIGONOS_BUCKET).remove(paths);
+      }
+    }catch(_){}
+
+    try{
+      await sb.from('mapping_poligonos').delete().eq('proyecto_id',proyecto.id);
+    }catch(_){}
+
+    try{
+      await sb.from('mapping_proyectos').delete().eq('id',proyecto.id);
+    }catch(_){}
+
+    return alert(
+      'No se pudo cargar el archivo de polígonos en Supabase. '+
+      'El proyecto fue revertido.\n\n'+(e?.message||e)
+    );
   }
 
   pCodigo.value='';
@@ -4408,13 +4907,21 @@ async function crearProyecto(){
   if(pTipoProyecto)pTipoProyecto.value='MAPPING';
   aplicarDefaultFotosProyecto('MAPPING',false);
   pDescripcion.value='';
-  pGeojsonUrl.value='';
+
+  const fileInput=document.getElementById('pGeojsonUrl');
+  if(fileInput)fileInput.value='';
+
   geojsonProyectoPreview=null;
-  pGeojsonInfo.className='hint';
-  pGeojsonInfo.innerHTML=`Ruta base automática: <b>${POLIGONOS_PUBLIC_BASE}</b>`;
+
+  pGeojsonInfo.className='polygonStorageStatus';
+  pGeojsonInfo.textContent='Selecciona un archivo GeoJSON, JSON, KML o KMZ.';
 
   await cargarTodo();
-  alert(`Proyecto ${tipo_proyecto} creado con ${analisis.poligonos.length} polígonos.`);
+
+  alert(
+    `Proyecto ${tipo_proyecto} creado correctamente.\n\n`+
+    `${analisis.poligonos.length} polígonos cargados directamente en Supabase Storage.`
+  );
 }
 
 function filtrarTecnicosPorProyecto(){
@@ -8054,6 +8561,7 @@ function cambiarTabProyecto(tab,boton=null){
 
   if(tab==='poligonos'){
     llenarSelectsGestionProyectos();
+    setTimeout(actualizarEstadoPoligonosStorageMaster,0);
   }else if(tab==='fotos'){
     cargarConfigFotosProyectoExistente();
   }else if(tab==='cartografia'){
@@ -8381,23 +8889,58 @@ async function abrirDistribucionPoligonos(proyectoId){
 }
 
 async function actualizarPoligonosDesdeDistribucion(){
-  if(!esAdminMaster())return alert('Solo un administrador puede modificar el archivo maestro de polígonos.');
+  if(!esAdminMaster()){
+    return alert('Solo un administrador puede modificar el archivo maestro de polígonos.');
+  }
 
   const proyectoId=distPolyProyectoId.value;
-  const archivo=distPolyArchivo.value.trim();
-  if(!proyectoId||!archivo)return alert('Ingresa el nuevo archivo de polígonos.');
+  const input=document.getElementById('distPolyArchivo');
+  const archivo=input?.files?.[0]||null;
 
-  geoProyectoExistente.value=proyectoId;
-  geoUrlActualiza.value=archivo;
-  await actualizarGeoJSONProyectoExistente();
+  if(!proyectoId)return alert('No hay un proyecto seleccionado.');
+  if(!archivo)return alert('Selecciona el nuevo archivo de polígonos.');
 
-  distPolyArchivo.value='';
-  await abrirDistribucionPoligonos(proyectoId);
+  const proyecto=proyectos.find(p=>String(p.id)===String(proyectoId));
+  if(!proyecto)return alert('No se encontró el proyecto.');
+
+  try{
+    const analisis=await leerArchivoPoligonosLocal(archivo);
+    const resultado=await subirArchivoPoligonosStorage(proyecto,archivo,analisis);
+
+    if(input)input.value='';
+
+    await cargarProyectos();
+    llenarSelects();
+    await abrirDistribucionPoligonos(proyectoId);
+
+    alert(
+      `Archivo actualizado correctamente.\n\n`+
+      `Versión: ${resultado.version}\n`+
+      `Polígonos: ${resultado.analisis.poligonos.map(x=>x.codigo).join(', ')}`
+    );
+
+  }catch(e){
+    alert('No se pudo actualizar el archivo de polígonos: '+(e?.message||e));
+  }
+}
+
+async function eliminarPoligonosDesdeDistribucion(){
+  const proyectoId=document.getElementById('distPolyProyectoId')?.value||'';
+  if(!proyectoId)return;
+
+  const ok=await eliminarArchivoPoligonosProyecto(proyectoId);
+
+  if(ok){
+    await abrirDistribucionPoligonos(proyectoId);
+  }
 }
 
 
 </script>
 </body>
 </html>
+
+
+
 
 
