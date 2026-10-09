@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Master Mapping & Site Survey - V63 - Polígonos en Supabase Storage</title>
+<title>PDR-APP · Master Mapping & Site Survey V68 Safe</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1509,6 +1509,666 @@ aside.mapFiltersSidebar{padding:12px}
   .polygonStorageActions,.polygonStorageMeta{grid-template-columns:1fr}
 }
 
+
+/* ============================================================
+   V65 · DASHBOARD EJECUTIVO AVANZADO
+   ============================================================ */
+#avanceModal{z-index:30000!important}
+#avanceModal .dashboardModal{
+  width:min(1760px,99vw)!important;
+  margin:.8vh auto!important;
+  border-radius:18px!important;
+  overflow:hidden!important;
+  box-shadow:0 26px 90px rgba(2,6,23,.34)!important;
+}
+#avanceModal .dashboardTopHead{
+  position:sticky;
+  top:0;
+  z-index:40;
+  background:linear-gradient(110deg,#071827,#0a2438)!important;
+  border-bottom:1px solid rgba(125,211,252,.18)!important;
+}
+#avanceModal .dashboardBody{
+  background:#f4f7fb!important;
+  color:#0f172a!important;
+  padding:12px!important;
+}
+#avanceModal .executiveBanner{
+  min-height:128px;
+  background:
+    radial-gradient(circle at 88% 20%,rgba(34,211,238,.20),transparent 28%),
+    linear-gradient(118deg,#0b2c46 0%,#0c6ba8 55%,#0c8ba0 100%)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 12px 30px rgba(12,107,168,.16)!important;
+}
+#avanceModal .executiveBanner h1{
+  font-size:34px!important;
+  letter-spacing:.5px!important;
+}
+.executiveBrand{
+  align-self:center;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  color:#fff;
+  opacity:.96;
+}
+.executiveBrand b{
+  font-size:44px;
+  line-height:1;
+  letter-spacing:3px;
+}
+.executiveBrand span{
+  margin-top:5px;
+  font-size:8px;
+  letter-spacing:1.6px;
+  font-weight:900;
+  opacity:.78;
+}
+
+.dashboardFilterBar{
+  display:grid;
+  grid-template-columns:1.55fr 1fr 1.15fr .82fr .82fr auto;
+  gap:8px;
+  align-items:end;
+  margin-bottom:12px;
+  padding:10px;
+  border:1px solid #dbe4ee;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 3px 13px rgba(15,23,42,.05);
+}
+.dashboardFilterBar label{
+  margin:0 0 4px;
+  color:#64748b!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+.dashboardFilterBar select,
+.dashboardFilterBar input{
+  min-height:38px;
+  background:#f8fafc!important;
+  color:#0f172a!important;
+  border:1px solid #cbd5e1!important;
+  border-radius:9px!important;
+}
+.dashboardFilterBar .btn{
+  height:38px;
+  margin:0;
+}
+
+.dashSectionTitle{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:10px;
+  margin:14px 2px 8px;
+  border-bottom:1px solid #dbe4ee;
+  padding-bottom:6px;
+}
+.dashSectionTitle.compact{margin-top:11px}
+.dashSectionTitle span{
+  color:#0f3553;
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:1px;
+}
+.dashSectionTitle small{
+  color:#64748b;
+  font-size:9px;
+  font-weight:700;
+}
+
+.executiveKpiGrid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:8px;
+}
+.executiveKpi{
+  position:relative;
+  overflow:hidden;
+  min-height:104px;
+  padding:14px 14px 11px 16px;
+  border:1px solid #dbe4ee;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 16px rgba(15,23,42,.055);
+}
+.executiveKpi::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:5px;
+  background:var(--kpiAccent,#2563eb);
+}
+.executiveKpi::after{
+  content:"";
+  position:absolute;
+  width:84px;
+  height:84px;
+  right:-30px;
+  top:-34px;
+  border-radius:50%;
+  background:var(--kpiSoft,rgba(37,99,235,.07));
+}
+.executiveKpi span{
+  display:block;
+  color:#64748b;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+.executiveKpi b{
+  display:block;
+  margin:7px 0 2px;
+  color:#0f172a;
+  font-size:29px;
+  line-height:1;
+  font-weight:1000;
+}
+.executiveKpi small{
+  color:#64748b;
+  font-size:9px;
+  font-weight:700;
+}
+.kpiBlue{--kpiAccent:#2563eb;--kpiSoft:rgba(37,99,235,.10)}
+.kpiCyan{--kpiAccent:#0891b2;--kpiSoft:rgba(8,145,178,.10)}
+.kpiEmerald{--kpiAccent:#059669;--kpiSoft:rgba(5,150,105,.10)}
+.kpiViolet{--kpiAccent:#7c3aed;--kpiSoft:rgba(124,58,237,.10)}
+.kpiAmber{--kpiAccent:#d97706;--kpiSoft:rgba(217,119,6,.10)}
+.kpiRose{--kpiAccent:#e11d48;--kpiSoft:rgba(225,29,72,.10)}
+
+.operationalKpiGrid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+.miniMetric{
+  min-height:78px;
+  padding:10px 11px;
+  border:1px solid #dbe4ee;
+  border-radius:12px;
+  background:linear-gradient(180deg,#fff,#f8fafc);
+  box-shadow:0 2px 8px rgba(15,23,42,.04);
+}
+.miniMetric span{
+  display:block;
+  color:#64748b;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+.miniMetric b{
+  display:block;
+  margin:4px 0 2px;
+  color:#0f3553;
+  font-size:19px;
+  line-height:1.05;
+  font-weight:1000;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.miniMetric small{
+  display:block;
+  color:#64748b;
+  font-size:8px;
+  line-height:1.25;
+}
+
+.typeExecutiveGrid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+}
+.typeExecutiveCard{
+  position:relative;
+  min-height:70px;
+  padding:10px 12px 10px 15px;
+  border:1px solid #dbe4ee;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+}
+.typeExecutiveCard::before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;width:5px;
+  background:var(--typeColor,#2563eb);
+}
+.typeExecutiveCard span{
+  display:block;
+  color:#64748b;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.typeExecutiveCard b{
+  display:block;
+  margin-top:3px;
+  color:#0f172a;
+  font-size:24px;
+  font-weight:1000;
+}
+.typePoste{--typeColor:#2563eb}
+.typeCamara{--typeColor:#d97706}
+.typeAmericano{--typeColor:#7c3aed}
+.typeCercha{--typeColor:#65a30d}
+.typeCliente{--typeColor:#0891b2}
+
+.networkKpiGrid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:8px;
+}
+.networkKpiGrid>div{
+  min-height:66px;
+  padding:9px 10px;
+  border:1px solid #dbe4ee;
+  border-radius:11px;
+  background:#fff;
+  text-align:center;
+}
+.networkKpiGrid span{
+  display:block;
+  color:#64748b;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.networkKpiGrid b{
+  display:block;
+  margin-top:4px;
+  color:#0f3553;
+  font-size:21px;
+  font-weight:1000;
+}
+
+/* Mosaico de 12 columnas: sin espacios muertos. */
+#avanceModal .dashboardMosaic{
+  display:grid!important;
+  grid-template-columns:repeat(12,minmax(0,1fr))!important;
+  grid-auto-flow:dense!important;
+  gap:9px!important;
+  align-items:stretch!important;
+}
+#avanceModal .dashboardMosaic>.chartCard{
+  grid-column:span 6;
+  min-width:0;
+  min-height:332px;
+  display:flex;
+  flex-direction:column;
+  padding:11px!important;
+  border:1px solid #dbe4ee!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(15,23,42,.055)!important;
+}
+#avanceModal .dashboardMosaic>.chartCard.span4{grid-column:span 4!important}
+#avanceModal .dashboardMosaic>.chartCard.span6{grid-column:span 6!important}
+#avanceModal .dashboardMosaic>.chartCard.span8{grid-column:span 8!important}
+#avanceModal .dashboardMosaic>.chartCard.span12{grid-column:span 12!important}
+#avanceModal .dashboardMosaic .chartBox{
+  flex:1 1 auto;
+  height:285px!important;
+  min-height:255px;
+}
+#avanceModal .dashboardMosaic .span8 .chartBox,
+#avanceModal .dashboardMosaic .span6 .chartBox{
+  height:300px!important;
+}
+#avanceModal .dashboardMosaic .span12 .chartMap{
+  height:430px!important;
+}
+#avanceModal .dashboardMosaic .chartCard h3{
+  position:relative;
+  margin:0 0 9px!important;
+  padding-left:11px;
+  color:#0f172a!important;
+  font-size:12px!important;
+  font-weight:950;
+  text-align:left!important;
+}
+#avanceModal .dashboardMosaic .chartCard h3::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:1px;
+  bottom:1px;
+  width:4px;
+  border-radius:999px;
+  background:var(--chartAccent,#2563eb);
+}
+.accentBlue{--chartAccent:#2563eb}
+.accentCyan{--chartAccent:#0891b2}
+.accentEmerald{--chartAccent:#059669}
+.accentViolet{--chartAccent:#7c3aed}
+.accentAmber{--chartAccent:#d97706}
+.accentRose{--chartAccent:#e11d48}
+
+#avanceModal .cityDashboardCard{
+  min-height:332px!important;
+}
+#avanceModal .cityDashboardCard .citySummaryList{
+  min-height:0!important;
+  max-height:278px;
+  overflow:auto;
+  padding-right:3px;
+}
+#avanceModal .cityDashboardCard .cityRow{
+  color:#334155!important;
+  font-size:10px!important;
+}
+#avanceModal .cityDashboardCard .cityBar{
+  background:#e2e8f0!important;
+  height:7px!important;
+}
+#avanceModal .cityDashboardCard .cityBarFill{
+  background:linear-gradient(90deg,#0891b2,#22c55e)!important;
+}
+
+#avanceModal .hourActivitySummary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:8px;
+}
+#avanceModal .hourInsight{
+  border:1px solid #dbe4ee!important;
+  background:#f8fafc!important;
+  border-radius:10px!important;
+  padding:7px 8px!important;
+}
+#avanceModal .hourInsight span{
+  color:#64748b!important;
+  font-size:7px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+}
+#avanceModal .hourInsight b{
+  color:#0f3553!important;
+  font-size:10px!important;
+}
+#avanceModal .hourInsight small{
+  color:#64748b!important;
+  font-size:7px!important;
+}
+
+#avanceModal .dashTables{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:9px!important;
+  margin-top:0!important;
+}
+#avanceModal .dashTables>.chartCard{
+  border:1px solid #dbe4ee!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(15,23,42,.05)!important;
+}
+#avanceModal .dashTables h3{
+  color:#0f172a!important;
+  text-align:left!important;
+  font-size:12px!important;
+}
+#avanceModal .dashTableWrap{
+  max-height:360px!important;
+}
+
+#avanceModal .chartMap{
+  border:1px solid #dbe4ee!important;
+  border-radius:11px!important;
+}
+
+/* Entregables siempre por debajo de los modales.
+   Evita que el botón o su menú queden sobre Dashboard/Proyectos/etc. */
+.deliverablesTop{
+  z-index:850!important;
+}
+.deliverablesDropdown{
+  z-index:851!important;
+}
+.modalOverlay.open{
+  z-index:30000!important;
+}
+
+@media(max-width:1450px){
+  .executiveKpiGrid{grid-template-columns:repeat(3,1fr)}
+  .operationalKpiGrid{grid-template-columns:repeat(5,1fr)}
+  .networkKpiGrid{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:1100px){
+  .dashboardFilterBar{grid-template-columns:repeat(2,1fr)}
+  .dashboardFilterBar .btn{grid-column:1/-1}
+  .operationalKpiGrid{grid-template-columns:repeat(2,1fr)}
+  .typeExecutiveGrid{grid-template-columns:repeat(3,1fr)}
+  .networkKpiGrid{grid-template-columns:repeat(3,1fr)}
+  #avanceModal .dashboardMosaic>.chartCard,
+  #avanceModal .dashboardMosaic>.chartCard.span4,
+  #avanceModal .dashboardMosaic>.chartCard.span6,
+  #avanceModal .dashboardMosaic>.chartCard.span8{
+    grid-column:span 6!important;
+  }
+}
+@media(max-width:760px){
+  #avanceModal .dashboardModal{width:100%!important;margin:0!important;border-radius:0!important}
+  #avanceModal .dashboardBody{padding:8px!important}
+  .executiveBrand{display:none}
+  .executiveKpiGrid{grid-template-columns:repeat(2,1fr)}
+  .operationalKpiGrid{grid-template-columns:repeat(2,1fr)}
+  .typeExecutiveGrid{grid-template-columns:repeat(2,1fr)}
+  .networkKpiGrid{grid-template-columns:repeat(2,1fr)}
+  #avanceModal .dashboardMosaic{grid-template-columns:1fr!important}
+  #avanceModal .dashboardMosaic>.chartCard,
+  #avanceModal .dashboardMosaic>.chartCard.span4,
+  #avanceModal .dashboardMosaic>.chartCard.span6,
+  #avanceModal .dashboardMosaic>.chartCard.span8,
+  #avanceModal .dashboardMosaic>.chartCard.span12{
+    grid-column:auto!important;
+  }
+  #avanceModal .dashTables{grid-template-columns:1fr!important}
+  .dashSectionTitle{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:520px){
+  .executiveKpiGrid,
+  .operationalKpiGrid,
+  .typeExecutiveGrid,
+  .networkKpiGrid{grid-template-columns:1fr}
+}
+
+/* Impresión compacta del nuevo bloque de KPIs. */
+@media print{
+  .dashboardFilterBar{display:none!important}
+  .dashSectionTitle{margin:4px 0 3px!important;padding:0 0 2px!important}
+  .dashSectionTitle span{font-size:6px!important}
+  .dashSectionTitle small{display:none!important}
+  .executiveKpiGrid{
+    display:grid!important;
+    grid-template-columns:repeat(6,1fr)!important;
+    gap:3px!important;
+    margin-bottom:3px!important;
+  }
+  .executiveKpi{
+    min-height:42px!important;
+    padding:4px 5px!important;
+    border-radius:6px!important;
+  }
+  .executiveKpi span{font-size:5.5px!important}
+  .executiveKpi b{font-size:13px!important;margin:2px 0!important}
+  .executiveKpi small{font-size:5.5px!important}
+  .operationalKpiGrid{
+    display:grid!important;
+    grid-template-columns:repeat(5,1fr)!important;
+    gap:3px!important;
+    margin:0 0 3px!important;
+  }
+  .miniMetric{
+    min-height:32px!important;
+    padding:3px 4px!important;
+    border-radius:5px!important;
+  }
+  .miniMetric span{font-size:5px!important}
+  .miniMetric b{font-size:9px!important;margin:1px 0!important}
+  .miniMetric small{font-size:5px!important}
+  .typeExecutiveGrid{
+    display:grid!important;
+    grid-template-columns:repeat(5,1fr)!important;
+    gap:3px!important;
+  }
+  .typeExecutiveCard{
+    min-height:30px!important;
+    padding:3px 5px!important;
+    border-radius:5px!important;
+  }
+  .typeExecutiveCard span{font-size:5px!important}
+  .typeExecutiveCard b{font-size:10px!important;margin-top:1px!important}
+  .networkKpiGrid{
+    display:grid!important;
+    grid-template-columns:repeat(7,1fr)!important;
+    gap:3px!important;
+  }
+  .networkKpiGrid>div{
+    min-height:28px!important;
+    padding:3px!important;
+    border-radius:5px!important;
+  }
+  .networkKpiGrid span{font-size:5px!important}
+  .networkKpiGrid b{font-size:10px!important;margin-top:1px!important}
+  #avanceModal .dashboardMosaic{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:5px!important;
+  }
+  #avanceModal .dashboardMosaic>.chartCard,
+  #avanceModal .dashboardMosaic>.chartCard.span4,
+  #avanceModal .dashboardMosaic>.chartCard.span6,
+  #avanceModal .dashboardMosaic>.chartCard.span8,
+  #avanceModal .dashboardMosaic>.chartCard.span12{
+    flex:0 0 calc(50% - 3px)!important;
+    width:calc(50% - 3px)!important;
+    max-width:calc(50% - 3px)!important;
+    min-height:177px!important;
+    height:177px!important;
+  }
+  #avanceModal .dashboardMosaic .span12 .chartMap{
+    height:151px!important;
+  }
+}
+
+
+/* ============================================================
+   V66 · DRILLDOWN DE GRÁFICAS
+   ============================================================ */
+#dashDrillModal{z-index:32000!important}
+.dashDrillModalBox{
+  width:min(1500px,98vw)!important;
+  margin:2vh auto!important;
+}
+.dashDrillHeadActions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.dashDrillHeadActions .btn{margin:0;width:auto}
+.dashDrillSummary{
+  display:grid;
+  grid-template-columns:.8fr .8fr 1.4fr;
+  gap:8px;
+  margin-bottom:10px;
+}
+.dashDrillSummary>div{
+  border:1px solid #dbe4ee;
+  border-radius:11px;
+  background:#f8fafc;
+  padding:9px 11px;
+}
+.dashDrillSummary span{
+  display:block;
+  color:#64748b;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+.dashDrillSummary b{
+  display:block;
+  color:#0f3553;
+  font-size:15px;
+  margin-top:3px;
+}
+.dashDrillTableWrap{
+  max-height:68vh!important;
+}
+#dashDrillTabla tr:hover{
+  background:#eef6fb;
+}
+#avanceModal canvas{
+  cursor:pointer;
+}
+.dashboardClickHint{
+  color:#64748b;
+  font-size:8px;
+  font-weight:700;
+}
+@media(max-width:760px){
+  .dashDrillSummary{grid-template-columns:1fr}
+  .dashDrillHeadActions{flex-direction:column;align-items:stretch}
+}
+
+/* Evita que el botón Entregables se superponga también sobre el drilldown. */
+#dashDrillModal.open{z-index:32000!important}
+
+
+/* ============================================================
+   V67 · HOVER AZUL + KPIs INTERACTIVOS
+   ============================================================ */
+#dashDrillTabla tr:hover,
+#dashDrillTabla tr:focus-within{
+  background:#0f3b5f!important;
+}
+#dashDrillTabla tr:hover td,
+#dashDrillTabla tr:focus-within td,
+#dashDrillTabla tr:hover b,
+#dashDrillTabla tr:focus-within b{
+  color:#ffffff!important;
+}
+#dashDrillTabla tr:hover .btn,
+#dashDrillTabla tr:focus-within .btn{
+  filter:brightness(1.08);
+}
+#dashDrillTabla tr::selection,
+#dashDrillTabla td::selection{
+  background:#1d4ed8!important;
+  color:#fff!important;
+}
+.executiveKpi,
+.miniMetric,
+.typeExecutiveCard,
+.networkKpiGrid>div{
+  cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.executiveKpi:hover,
+.miniMetric:hover,
+.typeExecutiveCard:hover,
+.networkKpiGrid>div:hover{
+  transform:translateY(-2px);
+  border-color:#38bdf8!important;
+  box-shadow:0 8px 20px rgba(14,116,144,.16)!important;
+}
+.executiveKpi:active,
+.miniMetric:active,
+.typeExecutiveCard:active,
+.networkKpiGrid>div:active{
+  transform:translateY(0);
+}
+
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -1543,42 +2203,460 @@ aside.mapFiltersSidebar{padding:12px}
  .deliverablesDropdown{position:fixed;top:68px;right:10px;left:10px;width:auto}
 }
 </style>
+
+<style id="pdrMasterVisualV68Safe">
+/* ===== V68 SAFE · SOLO CAPA VISUAL SOBRE V67 ===== */
+:root{
+  --pdrFxCyan:#22dff2;
+  --pdrFxMint:#47f1d1;
+  --pdrFxBlue:#38bdf8;
+}
+
+/* El fondo se agrega detrás de la aplicación sin cambiar su árbol funcional. */
+.masterFxStage{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(33,210,245,.12),transparent 24%),
+    radial-gradient(circle at 82% 26%,rgba(71,241,209,.08),transparent 18%),
+    radial-gradient(circle at 20% 80%,rgba(34,143,255,.07),transparent 24%),
+    linear-gradient(180deg,#050d16 0%,#07192a 55%,#03101d 100%);
+}
+.masterFxMesh{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.12;
+  background:
+    linear-gradient(transparent 0 98%,rgba(255,255,255,.018) 100%),
+    linear-gradient(90deg,transparent 0 98%,rgba(255,255,255,.016) 100%);
+  background-size:72px 72px,72px 72px;
+  -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.75),rgba(0,0,0,.22));
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.75),rgba(0,0,0,.22));
+}
+.masterFxAmbient{
+  position:absolute;
+  inset:-10%;
+  z-index:0;
+  pointer-events:none;
+  filter:blur(42px);
+  opacity:.65;
+  background:
+    radial-gradient(circle at 18% 25%,rgba(30,220,255,.12),transparent 20%),
+    radial-gradient(circle at 80% 20%,rgba(53,115,255,.10),transparent 20%),
+    radial-gradient(circle at 50% 80%,rgba(70,241,209,.09),transparent 18%);
+}
+#masterNetworkCanvas{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+/* La app existente simplemente queda por encima. */
+body{background:#050d16!important}
+body>header,
+body>.layout{
+  position:relative;
+  z-index:2;
+}
+
+/* HEADER: misma altura V67 para no desconfigurar layout/mapa. */
+header{
+  background:linear-gradient(180deg,rgba(7,17,31,.91),rgba(5,15,27,.86))!important;
+  border-bottom:1px solid rgba(103,232,249,.22)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.20),inset 0 -1px 0 rgba(34,211,238,.035)!important;
+  backdrop-filter:blur(16px) saturate(130%);
+  -webkit-backdrop-filter:blur(16px) saturate(130%);
+  overflow:visible!important;
+}
+header::after{
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(34,223,242,.56),rgba(71,241,209,.24),transparent);
+  pointer-events:none;
+}
+
+/* Logo oficial exacto del login MASTER. */
+.masterBrand{gap:9px!important;min-width:0}
+.masterLogoWrap{
+  flex:0 0 auto;
+  width:88px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 7px;
+  border:1px solid rgba(103,232,249,.18);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(13,36,53,.66),rgba(5,20,32,.50));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 0 18px rgba(34,223,242,.055);
+}
+.pdrMasterLogo{
+  width:100%;
+  max-height:29px;
+  display:block;
+  object-fit:contain;
+  filter:drop-shadow(0 0 9px rgba(92,239,255,.08));
+}
+.masterBrandCopy{min-width:0}
+.masterBrandTitle{display:flex;align-items:center;gap:7px;min-width:0}
+.masterBrandTitle h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.masterBrandTitle>span{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  height:18px;
+  padding:0 7px;
+  border-radius:999px;
+  border:1px solid rgba(71,241,209,.36);
+  background:rgba(5,38,46,.58);
+  color:#72f4dc;
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.16em;
+  box-shadow:0 0 12px rgba(71,241,209,.05);
+}
+
+/* Botones superiores premium sin cambiar funciones. */
+.topHeaderActions{
+  gap:7px!important;
+  overflow:visible!important;
+}
+.topHeaderActions .topActionBtn,
+.topHeaderActions .deliverablesBtn{
+  --hdrAccent:34,223,242;
+  position:relative!important;
+  isolation:isolate;
+  overflow:hidden!important;
+  min-height:38px!important;
+  padding:7px 11px!important;
+  gap:7px!important;
+  border:1px solid rgba(var(--hdrAccent),.28)!important;
+  border-radius:11px!important;
+  color:#effcff!important;
+  background:
+    radial-gradient(circle at 18% 0%,rgba(255,255,255,.075),transparent 42%),
+    linear-gradient(180deg,rgba(18,40,58,.90),rgba(7,24,38,.90))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.055),
+    0 5px 18px rgba(0,0,0,.18),
+    0 0 14px rgba(var(--hdrAccent),.035)!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:.15px!important;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease!important;
+}
+.topHeaderActions .topActionBtn::before,
+.topHeaderActions .deliverablesBtn::before{
+  content:""!important;
+  position:absolute!important;
+  z-index:-1!important;
+  inset:auto 12% 0!important;
+  height:1px!important;
+  background:linear-gradient(90deg,transparent,rgba(var(--hdrAccent),.95),transparent)!important;
+  opacity:.42!important;
+  transition:inset .18s ease,opacity .18s ease!important;
+}
+.topHeaderActions .topActionBtn::after,
+.topHeaderActions .deliverablesBtn::after{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  z-index:-1!important;
+  inset:-60% auto -60% -48%!important;
+  width:34%!important;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent)!important;
+  transform:skewX(-18deg) translateX(-220%)!important;
+  transition:transform .50s cubic-bezier(.2,.72,.2,1)!important;
+  pointer-events:none!important;
+}
+.topHeaderActions .topActionBtn:hover,
+.topHeaderActions .deliverablesBtn:hover{
+  transform:translateY(-2px)!important;
+  border-color:rgba(var(--hdrAccent),.72)!important;
+  background:
+    radial-gradient(circle at 18% 0%,rgba(var(--hdrAccent),.11),transparent 48%),
+    linear-gradient(180deg,rgba(22,50,69,.98),rgba(7,29,45,.97))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    0 8px 23px rgba(0,0,0,.24),
+    0 0 22px rgba(var(--hdrAccent),.11)!important;
+}
+.topHeaderActions .topActionBtn:hover::before,
+.topHeaderActions .deliverablesBtn:hover::before{inset:auto 5% 0!important;opacity:.95!important}
+.topHeaderActions .topActionBtn:hover::after,
+.topHeaderActions .deliverablesBtn:hover::after{transform:skewX(-18deg) translateX(560%)!important}
+.topHeaderActions .topActionBtn:active,
+.topHeaderActions .deliverablesBtn:active{transform:translateY(0) scale(.985)!important}
+
+.hdrEmpresas{--hdrAccent:34,223,242!important}
+.hdrUsuarios{--hdrAccent:71,241,209!important}
+.hdrProyectos{--hdrAccent:56,189,248!important}
+.hdrDashboard{--hdrAccent:139,92,246!important}
+.hdrAsignaciones{--hdrAccent:45,212,191!important}
+.hdrEntregables{--hdrAccent:34,211,238!important}
+.hdrIcon{
+  flex:0 0 20px;
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:7px;
+  color:rgb(var(--hdrAccent));
+  background:rgba(var(--hdrAccent),.075);
+  box-shadow:inset 0 0 0 1px rgba(var(--hdrAccent),.10);
+  font-size:11px;
+  font-weight:1000;
+  transition:transform .18s ease,background .18s ease,box-shadow .18s ease;
+}
+.topActionBtn:hover .hdrIcon,.deliverablesBtn:hover .hdrIcon{
+  transform:scale(1.08) rotate(-2deg);
+  background:rgba(var(--hdrAccent),.14);
+  box-shadow:inset 0 0 0 1px rgba(var(--hdrAccent),.18),0 0 12px rgba(var(--hdrAccent),.10);
+}
+.topHeaderActions .headerActionActive{
+  border-color:rgba(103,232,249,.72)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 18px rgba(34,211,238,.10)!important;
+}
+
+/* Entregables conserva z-index corregido de V67: debajo de modales. */
+.deliverablesTop{z-index:850!important}
+.deliverablesDropdown{
+  z-index:851!important;
+  border-color:rgba(103,232,249,.24)!important;
+  background:linear-gradient(155deg,rgba(7,25,41,.985),rgba(4,13,24,.99))!important;
+  box-shadow:0 20px 54px rgba(0,0,0,.48),0 0 24px rgba(34,223,242,.065)!important;
+  backdrop-filter:blur(16px) saturate(125%);
+  -webkit-backdrop-filter:blur(16px) saturate(125%);
+}
+
+/* Sidebar oscuro tipo glass para que las partículas se perciban sin sacrificar legibilidad. */
+.layout{background:transparent!important}
+aside.mapFiltersSidebar{
+  background:linear-gradient(180deg,rgba(9,26,42,.91),rgba(5,18,31,.92))!important;
+  border-right-color:rgba(103,232,249,.13)!important;
+  backdrop-filter:blur(12px) saturate(118%);
+  -webkit-backdrop-filter:blur(12px) saturate(118%);
+}
+aside .mapFilterCard{
+  background:
+    radial-gradient(circle at 10% 0%,rgba(34,223,242,.045),transparent 38%),
+    linear-gradient(180deg,rgba(19,38,58,.78),rgba(9,27,44,.76))!important;
+  border-color:rgba(103,232,249,.13)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 7px 17px rgba(0,0,0,.10);
+}
+aside .mapFilterCard:hover{border-color:rgba(103,232,249,.22)!important}
+
+/* El panel de mapa sigue intacto y opaco: no se modifica Leaflet. */
+.mapPanel{background:#06101d!important}
+
+/* En pantallas medianas conservamos scroll y no deformamos la barra. */
+@media(max-width:1350px){
+  .masterLogoWrap{width:72px}
+  .masterBrandTitle h1{font-size:13px!important}
+  .masterBrandCopy small{display:none}
+  .topHeaderActions .topActionBtn,.topHeaderActions .deliverablesBtn{padding:7px 9px!important;gap:5px!important;font-size:8px!important}
+  .hdrIcon{width:18px;height:18px;flex-basis:18px}
+}
+@media(max-width:1050px){
+  .topHeaderActions{overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:thin}
+  .masterBrandTitle>span{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .topHeaderActions .topActionBtn,.topHeaderActions .deliverablesBtn,.hdrIcon{transition:none!important}
+  .topHeaderActions .topActionBtn::after,.topHeaderActions .deliverablesBtn::after{display:none!important}
+}
+</style>
+
+
+<style id="entregablesRobustFixV68">
+/* ===== FIX ROBUSTO ENTREGABLES V68 SAFE ===== */
+
+/* Header por encima del mapa, pero siempre debajo de los modales (30000+). */
+header{
+  position:relative!important;
+  z-index:24000!important;
+  overflow:visible!important;
+}
+
+.topHeaderActions{
+  overflow:visible!important;
+}
+
+.deliverablesTop{
+  position:relative!important;
+  z-index:25000!important;
+  overflow:visible!important;
+}
+
+/* El menú se posiciona por JS con getBoundingClientRect(). */
+#entregablesMenu.deliverablesDropdown{
+  position:fixed!important;
+  z-index:25001!important;
+
+  display:block!important;
+  min-width:280px!important;
+  max-width:330px!important;
+  max-height:calc(100vh - 90px)!important;
+  overflow-y:auto!important;
+
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+
+  transform:translateY(-7px) scale(.985)!important;
+  transform-origin:top right!important;
+
+  background:
+    radial-gradient(circle at 88% 0%,rgba(34,223,242,.08),transparent 30%),
+    linear-gradient(155deg,rgba(7,25,41,.99),rgba(4,13,24,.995))!important;
+  border:1px solid rgba(103,232,249,.28)!important;
+  border-radius:14px!important;
+  box-shadow:
+    0 24px 60px rgba(0,0,0,.55),
+    0 0 28px rgba(34,223,242,.08)!important;
+
+  backdrop-filter:blur(16px) saturate(130%)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(130%)!important;
+
+  transition:
+    opacity .16s ease,
+    transform .16s ease,
+    visibility .16s ease!important;
+}
+
+/* Aceptamos ambos estados: root.open o menu.open. */
+.deliverablesTop.open #entregablesMenu,
+#entregablesMenu.open{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+
+/* Los modales siguen por encima del menú. */
+.modalOverlay.open{
+  z-index:30000!important;
+}
+#dashDrillModal.open{
+  z-index:32000!important;
+}
+
+@media(max-width:700px){
+  #entregablesMenu.deliverablesDropdown{
+    max-width:calc(100vw - 24px)!important;
+    min-width:0!important;
+  }
+}
+</style>
+
 </head>
 <body>
+
+<div class="masterFxStage" id="masterFxStage" aria-hidden="true">
+  <div class="masterFxAmbient"></div>
+  <div class="masterFxMesh"></div>
+  <canvas id="masterNetworkCanvas"></canvas>
+</div>
 <div id="authChecking" class="authChecking">Validando acceso MASTER...</div>
 
 <header>
-  <div class="brand"><span class="mark"></span><div><h1>MASTER MAPPING Y SITE SURVEY</h1><small>Proyectos · técnicos · filtros avanzados · entregables</small></div></div>
+  <div class="brand masterBrand">
+    <div class="masterLogoWrap">
+      <img class="pdrMasterLogo"
+        src="https://static.wixstatic.com/media/63e6ec_6f519a0e397d4f6fbe3f82ce81606614~mv2.png/v1/fill/w_529,h_173,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/PDR-1.png"
+        alt="PDR-APP" loading="eager" referrerpolicy="no-referrer">
+    </div>
+    <div class="masterBrandCopy">
+      <div class="masterBrandTitle"><h1>MASTER MAPPING Y SITE SURVEY</h1><span>MASTER</span></div>
+      <small>Proyectos · técnicos · filtros avanzados · entregables</small>
+    </div>
+  </div>
   <div class="topHeaderActions">
-    <button class="topActionBtn adminOnly managementBtn" onclick="abrirGestionEmpresas()">Empresas</button>
-    <button class="topActionBtn adminOnly managementBtn" onclick="abrirGestionUsuarios()">Usuarios</button>
-    <button class="topActionBtn managementBtn" onclick="abrirAdministrarProyectos()">Proyectos</button>
-    <button class="topActionBtn" onclick="abrirDashboardAvances()">Reporte de avances</button>
-    <button class="topActionBtn" onclick="abrirModalAsignaciones()">Asignaciones</button>
+    <button class="topActionBtn adminOnly managementBtn hdrEmpresas" onclick="abrirGestionEmpresas()"><span class="hdrIcon">▦</span><span>Empresas</span></button>
+    <button class="topActionBtn adminOnly managementBtn hdrUsuarios" onclick="abrirGestionUsuarios()"><span class="hdrIcon">◉</span><span>Usuarios</span></button>
+    <button class="topActionBtn managementBtn hdrProyectos" onclick="abrirAdministrarProyectos()"><span class="hdrIcon">▱</span><span>Proyectos</span></button>
+    <button class="topActionBtn hdrDashboard" onclick="abrirDashboardAvances()"><span class="hdrIcon">▥</span><span>Reporte de avances</span></button>
+    <button class="topActionBtn hdrAsignaciones" onclick="abrirModalAsignaciones()"><span class="hdrIcon">✓</span><span>Asignaciones</span></button>
     <div class="deliverablesTop" id="deliverablesTop">
-      <button class="topActionBtn deliverablesTrigger deliverablesBtn" type="button" onclick="toggleEntregables(event)">◇ ENTREGABLES <span class="deliverablesArrow">⌄</span></button>
+      <button class="topActionBtn deliverablesTrigger deliverablesBtn hdrEntregables" type="button" onclick="toggleEntregables(event)" aria-haspopup="menu" aria-expanded="false"><span class="hdrIcon">◇</span><span>ENTREGABLES</span><span class="deliverablesArrow">⌄</span></button>
       <div class="deliverablesDropdown" id="entregablesMenu">
         <div class="deliverablesTitle">CENTRO DE ENTREGABLES</div>
-        <a class="deliverableItem" href="https://drive.google.com/uc?export=download&id=1X6Wy1qzVj1OOGBt-jXqzUI7pyLAGdKAd" target="_blank" rel="noopener noreferrer">
-          <span class="deliverableIcon">⇩</span><span><b>Descargar Connector</b><small>Conector local para AutoCAD</small></span>
+
+        <a class="deliverableItem"
+           href="https://drive.google.com/uc?export=download&id=1X6Wy1qzVj1OOGBt-jXqzUI7pyLAGdKAd"
+           target="_blank"
+           rel="noopener noreferrer">
+          <span class="deliverableIcon">⇩</span>
+          <span>
+            <b>Descargar Connector</b>
+            <small>Conector local para AutoCAD</small>
+          </span>
         </a>
-        <button class="deliverableItem" type="button" onclick="cerrarEntregables();enviarAutoCADConnector()">
-          <span class="deliverableIcon">⌁</span><span><b>Generar en AutoCAD</b><small>Dibujar infraestructura del proyecto</small></span>
+
+        <button class="deliverableItem"
+                type="button"
+                onclick="cerrarEntregables();enviarAutoCADConnector()">
+          <span class="deliverableIcon">⌁</span>
+          <span>
+            <b>Generar en AutoCAD</b>
+            <small>Dibujar infraestructura del proyecto</small>
+          </span>
         </button>
-        <button class="deliverableItem" type="button" onclick="cerrarEntregables();exportarKMZProyecto(this)">
-          <span class="deliverableIcon">◎</span><span><b>Exportar KMZ</b><small>Proyecto georreferenciado para Google Earth</small></span>
+
+        <button class="deliverableItem"
+                type="button"
+                onclick="cerrarEntregables();exportarKMZProyecto(this)">
+          <span class="deliverableIcon">◎</span>
+          <span>
+            <b>Exportar KMZ</b>
+            <small>Proyecto georreferenciado para Google Earth</small>
+          </span>
         </button>
+
         <div class="deliverablesDivider"></div>
-        <button class="deliverableItem" type="button" onclick="cerrarEntregables();exportarCarteraEMSA()">
-          <span class="deliverableIcon">▤</span><span><b>Cartera EMSA</b><small>Generar cartera del levantamiento</small></span>
+
+        <button class="deliverableItem"
+                type="button"
+                onclick="cerrarEntregables();exportarCarteraEMSA()">
+          <span class="deliverableIcon">▤</span>
+          <span>
+            <b>Cartera EMSA</b>
+            <small>Generar cartera del levantamiento</small>
+          </span>
         </button>
-        <button class="deliverableItem" type="button" onclick="cerrarEntregables();exportarReporteExcel()">
-          <span class="deliverableIcon">▦</span><span><b>Reporte Excel</b><small>Exportar información del dashboard</small></span>
+
+        <button class="deliverableItem"
+                type="button"
+                onclick="cerrarEntregables();exportarReporteExcel()">
+          <span class="deliverableIcon">▦</span>
+          <span>
+            <b>Reporte Excel</b>
+            <small>Exportar información del dashboard</small>
+          </span>
         </button>
-        <button class="deliverableItem" type="button" onclick="cerrarEntregables();imprimirEntregableProyecto()">
-          <span class="deliverableIcon">⌑</span><span><b>Imprimir / PDF</b><small>Preparar informe para entrega</small></span>
+
+        <button class="deliverableItem"
+                type="button"
+                onclick="cerrarEntregables();imprimirEntregableProyecto()">
+          <span class="deliverableIcon">⌑</span>
+          <span>
+            <b>Imprimir / PDF</b>
+            <small>Preparar informe para entrega</small>
+          </span>
         </button>
-      </div>
+</div>
     </div>
     <span id="userTop">Sin sesión</span>
     <button class="logout" onclick="logoutMaster()">Salir</button>
@@ -2163,19 +3241,20 @@ aside.mapFiltersSidebar{padding:12px}
   </div>
 </div>
 
-<!-- ===== DASHBOARD DE AVANCES ===== -->
+<!-- ===== DASHBOARD DE AVANCES · V65 EJECUTIVO ===== -->
 <div class="modalOverlay" id="avanceModal">
   <div class="modal dashboardModal">
-    <div class="modalHead noPrint">
+    <div class="modalHead noPrint dashboardTopHead">
       <div>
-        <h2>Dashboard de avances - Mapping & Site Survey</h2>
-        <small id="avanceSubtitulo" style="color:var(--muted)">Resumen operativo del levantamiento</small>
+        <h2>Centro de Control · Mapping & Site Survey</h2>
+        <small id="avanceSubtitulo" style="color:var(--muted)">Analítica integral del levantamiento</small>
       </div>
       <div class="dashHeadActions">
         <button class="btn blue" onclick="imprimirDashboard()">🖨️ Exportar / PDF</button>
         <button class="close" onclick="cerrarDashboardAvances()">Cerrar</button>
       </div>
     </div>
+
     <div class="modalBody dashboardBody" id="dashboardPrintArea">
       <div class="dashPrintHeader">
         <div>
@@ -2185,83 +3264,355 @@ aside.mapFiltersSidebar{padding:12px}
         <div id="dashPrintFecha"></div>
       </div>
 
-      <div class="reportBanner">
+      <div class="reportBanner executiveBanner">
         <div>
-          <div class="rbMetaTitle">INFORME MAPPING</div>
-          <h1>INFORME MAPPING</h1>
+          <div class="rbMetaTitle">CENTRO DE CONTROL OPERATIVO</div>
+          <h1>DASHBOARD MAPPING</h1>
           <div class="rbMetaTitle" style="margin-top:8px">FECHA DE REPORTE</div>
           <div class="rbDate" id="dashFechaReporte">—</div>
           <div class="rbContext" id="dashContextoReporte">Proyecto: Todos · Ciudad: Todas · Técnico: Todos</div>
         </div>
-        
+        <div class="executiveBrand">
+          <b>PDR</b>
+          <span>PROJECT DATA & REPORTING</span>
+        </div>
       </div>
 
-      <div class="reportTopGrid">
-        <div class="filterCardReport">
-          <div class="reportFiltersMini noPrint">
-            <div><label>Proyecto</label><select id="dashProyecto" onchange="cargarDashboardAvances()"></select></div>
-            <div class="reportFilterRow">
-              <div><label>Ciudad</label><select id="dashCiudad" onchange="cargarDashboardAvances()"></select></div>
-              <div><label>Técnico</label><select id="dashTecnico" onchange="renderDashboardAvances()"></select></div>
-            </div>
-            <div class="reportFilterRow">
-              <div><label>Desde</label><input id="dashDesde" type="date" onchange="renderDashboardAvances()"></div>
-              <div><label>Hasta</label><input id="dashHasta" type="date" onchange="renderDashboardAvances()"></div>
-            </div>
-            <button class="btn blue" onclick="cargarDashboardAvances()">Actualizar</button>
-          </div>
-          <div class="typeMiniGrid">
-            <div class="typeMiniCard"><span>Postes</span><b id="dPostes">0</b></div>
-            <div class="typeMiniCard"><span>Cámaras</span><b id="dCamaras">0</b></div>
-            <div class="typeMiniCard"><span>C. Americanos</span><b id="dAmericano">0</b></div>
-            <div class="typeMiniCard"><span>Cerchas</span><b id="dCerchas">0</b></div>
-          </div>
-          <div class="distanceCard">
-  <span class="distanceKmLabel">Distancia aproximada:</span>
-  <div class="distanceKmLine">
-    <span id="dDistanciaKm" class="distanceKmNumber">0.0</span>
-    <span class="distanceKmUnit">km</span>
-  </div>
-</div>
+      <div class="dashboardFilterBar noPrint">
+        <div>
+          <label>Proyecto</label>
+          <select id="dashProyecto" onchange="cambiarProyectoDashboard()"></select>
+        </div>
+        <div>
+          <label>Ciudad</label>
+          <select id="dashCiudad" onchange="cargarDashboardAvances()"></select>
+        </div>
+        <div>
+          <label>Técnico</label>
+          <select id="dashTecnico" onchange="renderDashboardAvances()"></select>
+        </div>
+        <div>
+          <label>Desde</label>
+          <input id="dashDesde" type="date" onchange="renderDashboardAvances()">
+        </div>
+        <div>
+          <label>Hasta</label>
+          <input id="dashHasta" type="date" onchange="renderDashboardAvances()">
+        </div>
+        <button class="btn blue" onclick="cargarDashboardAvances()">⟳ Actualizar</button>
+      </div>
+
+      <div class="dashSectionTitle">
+        <span>RESUMEN EJECUTIVO</span>
+        <small>Indicadores principales del periodo seleccionado</small>
+      </div>
+
+      <div class="executiveKpiGrid">
+        <div class="executiveKpi kpiBlue" onclick="abrirDetalleKPIDashboard('total')">
+          <span>Total infraestructura</span>
+          <b id="dTotal">0</b>
+          <small>elementos levantados</small>
+        </div>
+        <div class="executiveKpi kpiCyan" onclick="abrirDetalleKPIDashboard('distancia')">
+          <span>Distancia de red</span>
+          <b><span id="dDistanciaKm">0.0</span> km</b>
+          <small id="dDistanciaConexiones">0 conexiones</small>
+        </div>
+        <div class="executiveKpi kpiEmerald" onclick="abrirDetalleKPIDashboard('tecnicos')">
+          <span>Técnicos activos</span>
+          <b id="dTecnicos">0</b>
+          <small>con producción</small>
+        </div>
+        <div class="executiveKpi kpiViolet" onclick="abrirDetalleKPIDashboard('dias')">
+          <span>Días de levantamiento</span>
+          <b id="dDiasActivos">0</b>
+          <small>jornadas con producción</small>
+        </div>
+        <div class="executiveKpi kpiAmber" onclick="abrirDetalleKPIDashboard('promedio_dia')">
+          <span>Promedio por día</span>
+          <b id="dPromDia">0</b>
+          <small>elementos / jornada</small>
+        </div>
+        <div class="executiveKpi kpiRose" onclick="abrirDetalleKPIDashboard('promedio_tecnico_dia')">
+          <span>Promedio técnico / día</span>
+          <b id="dPromTecnicoDia">0</b>
+          <small>rendimiento general</small>
+        </div>
+      </div>
+
+      <div class="operationalKpiGrid">
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('mejor_dia')">
+          <span>Mejor día</span>
+          <b id="dMejorDia">0</b>
+          <small id="dMejorDiaFecha">—</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('mejor_tecnico')">
+          <span>Mejor técnico</span>
+          <b id="dMejorTecnico">—</b>
+          <small id="dMejorTecnicoTotal">0 elementos</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('max_tecnico_dia')">
+          <span>Máx. técnico / día</span>
+          <b id="dMaxTecDia">0</b>
+          <small id="dMaxTecDiaDetalle">—</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('poligonos')">
+          <span>Polígonos con producción</span>
+          <b id="dPoligonos">0</b>
+          <small>áreas intervenidas</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('ciudades')">
+          <span>Ciudades</span>
+          <b id="dCiudades">0</b>
+          <small>con levantamiento</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('conexiones')">
+          <span>Conexiones medidas</span>
+          <b id="dConexiones">0</b>
+          <small>en la red levantada</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('prom_conexion')">
+          <span>Distancia media enlace</span>
+          <b id="dPromConexion">0 m</b>
+          <small>por conexión</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('gps')">
+          <span>Cobertura GPS</span>
+          <b id="dCoberturaGPS">0%</b>
+          <small>registros georreferenciados</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('fin_red')">
+          <span>Fines de red</span>
+          <b id="dFinRed">0</b>
+          <small>FINDERED = SI</small>
+        </div>
+        <div class="miniMetric" onclick="abrirDetalleKPIDashboard('propietarios')">
+          <span>Propietarios</span>
+          <b id="dPropietarios">0</b>
+          <small>identificados</small>
+        </div>
+      </div>
+
+      <div class="dashSectionTitle compact">
+        <span>COMPOSICIÓN DE INFRAESTRUCTURA</span>
+        <small>Distribución por tipo de elemento</small>
+      </div>
+
+      <div class="typeExecutiveGrid">
+        <div class="typeExecutiveCard typePoste" onclick="abrirDetalleKPIDashboard('tipo','POSTE')"><span>Postes</span><b id="dPostes">0</b></div>
+        <div class="typeExecutiveCard typeCamara" onclick="abrirDetalleKPIDashboard('tipo','CANALIZADO')"><span>Canalizados / cámaras</span><b id="dCamaras">0</b></div>
+        <div class="typeExecutiveCard typeAmericano" onclick="abrirDetalleKPIDashboard('tipo','C. AMERICANO')"><span>C. Americanos</span><b id="dAmericano">0</b></div>
+        <div class="typeExecutiveCard typeCercha" onclick="abrirDetalleKPIDashboard('tipo','CERCHA')"><span>Cerchas</span><b id="dCerchas">0</b></div>
+        <div class="typeExecutiveCard typeCliente" onclick="abrirDetalleKPIDashboard('tipo','CLIENTE')"><span>Clientes</span><b id="dClientes">0</b></div>
+      </div>
+
+      <div class="dashSectionTitle compact">
+        <span>INVENTARIO DE RED</span>
+        <small>Sumatoria de elementos registrados en campo</small>
+      </div>
+
+      <div class="networkKpiGrid">
+        <div onclick="abrirDetalleKPIDashboard('inventario','NAPS')"><span>NAPs</span><b id="dNaps">0</b></div>
+        <div onclick="abrirDetalleKPIDashboard('inventario','CABLES')"><span>Cables</span><b id="dCables">0</b></div>
+        <div onclick="abrirDetalleKPIDashboard('inventario','RESERVAS')"><span>Reservas</span><b id="dReservas">0</b></div>
+        <div onclick="abrirDetalleKPIDashboard('inventario','EMPALMES')"><span>Empalmes / muflas</span><b id="dEmpalmes">0</b></div>
+        <div onclick="abrirDetalleKPIDashboard('inventario','BAJANTES')"><span>Bajantes</span><b id="dBajantes">0</b></div>
+        <div onclick="abrirDetalleKPIDashboard('inventario','AMPLIFI')"><span>Amplificadores</span><b id="dAmplificadores">0</b></div>
+        <div onclick="abrirDetalleKPIDashboard('inventario','FUENTES')"><span>Fuentes</span><b id="dFuentes">0</b></div>
+      </div>
+
+      <div class="dashSectionTitle">
+        <span>ANÁLISIS DEL PROYECTO</span>
+        <small>Productividad, composición, red, materiales y cobertura · Haz clic sobre cualquier dato para ver su detalle</small>
+      </div>
+
+      <div class="chartsGrid dashboardMosaic">
+        <div class="chartCard span8 accentBlue">
+          <h3>Evolución diaria de infraestructura</h3>
+          <div class="chartBox"><canvas id="chTotalDia"></canvas></div>
         </div>
 
-        <div class="cityCardReport">
+        <div class="chartCard span4 accentViolet">
+          <h3>Composición total por tipo</h3>
+          <div class="chartBox"><canvas id="chTipoComposicion"></canvas></div>
+        </div>
+
+        <div class="chartCard span8 accentCyan">
+          <h3>Producción diaria por tipo de infraestructura</h3>
+          <div class="chartBox"><canvas id="chDiario"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentEmerald">
+          <h3>Inventario de elementos de red</h3>
+          <div class="chartBox"><canvas id="chActivosRed"></canvas></div>
+        </div>
+
+        <div class="chartCard span8 accentAmber">
+          <h3>Infraestructura por polígono</h3>
+          <div class="chartBox"><canvas id="chPoligonos"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentRose">
+          <h3>Nivel de tensión</h3>
+          <div class="chartBox"><canvas id="chTension"></canvas></div>
+        </div>
+
+        <div class="chartCard span6 accentBlue">
+          <h3>Producción acumulada por técnico</h3>
+          <div class="chartBox"><canvas id="chTecnicos"></canvas></div>
+        </div>
+
+        <div class="chartCard span6 accentCyan">
+          <h3>Producción técnico × día</h3>
+          <div class="chartBox"><canvas id="chTecnicoDia"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentViolet">
+          <h3>Distribución por propietario</h3>
+          <div class="chartBox"><canvas id="chPropietarios"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentEmerald">
+          <h3>Material de poste</h3>
+          <div class="chartBox"><canvas id="chMaterial"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentAmber">
+          <h3>Rotura / clase de poste</h3>
+          <div class="chartBox"><canvas id="chRotura"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentBlue">
+          <h3>Altura de postería</h3>
+          <div class="chartBox"><canvas id="chAltura"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentRose">
+          <h3>Tipos de cámara</h3>
+          <div class="chartBox"><canvas id="chTipoCamara"></canvas></div>
+        </div>
+
+        <div class="chartCard span4 accentCyan">
+          <h3>Inventario de ductos</h3>
+          <div class="chartBox"><canvas id="chDuctos"></canvas></div>
+        </div>
+
+        <div class="chartCard span8 accentViolet">
+          <h3>Actividad de técnicos por hora del día</h3>
+          <div class="chartBox"><canvas id="chActividadHora"></canvas></div>
+          <div id="dashActividadHoraResumen" class="hourActivitySummary">Analizando horas de trabajo...</div>
+        </div>
+
+        <div class="chartCard span4 accentEmerald cityDashboardCard">
           <h3>Infraestructura por ciudad</h3>
           <div id="dashResumenCiudades" class="citySummaryList"></div>
         </div>
 
-        <div class="rightSummaryReport">
-          <div class="rightKpiCard primary"><span>Total infraestructura</span><b id="dTotal">0</b><small>elementos levantados</small></div>
-          <div class="rightKpiCard"><span>Promedio x técnico x día</span><b id="dPromTecnicoDia">0</b><small>rendimiento general</small></div>
-          <div class="rightKpiCard"><span>Días de levantamiento</span><b id="dDiasActivos">0</b><small>con producción</small></div>
-          <div class="rightKpiCard"><span>Mejor día</span><b id="dMejorDia">0</b><small id="dMejorDiaFecha">—</small></div>
-          <div class="rightKpiCard"><span>Técnicos activos</span><b id="dTecnicos">0</b><small>con producción</small></div>
+        <div class="chartCard span6 accentAmber">
+          <h3>Distancia de red construida por día</h3>
+          <div class="chartBox"><canvas id="chDistanciaDia"></canvas></div>
+        </div>
+
+        <div class="chartCard span6 accentBlue">
+          <h3>Avance acumulado del levantamiento</h3>
+          <div class="chartBox"><canvas id="chAcumulado"></canvas></div>
+        </div>
+
+        <div class="chartCard span12 accentCyan">
+          <h3>Mapa ejecutivo de referencia</h3>
+          <div class="chartMap"><div id="dashMap"></div></div>
         </div>
       </div>
 
-      <div class="chartsGrid">
-        <div class="chartCard span2"><h3>Cantidad de infraestructura por día</h3><div class="chartBox"><canvas id="chTotalDia"></canvas></div></div>
-        <div class="chartCard span2"><h3>Producción diaria por tipo</h3><div class="chartBox"><canvas id="chDiario"></canvas></div></div>
-        <div class="chartCard span2"><h3>Elementos por polígono y tipo de infraestructura</h3><div class="chartBox"><canvas id="chPoligonos"></canvas></div></div>
-        <div class="chartCard"><h3>Histórico cantidad de infraestructura x técnico</h3><div class="chartBox"><canvas id="chTecnicos"></canvas></div></div>
-        <div class="chartCard span2"><h3>Cant de infraestructura levantada x técnico x día</h3><div class="chartBox"><canvas id="chTecnicoDia"></canvas></div></div>
-        <div class="chartCard span2">
-          <h3>Actividad de los técnicos por hora del día</h3>
-          <div class="chartBox"><canvas id="chActividadHora"></canvas></div>
-          <div id="dashActividadHoraResumen" class="hourActivitySummary">Analizando horas de trabajo...</div>
-        </div>
-        <div class="chartCard span2"><h3>Mapa de referencia</h3><div class="chartMap"><div id="dashMap"></div></div></div>
+      <div class="dashSectionTitle">
+        <span>DETALLE OPERATIVO</span>
+        <small>Desempeño por técnico y comportamiento diario</small>
       </div>
 
       <div class="dashTables">
         <div class="chartCard">
           <h3>Resumen por técnico</h3>
-          <div class="tableWrap dashTableWrap"><table class="table"><thead><tr><th>Técnico</th><th>Total</th><th>Días activos</th><th>Prom./día</th><th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th></tr></thead><tbody id="dashTablaTecnicos"></tbody></table></div>
+          <div class="tableWrap dashTableWrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Técnico</th><th>Total</th><th>%</th><th>Días</th><th>Prom./día</th><th>Máx./día</th>
+                  <th>Km red</th><th>Postes</th><th>Cámaras</th><th>Clientes</th>
+                </tr>
+              </thead>
+              <tbody id="dashTablaTecnicos"></tbody>
+            </table>
+          </div>
         </div>
+
         <div class="chartCard">
           <h3>Detalle diario</h3>
-          <div class="tableWrap dashTableWrap"><table class="table"><thead><tr><th>Fecha</th><th>Total</th><th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th></tr></thead><tbody id="dashTablaDias"></tbody></table></div>
+          <div class="tableWrap dashTableWrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Total</th><th>Técnicos</th><th>Km red</th>
+                  <th>Postes</th><th>Cámaras</th><th>Cerchas</th><th>C. Amer.</th><th>Clientes</th>
+                </tr>
+              </thead>
+              <tbody id="dashTablaDias"></tbody>
+            </table>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== DETALLE DE DATOS DE GRÁFICAS ===== -->
+<div class="modalOverlay" id="dashDrillModal">
+  <div class="modal dashDrillModalBox">
+    <div class="modalHead">
+      <div>
+        <h2 id="dashDrillTitulo">Detalle de gráfica</h2>
+        <small id="dashDrillSubtitulo" style="color:var(--muted)">Registros asociados al valor seleccionado</small>
+      </div>
+      <div class="dashDrillHeadActions">
+        <button class="btn blue" onclick="exportarDetalleGraficaDashboard()">⬇ Exportar Excel</button>
+        <button class="close" onclick="cerrarDetalleGraficaDashboard()">Cerrar</button>
+      </div>
+    </div>
+
+    <div class="modalBody">
+      <div class="dashDrillSummary">
+        <div>
+          <span>VALOR SELECCIONADO</span>
+          <b id="dashDrillValor">—</b>
+        </div>
+        <div>
+          <span>REGISTROS RELACIONADOS</span>
+          <b id="dashDrillCantidad">0</b>
+        </div>
+        <div>
+          <span>CONTEXTO</span>
+          <b id="dashDrillContexto">—</b>
+        </div>
+      </div>
+
+      <div class="tableWrap dashDrillTableWrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>IDCAMPO</th>
+              <th>Fecha</th>
+              <th>Técnico</th>
+              <th>Tipo</th>
+              <th>Polígono</th>
+              <th>Consecutivo</th>
+              <th>Ciudad</th>
+              <th>Propietario</th>
+              <th id="dashDrillAporteHead">Aporte</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="dashDrillTabla"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -2305,6 +3656,11 @@ let passwordSesionActual='';
 let dashboardPuntos=[];
 let dashboardCharts={};
 let dashboardMap=null,dashboardMapLayer=null;
+let dashboardDrillRegistros=[];
+let dashboardDrillTituloActual='';
+let dashboardDrillValorActual='';
+let dashboardDrillContextoActual='';
+let dashboardDrillAporteLabel='Aporte';
 
 // Ubicación actual de técnicos
 let ubicacionesTecnicos=[];
@@ -6449,7 +7805,28 @@ function descripcionElementoKMZ(p){
       .cw{vertical-align:top;padding:5px 10px;max-width:430px;white-space:normal}
       .titulo{font-size:20px;font-weight:bold;color:#0C6BA8;text-align:center;margin-bottom:2px}
       .subtitulo{font-size:12px;font-weight:bold;text-align:center;color:#334155;margin-bottom:6px}
-    </style>
+    
+/* ===== FIX ENTREGABLES V68 SAFE ===== */
+.deliverablesTop{
+  overflow:visible!important;
+}
+.deliverablesDropdown{
+  display:block;
+  max-height:calc(100vh - 90px);
+  overflow-y:auto!important;
+}
+.deliverablesTop:not(.open) .deliverablesDropdown{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+.deliverablesTop.open .deliverablesDropdown{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+
+</style>
 
     <div class="titulo">MAPPING</div>
     <div class="subtitulo">${xmlEscKMZ(p.idcampo||'')}</div>
@@ -6824,16 +8201,25 @@ function valorQ(p,key,dbkey=null){
 function numeroFmt(n,dec=1){return Number(n||0).toLocaleString('es-CO',{maximumFractionDigits:dec})}
 
 async function abrirDashboardAvances(){
+  cerrarEntregables();
   dashProyecto.innerHTML='<option value="">Todos los proyectos</option>'+proyectos.map(p=>`<option value="${p.id}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');
   if(fProyecto?.value)dashProyecto.value=fProyecto.value;
   avanceModal.classList.add('open');
-  await cargarDashboardAvances();
+  await cargarDashboardAvances({resetFechas:true});
   setTimeout(()=>{if(dashboardMap)dashboardMap.invalidateSize()},180);
 }
 function cerrarDashboardAvances(){
+  dashDrillModal?.classList.remove('open');
   avanceModal.classList.remove('open');
 }
-async function cargarDashboardAvances(){
+async function cambiarProyectoDashboard(){
+  // Cada cambio de proyecto parte de todo el rango real disponible.
+  dashCiudad.value='';
+  dashTecnico.value='';
+  await cargarDashboardAvances({resetFechas:true});
+}
+
+async function cargarDashboardAvances({resetFechas=false}={}){
   const proyectoId=dashProyecto.value;
 
   if(proyectoId && !exigirProyectoPermitidoMaster(
@@ -6880,8 +8266,34 @@ async function cargarDashboardAvances(){
 
   const fechas=dashboardPuntos.map(fechaPunto).filter(Boolean).sort();
   if(fechas.length){
-    if(!dashDesde.value)dashDesde.value=fechas[0];
-    if(!dashHasta.value)dashHasta.value=fechas[fechas.length-1];
+    const fechaMin=fechas[0];
+    const fechaMax=fechas[fechas.length-1];
+
+    dashDesde.min=fechaMin;
+    dashDesde.max=fechaMax;
+    dashHasta.min=fechaMin;
+    dashHasta.max=fechaMax;
+
+    // Al seleccionar/cambiar proyecto SIEMPRE se restablece al rango total real.
+    if(
+      resetFechas ||
+      !dashDesde.value ||
+      !dashHasta.value ||
+      dashDesde.value<fechaMin ||
+      dashDesde.value>fechaMax ||
+      dashHasta.value<fechaMin ||
+      dashHasta.value>fechaMax
+    ){
+      dashDesde.value=fechaMin;
+      dashHasta.value=fechaMax;
+    }
+  }else{
+    dashDesde.value='';
+    dashHasta.value='';
+    dashDesde.removeAttribute('min');
+    dashDesde.removeAttribute('max');
+    dashHasta.removeAttribute('min');
+    dashHasta.removeAttribute('max');
   }
 
   renderDashboardAvances();
@@ -6898,10 +8310,546 @@ function datosDashboardFiltrados(){
 function destruirChart(id){
   if(dashboardCharts[id]){dashboardCharts[id].destroy();delete dashboardCharts[id]}
 }
+function normalizarTextoDashboard(v){
+  return String(v??'').trim().toUpperCase();
+}
+
+function fechasDashboardOrdenadas(){
+  return [...new Set(
+    datosDashboardFiltrados()
+      .map(fechaPunto)
+      .filter(Boolean)
+  )].sort();
+}
+
+function tipoDesdeEtiquetaDashboard(label){
+  const s=String(label||'').trim().toUpperCase();
+  const mapa={
+    'POSTES':'POSTE',
+    'POSTE':'POSTE',
+    'CANALIZADOS':'CANALIZADO',
+    'CANALIZADO':'CANALIZADO',
+    'C. AMERICANO':'C. AMERICANO',
+    'C. AMERICANOS':'C. AMERICANO',
+    'CERCHAS':'CERCHA',
+    'CERCHA':'CERCHA',
+    'CLIENTES':'CLIENTE',
+    'CLIENTE':'CLIENTE'
+  };
+  return mapa[s]||s;
+}
+
+function registrosCategoriaDashboard(arr,label,normalizador,labelsVisibles=[]){
+  const etiqueta=String(label||'');
+  const visibles=labelsVisibles
+    .filter(x=>String(x)!=='Otros')
+    .map(x=>String(x));
+
+  if(etiqueta==='Otros'){
+    return arr.filter(p=>!visibles.includes(String(normalizador(p))));
+  }
+
+  return arr.filter(p=>String(normalizador(p))===etiqueta);
+}
+
+function construirDrillDashboard(id,hit,chart){
+  const arr=datosDashboardFiltrados();
+  const di=hit.datasetIndex;
+  const ix=hit.index;
+  const label=String(chart.data.labels?.[ix]??'');
+  const datasetLabel=String(chart.data.datasets?.[di]?.label??'');
+  const valor=chart.data.datasets?.[di]?.data?.[ix];
+  const fechas=fechasDashboardOrdenadas();
+  const fecha=fechas[ix]||'';
+
+  const base={
+    titulo:chart.options?.plugins?.title?.text||'Detalle de gráfica',
+    subtitulo:`${label}${datasetLabel?` · ${datasetLabel}`:''}`,
+    valor:typeof valor==='number'?numeroFmt(valor,2):String(valor??'—'),
+    contexto:textoProyectoDashboard(),
+    aporteLabel:'Aporte',
+    registros:[]
+  };
+
+  if(id==='chTotalDia'){
+    base.titulo='Evolución diaria de infraestructura';
+    base.subtitulo=fmtFechaCorta(fecha);
+    base.registros=arr.filter(p=>fechaPunto(p)===fecha);
+    return base;
+  }
+
+  if(id==='chTipoComposicion'){
+    const tipo=tipoDesdeEtiquetaDashboard(label);
+    base.titulo='Composición total por tipo';
+    base.subtitulo=label;
+    base.registros=arr.filter(p=>normalizarTextoDashboard(p.tipo)===tipo);
+    return base;
+  }
+
+  if(id==='chDiario'){
+    const tipo=tipoDesdeEtiquetaDashboard(datasetLabel);
+    base.titulo='Producción diaria por tipo de infraestructura';
+    base.subtitulo=`${fmtFechaCorta(fecha)} · ${datasetLabel}`;
+    base.registros=arr.filter(
+      p=>fechaPunto(p)===fecha && normalizarTextoDashboard(p.tipo)===tipo
+    );
+    return base;
+  }
+
+  if(id==='chActivosRed'){
+    const campos={
+      'NAPs':['NAPS','naps'],
+      'Cables':['CABLES','cables'],
+      'Reservas':['RESERVAS','reservas'],
+      'Empalmes':['EMPALMES','empalmes'],
+      'Bajantes':['BAJANTES','bajantes'],
+      'Amplificadores':['AMPLIFI','amplifi'],
+      'Fuentes':['FUENTES','fuentes']
+    };
+    const par=campos[label];
+    if(par){
+      base.titulo='Inventario de elementos de red';
+      base.subtitulo=label;
+      base.aporteLabel=label;
+      base.registros=arr
+        .map(p=>({p,aporte:numeroFlexible(valorQgisODb(p,par[0],par[1]))}))
+        .filter(x=>Number.isFinite(x.aporte)&&x.aporte>0);
+    }
+    return base;
+  }
+
+  if(id==='chPoligonos'){
+    const tipo=tipoDesdeEtiquetaDashboard(datasetLabel);
+    base.titulo='Infraestructura por polígono';
+    base.subtitulo=`${label} · ${datasetLabel}`;
+    base.registros=arr.filter(p=>{
+      const pol=String(p.poligono||valorQgisODb(p,'POLIGONO','poligono')||'SIN POLÍGONO').trim()||'SIN POLÍGONO';
+      return pol===label && normalizarTextoDashboard(p.tipo)===tipo;
+    });
+    return base;
+  }
+
+  if(id==='chTension'){
+    const lista=arr.filter(p=>normalizarTextoDashboard(p.tipo)==='POSTE');
+    const norm=p=>normalizarTextoDashboard(valorQgisODb(p,'TENSION','tension'));
+    base.titulo='Nivel de tensión';
+    base.subtitulo=label;
+    base.registros=registrosCategoriaDashboard(lista,label,norm,chart.data.labels);
+    return base;
+  }
+
+  if(id==='chTecnicos'){
+    base.titulo='Producción acumulada por técnico';
+    base.subtitulo=label;
+    base.registros=arr.filter(p=>nombreTecnicoPunto(p)===label);
+    return base;
+  }
+
+  if(id==='chTecnicoDia'){
+    base.titulo='Producción técnico × día';
+    base.subtitulo=`${datasetLabel} · ${fmtFechaCorta(fecha)}`;
+    base.registros=arr.filter(
+      p=>nombreTecnicoPunto(p)===datasetLabel && fechaPunto(p)===fecha
+    );
+    return base;
+  }
+
+  if(id==='chPropietarios'){
+    const norm=p=>String(valorQgisODb(p,'PROPIETARI','propietari')||'').trim();
+    base.titulo='Distribución por propietario';
+    base.subtitulo=label;
+    base.registros=registrosCategoriaDashboard(arr,label,norm,chart.data.labels);
+    return base;
+  }
+
+  if(id==='chMaterial'){
+    const lista=arr.filter(p=>normalizarTextoDashboard(p.tipo)==='POSTE');
+    const norm=p=>normalizarTextoDashboard(valorQgisODb(p,'MATERIAL','material'));
+    base.titulo='Material de poste';
+    base.subtitulo=label;
+    base.registros=registrosCategoriaDashboard(lista,label,norm,chart.data.labels);
+    return base;
+  }
+
+  if(id==='chRotura'){
+    const lista=arr.filter(p=>normalizarTextoDashboard(p.tipo)==='POSTE');
+    const norm=p=>String(valorQgisODb(p,'ROTURA','rotura')||'').trim();
+    base.titulo='Rotura / clase de poste';
+    base.subtitulo=label;
+    base.registros=registrosCategoriaDashboard(lista,label,norm,chart.data.labels);
+    return base;
+  }
+
+  if(id==='chAltura'){
+    const lista=arr.filter(p=>normalizarTextoDashboard(p.tipo)==='POSTE');
+    const norm=p=>{
+      const n=numeroFlexible(valorQgisODb(p,'ALTURA','altura'));
+      return Number.isFinite(n)?`${numeroFmt(n,1)} m`:String(valorQgisODb(p,'ALTURA','altura')||'').trim();
+    };
+    base.titulo='Altura de postería';
+    base.subtitulo=label;
+    base.registros=registrosCategoriaDashboard(lista,label,norm,chart.data.labels);
+    return base;
+  }
+
+  if(id==='chTipoCamara'){
+    const lista=arr.filter(p=>normalizarTextoDashboard(p.tipo)==='CANALIZADO');
+    const norm=p=>normalizarTextoDashboard(valorQgisODb(p,'TIPOCAMARA','tipocamara'));
+    base.titulo='Tipos de cámara';
+    base.subtitulo=label;
+    base.registros=registrosCategoriaDashboard(lista,label,norm,chart.data.labels);
+    return base;
+  }
+
+  if(id==='chDuctos'){
+    const campos={
+      'Ducto eléctrico':['DUCTO ELEC','ducto_elec'],
+      'Ducto telco':['DUCT TELCO','duct_telco'],
+      'Ducto libre':['DUCT LIBRE','duct_libre'],
+      'Ducto útil':['DUCT UTIL','duct_util']
+    };
+    const par=campos[label];
+    if(par){
+      base.titulo='Inventario de ductos';
+      base.subtitulo=label;
+      base.aporteLabel=label;
+      base.registros=arr
+        .map(p=>({p,aporte:numeroFlexible(valorQgisODb(p,par[0],par[1]))}))
+        .filter(x=>Number.isFinite(x.aporte)&&x.aporte>0);
+    }
+    return base;
+  }
+
+  if(id==='chActividadHora'){
+    const hora=ix;
+    base.titulo='Actividad de técnicos por hora del día';
+    base.subtitulo=`${datasetLabel} · ${etiquetaHoraDashboard(hora)}`;
+    base.registros=arr.filter(
+      p=>nombreTecnicoPunto(p)===datasetLabel && horaPuntoColombia(p)===hora
+    );
+    return base;
+  }
+
+  if(id==='chDistanciaDia'){
+    base.titulo='Distancia de red construida por día';
+    base.subtitulo=fmtFechaCorta(fecha);
+    base.valor=`${numeroFmt(Number(valor)||0,2)} km`;
+    base.registros=arr.filter(p=>fechaPunto(p)===fecha);
+    base.aporteLabel='Registro del día';
+    return base;
+  }
+
+  if(id==='chAcumulado'){
+    base.titulo='Avance acumulado del levantamiento';
+    base.subtitulo=`Acumulado hasta ${fmtFechaCorta(fecha)}`;
+    base.registros=arr.filter(p=>{
+      const f=fechaPunto(p);
+      return f && f<=fecha;
+    });
+    return base;
+  }
+
+  return base;
+}
+
+
+function abrirDetalleKPIDashboard(tipo,extra=null){
+  const arr=datosDashboardFiltrados();
+
+  const info={
+    titulo:'Detalle KPI',
+    subtitulo:'',
+    valor:'—',
+    contexto:textoProyectoDashboard(),
+    aporteLabel:'Aporte',
+    registros:[]
+  };
+
+  const numeroCampo=(p,q,db)=>{
+    const n=numeroFlexible(valorQgisODb(p,q,db));
+    return Number.isFinite(n)&&n>0?n:0;
+  };
+
+  if(tipo==='total'){
+    info.titulo='Total infraestructura';
+    info.subtitulo='Todos los elementos incluidos en el periodo';
+    info.valor=numeroFmt(arr.length,0);
+    info.registros=arr;
+  }else if(tipo==='distancia'){
+    const d=calcularDistanciaRedPorConexiones(arr);
+    info.titulo='Distancia total de red';
+    info.subtitulo='Registros con conexiones que aportan distancia';
+    info.valor=`${numeroFmt(d.km,2)} km`;
+    info.aporteLabel='Distancia aprox. (km)';
+    info.registros=arr
+      .map(p=>({p,aporte:calcularDistanciaRedPorConexiones([p]).km}))
+      .filter(x=>Number(x.aporte)>0);
+  }else if(tipo==='tecnicos'){
+    const nombres=[...new Set(arr.map(nombreTecnicoPunto).filter(Boolean))];
+    info.titulo='Técnicos activos';
+    info.subtitulo='Registros de técnicos con producción';
+    info.valor=numeroFmt(nombres.length,0);
+    info.registros=arr;
+  }else if(tipo==='dias'){
+    const dias=[...new Set(arr.map(fechaPunto).filter(Boolean))];
+    info.titulo='Días de levantamiento';
+    info.subtitulo='Registros de las jornadas con producción';
+    info.valor=numeroFmt(dias.length,0);
+    info.registros=arr;
+  }else if(tipo==='promedio_dia'){
+    const dias=[...new Set(arr.map(fechaPunto).filter(Boolean))];
+    info.titulo='Promedio por día';
+    info.subtitulo='Registros usados para calcular el promedio diario';
+    info.valor=numeroFmt(dias.length?arr.length/dias.length:0,1);
+    info.registros=arr;
+  }else if(tipo==='promedio_tecnico_dia'){
+    const dias=[...new Set(arr.map(fechaPunto).filter(Boolean))];
+    const tecs=[...new Set(arr.map(nombreTecnicoPunto).filter(Boolean))];
+    info.titulo='Promedio técnico / día';
+    info.subtitulo='Registros usados para calcular el rendimiento general';
+    info.valor=numeroFmt((dias.length&&tecs.length)?arr.length/(dias.length*tecs.length):0,1);
+    info.registros=arr;
+  }else if(tipo==='mejor_dia'){
+    const m=new Map();
+    arr.forEach(p=>{
+      const f=fechaPunto(p);
+      if(f)m.set(f,(m.get(f)||0)+1);
+    });
+    const mejor=[...m.entries()].sort((a,b)=>b[1]-a[1])[0];
+    info.titulo='Mejor día';
+    info.subtitulo=mejor?fmtFechaCorta(mejor[0]):'—';
+    info.valor=numeroFmt(mejor?.[1]||0,0);
+    info.registros=mejor?arr.filter(p=>fechaPunto(p)===mejor[0]):[];
+  }else if(tipo==='mejor_tecnico'){
+    const m=new Map();
+    arr.forEach(p=>{
+      const t=nombreTecnicoPunto(p);
+      m.set(t,(m.get(t)||0)+1);
+    });
+    const mejor=[...m.entries()].sort((a,b)=>b[1]-a[1])[0];
+    info.titulo='Mejor técnico';
+    info.subtitulo=mejor?.[0]||'—';
+    info.valor=numeroFmt(mejor?.[1]||0,0);
+    info.registros=mejor?arr.filter(p=>nombreTecnicoPunto(p)===mejor[0]):[];
+  }else if(tipo==='max_tecnico_dia'){
+    const m=new Map();
+    arr.forEach(p=>{
+      const t=nombreTecnicoPunto(p);
+      const f=fechaPunto(p);
+      if(!f)return;
+      const k=`${t}||${f}`;
+      m.set(k,(m.get(k)||0)+1);
+    });
+    const mejor=[...m.entries()].sort((a,b)=>b[1]-a[1])[0];
+    const partes=mejor?.[0]?.split('||')||[];
+    info.titulo='Máximo técnico / día';
+    info.subtitulo=partes.length===2?`${partes[0]} · ${fmtFechaCorta(partes[1])}`:'—';
+    info.valor=numeroFmt(mejor?.[1]||0,0);
+    info.registros=partes.length===2
+      ? arr.filter(p=>nombreTecnicoPunto(p)===partes[0]&&fechaPunto(p)===partes[1])
+      : [];
+  }else if(tipo==='poligonos'){
+    const pols=[...new Set(
+      arr.map(p=>String(p.poligono||valorQgisODb(p,'POLIGONO','poligono')||'').trim()).filter(Boolean)
+    )];
+    info.titulo='Polígonos con producción';
+    info.subtitulo='Elementos levantados en polígonos con actividad';
+    info.valor=numeroFmt(pols.length,0);
+    info.registros=arr;
+  }else if(tipo==='ciudades'){
+    const ciudades=[...new Set(
+      arr.map(p=>String(p.ciudad||valorQgisODb(p,'CIUDAD','ciudad')||'').trim()).filter(Boolean)
+    )];
+    info.titulo='Ciudades';
+    info.subtitulo='Registros de ciudades con levantamiento';
+    info.valor=numeroFmt(ciudades.length,0);
+    info.registros=arr;
+  }else if(tipo==='conexiones'){
+    const d=calcularDistanciaRedPorConexiones(arr);
+    info.titulo='Conexiones medidas';
+    info.subtitulo='Registros que contienen conexiones';
+    info.valor=numeroFmt(d.conexiones,0);
+    info.registros=arr.filter(p=>calcularDistanciaRedPorConexiones([p]).conexiones>0);
+  }else if(tipo==='prom_conexion'){
+    const d=calcularDistanciaRedPorConexiones(arr);
+    info.titulo='Distancia media por conexión';
+    info.subtitulo='Registros con conexiones medidas';
+    info.valor=d.conexiones?`${numeroFmt(d.metros/d.conexiones,1)} m`:'0 m';
+    info.registros=arr.filter(p=>calcularDistanciaRedPorConexiones([p]).conexiones>0);
+  }else if(tipo==='gps'){
+    const validos=arr.filter(p=>{
+      const lat=Number(p.latitude),lng=Number(p.longitude);
+      return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
+    });
+    info.titulo='Cobertura GPS';
+    info.subtitulo='Registros con coordenadas válidas';
+    info.valor=`${numeroFmt(arr.length?validos.length/arr.length*100:0,1)}%`;
+    info.registros=validos;
+  }else if(tipo==='fin_red'){
+    const regs=arr.filter(p=>verdadSi(valorQgisODb(p,'FINDERED','findered')));
+    info.titulo='Fines de red';
+    info.subtitulo='Registros con FINDERED = SI';
+    info.valor=numeroFmt(regs.length,0);
+    info.registros=regs;
+  }else if(tipo==='propietarios'){
+    const regs=arr.filter(p=>String(valorQgisODb(p,'PROPIETARI','propietari')||'').trim());
+    const props=[...new Set(regs.map(p=>String(valorQgisODb(p,'PROPIETARI','propietari')).trim()))];
+    info.titulo='Propietarios identificados';
+    info.subtitulo='Registros con propietario informado';
+    info.valor=numeroFmt(props.length,0);
+    info.registros=regs;
+  }else if(tipo==='tipo'){
+    const t=normalizarTextoDashboard(extra);
+    const regs=arr.filter(p=>normalizarTextoDashboard(p.tipo)===t);
+    info.titulo=`Infraestructura · ${extra}`;
+    info.subtitulo=`Registros tipo ${extra}`;
+    info.valor=numeroFmt(regs.length,0);
+    info.registros=regs;
+  }else if(tipo==='inventario'){
+    const mapa={
+      'NAPS':['NAPS','naps','NAPs'],
+      'CABLES':['CABLES','cables','Cables'],
+      'RESERVAS':['RESERVAS','reservas','Reservas'],
+      'EMPALMES':['EMPALMES','empalmes','Empalmes / muflas'],
+      'BAJANTES':['BAJANTES','bajantes','Bajantes'],
+      'AMPLIFI':['AMPLIFI','amplifi','Amplificadores'],
+      'FUENTES':['FUENTES','fuentes','Fuentes']
+    };
+    const conf=mapa[String(extra||'').toUpperCase()];
+    if(conf){
+      const regs=arr
+        .map(p=>({p,aporte:numeroCampo(p,conf[0],conf[1])}))
+        .filter(x=>x.aporte>0);
+      info.titulo=conf[2];
+      info.subtitulo=`Registros que aportan ${conf[2].toLowerCase()}`;
+      info.valor=numeroFmt(regs.reduce((s,x)=>s+x.aporte,0),0);
+      info.aporteLabel=conf[2];
+      info.registros=regs;
+    }
+  }
+
+  abrirDetalleGraficaDashboard(info);
+}
+
+function filaDrillDashboard(item){
+  const p=item?.p||item;
+  const aporte=item?.aporte;
+  return {
+    p,
+    aporte:(aporte===undefined||aporte===null||Number.isNaN(aporte))?'':aporte
+  };
+}
+
+function abrirDetalleGraficaDashboard(info){
+  const datos=(info?.registros||[]).map(filaDrillDashboard);
+
+  dashboardDrillRegistros=datos;
+  dashboardDrillTituloActual=info?.titulo||'Detalle de gráfica';
+  dashboardDrillValorActual=info?.valor??'—';
+  dashboardDrillContextoActual=info?.subtitulo||info?.contexto||'—';
+  dashboardDrillAporteLabel=info?.aporteLabel||'Aporte';
+
+  dashDrillTitulo.textContent=dashboardDrillTituloActual;
+  dashDrillSubtitulo.textContent=info?.subtitulo||'Registros asociados al valor seleccionado';
+  dashDrillValor.textContent=String(dashboardDrillValorActual);
+  dashDrillCantidad.textContent=numeroFmt(datos.length,0);
+  dashDrillContexto.textContent=dashboardDrillContextoActual||'—';
+  dashDrillAporteHead.textContent=dashboardDrillAporteLabel;
+
+  dashDrillTabla.innerHTML=datos.length
+    ? datos.map(({p,aporte})=>`
+      <tr>
+        <td><b>${esc(p.idcampo||p.id||'—')}</b></td>
+        <td>${esc(fmtFechaCorta(fechaPunto(p)))}</td>
+        <td>${esc(nombreTecnicoPunto(p))}</td>
+        <td>${esc(p.tipo||'—')}</td>
+        <td>${esc(p.poligono||valorQgisODb(p,'POLIGONO','poligono')||'—')}</td>
+        <td>${esc(p.consecutiv??valorQgisODb(p,'CONSECUTIV','consecutiv')??'—')}</td>
+        <td>${esc(p.ciudad||valorQgisODb(p,'CIUDAD','ciudad')||'—')}</td>
+        <td>${esc(valorQgisODb(p,'PROPIETARI','propietari')||'—')}</td>
+        <td>${aporte!==''?esc(numeroFmt(aporte,2)):'—'}</td>
+        <td><button class="btn small blue" onclick="cerrarDetalleGraficaDashboard();abrirDetallePunto('${esc(p.id)}')">Ver</button></td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="10">No se encontraron registros asociados a este valor.</td></tr>';
+
+  dashDrillModal.classList.add('open');
+}
+
+function cerrarDetalleGraficaDashboard(){
+  dashDrillModal.classList.remove('open');
+}
+
+function exportarDetalleGraficaDashboard(){
+  if(!dashboardDrillRegistros.length){
+    return alert('No hay registros para exportar.');
+  }
+
+  if(typeof XLSX==='undefined'){
+    return alert('La librería de Excel no está disponible.');
+  }
+
+  const filas=dashboardDrillRegistros.map(({p,aporte})=>({
+    IDCAMPO:p.idcampo||p.id||'',
+    Fecha:fechaPunto(p)||'',
+    Tecnico:nombreTecnicoPunto(p),
+    Tipo:p.tipo||'',
+    Poligono:p.poligono||valorQgisODb(p,'POLIGONO','poligono')||'',
+    Consecutivo:p.consecutiv??valorQgisODb(p,'CONSECUTIV','consecutiv')??'',
+    Ciudad:p.ciudad||valorQgisODb(p,'CIUDAD','ciudad')||'',
+    Barrio:p.barrio||valorQgisODb(p,'BARRIO','barrio')||'',
+    Direccion:p.direccion||'',
+    Propietario:valorQgisODb(p,'PROPIETARI','propietari')||'',
+    Latitud:p.latitude??'',
+    Longitud:p.longitude??'',
+    [dashboardDrillAporteLabel]:aporte!==''?aporte:''
+  }));
+
+  const ws=XLSX.utils.json_to_sheet(filas);
+  ws['!cols']=[
+    {wch:20},{wch:13},{wch:24},{wch:18},{wch:18},{wch:12},
+    {wch:18},{wch:20},{wch:32},{wch:22},{wch:14},{wch:14},{wch:16}
+  ];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Detalle');
+
+  const nombre=String(dashboardDrillTituloActual||'DETALLE')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Za-z0-9_-]+/g,'_')
+    .slice(0,55);
+
+  XLSX.writeFile(
+    wb,
+    `${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`
+  );
+}
+
 function crearChart(id,config){
   destruirChart(id);
   const el=document.getElementById(id);
   if(!el)return;
+
+  config.options=config.options||{};
+  const onClickOriginal=config.options.onClick;
+
+  config.options.onClick=(event,elements,chart)=>{
+    if(elements?.length){
+      const info=construirDrillDashboard(id,elements[0],chart);
+      if(info)abrirDetalleGraficaDashboard(info);
+    }
+    if(typeof onClickOriginal==='function'){
+      onClickOriginal(event,elements,chart);
+    }
+  };
+
+  config.options.onHover=(event,elements)=>{
+    if(event?.native?.target){
+      event.native.target.style.cursor=elements?.length?'pointer':'default';
+    }
+  };
+
   dashboardCharts[id]=new Chart(el.getContext('2d'),config);
 }
 function textoProyectoDashboard(){
@@ -7092,37 +9040,65 @@ function renderResumenCiudades(ciudades){
 }
 function renderDashboardAvances(){
   const arr=datosDashboardFiltrados();
-  const porDia=new Map(),porTec=new Map(),porPoligono=new Map(),porCiudad=new Map(),porTecDia=new Map(),porHora=new Map(),porTecHora=new Map();
+
+  const porDia=new Map();
+  const porTec=new Map();
+  const porPoligono=new Map();
+  const porCiudad=new Map();
+  const porTecDia=new Map();
+  const porHora=new Map();
+  const porTecHora=new Map();
+  const puntosPorDia=new Map();
+  const puntosPorTec=new Map();
+
+  const tiposBase=['POSTE','CANALIZADO','C. AMERICANO','CERCHA','CLIENTE'];
+
   for(const p of arr){
     const f=fechaPunto(p)||'Sin fecha';
-    const t=(p.tipo||'SIN TIPO').toUpperCase();
+    const t=String(p.tipo||'SIN TIPO').toUpperCase();
     const tec=nombreTecnicoPunto(p);
-    const pol=String(p.poligono||'SIN POLÍGONO').trim()||'SIN POLÍGONO';
-    const ciudad=String(p.ciudad||'Sin ciudad').trim()||'Sin ciudad';
+    const pol=String(p.poligono||valorQgisODb(p,'POLIGONO','poligono')||'SIN POLÍGONO').trim()||'SIN POLÍGONO';
+    const ciudad=String(p.ciudad||valorQgisODb(p,'CIUDAD','ciudad')||'Sin ciudad').trim()||'Sin ciudad';
 
-    if(!porDia.has(f))porDia.set(f,{fecha:f,total:0,POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
-    const d=porDia.get(f);d.total++;if(d[t]!=null)d[t]++;
+    if(!puntosPorDia.has(f))puntosPorDia.set(f,[]);
+    puntosPorDia.get(f).push(p);
 
-    if(!porTec.has(tec))porTec.set(tec,{tecnico:tec,total:0,dias:new Set(),POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0});
-    const x=porTec.get(tec);x.total++;x.dias.add(f);if(x[t]!=null)x[t]++;
+    if(!puntosPorTec.has(tec))puntosPorTec.set(tec,[]);
+    puntosPorTec.get(tec).push(p);
+
+    if(!porDia.has(f)){
+      porDia.set(f,{
+        fecha:f,total:0,POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0,CLIENTE:0,
+        tecnicos:new Set()
+      });
+    }
+    const d=porDia.get(f);
+    d.total++;
+    d.tecnicos.add(tec);
+    if(d[t]!=null)d[t]++;
+
+    if(!porTec.has(tec)){
+      porTec.set(tec,{
+        tecnico:tec,total:0,dias:new Set(),
+        POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0,CLIENTE:0
+      });
+    }
+    const x=porTec.get(tec);
+    x.total++;
+    x.dias.add(f);
+    if(x[t]!=null)x[t]++;
 
     if(!porPoligono.has(pol)){
       porPoligono.set(pol,{
-        poligono:pol,
-        total:0,
-        POSTE:0,
-        CANALIZADO:0,
-        'C. AMERICANO':0,
-        CERCHA:0,
-        CLIENTE:0
+        poligono:pol,total:0,
+        POSTE:0,CANALIZADO:0,'C. AMERICANO':0,CERCHA:0,CLIENTE:0
       });
     }
     const pp=porPoligono.get(pol);
     pp.total++;
     if(pp[t]!=null)pp[t]++;
 
-    if(!porCiudad.has(ciudad))porCiudad.set(ciudad,0);
-    porCiudad.set(ciudad,porCiudad.get(ciudad)+1);
+    porCiudad.set(ciudad,(porCiudad.get(ciudad)||0)+1);
 
     const k=`${tec}||${f}`;
     if(!porTecDia.has(k))porTecDia.set(k,{tecnico:tec,fecha:f,total:0});
@@ -7131,7 +9107,6 @@ function renderDashboardAvances(){
     const hora=horaPuntoColombia(p);
     if(Number.isFinite(hora)){
       porHora.set(hora,(porHora.get(hora)||0)+1);
-
       const kh=`${tec}||${hora}`;
       porTecHora.set(kh,(porTecHora.get(kh)||0)+1);
     }
@@ -7139,35 +9114,175 @@ function renderDashboardAvances(){
 
   const distanciaRed=calcularDistanciaRedPorConexiones(arr);
 
-  const dias=[...porDia.values()].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const dias=[...porDia.values()]
+    .filter(x=>x.fecha&&x.fecha!=='Sin fecha')
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+
   const tecnicos=[...porTec.values()].sort((a,b)=>b.total-a.total);
+
   const poligonos=[...porPoligono.values()]
     .sort((a,b)=>String(a.poligono).localeCompare(String(b.poligono),'es',{numeric:true,sensitivity:'base'}));
-  const ciudades=[...porCiudad.entries()].map(([ciudad,total])=>({ciudad,total})).sort((a,b)=>b.total-a.total);
-  const fechas=[...new Set(dias.map(d=>d.fecha))].filter(f=>f && f!=='Sin fecha').sort();
-  const total=arr.length;
-  const cuenta=tipo=>arr.filter(p=>(p.tipo||'').toUpperCase()===tipo).length;
-  const diasActivos=fechas.length;
-  const tecnicosActivos=tecnicos.length;
-  const promedioTecDia=(tecnicosActivos && diasActivos)? total/(tecnicosActivos*diasActivos):0;
-  const mejor=dias.reduce((m,d)=>!m||d.total>m.total?d:m,null);
 
+  const ciudades=[...porCiudad.entries()]
+    .map(([ciudad,total])=>({ciudad,total}))
+    .sort((a,b)=>b.total-a.total);
+
+  const fechas=dias.map(d=>d.fecha);
+  const total=arr.length;
+  const cuenta=tipo=>arr.filter(p=>String(p.tipo||'').toUpperCase()===tipo).length;
+  const diasActivos=dias.length;
+  const tecnicosActivos=tecnicos.length;
+  const promedioDia=diasActivos?total/diasActivos:0;
+  const promedioTecDia=(tecnicosActivos&&diasActivos)?total/(tecnicosActivos*diasActivos):0;
+  const mejor=dias.reduce((m,d)=>!m||d.total>m.total?d:m,null);
+  const mejorTecnico=tecnicos[0]||null;
+
+  const maxTecDia=[...porTecDia.values()]
+    .reduce((m,x)=>!m||x.total>m.total?x:m,null);
+
+  const gpsValidos=arr.filter(p=>{
+    const lat=Number(p.latitude),lng=Number(p.longitude);
+    return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
+  }).length;
+  const coberturaGPS=total?(gpsValidos/total)*100:0;
+
+  const finRed=arr.filter(p=>verdadSi(valorQgisODb(p,'FINDERED','findered'))).length;
+
+  const propietariosSet=new Set(
+    arr.map(p=>String(valorQgisODb(p,'PROPIETARI','propietari')||'').trim())
+      .filter(Boolean)
+  );
+
+  const sumarCampo=(qKey,dbKey)=>{
+    return arr.reduce((sum,p)=>{
+      const n=numeroFlexible(valorQgisODb(p,qKey,dbKey));
+      return sum+(Number.isFinite(n)&&n>0?n:0);
+    },0);
+  };
+
+  const activosRed={
+    NAPs:sumarCampo('NAPS','naps'),
+    Cables:sumarCampo('CABLES','cables'),
+    Reservas:sumarCampo('RESERVAS','reservas'),
+    Empalmes:sumarCampo('EMPALMES','empalmes'),
+    Bajantes:sumarCampo('BAJANTES','bajantes'),
+    Amplificadores:sumarCampo('AMPLIFI','amplifi'),
+    Fuentes:sumarCampo('FUENTES','fuentes')
+  };
+
+  const ductos={
+    'Ducto eléctrico':sumarCampo('DUCTO ELEC','ducto_elec'),
+    'Ducto telco':sumarCampo('DUCT TELCO','duct_telco'),
+    'Ducto libre':sumarCampo('DUCT LIBRE','duct_libre'),
+    'Ducto útil':sumarCampo('DUCT UTIL','duct_util')
+  };
+
+  const distribucionCampo=(lista,qKey,dbKey,{top=10,normalizar=null,excluirVacio=true}={})=>{
+    const m=new Map();
+
+    for(const p of lista){
+      let v=valorQgisODb(p,qKey,dbKey);
+
+      if(normalizar)v=normalizar(v,p);
+      else v=String(v??'').trim();
+
+      if(!v && excluirVacio)continue;
+      if(!v)v='Sin dato';
+
+      m.set(v,(m.get(v)||0)+1);
+    }
+
+    let items=[...m.entries()]
+      .map(([label,value])=>({label,value}))
+      .sort((a,b)=>b.value-a.value);
+
+    if(top&&items.length>top){
+      const principales=items.slice(0,top-1);
+      const otros=items.slice(top-1).reduce((s,x)=>s+x.value,0);
+      items=principales.concat([{label:'Otros',value:otros}]);
+    }
+
+    return items;
+  };
+
+  const distPropietarios=distribucionCampo(arr,'PROPIETARI','propietari',{top:8});
+  const distMaterial=distribucionCampo(
+    arr.filter(p=>String(p.tipo||'').toUpperCase()==='POSTE'),
+    'MATERIAL','material',{top:8,normalizar:v=>String(v??'').trim().toUpperCase()}
+  );
+  const distRotura=distribucionCampo(
+    arr.filter(p=>String(p.tipo||'').toUpperCase()==='POSTE'),
+    'ROTURA','rotura',{top:8,normalizar:v=>String(v??'').trim()}
+  );
+  const distTension=distribucionCampo(
+    arr.filter(p=>String(p.tipo||'').toUpperCase()==='POSTE'),
+    'TENSION','tension',{top:8,normalizar:v=>String(v??'').trim().toUpperCase()}
+  );
+  const distAltura=distribucionCampo(
+    arr.filter(p=>String(p.tipo||'').toUpperCase()==='POSTE'),
+    'ALTURA','altura',{
+      top:9,
+      normalizar:v=>{
+        const n=numeroFlexible(v);
+        return Number.isFinite(n)?`${numeroFmt(n,1)} m`:String(v??'').trim();
+      }
+    }
+  );
+  const distTipoCamara=distribucionCampo(
+    arr.filter(p=>String(p.tipo||'').toUpperCase()==='CANALIZADO'),
+    'TIPOCAMARA','tipocamara',{top:8,normalizar:v=>String(v??'').trim().toUpperCase()}
+  );
+
+  // KPIs
   dTotal.textContent=numeroFmt(total,0);
   dPostes.textContent=numeroFmt(cuenta('POSTE'),0);
   dCamaras.textContent=numeroFmt(cuenta('CANALIZADO'),0);
   dAmericano.textContent=numeroFmt(cuenta('C. AMERICANO'),0);
   dCerchas.textContent=numeroFmt(cuenta('CERCHA'),0);
-  dDistanciaKm.textContent=(distanciaRed.metros/1000).toFixed(1);
-  dPromTecnicoDia.textContent=numeroFmt(promedioTecDia,2);
+  dClientes.textContent=numeroFmt(cuenta('CLIENTE'),0);
+
+  dDistanciaKm.textContent=numeroFmt(distanciaRed.km,1);
+  dDistanciaConexiones.textContent=`${numeroFmt(distanciaRed.conexiones,0)} conexiones`;
+  dPromTecnicoDia.textContent=numeroFmt(promedioTecDia,1);
+  dPromDia.textContent=numeroFmt(promedioDia,1);
   dDiasActivos.textContent=numeroFmt(diasActivos,0);
-  dMejorDia.textContent=numeroFmt(mejor?.total||0,0);
-  dMejorDiaFecha.textContent=mejor?.fecha?fmtFechaCorta(mejor.fecha):'—';
   dTecnicos.textContent=numeroFmt(tecnicosActivos,0);
 
+  dMejorDia.textContent=numeroFmt(mejor?.total||0,0);
+  dMejorDiaFecha.textContent=mejor?.fecha?fmtFechaCorta(mejor.fecha):'—';
+
+  dMejorTecnico.textContent=mejorTecnico?.tecnico||'—';
+  dMejorTecnicoTotal.textContent=`${numeroFmt(mejorTecnico?.total||0,0)} elementos`;
+
+  dMaxTecDia.textContent=numeroFmt(maxTecDia?.total||0,0);
+  dMaxTecDiaDetalle.textContent=maxTecDia
+    ? `${maxTecDia.tecnico} · ${fmtFechaCorta(maxTecDia.fecha)}`
+    : '—';
+
+  dPoligonos.textContent=numeroFmt(poligonos.length,0);
+  dCiudades.textContent=numeroFmt(ciudades.length,0);
+  dConexiones.textContent=numeroFmt(distanciaRed.conexiones,0);
+  dPromConexion.textContent=distanciaRed.conexiones
+    ? `${numeroFmt(distanciaRed.metros/distanciaRed.conexiones,1)} m`
+    : '0 m';
+  dCoberturaGPS.textContent=`${numeroFmt(coberturaGPS,1)}%`;
+  dFinRed.textContent=numeroFmt(finRed,0);
+  dPropietarios.textContent=numeroFmt(propietariosSet.size,0);
+
+  dNaps.textContent=numeroFmt(activosRed.NAPs,0);
+  dCables.textContent=numeroFmt(activosRed.Cables,0);
+  dReservas.textContent=numeroFmt(activosRed.Reservas,0);
+  dEmpalmes.textContent=numeroFmt(activosRed.Empalmes,0);
+  dBajantes.textContent=numeroFmt(activosRed.Bajantes,0);
+  dAmplificadores.textContent=numeroFmt(activosRed.Amplificadores,0);
+  dFuentes.textContent=numeroFmt(activosRed.Fuentes,0);
+
+  // Contexto del reporte
   const proyectoTxt=textoProyectoDashboard();
   const ciudadTxt=dashCiudad.value||'Todas';
   const tecnicoTxt=dashTecnico.value||'Todos';
   const fechaGeneracion=fechaHoraColombiaMaster(new Date());
+
   avanceSubtitulo.textContent=proyectoTxt;
   dashPrintProyecto.textContent=`${proyectoTxt} · Ciudad: ${ciudadTxt} · Técnico: ${tecnicoTxt}`;
   dashPrintFecha.textContent=`Generado: ${fechaGeneracion}`;
@@ -7176,71 +9291,201 @@ function renderDashboardAvances(){
 
   renderResumenCiudades(ciudades);
 
-  const labels=dias.map(d=>fmtFechaCorta(d.fecha));
   const chartText='#334155';
+  const chartGrid='#e2e8f0';
+  const palette={
+    blue:'#2563eb',
+    cyan:'#0891b2',
+    teal:'#0d9488',
+    emerald:'#059669',
+    violet:'#7c3aed',
+    amber:'#d97706',
+    orange:'#ea580c',
+    rose:'#e11d48',
+    lime:'#65a30d',
+    slate:'#64748b',
+    indigo:'#4f46e5'
+  };
+  const paletteList=[
+    palette.blue,palette.cyan,palette.emerald,palette.violet,palette.amber,
+    palette.rose,palette.lime,palette.orange,palette.indigo,palette.slate
+  ];
 
+  const baseScales={
+    x:{ticks:{color:'#64748b'},grid:{color:'rgba(226,232,240,.72)'}},
+    y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:'rgba(226,232,240,.72)'}}
+  };
+
+  const datalabelTop={
+    display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+    color:'#334155',
+    anchor:'end',
+    align:'top',
+    offset:2,
+    font:{size:9,weight:'800'},
+    formatter:v=>v||''
+  };
+
+  // 1. Evolución diaria
   crearChart('chTotalDia',{
     type:'line',
-    data:{labels,datasets:[{label:'Infraestructura',data:dias.map(d=>d.total),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.16)',fill:true,tension:.25,pointRadius:4,pointHoverRadius:5}]},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{display:false},datalabels:{display:true,color:'#60a5fa',anchor:'end',align:'top',formatter:(v)=>v||''}}}
+    data:{
+      labels:dias.map(d=>fmtFechaCorta(d.fecha)),
+      datasets:[{
+        label:'Infraestructura',
+        data:dias.map(d=>d.total),
+        borderColor:palette.blue,
+        backgroundColor:'rgba(37,99,235,.10)',
+        fill:true,
+        tension:.28,
+        pointRadius:4,
+        pointHoverRadius:6,
+        pointBackgroundColor:'#fff',
+        pointBorderColor:palette.blue,
+        pointBorderWidth:2
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20,right:8}},
+      scales:baseScales,
+      plugins:{
+        legend:{display:false},
+        datalabels:datalabelTop,
+        tooltip:{displayColors:false}
+      }
+    }
   });
 
+  // 2. Composición
+  const composicion=[
+    {label:'Postes',value:cuenta('POSTE'),color:palette.blue},
+    {label:'Canalizados',value:cuenta('CANALIZADO'),color:palette.amber},
+    {label:'C. Americano',value:cuenta('C. AMERICANO'),color:palette.violet},
+    {label:'Cerchas',value:cuenta('CERCHA'),color:palette.lime},
+    {label:'Clientes',value:cuenta('CLIENTE'),color:palette.cyan}
+  ].filter(x=>x.value>0);
+
+  crearChart('chTipoComposicion',{
+    type:'doughnut',
+    data:{
+      labels:composicion.map(x=>x.label),
+      datasets:[{
+        data:composicion.map(x=>x.value),
+        backgroundColor:composicion.map(x=>x.color),
+        borderColor:'#fff',
+        borderWidth:3,
+        hoverOffset:7
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      cutout:'64%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:chartText,boxWidth:11,usePointStyle:true}},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#fff',
+          font:{size:9,weight:'900'},
+          formatter:v=>Number(v)>0?numeroFmt(v,0):''
+        }
+      }
+    }
+  });
+
+  // 3. Producción diaria por tipo
   crearChart('chDiario',{
     type:'bar',
-    data:{labels,datasets:[
-      {label:'Postes',data:dias.map(d=>d.POSTE),backgroundColor:'#3b82f6'},
-      {label:'Cámaras',data:dias.map(d=>d.CANALIZADO),backgroundColor:'#f59e0b'},
-      {label:'C. Americano',data:dias.map(d=>d['C. AMERICANO']),backgroundColor:'#a855f7'},
-      {label:'Cerchas',data:dias.map(d=>d.CERCHA),backgroundColor:'#84cc16'}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,ticks:{color:'#64748b'}},y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{labels:{color:chartText}},datalabels:{display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,color:'#fff',anchor:'center',align:'center',formatter:(v)=>v||''}}}
+    data:{
+      labels:dias.map(d=>fmtFechaCorta(d.fecha)),
+      datasets:[
+        {label:'Postes',data:dias.map(d=>d.POSTE),backgroundColor:palette.blue},
+        {label:'Canalizados',data:dias.map(d=>d.CANALIZADO),backgroundColor:palette.amber},
+        {label:'C. Americano',data:dias.map(d=>d['C. AMERICANO']),backgroundColor:palette.violet},
+        {label:'Cerchas',data:dias.map(d=>d.CERCHA),backgroundColor:palette.lime},
+        {label:'Clientes',data:dias.map(d=>d.CLIENTE),backgroundColor:palette.cyan}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{stacked:true,ticks:{color:'#64748b'},grid:{display:false}},
+        y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
+      },
+      plugins:{
+        legend:{position:'top',align:'start',labels:{color:chartText,boxWidth:12,usePointStyle:true}},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#fff',
+          font:{size:8,weight:'900'},
+          formatter:v=>v||''
+        }
+      }
+    }
   });
 
+  // 4. Elementos de red
+  crearChart('chActivosRed',{
+    type:'bar',
+    data:{
+      labels:Object.keys(activosRed),
+      datasets:[{
+        label:'Cantidad',
+        data:Object.values(activosRed),
+        backgroundColor:[
+          palette.cyan,palette.blue,palette.violet,palette.amber,
+          palette.emerald,palette.rose,palette.orange
+        ],
+        borderRadius:6
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}},
+        y:{ticks:{color:'#475569'},grid:{display:false}}
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#334155',anchor:'end',align:'right',formatter:v=>numeroFmt(v,0),
+          font:{size:9,weight:'900'}
+        }
+      }
+    }
+  });
+
+  // 5. Polígonos
   crearChart('chPoligonos',{
     type:'bar',
     data:{
       labels:poligonos.map(p=>p.poligono),
       datasets:[
-        {label:'Postes',data:poligonos.map(p=>p.POSTE),backgroundColor:'#3b82f6',stack:'infra'},
-        {label:'Canalizados / Cámaras',data:poligonos.map(p=>p.CANALIZADO),backgroundColor:'#f59e0b',stack:'infra'},
-        {label:'C. Americanos',data:poligonos.map(p=>p['C. AMERICANO']),backgroundColor:'#a855f7',stack:'infra'},
-        {label:'Cerchas',data:poligonos.map(p=>p.CERCHA),backgroundColor:'#84cc16',stack:'infra'},
-        {label:'Clientes',data:poligonos.map(p=>p.CLIENTE),backgroundColor:'#06b6d4',stack:'infra'}
+        {label:'Postes',data:poligonos.map(p=>p.POSTE),backgroundColor:palette.blue,stack:'infra'},
+        {label:'Canalizados',data:poligonos.map(p=>p.CANALIZADO),backgroundColor:palette.amber,stack:'infra'},
+        {label:'C. Americano',data:poligonos.map(p=>p['C. AMERICANO']),backgroundColor:palette.violet,stack:'infra'},
+        {label:'Cerchas',data:poligonos.map(p=>p.CERCHA),backgroundColor:palette.lime,stack:'infra'},
+        {label:'Clientes',data:poligonos.map(p=>p.CLIENTE),backgroundColor:palette.cyan,stack:'infra'}
       ]
     },
     options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{padding:{top:18}},
+      responsive:true,maintainAspectRatio:false,
       scales:{
-        x:{
-          stacked:true,
-          ticks:{color:'#64748b',maxRotation:45,minRotation:0}
-        },
-        y:{
-          stacked:true,
-          beginAtZero:true,
-          ticks:{precision:0,color:'#64748b'}
-        }
+        x:{stacked:true,ticks:{color:'#64748b',maxRotation:40,minRotation:0},grid:{display:false}},
+        y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
       },
       plugins:{
-        legend:{
-          display:true,
-          position:'top',
-          align:'start',
-          labels:{color:chartText,boxWidth:16}
-        },
+        legend:{position:'top',align:'start',labels:{color:chartText,boxWidth:12,usePointStyle:true}},
         datalabels:{
           display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
-          color:'#ffffff',
-          anchor:'center',
-          align:'center',
-          font:{size:9,weight:'bold'},
-          formatter:(v)=>v||''
+          color:'#fff',font:{size:8,weight:'900'},formatter:v=>v||''
         },
         tooltip:{
           callbacks:{
-            footer:(items)=>{
+            footer:items=>{
               if(!items?.length)return '';
               const i=items[0].dataIndex;
               return `Total polígono: ${poligonos[i]?.total||0}`;
@@ -7251,22 +9496,141 @@ function renderDashboardAvances(){
     }
   });
 
+  const chartDistribucion=(id,items,{tipo='bar',horizontal=true,colores=paletteList}={})=>{
+    crearChart(id,{
+      type:tipo,
+      data:{
+        labels:items.map(x=>x.label),
+        datasets:[{
+          label:'Cantidad',
+          data:items.map(x=>x.value),
+          backgroundColor:items.map((_,i)=>colores[i%colores.length]),
+          borderColor:tipo==='doughnut'?'#fff':undefined,
+          borderWidth:tipo==='doughnut'?2:0,
+          borderRadius:tipo==='bar'?5:0
+        }]
+      },
+      options:{
+        indexAxis:tipo==='bar'&&horizontal?'y':'x',
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:tipo==='doughnut'?'58%':undefined,
+        scales:tipo==='doughnut'?{}:{
+          x:horizontal
+            ? {beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
+            : {ticks:{color:'#64748b'},grid:{display:false}},
+          y:horizontal
+            ? {ticks:{color:'#475569'},grid:{display:false}}
+            : {beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
+        },
+        plugins:{
+          legend:{
+            display:tipo==='doughnut',
+            position:'bottom',
+            labels:{color:chartText,boxWidth:10,usePointStyle:true}
+          },
+          datalabels:{
+            display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+            color:tipo==='doughnut'?'#fff':'#334155',
+            anchor:tipo==='bar'?'end':'center',
+            align:tipo==='bar'?(horizontal?'right':'top'):'center',
+            formatter:v=>v||'',
+            font:{size:8,weight:'900'}
+          }
+        }
+      }
+    });
+  };
+
+  chartDistribucion('chTension',distTension,{tipo:'doughnut'});
+  chartDistribucion('chPropietarios',distPropietarios,{horizontal:true});
+  chartDistribucion('chMaterial',distMaterial,{horizontal:true});
+  chartDistribucion('chRotura',distRotura,{tipo:'doughnut'});
+  chartDistribucion('chAltura',distAltura,{horizontal:false});
+  chartDistribucion('chTipoCamara',distTipoCamara,{tipo:'doughnut'});
+
+  // 6. Producción por técnico
   crearChart('chTecnicos',{
     type:'bar',
-    data:{labels:tecnicos.map(t=>t.tecnico),datasets:[{label:'CONSECUTIV',data:tecnicos.map(t=>t.total),backgroundColor:'#4a82e2'}]},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{position:'top',align:'start',labels:{color:chartText,boxWidth:18}},datalabels:{display:true,color:'#0f172a',anchor:'end',align:'start',offset:-2,formatter:(v)=>v||''}}}
+    data:{
+      labels:tecnicos.map(t=>t.tecnico),
+      datasets:[{
+        label:'Elementos',
+        data:tecnicos.map(t=>t.total),
+        backgroundColor:tecnicos.map((_,i)=>paletteList[i%paletteList.length]),
+        borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:18}},
+      scales:{
+        x:{ticks:{color:'#64748b',maxRotation:35,minRotation:0},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:datalabelTop
+      }
+    }
   });
 
-  const tecColors=['#3b82f6','#f59e0b','#a855f7','#84cc16','#ef4444','#06b6d4','#f97316','#14b8a6'];
+  const tecColors=['#2563eb','#d97706','#7c3aed','#65a30d','#e11d48','#0891b2','#ea580c','#0d9488'];
+
   crearChart('chTecnicoDia',{
     type:'bar',
-    data:{labels:fechas.map(fmtFechaCorta),datasets:tecnicos.map((t,i)=>({label:t.tecnico,data:fechas.map(f=>porTecDia.get(`${t.tecnico}||${f}`)?.total||0),backgroundColor:tecColors[i%tecColors.length]}))},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},scales:{x:{ticks:{color:'#64748b'}},y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'}}},plugins:{legend:{position:'top',align:'start',labels:{color:chartText}},datalabels:{display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,color:(ctx)=>ctx?.dataset?.backgroundColor||'#334155',anchor:'end',align:'top',formatter:(v)=>v||''}}}
+    data:{
+      labels:fechas.map(fmtFechaCorta),
+      datasets:tecnicos.map((t,i)=>({
+        label:t.tecnico,
+        data:fechas.map(f=>porTecDia.get(`${t.tecnico}||${f}`)?.total||0),
+        backgroundColor:tecColors[i%tecColors.length]
+      }))
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{stacked:true,ticks:{color:'#64748b'},grid:{display:false}},
+        y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
+      },
+      plugins:{
+        legend:{position:'top',align:'start',labels:{color:chartText,boxWidth:11,usePointStyle:true}},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#fff',font:{size:8,weight:'900'},formatter:v=>v||''
+        }
+      }
+    }
   });
 
-  // ===== Actividad horaria de los técnicos =====
-  // Se muestran las 24 horas. Los registros se convierten a hora Colombia
-  // (America/Bogota) antes de agrupar para evitar desfases por UTC.
+  // 7. Ductos
+  const ductItems=Object.entries(ductos).map(([label,value])=>({label,value}));
+
+  crearChart('chDuctos',{
+    type:'bar',
+    data:{
+      labels:ductItems.map(x=>x.label),
+      datasets:[{
+        data:ductItems.map(x=>x.value),
+        backgroundColor:[palette.indigo,palette.blue,palette.emerald,palette.cyan],
+        borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{ticks:{color:'#64748b',maxRotation:30},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{precision:0,color:'#64748b'},grid:{color:chartGrid}}
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:datalabelTop
+      }
+    }
+  });
+
+  // 8. Actividad horaria
   const horasDia=Array.from({length:24},(_,h)=>h);
   const labelsHora=horasDia.map(h=>etiquetaHoraDashboard(h));
   const tecsActividad=tecnicos.filter(t=>
@@ -7285,8 +9649,7 @@ function renderDashboardAvances(){
       }))
     },
     options:{
-      responsive:true,
-      maintainAspectRatio:false,
+      responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       scales:{
         x:{
@@ -7295,45 +9658,32 @@ function renderDashboardAvances(){
             color:'#64748b',
             autoSkip:false,
             maxRotation:0,
-            callback:function(value,index){
-              return index%2===0 ? labelsHora[index] : '';
-            }
+            callback:(value,index)=>index%2===0?labelsHora[index]:''
           },
-          title:{display:true,text:'Hora del día · Colombia',color:'#475569'}
+          grid:{display:false},
+          title:{display:true,text:'Hora del día · Colombia',color:'#64748b'}
         },
         y:{
-          stacked:true,
-          beginAtZero:true,
+          stacked:true,beginAtZero:true,
           ticks:{precision:0,color:'#64748b'},
-          title:{display:true,text:'Elementos levantados',color:'#475569'}
+          grid:{color:chartGrid}
         }
       },
       plugins:{
-        legend:{
-          position:'top',
-          align:'start',
-          labels:{color:chartText,boxWidth:14}
-        },
+        legend:{position:'top',align:'start',labels:{color:chartText,boxWidth:10,usePointStyle:true}},
         tooltip:{
           callbacks:{
-            footer:(items)=>{
+            footer:items=>{
               const idx=items?.[0]?.dataIndex;
-              if(idx===undefined)return '';
-              const totalHora=porHora.get(idx)||0;
-              return `Total de la hora: ${totalHora}`;
+              return idx===undefined?'':`Total de la hora: ${porHora.get(idx)||0}`;
             }
           }
         },
         datalabels:{
           display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
-          formatter:(v)=>Number(v)>0?Number(v):'',
-          anchor:'center',
-          align:'center',
-          clamp:true,
-          color:'#ffffff',
-          textStrokeColor:'#0f172a',
-          textStrokeWidth:3,
-          font:{weight:'900',size:9}
+          formatter:v=>Number(v)>0?Number(v):'',
+          color:'#fff',
+          font:{weight:'900',size:8}
         }
       }
     }
@@ -7348,22 +9698,15 @@ function renderDashboardAvances(){
     }else{
       const primeraHora=Math.min(...horasConActividad);
       const ultimaHora=Math.max(...horasConActividad);
-
       const horaPico=horasConActividad.reduce(
-        (mejor,h)=>(porHora.get(h)||0)>(porHora.get(mejor)||0)?h:mejor,
+        (mejorH,h)=>(porHora.get(h)||0)>(porHora.get(mejorH)||0)?h:mejorH,
         horasConActividad[0]
       );
 
-      // "Menor actividad" se calcula dentro de la jornada observada
-      // (primera a última hora con producción), incluyendo huecos de 0.
       const horasJornada=horasDia.filter(h=>h>=primeraHora&&h<=ultimaHora);
       const minimoValor=Math.min(...horasJornada.map(h=>porHora.get(h)||0));
       const horasMinimas=horasJornada.filter(h=>(porHora.get(h)||0)===minimoValor);
-
-      const textoMinimas=horasMinimas
-        .slice(0,4)
-        .map(etiquetaHoraDashboard)
-        .join(', ')+(horasMinimas.length>4?'…':'');
+      const textoMinimas=horasMinimas.slice(0,4).map(etiquetaHoraDashboard).join(', ')+(horasMinimas.length>4?'…':'');
 
       resumenHora.innerHTML=`
         <div class="hourInsight">
@@ -7372,42 +9715,178 @@ function renderDashboardAvances(){
           <small>Primera y última hora con registros</small>
         </div>
         <div class="hourInsight">
-          <span>Mayor actividad</span>
+          <span>Hora pico</span>
           <b>${etiquetaHoraDashboard(horaPico)} · ${porHora.get(horaPico)||0} elementos</b>
-          <small>Hora con más levantamientos</small>
+          <small>Mayor intensidad de producción</small>
         </div>
         <div class="hourInsight">
-          <span>Menor actividad en la jornada</span>
+          <span>Menor actividad</span>
           <b>${textoMinimas} · ${minimoValor} elementos</b>
-          <small>Hora(s) con menos levantamientos</small>
+          <small>Dentro de la jornada observada</small>
         </div>`;
     }
   }
 
+  // 9. Distancia diaria
+  const distDia=dias.map(d=>{
+    const pts=puntosPorDia.get(d.fecha)||[];
+    return calcularDistanciaRedPorConexiones(pts).km;
+  });
+
+  crearChart('chDistanciaDia',{
+    type:'bar',
+    data:{
+      labels:dias.map(d=>fmtFechaCorta(d.fecha)),
+      datasets:[{
+        label:'Km',
+        data:distDia,
+        backgroundColor:palette.amber,
+        borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{ticks:{color:'#64748b'},grid:{display:false}},
+        y:{
+          beginAtZero:true,
+          ticks:{color:'#64748b',callback:v=>`${v} km`},
+          grid:{color:chartGrid}
+        }
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:'#92400e',anchor:'end',align:'top',
+          formatter:v=>`${numeroFmt(v,1)} km`,
+          font:{size:8,weight:'900'}
+        }
+      }
+    }
+  });
+
+  // 10. Acumulado
+  let acumulado=0;
+  const acumulados=dias.map(d=>(acumulado+=d.total));
+
+  crearChart('chAcumulado',{
+    type:'line',
+    data:{
+      labels:dias.map(d=>fmtFechaCorta(d.fecha)),
+      datasets:[{
+        label:'Acumulado',
+        data:acumulados,
+        borderColor:palette.blue,
+        backgroundColor:'rgba(37,99,235,.12)',
+        fill:true,
+        tension:.2,
+        pointRadius:3,
+        pointBackgroundColor:palette.blue
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:baseScales,
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          display:(ctx)=>Number(ctx.dataset.data[ctx.dataIndex]||0)>0,
+          color:palette.blue,anchor:'end',align:'top',
+          formatter:v=>numeroFmt(v,0),
+          font:{size:9,weight:'900'}
+        }
+      }
+    }
+  });
+
+  // 11. Mapa
   asegurarDashboardMap();
   if(dashboardMapLayer)dashboardMapLayer.clearLayers();
+
   const bounds=[];
+
   arr.forEach(p=>{
     const lat=Number(p.latitude),lng=Number(p.longitude);
     if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
-    const tipo=(p.tipo||'').toUpperCase();
-    const color=tipo==='POSTE'?'#3b82f6':tipo==='CANALIZADO'?'#f59e0b':tipo==='CERCHA'?'#84cc16':'#a855f7';
-    const mk=L.circleMarker([lat,lng],{radius:5,color:'#fff',weight:1,fillColor:color,fillOpacity:.95}).bindPopup(`<b>${esc(p.idcampo||p.consecutiv||p.id||'Elemento')}</b><br>${esc(p.tipo||'')}<br>${esc(p.poligono||'')}<br>${esc(nombreTecnicoPunto(p))}`);
+
+    const tipo=String(p.tipo||'').toUpperCase();
+
+    const color=
+      tipo==='POSTE'?palette.blue:
+      tipo==='CANALIZADO'?palette.amber:
+      tipo==='CERCHA'?palette.lime:
+      tipo==='CLIENTE'?palette.cyan:
+      palette.violet;
+
+    const mk=L.circleMarker([lat,lng],{
+      radius:5,
+      color:'#fff',
+      weight:1,
+      fillColor:color,
+      fillOpacity:.95
+    }).bindPopup(
+      `<b>${esc(p.idcampo||p.consecutiv||p.id||'Elemento')}</b><br>`+
+      `${esc(p.tipo||'')}<br>${esc(p.poligono||'')}<br>${esc(nombreTecnicoPunto(p))}`
+    );
+
     dashboardMapLayer.addLayer(mk);
     bounds.push([lat,lng]);
   });
+
   if(bounds.length)dashboardMap.fitBounds(bounds,{padding:[20,20]});
   else dashboardMap.setView([4.65,-74.1],11);
+
   setTimeout(()=>dashboardMap.invalidateSize(),120);
 
-  dashTablaTecnicos.innerHTML=tecnicos.length?tecnicos.map(t=>`<tr>
-    <td><b>${esc(t.tecnico)}</b></td><td>${t.total}</td><td>${t.dias.size}</td><td>${numeroFmt(t.total/Math.max(t.dias.size,1),1)}</td>
-    <td>${t.POSTE}</td><td>${t.CANALIZADO}</td><td>${t.CERCHA}</td><td>${t['C. AMERICANO']}</td>
-  </tr>`).join(''):'<tr><td colspan="8">Sin información para los filtros seleccionados.</td></tr>';
+  // 12. Tablas
+  const distanciaPorTec=new Map();
+  for(const t of tecnicos){
+    distanciaPorTec.set(
+      t.tecnico,
+      calcularDistanciaRedPorConexiones(puntosPorTec.get(t.tecnico)||[]).km
+    );
+  }
 
-  dashTablaDias.innerHTML=dias.length?dias.slice().reverse().map(d=>`<tr>
-    <td>${esc(fmtFechaCorta(d.fecha))}</td><td><b>${d.total}</b></td><td>${d.POSTE}</td><td>${d.CANALIZADO}</td><td>${d.CERCHA}</td><td>${d['C. AMERICANO']}</td>
-  </tr>`).join(''):'<tr><td colspan="6">Sin información para los filtros seleccionados.</td></tr>';
+  dashTablaTecnicos.innerHTML=tecnicos.length
+    ? tecnicos.map(t=>{
+        const maxDia=Math.max(
+          0,
+          ...fechas.map(f=>porTecDia.get(`${t.tecnico}||${f}`)?.total||0)
+        );
+
+        return `<tr>
+          <td><b>${esc(t.tecnico)}</b></td>
+          <td>${numeroFmt(t.total,0)}</td>
+          <td>${total?numeroFmt(t.total/total*100,1):0}%</td>
+          <td>${t.dias.size}</td>
+          <td>${numeroFmt(t.total/Math.max(t.dias.size,1),1)}</td>
+          <td>${numeroFmt(maxDia,0)}</td>
+          <td>${numeroFmt(distanciaPorTec.get(t.tecnico)||0,1)}</td>
+          <td>${t.POSTE}</td>
+          <td>${t.CANALIZADO}</td>
+          <td>${t.CLIENTE}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="10">Sin información para los filtros seleccionados.</td></tr>';
+
+  dashTablaDias.innerHTML=dias.length
+    ? dias.slice().reverse().map((d,idx)=>{
+        const km=calcularDistanciaRedPorConexiones(puntosPorDia.get(d.fecha)||[]).km;
+
+        return `<tr>
+          <td>${esc(fmtFechaCorta(d.fecha))}</td>
+          <td><b>${d.total}</b></td>
+          <td>${d.tecnicos.size}</td>
+          <td>${numeroFmt(km,1)}</td>
+          <td>${d.POSTE}</td>
+          <td>${d.CANALIZADO}</td>
+          <td>${d.CERCHA}</td>
+          <td>${d['C. AMERICANO']}</td>
+          <td>${d.CLIENTE}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="9">Sin información para los filtros seleccionados.</td></tr>';
 }
 
 const COLUMNAS_REPORTE_EJEMPLO = ["wkt_geom", "fid", "FOTO", "CONSECUTIV", "PROPIETARI", "CX1", "CX2", "CX3", "CX4", "PACVI", "TIPO POSTE", "ROTURA", "MATERIAL", "ALTURA", "ESTADO", "POLIGONO", "COSTADO", "DIRECCION", "TENSION", "CABLES", "RESERVAS", "EMPALMES", "OBSERVACIO", "FECHA", "IDCAMPO", "ID UNICO", "FOTO2", "EXISTENCIA", "TIPOCAMARA", "HORA", "TIPO", "ELECTRICOS", "CONF DUCTO", "DUCTO ELEC", "DUCT TELCO", "DUCT LIBRE", "DUCT UTIL", "SUBIDA A P", "ELEM RED", "CANT RESER", "ID", "LATCX1", "LATCX2", "LATCX3", "LATCX4", "LONGTCX1", "LONGTCX2", "LONGTCX3", "LONGTCX4", "CX1POL", "CX2POL", "CX3POL", "CX4POL", "CX1CONSE", "CX2CONSE", "CX3CONSE", "CX4CONSE", "CXOTROPOL", "CX1LATPOL", "CX2LATPOL", "CX3LATPOL", "CX4LATPOL", "CX1LONTPOL", "CX2LONTPOL", "CX3LONTPOL", "CX4LONTPOL", "DISTANCIA", "IMGDUCTOS", "FINDERED", "LATITUDE", "LONGITUDE", "MAPPING", "NAPS", "BAJANTES", "FUENTES", "PROEMPALME", "PRONAP", "RIENDA", "AMPLIFI", "TELCX1", "TELCX2", "TELCX3", "TELCX4", "FOTO3", "FOTO4", "FOTO5CAM", "FOTO6CAM", "FOTO7CAM", "FOTO8CAM", "FOTO9CAM", "BARRIO", "CIUDAD", "TECNICO", "PROYECTO", "DISTODO1", "DISTODO2", "DISTODO3", "DISTODO4", "DISTODO5", "DISTODO6", "DISTODO7", "DISTODO8", "IDGLOBAL", "FOTO10CAM", "FOTO11"];
@@ -8515,35 +10994,102 @@ window.addEventListener('load',async()=>{
   await verificar();
 });
 
-function toggleEntregables(ev){
-  if(ev){ev.preventDefault();ev.stopPropagation();}
+function posicionarEntregables(){
   const root=document.getElementById('deliverablesTop');
-  if(!root)return;
+  const btn=root?.querySelector('.deliverablesBtn');
+  const menu=document.getElementById('entregablesMenu');
 
-  root.classList.toggle('open');
+  if(!root||!btn||!menu)return;
+
+  const r=btn.getBoundingClientRect();
+  const margen=8;
+  const ancho=Math.min(330,Math.max(280,window.innerWidth-24));
+
+  let left=r.right-ancho;
+  if(left<12)left=12;
+  if(left+ancho>window.innerWidth-12){
+    left=Math.max(12,window.innerWidth-ancho-12);
+  }
+
+  menu.style.position='fixed';
+  menu.style.top=`${Math.round(r.bottom+margen)}px`;
+  menu.style.left=`${Math.round(left)}px`;
+  menu.style.right='auto';
+  menu.style.width=`${Math.round(ancho)}px`;
+}
+
+function toggleEntregables(ev){
+  if(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+
+  const root=document.getElementById('deliverablesTop');
+  const menu=document.getElementById('entregablesMenu');
+  if(!root||!menu)return;
+
+  const abrir=!root.classList.contains('open');
+
+  root.classList.toggle('open',abrir);
+  menu.classList.toggle('open',abrir);
 
   const btn=root.querySelector('.deliverablesBtn');
   if(btn){
-    btn.classList.toggle('headerActionActive',root.classList.contains('open'));
+    btn.classList.toggle('headerActionActive',abrir);
+    btn.setAttribute('aria-expanded',abrir?'true':'false');
   }
 
-  // El menú es fixed para que nunca vuelva a quedar recortado
-  // por el contenedor horizontal de acciones del header.
-  const menu=document.getElementById('entregablesMenu');
-  if(root.classList.contains('open')&&menu){
+  if(abrir){
+    posicionarEntregables();
     menu.scrollTop=0;
   }
 }
+
 function cerrarEntregables(){
-  document.getElementById('deliverablesTop')?.classList.remove('open');
+  const root=document.getElementById('deliverablesTop');
+  const menu=document.getElementById('entregablesMenu');
+
+  root?.classList.remove('open');
+  menu?.classList.remove('open');
+
+  const btn=root?.querySelector('.deliverablesBtn');
+  if(btn){
+    btn.classList.remove('headerActionActive');
+    btn.setAttribute('aria-expanded','false');
+  }
 }
+
 document.addEventListener('click',function(e){
-  const d=document.getElementById('deliverablesTop');
-  if(d && !d.contains(e.target)) d.classList.remove('open');
+  const root=document.getElementById('deliverablesTop');
+  const menu=document.getElementById('entregablesMenu');
+
+  if(!root)return;
+
+  const clickDentroRoot=root.contains(e.target);
+  const clickDentroMenu=menu?.contains(e.target);
+
+  if(!clickDentroRoot && !clickDentroMenu){
+    cerrarEntregables();
+  }
 });
+
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape') cerrarEntregables();
+  if(e.key==='Escape')cerrarEntregables();
 });
+
+window.addEventListener('resize',function(){
+  const root=document.getElementById('deliverablesTop');
+  if(root?.classList.contains('open')){
+    posicionarEntregables();
+  }
+},{passive:true});
+
+window.addEventListener('scroll',function(){
+  const root=document.getElementById('deliverablesTop');
+  if(root?.classList.contains('open')){
+    posicionarEntregables();
+  }
+},{passive:true});
 
 // ============================================================
 // V57 · GESTIÓN SUPERIOR ORGANIZADA
@@ -8937,8 +11483,111 @@ async function eliminarPoligonosDesdeDistribucion(){
 
 
 </script>
+
+<script id="pdrMasterParticlesV68Safe">
+(() => {
+  const stage=document.getElementById('masterFxStage');
+  const canvas=document.getElementById('masterNetworkCanvas');
+  if(!stage || !canvas)return;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)return;
+
+  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  let DPR=Math.min(window.devicePixelRatio||1,2);
+  let W=0,H=0,particles=[];
+
+  function resizeMasterNetwork(){
+    const rect=stage.getBoundingClientRect();
+    W=Math.round(rect.width);
+    H=Math.round(rect.height);
+    canvas.width=Math.round(W*DPR);
+    canvas.height=Math.round(H*DPR);
+    canvas.style.width=W+'px';
+    canvas.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    const desktop=window.innerWidth>=900;
+    const count=desktop?82:50;
+    particles=Array.from({length:count},(_,i)=>({
+      x:Math.random()*W,
+      y:Math.random()*H,
+      vx:(Math.random()-.5)*(desktop?.24:.30),
+      vy:(Math.random()-.5)*(desktop?.21:.27),
+      r:(desktop?1.05:1.2)+Math.random()*(desktop?1.55:1.85),
+      seed:Math.random()*1000+i*11,
+      glow:.45+Math.random()*.55
+    }));
+  }
+
+  function drawMasterNetwork(t,move=true){
+    ctx.clearRect(0,0,W,H);
+    const desktop=window.innerWidth>=900;
+    const maxDist=desktop?150:128;
+
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      if(move){
+        p.x+=p.vx+Math.sin(t*.00035+p.seed)*.045;
+        p.y+=p.vy+Math.cos(t*.00028+p.seed)*.040;
+        if(p.x<-12)p.x=W+12;
+        if(p.x>W+12)p.x=-12;
+        if(p.y<-12)p.y=H+12;
+        if(p.y>H+12)p.y=-12;
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r*2.2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(90,240,255,${.025+p.glow*.052})`;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(118,248,255,${.66+p.glow*.17})`;
+      ctx.shadowBlur=desktop?9:11;
+      ctx.shadowColor='rgba(84,235,255,.31)';
+      ctx.fill();
+
+      for(let j=i+1;j<particles.length;j++){
+        const q=particles[j];
+        const dx=p.x-q.x,dy=p.y-q.y;
+        const d=Math.hypot(dx,dy);
+        if(d<maxDist){
+          const a=(1-d/maxDist)*(desktop?.15:.21);
+          ctx.beginPath();
+          ctx.moveTo(p.x,p.y);
+          ctx.lineTo(q.x,q.y);
+          ctx.lineWidth=d<70?.9:.6;
+          ctx.strokeStyle=`rgba(86,235,255,${a})`;
+          ctx.shadowBlur=0;
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.shadowBlur=0;
+  }
+
+  function animateMasterNetwork(t){
+    drawMasterNetwork(t,true);
+    requestAnimationFrame(animateMasterNetwork);
+  }
+
+  resizeMasterNetwork();
+  if(reduceMotion)drawMasterNetwork(0,false);
+  else requestAnimationFrame(animateMasterNetwork);
+
+  window.addEventListener('resize',()=>{
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    resizeMasterNetwork();
+    if(reduceMotion)drawMasterNetwork(0,false);
+  },{passive:true});
+})();
+</script>
+
 </body>
 </html>
+
+
+
 
 
 
