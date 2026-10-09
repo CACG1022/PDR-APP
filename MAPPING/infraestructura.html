@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mapping Site Survey - Levantamiento de Infraestructura</title>
+<title>PDR-APP Mapping · Offline First</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1772,6 +1772,28 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
   .brand small{max-width:48vw;font-size:8px;}
 }
 
+
+/* ===== MODO OFFLINE-FIRST ===== */
+.offlineModeBadge{
+  display:none;
+  position:fixed;
+  left:50%;
+  top:69px;
+  transform:translateX(-50%);
+  z-index:2800;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid #f59e0b;
+  background:rgba(120,53,15,.94);
+  color:#fef3c7;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.7px;
+  box-shadow:0 7px 20px rgba(0,0,0,.30);
+  pointer-events:none;
+}
+.offlineModeBadge.open{display:block}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1785,6 +1807,7 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
   ></iframe>
 </div>
 
+<div id="offlineModeBadge" class="offlineModeBadge">📴 MODO OFFLINE</div>
 <header><div class="brand"><div class="masterLogoWrap"><img class="pdrMasterLogo"
         src="https://static.wixstatic.com/media/63e6ec_6f519a0e397d4f6fbe3f82ce81606614~mv2.png/v1/fill/w_529,h_173,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/PDR-1.png"
         alt="PDR-APP" loading="eager" referrerpolicy="no-referrer"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Base + satélite IGAC offline · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
@@ -8299,28 +8322,52 @@ async function cargarPoligonosAsignadosTecnico(){
     return 0;
   }
 
-  const {data,error}=await mappingSb
-    .from('mapping_tecnico_poligonos')
-    .select('poligono_id,mapping_poligonos(*)')
-    .eq('proyecto_id',proyectoActivo.proyecto_id)
-    .eq('tecnico_id',mappingUser.id);
+  const proyectoId=proyectoActivo.proyecto_id||proyectoActivo.id;
+  let data=null,error=null;
 
-  if(error){
-    console.warn('No se pudieron cargar polígonos asignados:',error.message);
-    aplicarOpcionesPoligonosAsignados();
-    bloquearSinPoligonos('No fue posible verificar tus polígonos asignados.');
-    return 0;
+  if(navigator.onLine){
+    try{
+      const r=await mappingSb
+        .from('mapping_tecnico_poligonos')
+        .select('poligono_id,mapping_poligonos(*)')
+        .eq('proyecto_id',proyectoId)
+        .eq('tecnico_id',mappingUser.id);
+      data=r.data;
+      error=r.error;
+    }catch(e){error=e}
   }
 
-  poligonosAsignados=(data||[])
-    .map(x=>x.mapping_poligonos)
+  if(error || !navigator.onLine){
+    const cached=leerPoligonosOfflineMapping(proyectoId);
+
+    if((!navigator.onLine || errorEsConexionMapping(error)) && cached.length){
+      poligonosAsignados=cached;
+    }else if(error){
+      console.warn('No se pudieron cargar polígonos asignados:',error?.message||error);
+      aplicarOpcionesPoligonosAsignados();
+      bloquearSinPoligonos('No fue posible verificar tus polígonos asignados.');
+      return 0;
+    }
+  }else{
+    poligonosAsignados=(data||[])
+      .map(x=>x.mapping_poligonos)
+      .filter(Boolean)
+      .filter(x=>x.activo!==false)
+      .sort((a,b)=>(Number(a.feature_index)||0)-(Number(b.feature_index)||0))
+      .map(x=>({
+        ...x,
+        codigo:normalizarCodigoPoligonoApp(x.codigo||x.nombre)
+      }));
+
+    cachePoligonosOfflineMapping(proyectoId,poligonosAsignados);
+  }
+
+  // Normalización también para los datos restaurados localmente.
+  poligonosAsignados=(poligonosAsignados||[])
     .filter(Boolean)
     .filter(x=>x.activo!==false)
     .sort((a,b)=>(Number(a.feature_index)||0)-(Number(b.feature_index)||0))
-    .map(x=>({
-      ...x,
-      codigo:normalizarCodigoPoligonoApp(x.codigo||x.nombre)
-    }));
+    .map(x=>({...x,codigo:normalizarCodigoPoligonoApp(x.codigo||x.nombre)}));
 
   poligonosAsignadosSet=new Set(
     poligonosAsignados.map(x=>normalizarCodigoPoligonoApp(x.codigo))
@@ -8329,7 +8376,9 @@ async function cargarPoligonosAsignadosTecnico(){
 
   if(!poligonosAsignados.length){
     bloquearSinPoligonos(
-      `El proyecto ${proyectoActivo.codigo||proyectoActivo.nombre||''} todavía no tiene polígonos asignados a tu usuario.`
+      navigator.onLine
+        ? `El proyecto ${proyectoActivo.codigo||proyectoActivo.nombre||''} todavía no tiene polígonos asignados a tu usuario.`
+        : 'No hay polígonos guardados para este proyecto. Conéctate una vez y abre el proyecto antes de trabajar offline.'
     );
     return 0;
   }
@@ -8341,8 +8390,12 @@ async function cargarPoligonosAsignadosTecnico(){
     }catch(e){
       console.warn('No fue posible pintar polígonos:',e);
     }
+  }else if(!navigator.onLine){
+    bloquearSinPoligonos('El archivo del polígono no está guardado en este dispositivo. Conéctate y abre el proyecto una vez.');
+    return 0;
   }
 
+  cacheAccesoOfflineMapping();
   desbloquearProyecto();
   return poligonosAsignados.length;
 }
@@ -8672,6 +8725,8 @@ async function refrescarOSMOfflineUI(){
 }
 
 async function descargarMapaBaseOSMOffline(){
+  cacheAccesoOfflineMapping();
+  if(navigator.onLine)prepararShellOfflineMapping().catch(()=>{});
   if(offlineDirectDescargaEnCurso)return;
 
   if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
@@ -9028,6 +9083,8 @@ async function refrescarResumenOfflineSimple(){
 }
 
 async function descargarSateliteIGACOffline(){
+  cacheAccesoOfflineMapping();
+  if(navigator.onLine)prepararShellOfflineMapping().catch(()=>{});
   if(offlineDirectDescargaEnCurso)return;
 
   if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
@@ -10437,6 +10494,8 @@ function setProgresoOffline(pct,texto){
 }
 
 async function prepararProyectoOfflineCompleto(){
+  cacheAccesoOfflineMapping();
+  if(navigator.onLine)await prepararShellOfflineMapping().catch(()=>false);
   if(!proyectoActivo)return alert('Selecciona primero un proyecto.');
   if(!poligonosAsignados.length)return alert('No tienes polígonos asignados en este proyecto.');
 
@@ -11029,6 +11088,222 @@ function aplicarCamposFijos(){
   sincronizarChecksPin();
 }
 
+
+// ============================================================
+// OFFLINE-FIRST · CREDENCIAL OPERATIVA LOCAL
+// ============================================================
+const MAPPING_OFFLINE_ACCESS_KEY='pdr_mapping_offline_access_v1';
+const MAPPING_OFFLINE_POLY_PREFIX='pdr_mapping_offline_polygons_v1_';
+const MAPPING_OFFLINE_SHELL_CACHE='pdr-mapping-shell-v1';
+const MAPPING_OFFLINE_SW='./mapping-offline-sw.js';
+
+function leerJSONMappingLocal(key,fallback=null){
+  try{
+    const raw=localStorage.getItem(key);
+    return raw?JSON.parse(raw):fallback;
+  }catch(_){return fallback}
+}
+
+function guardarJSONMappingLocal(key,value){
+  try{
+    localStorage.setItem(key,JSON.stringify(value));
+    return true;
+  }catch(e){
+    console.warn('No se pudo guardar caché offline:',key,e);
+    return false;
+  }
+}
+
+function limpiarCredencialOfflineMapping(){
+  try{localStorage.removeItem(MAPPING_OFFLINE_ACCESS_KEY)}catch(_){ }
+  try{
+    Object.keys(localStorage)
+      .filter(k=>k.startsWith(MAPPING_OFFLINE_POLY_PREFIX))
+      .forEach(k=>localStorage.removeItem(k));
+  }catch(_){ }
+}
+
+function cacheAccesoOfflineMapping(){
+  if(!mappingUser)return false;
+
+  const user={
+    id:mappingUser.id,
+    email:mappingUser.email||mappingProfile?.email||''
+  };
+
+  const payload={
+    user,
+    profile:mappingProfile||null,
+    assignments:Array.isArray(proyectosAsignados)?proyectosAsignados:[],
+    active_project:proyectoActivo||null,
+    last_online_validation:new Date().toISOString()
+  };
+
+  return guardarJSONMappingLocal(MAPPING_OFFLINE_ACCESS_KEY,payload);
+}
+
+function cachePoligonosOfflineMapping(proyectoId,items){
+  if(!proyectoId||!Array.isArray(items))return false;
+  return guardarJSONMappingLocal(
+    MAPPING_OFFLINE_POLY_PREFIX+String(proyectoId),
+    {proyecto_id:String(proyectoId),items,updated_at:new Date().toISOString()}
+  );
+}
+
+function leerPoligonosOfflineMapping(proyectoId){
+  const c=leerJSONMappingLocal(MAPPING_OFFLINE_POLY_PREFIX+String(proyectoId),null);
+  return Array.isArray(c?.items)?c.items:[];
+}
+
+function errorEsConexionMapping(error){
+  if(!navigator.onLine)return true;
+  const s=String(error?.message||error||'').toLowerCase();
+  return [
+    'failed to fetch','fetch failed','networkerror','network error',
+    'load failed','connection','internet','offline','err_internet_disconnected',
+    'timeout','timed out'
+  ].some(x=>s.includes(x));
+}
+
+function actualizarBadgeModoOffline(){
+  const b=document.getElementById('offlineModeBadge');
+  if(!b)return;
+  b.classList.toggle('open',!navigator.onLine);
+  b.textContent=navigator.onLine?'':'📴 MODO OFFLINE · DATOS GUARDADOS EN EL CELULAR';
+}
+
+async function registrarServiceWorkerMapping(){
+  if(!('serviceWorker' in navigator))return false;
+  if(!/^https?:$/i.test(location.protocol))return false;
+
+  try{
+    const reg=await navigator.serviceWorker.register(MAPPING_OFFLINE_SW,{scope:'./'});
+    await navigator.serviceWorker.ready;
+
+    if(reg.active){
+      reg.active.postMessage({type:'CACHE_URL',url:location.href});
+    }else if(reg.waiting){
+      reg.waiting.postMessage({type:'CACHE_URL',url:location.href});
+    }
+
+    return true;
+  }catch(e){
+    console.warn('Service Worker offline no disponible:',e);
+    return false;
+  }
+}
+
+async function cachearDocumentoActualMapping(){
+  if(!navigator.onLine || !('caches' in window) || !/^https?:$/i.test(location.protocol))return false;
+  try{
+    const cache=await caches.open(MAPPING_OFFLINE_SHELL_CACHE);
+    const req=new Request(location.href,{credentials:'same-origin'});
+    const res=await fetch(req,{cache:'reload'});
+    if(res.ok){
+      await cache.put(req,res.clone());
+      return true;
+    }
+  }catch(e){
+    console.warn('No se pudo guardar el HTML para apertura offline:',e);
+  }
+  return false;
+}
+
+async function prepararShellOfflineMapping(){
+  if(!navigator.onLine)return false;
+  await registrarServiceWorkerMapping().catch(()=>false);
+  await cachearDocumentoActualMapping().catch(()=>false);
+  return true;
+}
+
+function restaurarIdentidadOfflineMapping(){
+  const c=leerJSONMappingLocal(MAPPING_OFFLINE_ACCESS_KEY,null);
+  if(!c?.user?.id)return false;
+
+  mappingUser={...c.user};
+  mappingProfile=c.profile||{
+    id:c.user.id,
+    email:c.user.email||'',
+    nombre:c.user.email||'Técnico',
+    rol:'tecnico'
+  };
+
+  proyectosAsignados=Array.isArray(c.assignments)?c.assignments:[];
+
+  const activoGuardado=leerJSONMappingLocal('mapping_proyecto_activo_v1',null)||c.active_project||null;
+  if(activoGuardado)proyectoActivo=activoGuardado;
+
+  const ui=document.getElementById('projectUserInfo');
+  if(ui){
+    ui.innerHTML=`<b>${esc(mappingProfile.nombre||mappingUser.email||'Técnico')}</b><br>${esc(mappingUser.email||'')}`;
+  }
+
+  return true;
+}
+
+async function activarProyectoOfflineGuardado(){
+  pintarProyectosAsignados();
+
+  if(!proyectosAsignados.length){
+    bloquearSinProyecto('No existe una asignación guardada para trabajo offline. Conéctate a Internet una vez para actualizar tus proyectos.');
+    return false;
+  }
+
+  if(proyectoActivo){
+    const a=proyectosAsignados.find(x=>
+      String(x.proyecto_id)===String(proyectoActivo.proyecto_id||proyectoActivo.id)
+    );
+
+    if(a){
+      const p=a.mapping_proyectos||{};
+      proyectoActivo={
+        ...a,
+        ...p,
+        ...proyectoActivo,
+        empresa:p.mapping_empresas||proyectoActivo.empresa||null,
+        proyecto_id:a.proyecto_id,
+        asignacion_id:a.id
+      };
+
+      localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));
+      actualizarIndicadorTipoProyecto();
+      prepararCartografiaProyectoSeleccionado();
+
+      const n=await cargarPoligonosAsignadosTecnico();
+      if(!n)return false;
+
+      await cargarPuntosSupabase(false);
+      pintarRegistros();
+      ubicarEnUltimoElementoRegistrado();
+      actualizarEstadoSync();
+
+      setTimeout(async()=>{
+        const restaurado=await restaurarMapaOfflineSiPreferido().catch(()=>false);
+        if(!restaurado){
+          const base=await resumenOSMOffline().catch(()=>({descargados:0}));
+          const sat=await resumenIGACOffline().catch(()=>({descargados:0}));
+          if(base.descargados)await activarMapaOSMOffline(false).catch(()=>{});
+          else if(sat.descargados)await activarSateliteIGACOffline(false).catch(()=>{});
+        }
+      },180);
+
+      programarCartografiaProyectoSegundoPlano(450);
+      return true;
+    }
+  }
+
+  if(proyectosAsignados.length===1){
+    await seleccionarProyecto(proyectosAsignados[0].id);
+    return !!trabajoProyectoHabilitado;
+  }
+
+  setControlesTrabajoHabilitados(false);
+  const lock=document.getElementById('sinProyectoLock');
+  if(lock)lock.classList.remove('open');
+  abrirPanelProyectos();
+  return true;
+}
+
 function destinoActualMappingParaLogin(){
   const archivo=location.pathname.split('/').pop()||'infraestructura.html';
   return archivo+location.search;
@@ -11038,12 +11313,47 @@ function irLoginMapping(msg=''){
 }
 async function verificarSesionMapping(){
   setControlesTrabajoHabilitados(false);
-  const {data:{session},error}=await mappingSb.auth.getSession();
+  actualizarBadgeModoOffline();
 
-  if(error||!session){
+  // OFFLINE-FIRST: no dependemos de Supabase para volver a abrir un proyecto
+  // que ya fue validado anteriormente en este dispositivo.
+  if(!navigator.onLine){
+    if(!restaurarIdentidadOfflineMapping()){
+      mostrarLoginMappingEmbebido(
+        'Para trabajar sin Internet debes iniciar sesión y abrir el proyecto al menos una vez con conexión.'
+      );
+      return false;
+    }
+
+    ocultarLoginMappingEmbebido();
+    const ok=await activarProyectoOfflineGuardado();
+    if(ok)setTimeout(prepararGPSInicial,180);
+    return ok;
+  }
+
+  let session=null;
+  let sessionError=null;
+
+  try{
+    const r=await mappingSb.auth.getSession();
+    session=r?.data?.session||null;
+    sessionError=r?.error||null;
+  }catch(e){
+    sessionError=e;
+  }
+
+  if(sessionError||!session){
+    // Si la conexión se cayó durante el arranque, usamos la credencial local.
+    if(errorEsConexionMapping(sessionError) && restaurarIdentidadOfflineMapping()){
+      ocultarLoginMappingEmbebido();
+      const ok=await activarProyectoOfflineGuardado();
+      if(ok)setTimeout(prepararGPSInicial,180);
+      return ok;
+    }
+
     mappingUser=null;
     mostrarLoginMappingEmbebido(
-      error ? ('No fue posible validar la sesión: '+error.message) : ''
+      sessionError ? ('No fue posible validar la sesión: '+(sessionError.message||sessionError)) : ''
     );
     return false;
   }
@@ -11057,13 +11367,11 @@ async function verificarSesionMapping(){
   await cargarPerfilMapping();
   await cargarProyectosAsignados();
 
+  cacheAccesoOfflineMapping();
+  prepararShellOfflineMapping().catch(()=>{});
+
   ocultarLoginMappingEmbebido();
-
-  // El login ya desapareció: si el permiso estaba concedido, inicia GPS.
-  // Si no, el indicador pedirá tocar 📍 y el permiso se solicitará
-  // mediante una acción explícita del técnico.
   setTimeout(prepararGPSInicial,250);
-
   return true;
 }
 async function loginMapping(){irLoginMapping()}
@@ -11079,6 +11387,7 @@ async function logoutMapping(){
   poligonosAsignadosSet=new Set();
 
   localStorage.removeItem('mapping_proyecto_activo_v1');
+  limpiarCredencialOfflineMapping();
   setControlesTrabajoHabilitados(false);
 
   try{detenerSeguimientoGPS()}catch(_){}
@@ -11090,29 +11399,85 @@ async function logoutMapping(){
   mostrarLoginMappingEmbebido();
 }
 async function cargarPerfilMapping(){
-  let {data,error}=await mappingSb.from('mapping_usuarios').select('*').eq('id',mappingUser.id).maybeSingle();
-  if(error)console.warn(error);
-  if(!data){
-    const nuevo={id:mappingUser.id,email:mappingUser.email,nombre:mappingUser.email,rol:'tecnico',activo:true};
-    const ins=await mappingSb.from('mapping_usuarios').insert(nuevo).select().single();
-    if(!ins.error)data=ins.data;
+  let data=null,error=null;
+  const cache=leerJSONMappingLocal(MAPPING_OFFLINE_ACCESS_KEY,null);
+
+  if(navigator.onLine){
+    try{
+      const r=await mappingSb
+        .from('mapping_usuarios')
+        .select('*')
+        .eq('id',mappingUser.id)
+        .maybeSingle();
+      data=r.data;
+      error=r.error;
+    }catch(e){error=e}
   }
-  mappingProfile=data||{id:mappingUser.id,email:mappingUser.email,nombre:mappingUser.email,rol:'tecnico'};
-  const ui=document.getElementById('projectUserInfo');if(ui)ui.innerHTML=`<b>${esc(mappingProfile.nombre||mappingUser.email)}</b><br>${esc(mappingUser.email)}`;
+
+  if(error && !errorEsConexionMapping(error)){
+    console.warn('Perfil Mapping:',error);
+  }
+
+  if(!data && cache?.profile && String(cache.profile.id)===String(mappingUser.id)){
+    data=cache.profile;
+  }
+
+  if(!data && navigator.onLine && !error){
+    const nuevo={
+      id:mappingUser.id,
+      email:mappingUser.email,
+      nombre:mappingUser.email,
+      rol:'tecnico',
+      activo:true
+    };
+    try{
+      const ins=await mappingSb.from('mapping_usuarios').insert(nuevo).select().single();
+      if(!ins.error)data=ins.data;
+    }catch(_){ }
+  }
+
+  mappingProfile=data||{
+    id:mappingUser.id,
+    email:mappingUser.email||cache?.user?.email||'',
+    nombre:mappingUser.email||cache?.user?.email||'Técnico',
+    rol:'tecnico'
+  };
+
+  const ui=document.getElementById('projectUserInfo');
+  if(ui)ui.innerHTML=`<b>${esc(mappingProfile.nombre||mappingUser.email||'Técnico')}</b><br>${esc(mappingUser.email||'')}`;
+
+  if(navigator.onLine)cacheAccesoOfflineMapping();
+  return mappingProfile;
 }
 async function cargarProyectosAsignados(){
   if(!mappingUser)return;
 
-  const {data,error}=await mappingSb
-    .from('mapping_proyecto_tecnicos')
-    .select('*,mapping_proyectos(*,mapping_empresas(*))')
-    .eq('tecnico_id',mappingUser.id)
-    .order('fecha_asignacion',{ascending:false});
+  let data=null,error=null;
 
-  if(error){
-    alert('Error cargando proyectos: '+error.message);
-    bloquearSinProyecto('No fue posible verificar tus asignaciones.');
-    return;
+  if(navigator.onLine){
+    try{
+      const r=await mappingSb
+        .from('mapping_proyecto_tecnicos')
+        .select('*,mapping_proyectos(*,mapping_empresas(*))')
+        .eq('tecnico_id',mappingUser.id)
+        .order('fecha_asignacion',{ascending:false});
+      data=r.data;
+      error=r.error;
+    }catch(e){error=e}
+  }
+
+  if(error || !navigator.onLine){
+    const cache=leerJSONMappingLocal(MAPPING_OFFLINE_ACCESS_KEY,null);
+    const cached=Array.isArray(cache?.assignments)?cache.assignments:[];
+
+    if((!navigator.onLine || errorEsConexionMapping(error)) && cached.length){
+      data=cached;
+      error=null;
+    }else if(error){
+      alert('Error cargando proyectos: '+(error.message||error));
+      bloquearSinProyecto('No fue posible verificar tus asignaciones.');
+      return;
+    }
   }
 
   proyectosAsignados=(data||[]).filter(a=>
@@ -11123,6 +11488,8 @@ async function cargarProyectosAsignados(){
 
   pintarProyectosAsignados();
 
+  if(navigator.onLine)cacheAccesoOfflineMapping();
+
   if(!proyectosAsignados.length){
     proyectoActivo=null;
     poligonosAsignados=[];
@@ -11130,12 +11497,18 @@ async function cargarProyectosAsignados(){
     limpiarCapaPoligonos();
     limpiarCartografiaProyecto();
     limpiarMapaBaseOfflineVisual();
-    localStorage.removeItem('mapping_proyecto_activo_v1');
-    bloquearSinProyecto();
+
+    // Solo eliminamos el proyecto guardado si la verificación fue realmente online.
+    if(navigator.onLine)localStorage.removeItem('mapping_proyecto_activo_v1');
+
+    bloquearSinProyecto(
+      navigator.onLine
+        ? ''
+        : 'No hay proyectos guardados para uso offline. Conéctate una vez para actualizar tus asignaciones.'
+    );
     return;
   }
 
-  // Valida el proyecto guardado sin iniciar una segunda selección paralela.
   if(proyectoActivo){
     const a=proyectosAsignados.find(x=>
       String(x.proyecto_id)===String(proyectoActivo.proyecto_id)
@@ -11145,20 +11518,15 @@ async function cargarProyectosAsignados(){
       proyectoActivo={
         ...a,
         ...a.mapping_proyectos,
-        empresa:a.mapping_proyectos?.mapping_empresas||null,
+        ...proyectoActivo,
+        empresa:a.mapping_proyectos?.mapping_empresas||proyectoActivo.empresa||null,
         proyecto_id:a.proyecto_id,
         asignacion_id:a.id
       };
 
-      localStorage.setItem(
-        'mapping_proyecto_activo_v1',
-        JSON.stringify(proyectoActivo)
-      );
-
+      localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));
       setControlesTrabajoHabilitados(false);
       actualizarIndicadorTipoProyecto();
-
-      // Solo limpia/prepara el estado visual; NO descarga cartografía aquí.
       prepararCartografiaProyectoSeleccionado();
 
       const cantidadPoligonos=await cargarPoligonosAsignadosTecnico();
@@ -11167,20 +11535,30 @@ async function cargarProyectosAsignados(){
         return;
       }
 
-      // false = no fitBounds. Después hacemos un único centrado.
       await cargarPuntosSupabase(false);
       ubicarEnUltimoElementoRegistrado();
       actualizarEstadoSync();
 
-      setTimeout(()=>restaurarMapaOfflineSiPreferido().catch(()=>{}),250);
+      setTimeout(async()=>{
+        const restored=await restaurarMapaOfflineSiPreferido().catch(()=>false);
+        if(!navigator.onLine && !restored){
+          const base=await resumenOSMOffline().catch(()=>({descargados:0}));
+          const sat=await resumenIGACOffline().catch(()=>({descargados:0}));
+          if(base.descargados)await activarMapaOSMOffline(false).catch(()=>{});
+          else if(sat.descargados)await activarSateliteIGACOffline(false).catch(()=>{});
+        }
+      },250);
 
-      // La cartografía se resuelve después, sin bloquear la carga principal.
       programarCartografiaProyectoSegundoPlano(700);
+      cacheAccesoOfflineMapping();
       return;
     }
 
-    proyectoActivo=null;
-    localStorage.removeItem('mapping_proyecto_activo_v1');
+    // Si estamos offline no destruimos el proyecto local por una diferencia temporal.
+    if(navigator.onLine){
+      proyectoActivo=null;
+      localStorage.removeItem('mapping_proyecto_activo_v1');
+    }
   }
 
   if(proyectosAsignados.length===1){
@@ -11270,14 +11648,24 @@ async function seleccionarProyecto(asignacionId){
     // Solo reinicia la capa; no descarga ni parsea cartografía todavía.
     prepararCartografiaProyectoSeleccionado();
 
-    // Actualización administrativa de la asignación.
-    await mappingSb
-      .from('mapping_proyecto_tecnicos')
-      .update({
-        estado_asignacion:'en_proceso',
-        fecha_inicio:a.fecha_inicio||new Date().toISOString()
-      })
-      .eq('id',a.id);
+    // Actualización administrativa solo cuando existe Internet.
+    // En modo offline la asignación local sigue siendo válida y el cambio se
+    // confirmará la próxima vez que el técnico trabaje conectado.
+    if(navigator.onLine){
+      try{
+        await mappingSb
+          .from('mapping_proyecto_tecnicos')
+          .update({
+            estado_asignacion:'en_proceso',
+            fecha_inicio:a.fecha_inicio||new Date().toISOString()
+          })
+          .eq('id',a.id);
+      }catch(e){
+        console.warn('No se pudo actualizar estado de asignación:',e);
+      }
+    }
+
+    cacheAccesoOfflineMapping();
 
     cerrarPanelProyectos();
     setControlesTrabajoHabilitados(false);
@@ -13184,6 +13572,14 @@ async function reconciliarEstadoLocalConNube(local,remoto){
 async function cargarPuntosSupabase(mostrar=true){
   if(!proyectoActivo||!mappingUser)return;
 
+  // Los puntos ya sincronizados y los pendientes se mantienen en localStorage.
+  // Sin Internet se muestran inmediatamente y NO se sustituye ni elimina nada.
+  if(!navigator.onLine){
+    persist();
+    pintarRegistros();
+    return registrosProyectoActual();
+  }
+
   const {data,error}=await mappingSb
     .from('mapping_puntos')
     .select('*')
@@ -13192,6 +13588,12 @@ async function cargarPuntosSupabase(mostrar=true){
     .order('consecutiv');
 
   if(error){
+    if(errorEsConexionMapping(error)){
+      console.warn('Sin conexión: se conservan y muestran los puntos locales.');
+      persist();
+      pintarRegistros();
+      return registrosProyectoActual();
+    }
     if(mostrar)alert('Error cargando puntos: '+error.message);
     return;
   }
@@ -13275,6 +13677,7 @@ async function cargarPuntosSupabase(mostrar=true){
 
   persist();
   pintarRegistros();
+  cacheAccesoOfflineMapping();
 
   if(mostrar&&data?.length){
     const b=data
@@ -13527,7 +13930,16 @@ mappingSb.auth.onAuthStateChange((event)=>{
     mostrarLoginMappingEmbebido();
   }
 });
-window.addEventListener('online',actualizarEstadoSync);window.addEventListener('offline',actualizarEstadoSync);window.addEventListener('load',async()=>{
+window.addEventListener('online',()=>{
+  actualizarBadgeModoOffline();
+  actualizarEstadoSync();
+  prepararShellOfflineMapping().catch(()=>{});
+});
+window.addEventListener('offline',()=>{
+  actualizarBadgeModoOffline();
+  actualizarEstadoSync();
+});
+window.addEventListener('load',async()=>{
   // Un estado "enviando" guardado en localStorage solo significa que la app
   // se cerró/interrumpió durante una sincronización anterior. Nunca debe
   // permanecer bloqueado al volver a abrir.
@@ -13548,8 +13960,13 @@ window.addEventListener('online',actualizarEstadoSync);window.addEventListener('
     console.warn('La aplicación está abierta con file://. Para Supabase Auth es más estable usar http://localhost o HTTPS.');
   }
 
+  actualizarBadgeModoOffline();
+  if(navigator.onLine)prepararShellOfflineMapping().catch(()=>{});
+
+  // No desbloquear/bloquear anticipadamente: verificarSesionMapping restaura
+  // primero la identidad, asignación y polígonos correspondientes.
+  setControlesTrabajoHabilitados(false);
   setTimeout(verificarSesionMapping,150);
-  if(proyectoActivo)desbloquearProyecto();else bloquearSinProyecto();
   actualizarBotonDistanciasMapa();
   actualizarIndicadorTipoProyecto();
   actualizarEstadoSync();
@@ -14515,7 +14932,6 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
-
 
 
 
