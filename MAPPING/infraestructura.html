@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>PDR-APP Mapping · Offline First</title>
+<title>PDR-APP · MAPPING V101 · Correcciones de campo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1794,6 +1794,303 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
 }
 .offlineModeBadge.open{display:block}
 
+
+/* ============================================================
+   V101 · SOLICITUDES DE CORRECCIÓN · TÉCNICO
+   ============================================================ */
+.correctionMenuBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  border-color:rgba(245,158,11,.30)!important;
+  background:linear-gradient(180deg,#3a2709,#241907)!important;
+  color:#fde68a!important;
+}
+.correctionMenuBadge{
+  min-width:22px;
+  height:22px;
+  padding:0 6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:#dc2626;
+  color:#fff;
+  font-size:10px;
+  font-weight:1000;
+  box-shadow:0 0 12px rgba(239,68,68,.18);
+}
+.correctionMenuBadge.zero{
+  background:#475569;
+  color:#e2e8f0;
+  box-shadow:none;
+}
+
+.correctionTechModal{
+  width:min(760px,96vw)!important;
+  max-height:92vh;
+}
+.correctionTechHead{
+  background:linear-gradient(105deg,#2b1805,#0d1b2a)!important;
+  border-bottom:1px solid rgba(245,158,11,.25)!important;
+}
+.correctionTechHead h2{color:#fde68a!important}
+.correctionTechHead small{
+  display:block;
+  margin-top:3px;
+  color:#fbbf24;
+  font-size:9px;
+}
+
+.correctionTechSummary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-bottom:9px;
+}
+.correctionTechKpi{
+  min-height:68px;
+  padding:9px 10px;
+  border:1px solid #29415d;
+  border-left:4px solid var(--corrColor,#64748b);
+  border-radius:11px;
+  background:#07111f;
+}
+.correctionTechKpi.pending{--corrColor:#f59e0b}
+.correctionTechKpi.reopened{--corrColor:#ef4444}
+.correctionTechKpi.fixed{--corrColor:#38bdf8}
+.correctionTechKpi span{
+  display:block;
+  color:#94a3b8;
+  font-size:7px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.correctionTechKpi b{
+  display:block;
+  margin-top:4px;
+  color:#fff;
+  font-size:21px;
+  font-weight:1000;
+}
+
+.correctionTechToolbar{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:7px;
+  margin-bottom:8px;
+}
+.correctionTechToolbar select{
+  margin:0!important;
+}
+.correctionTechToolbar .btn{
+  margin:0!important;
+  width:auto!important;
+}
+
+.correctionTechOfflineHint{
+  margin-bottom:8px;
+  padding:8px 10px;
+  border:1px solid #92400e;
+  border-left:4px solid #f59e0b;
+  border-radius:9px;
+  background:#2a1906;
+  color:#fde68a;
+  font-size:9px;
+  line-height:1.35;
+}
+
+.correctionTechList{
+  display:grid;
+  gap:9px;
+  max-height:62vh;
+  overflow:auto;
+  padding-right:2px;
+}
+.correctionTechCard{
+  position:relative;
+  overflow:hidden;
+  padding:11px;
+  border:1px solid #29415d;
+  border-left:5px solid var(--corrColor,#64748b);
+  border-radius:13px;
+  background:linear-gradient(180deg,#102236,#0a1725);
+  box-shadow:0 4px 13px rgba(0,0,0,.15);
+}
+.correctionTechCard.pendiente{--corrColor:#f59e0b}
+.correctionTechCard.reabierta{--corrColor:#ef4444}
+.correctionTechCard.corregida{--corrColor:#38bdf8}
+.correctionTechCard.cerrada{--corrColor:#22c55e}
+.correctionTechCard.pendingSync::after{
+  content:"PENDIENTE DE SINCRONIZAR";
+  position:absolute;
+  top:7px;
+  right:-39px;
+  width:150px;
+  padding:4px 0;
+  transform:rotate(35deg);
+  background:#7c3aed;
+  color:#fff;
+  text-align:center;
+  font-size:6px;
+  font-weight:1000;
+  letter-spacing:.5px;
+}
+.correctionTechMeta{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:7px;
+}
+.correctionTechState,
+.correctionTechPriority{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 7px;
+  border-radius:999px;
+  font-size:7px;
+  font-weight:1000;
+  text-transform:uppercase;
+}
+.correctionTechState.pendiente{background:#92400e;color:#fde68a}
+.correctionTechState.reabierta{background:#991b1b;color:#fecaca}
+.correctionTechState.corregida{background:#075985;color:#bae6fd}
+.correctionTechState.cerrada{background:#166534;color:#bbf7d0}
+.correctionTechPriority.normal{background:#334155;color:#e2e8f0}
+.correctionTechPriority.alta{background:#9a3412;color:#ffedd5}
+.correctionTechPriority.urgente{background:#991b1b;color:#fee2e2}
+.correctionTechCard h3{
+  margin:0 0 4px;
+  color:#fff;
+  font-size:14px;
+}
+.correctionTechCard .corrCategory{
+  color:#7dd3fc;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.correctionTechDescription{
+  margin:8px 0;
+  padding:9px 10px;
+  border-radius:9px;
+  background:#07111f;
+  color:#e2e8f0;
+  font-size:10px;
+  line-height:1.45;
+}
+.correctionTechReview{
+  margin:7px 0;
+  padding:8px 9px;
+  border-radius:8px;
+  background:#2a0d10;
+  border:1px solid #7f1d1d;
+  color:#fecaca;
+  font-size:9px;
+  line-height:1.4;
+}
+.correctionTechResponse{
+  margin:7px 0;
+  padding:8px 9px;
+  border-radius:8px;
+  background:#082f49;
+  border:1px solid #075985;
+  color:#bae6fd;
+  font-size:9px;
+  line-height:1.4;
+}
+.correctionTechFooter{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:9px;
+}
+.correctionTechFooter .btn{
+  width:auto!important;
+  margin:0!important;
+  padding:8px 10px!important;
+  font-size:9px!important;
+}
+.correctionTechFixBtn{
+  background:#16a34a!important;
+}
+.correctionTechCard small{
+  color:#94a3b8;
+  font-size:8px;
+}
+
+.mappingCorrectionMarkerHost{
+  position:relative;
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+}
+.mappingCorrectionMapBadge{
+  position:absolute;
+  right:-7px;
+  top:-8px;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #fff;
+  border-radius:999px;
+  background:#f59e0b;
+  color:#111827;
+  font-size:8px;
+  font-weight:1000;
+  box-shadow:0 2px 7px rgba(0,0,0,.38),0 0 0 4px rgba(245,158,11,.12);
+  animation:mappingCorrectionPulse 1.45s ease-in-out infinite;
+}
+@keyframes mappingCorrectionPulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.12)}
+}
+.mappingCorrectionPopupAlert{
+  margin:7px 0 5px;
+  padding:6px 7px;
+  border-left:3px solid #f59e0b;
+  border-radius:6px;
+  background:#3a2607;
+  color:#fde68a;
+  font-size:9px;
+  font-weight:900;
+}
+.popupCorrectionBtn{
+  border:0;
+  border-radius:7px;
+  background:#d97706;
+  color:#fff;
+  font-weight:900;
+  font-size:9px;
+  padding:6px 8px;
+  margin:3px 4px 3px 0;
+  cursor:pointer;
+}
+
+body.lightTheme .correctionTechCard{
+  background:#fff;
+  border-color:#cbd5e1;
+}
+body.lightTheme .correctionTechCard h3{color:#0f172a}
+body.lightTheme .correctionTechDescription{
+  background:#f8fafc;
+  color:#334155;
+}
+body.lightTheme .correctionTechToolbar select{
+  background:#fff;
+  color:#0f172a;
+}
+@media(max-width:520px){
+  .correctionTechSummary{grid-template-columns:1fr}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -1863,7 +2160,10 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
   <button onclick="abrirPanelProyectos();toggleSideMenu(false)">👷 Mis proyectos</button>
   <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
   <button onclick="reenviarTodo();toggleSideMenu(false)">⟳ Reenviar todo</button>
-  <button onclick="cargarPuntosSupabase();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
+  <button onclick="actualizarDesdeSupabaseCompleto();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
+  <button class="correctionMenuBtn" id="btnCorreccionesTecnico" onclick="abrirCorreccionesTecnico();toggleSideMenu(false)">
+    ⚠ Correcciones <span class="correctionMenuBadge" id="correctionMenuBadge">0</span>
+  </button>
   <button onclick="abrirBuscarConsecutivo();toggleSideMenu(false)">🔎 Buscar por consecutivo</button>
   <button id="btnCartografiaProyecto" onclick="toggleCartografiaProyecto();toggleSideMenu(false)" disabled>🗺️ Cartografía: no disponible</button>
   <button id="btnOfflineProject" onclick="abrirPrepararProyectoOffline();toggleSideMenu(false)">📦 Preparar proyecto offline</button>
@@ -1875,6 +2175,45 @@ body.lightTheme .offlineSimpleStatus b{color:#0f172a!important}
   <button onclick="finalizarAsignacion();toggleSideMenu(false)">✓ Finalizar mi asignación</button>
   <button onclick="logoutMapping()">⏻ Cerrar sesión</button>
 </div>
+
+<div class="overlay" id="correccionesTecnicoOverlay">
+  <div class="modal correctionTechModal">
+    <div class="modalHead correctionTechHead">
+      <div>
+        <h2>⚠️ Correcciones solicitadas</h2>
+        <small id="correctionTechSubtitle">Solicitudes enviadas por MASTER</small>
+      </div>
+      <button class="close" onclick="cerrarCorreccionesTecnico()">Cerrar</button>
+    </div>
+    <div class="body">
+      <div class="correctionTechSummary">
+        <div class="correctionTechKpi pending"><span>Pendientes</span><b id="corrTechPendientes">0</b></div>
+        <div class="correctionTechKpi reopened"><span>Reabiertas</span><b id="corrTechReabiertas">0</b></div>
+        <div class="correctionTechKpi fixed"><span>Enviadas a revisión</span><b id="corrTechCorregidas">0</b></div>
+      </div>
+
+      <div class="correctionTechToolbar">
+        <select id="corrTechEstadoFiltro" onchange="renderCorreccionesTecnico()">
+          <option value="">Todas</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="reabierta">Reabiertas</option>
+          <option value="corregida">Enviadas a revisión</option>
+          <option value="cerrada">Cerradas</option>
+        </select>
+        <button class="btn blue" type="button" onclick="cargarCorreccionesTecnico({silencioso:false})">⟳ Actualizar</button>
+      </div>
+
+      <div id="corrTechOfflineHint" class="correctionTechOfflineHint" style="display:none">
+        📴 Sin Internet: se muestran las últimas correcciones guardadas en este dispositivo.
+      </div>
+
+      <div id="corrTechList" class="correctionTechList">
+        <div class="hint">Selecciona un proyecto para consultar correcciones.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="projectsOverlay"><div class="modal"><div class="modalHead"><h2>Mis proyectos asignados</h2><button class="close" onclick="cerrarPanelProyectos()">Cerrar</button></div><div class="body">
   <div class="hint" id="projectUserInfo">Cargando usuario...</div>
   <button class="btn blue" style="width:100%" onclick="cargarProyectosAsignados()">Actualizar proyectos</button>
@@ -6504,6 +6843,11 @@ window.addEventListener('message',async(event)=>{
 
 let mappingUser=null,mappingProfile=null,proyectosAsignados=[];
 let proyectoActivo=JSON.parse(localStorage.getItem('mapping_proyecto_activo_v1')||'null');
+
+// Solicitudes de corrección MASTER ↔ técnico.
+let correccionesTecnico=[];
+let correccionesRealtimeChannel=null;
+let corrTecnicoCargaEnCurso=false;
 const LOCAL_KEY='mapping_sitesurvey_registros_v1';
 
 const FOTO_DB_NAME='mapping_sitesurvey_fotos_v1';
@@ -11273,6 +11617,7 @@ async function activarProyectoOfflineGuardado(){
       if(!n)return false;
 
       await cargarPuntosSupabase(false);
+      await cargarCorreccionesTecnico({silencioso:true});
       pintarRegistros();
       ubicarEnUltimoElementoRegistrado();
       actualizarEstadoSync();
@@ -11376,6 +11721,11 @@ async function verificarSesionMapping(){
 }
 async function loginMapping(){irLoginMapping()}
 async function logoutMapping(){
+  if(correccionesRealtimeChannel){
+    try{mappingSb.removeChannel(correccionesRealtimeChannel)}catch(_){}
+    correccionesRealtimeChannel=null;
+  }
+
   await marcarUbicacionTecnicoInactiva().catch(()=>{});
   await mappingSb.auth.signOut().catch(()=>{});
 
@@ -11679,6 +12029,8 @@ async function seleccionarProyecto(asignacionId){
 
     // Muy importante: false evita fitBounds de todos los puntos.
     await cargarPuntosSupabase(false);
+    await cargarCorreccionesTecnico({silencioso:true});
+    suscribirCorreccionesTecnico();
 
     // ÚNICO movimiento automático del mapa al seleccionar proyecto.
     ubicarEnUltimoElementoRegistrado();
@@ -13468,6 +13820,7 @@ async function sincronizarPendientesBackground(){
 
   syncEnCurso=false;
   try{await cargarPuntosSupabase(false)}catch(e){console.warn('Reconciliación final sync:',e)}
+  try{await sincronizarCorreccionesPendientesTecnico()}catch(e){console.warn('Sync final de correcciones:',e)}
   refrescarUIEstadoSincronizacion();
   finalizarPanelSync();
 }
@@ -13495,6 +13848,7 @@ async function sincronizarPendientes(){
     persist();
     pintarRegistros();
   }
+  try{await sincronizarCorreccionesPendientesTecnico()}catch(e){console.warn('Sync de correcciones:',e)}
   alert(`Sincronización terminada.\nEnviados: ${ok}\nCon error: ${fail}`);
 }
 async function reenviarTodo(){
@@ -13763,17 +14117,516 @@ function htmlEtiquetaConsecutivo(r){
 }
 
 
+
+/* ============================================================
+   V101 · SOLICITUDES DE CORRECCIÓN · TÉCNICO
+   ============================================================ */
+
+function corrTechEstado(c){
+  return String(c?.estado||'pendiente').toLowerCase();
+}
+
+function corrTechCacheKey(){
+  const proyectoId=String(proyectoActivo?.proyecto_id||proyectoActivo?.id||'SIN_PROYECTO');
+  const tecnicoId=String(mappingUser?.id||'SIN_TECNICO');
+  return `mapping_correcciones_cache_v1_${proyectoId}_${tecnicoId}`;
+}
+
+function guardarCorreccionesTecnicoCache(){
+  try{
+    if(!proyectoActivo||!mappingUser)return;
+    localStorage.setItem(corrTechCacheKey(),JSON.stringify(correccionesTecnico||[]));
+  }catch(e){
+    console.warn('No fue posible guardar correcciones localmente:',e);
+  }
+}
+
+function cargarCorreccionesTecnicoCache(){
+  try{
+    if(!proyectoActivo||!mappingUser){
+      correccionesTecnico=[];
+      return correccionesTecnico;
+    }
+
+    const raw=localStorage.getItem(corrTechCacheKey());
+    correccionesTecnico=raw?JSON.parse(raw):[];
+    if(!Array.isArray(correccionesTecnico))correccionesTecnico=[];
+  }catch(e){
+    console.warn('No fue posible leer correcciones locales:',e);
+    correccionesTecnico=[];
+  }
+
+  actualizarBadgeCorreccionesTecnico();
+  return correccionesTecnico;
+}
+
+function correccionesPendientesRegistroTecnico(r){
+  const puntoId=String(r?.supabase_id||'');
+  if(!puntoId)return [];
+
+  return correccionesTecnico.filter(c=>
+    String(c.punto_id)===puntoId &&
+    ['pendiente','reabierta'].includes(corrTechEstado(c))
+  );
+}
+
+function actualizarBadgeCorreccionesTecnico(){
+  const pendientes=correccionesTecnico.filter(c=>
+    ['pendiente','reabierta'].includes(corrTechEstado(c))
+  ).length;
+
+  const badge=document.getElementById('correctionMenuBadge');
+  if(badge){
+    badge.textContent=String(pendientes);
+    badge.classList.toggle('zero',pendientes===0);
+  }
+
+  const btn=document.getElementById('btnCorreccionesTecnico');
+  if(btn){
+    btn.classList.toggle('hasPendingCorrections',pendientes>0);
+  }
+}
+
+function correccionTechStateBadge(c){
+  const e=corrTechEstado(c);
+  const txt={
+    pendiente:'Pendiente',
+    reabierta:'Reabierta',
+    corregida:'En revisión',
+    cerrada:'Cerrada'
+  }[e]||e;
+
+  return `<span class="correctionTechState ${esc(e)}">${esc(txt)}</span>`;
+}
+
+function correccionTechPriorityBadge(c){
+  const p=String(c?.prioridad||'normal').toLowerCase();
+  return `<span class="correctionTechPriority ${esc(p)}">${esc(p)}</span>`;
+}
+
+function fechaCorreccionTecnico(v){
+  if(!v)return '—';
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime()))return String(v);
+
+  return d.toLocaleString('es-CO',{
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit'
+  });
+}
+
+function registroDeCorreccionTecnico(c){
+  return registrosProyectoActual().find(r=>
+    (r.supabase_id && String(r.supabase_id)===String(c.punto_id)) ||
+    String(r.IDCAMPO||'').toUpperCase()===String(c.idcampo||'').toUpperCase()
+  )||null;
+}
+
+async function sincronizarCorreccionesPendientesTecnico(){
+  if(!navigator.onLine||!mappingUser||!proyectoActivo)return false;
+
+  cargarCorreccionesTecnicoCache();
+
+  let huboCambios=false;
+
+  for(const c of correccionesTecnico.filter(x=>x?._pendiente_sync)){
+    const r=registroDeCorreccionTecnico(c);
+
+    // No avisar al MASTER antes de que la edición del elemento ya esté
+    // confirmada en Supabase.
+    if(r && r.sync_status!=='enviado'){
+      continue;
+    }
+
+    try{
+      const {data,error}=await mappingSb.rpc(
+        'mapping_marcar_correccion_corregida',
+        {
+          p_correccion_id:c.id,
+          p_respuesta:c.respuesta_tecnico||null
+        }
+      );
+
+      if(error)throw error;
+
+      const actualizado=Array.isArray(data)?data[0]:data;
+
+      if(actualizado){
+        Object.assign(c,actualizado,{_pendiente_sync:false});
+      }else{
+        c._pendiente_sync=false;
+      }
+
+      huboCambios=true;
+    }catch(e){
+      console.warn('Corrección pendiente de sincronizar:',c.id,e);
+    }
+  }
+
+  if(huboCambios)guardarCorreccionesTecnicoCache();
+  actualizarBadgeCorreccionesTecnico();
+
+  return huboCambios;
+}
+
+async function cargarCorreccionesTecnico({silencioso=true}={}){
+  if(corrTecnicoCargaEnCurso)return correccionesTecnico;
+
+  if(!mappingUser||!proyectoActivo){
+    correccionesTecnico=[];
+    actualizarBadgeCorreccionesTecnico();
+    renderCorreccionesTecnico();
+    return [];
+  }
+
+  corrTecnicoCargaEnCurso=true;
+
+  try{
+    if(!navigator.onLine){
+      cargarCorreccionesTecnicoCache();
+      renderCorreccionesTecnico();
+      pintarRegistros();
+      return correccionesTecnico;
+    }
+
+    await sincronizarCorreccionesPendientesTecnico();
+
+    const localesPendientes=(cargarCorreccionesTecnicoCache()||[])
+      .filter(c=>c?._pendiente_sync);
+
+    const {data,error}=await mappingSb
+      .from('mapping_correcciones')
+      .select('*')
+      .eq('proyecto_id',proyectoActivo.proyecto_id)
+      .order('fecha_solicitud',{ascending:false});
+
+    if(error)throw error;
+
+    const porId=new Map((data||[]).map(c=>[String(c.id),c]));
+
+    localesPendientes.forEach(c=>{
+      if(!porId.has(String(c.id))){
+        porId.set(String(c.id),c);
+      }else if(c._pendiente_sync){
+        porId.set(String(c.id),c);
+      }
+    });
+
+    correccionesTecnico=[...porId.values()]
+      .sort((a,b)=>new Date(b.fecha_solicitud||0)-new Date(a.fecha_solicitud||0));
+
+    guardarCorreccionesTecnicoCache();
+    actualizarBadgeCorreccionesTecnico();
+    renderCorreccionesTecnico();
+    pintarRegistros();
+
+    return correccionesTecnico;
+  }catch(e){
+    console.warn('Correcciones técnico:',e);
+    cargarCorreccionesTecnicoCache();
+    actualizarBadgeCorreccionesTecnico();
+    renderCorreccionesTecnico();
+    pintarRegistros();
+
+    if(!silencioso){
+      alert(
+        'No fue posible actualizar las correcciones desde Supabase.\n\n'+
+        'Se muestran las últimas solicitudes guardadas en este dispositivo.'
+      );
+    }
+
+    return correccionesTecnico;
+  }finally{
+    corrTecnicoCargaEnCurso=false;
+  }
+}
+
+function suscribirCorreccionesTecnico(){
+  if(correccionesRealtimeChannel){
+    try{mappingSb.removeChannel(correccionesRealtimeChannel)}catch(_){}
+    correccionesRealtimeChannel=null;
+  }
+
+  if(!navigator.onLine||!mappingUser||!proyectoActivo)return;
+
+  correccionesRealtimeChannel=mappingSb
+    .channel(`mapping-correcciones-${mappingUser.id}-${proyectoActivo.proyecto_id}`)
+    .on(
+      'postgres_changes',
+      {
+        event:'*',
+        schema:'public',
+        table:'mapping_correcciones',
+        filter:`tecnico_id=eq.${mappingUser.id}`
+      },
+      payload=>{
+        const row=payload?.new||payload?.old||{};
+        if(String(row.proyecto_id||'')!==String(proyectoActivo?.proyecto_id||''))return;
+
+        cargarCorreccionesTecnico({silencioso:true}).catch(()=>{});
+      }
+    )
+    .subscribe();
+}
+
+async function actualizarDesdeSupabaseCompleto(){
+  await cargarPuntosSupabase();
+  await cargarCorreccionesTecnico({silencioso:false});
+  suscribirCorreccionesTecnico();
+}
+
+async function abrirCorreccionesTecnico(){
+  if(!proyectoActivo){
+    bloquearSinProyecto('Selecciona un proyecto para consultar correcciones.');
+    return;
+  }
+
+  correccionesTecnicoOverlay.classList.add('open');
+  await cargarCorreccionesTecnico({silencioso:true});
+  renderCorreccionesTecnico();
+}
+
+function cerrarCorreccionesTecnico(){
+  correccionesTecnicoOverlay.classList.remove('open');
+}
+
+function renderCorreccionesTecnico(){
+  const list=document.getElementById('corrTechList');
+  if(!list)return;
+
+  const estadoFiltro=String(document.getElementById('corrTechEstadoFiltro')?.value||'').toLowerCase();
+
+  const pendientes=correccionesTecnico.filter(c=>corrTechEstado(c)==='pendiente').length;
+  const reabiertas=correccionesTecnico.filter(c=>corrTechEstado(c)==='reabierta').length;
+  const corregidas=correccionesTecnico.filter(c=>corrTechEstado(c)==='corregida').length;
+
+  const elPend=document.getElementById('corrTechPendientes');
+  const elRea=document.getElementById('corrTechReabiertas');
+  const elCor=document.getElementById('corrTechCorregidas');
+  if(elPend)elPend.textContent=pendientes;
+  if(elRea)elRea.textContent=reabiertas;
+  if(elCor)elCor.textContent=corregidas;
+
+  const hint=document.getElementById('corrTechOfflineHint');
+  if(hint)hint.style.display=navigator.onLine?'none':'block';
+
+  const subt=document.getElementById('correctionTechSubtitle');
+  if(subt){
+    subt.textContent=
+      `${proyectoActivo?.codigo||proyectoActivo?.nombre||'Proyecto'} · `+
+      `${mappingProfile?.nombre||mappingUser?.email||'Técnico'}`;
+  }
+
+  const ordenEstado={reabierta:0,pendiente:1,corregida:2,cerrada:3};
+
+  const lista=correccionesTecnico
+    .filter(c=>!estadoFiltro||corrTechEstado(c)===estadoFiltro)
+    .sort((a,b)=>{
+      const ea=ordenEstado[corrTechEstado(a)]??9;
+      const eb=ordenEstado[corrTechEstado(b)]??9;
+      if(ea!==eb)return ea-eb;
+      return new Date(b.fecha_solicitud||0)-new Date(a.fecha_solicitud||0);
+    });
+
+  list.innerHTML=lista.length
+    ? lista.map(c=>{
+        const e=corrTechEstado(c);
+        const r=registroDeCorreccionTecnico(c);
+        const pendiente=['pendiente','reabierta'].includes(e);
+
+        return `<div class="correctionTechCard ${esc(e)} ${c._pendiente_sync?'pendingSync':''}">
+          <div class="correctionTechMeta">
+            ${correccionTechStateBadge(c)}
+            ${correccionTechPriorityBadge(c)}
+            <span class="corrCategory">${esc(c.categoria||'DATOS')}</span>
+          </div>
+
+          <h3>${esc(c.idcampo||r?.IDCAMPO||'Elemento')}</h3>
+          <small>${fechaCorreccionTecnico(c.fecha_solicitud)} · Solicitó ${esc(c.solicitado_por_nombre||c.solicitado_por_email||'MASTER')}</small>
+
+          ${c.campo_objetivo?`<div class="correctionTechDescription"><b>Dato/campo a revisar:</b><br>${esc(c.campo_objetivo)}</div>`:''}
+          <div class="correctionTechDescription">${esc(c.descripcion||'')}</div>
+
+          ${c.observacion_revision?`<div class="correctionTechReview"><b>⚠ Revisión del MASTER:</b><br>${esc(c.observacion_revision)}</div>`:''}
+          ${c.respuesta_tecnico?`<div class="correctionTechResponse"><b>Tu respuesta:</b><br>${esc(c.respuesta_tecnico)}</div>`:''}
+
+          <div class="correctionTechFooter">
+            ${r?`<button class="btn blue" onclick="irElementoCorreccionTecnico('${esc(c.id)}')">📍 Ver mapa</button>`:''}
+            ${r&&pendiente?`<button class="btn" onclick="editarElementoCorreccionTecnico('${esc(c.id)}')">✏️ Corregir elemento</button>`:''}
+            ${pendiente?`<button class="btn correctionTechFixBtn" onclick="marcarCorreccionCorregidaTecnico('${esc(c.id)}')">✓ Marcar corregida</button>`:''}
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="hint">No hay solicitudes de corrección con este filtro.</div>';
+}
+
+function abrirCorreccionesTecnicoParaPunto(puntoId,idcampo=''){
+  correccionesTecnicoOverlay.classList.add('open');
+  corrTechEstadoFiltro.value='';
+
+  renderCorreccionesTecnico();
+
+  setTimeout(()=>{
+    const c=correccionesTecnico.find(x=>
+      (puntoId&&String(x.punto_id)===String(puntoId)) ||
+      (idcampo&&String(x.idcampo||'').toUpperCase()===String(idcampo).toUpperCase())
+    );
+
+    if(c){
+      const r=registroDeCorreccionTecnico(c);
+      if(r){
+        const list=document.getElementById('corrTechList');
+        const cards=[...list.querySelectorAll('.correctionTechCard')];
+        const idx=correccionesTecnico
+          .filter(x=>!corrTechEstadoFiltro.value||corrTechEstado(x)===corrTechEstadoFiltro.value)
+          .findIndex(x=>String(x.id)===String(c.id));
+        if(idx>=0&&cards[idx])cards[idx].scrollIntoView({behavior:'smooth',block:'center'});
+      }
+    }
+  },100);
+}
+
+function irElementoCorreccionTecnico(correccionId){
+  const c=correccionesTecnico.find(x=>String(x.id)===String(correccionId));
+  if(!c)return;
+
+  const r=registroDeCorreccionTecnico(c);
+  if(!r)return alert('El elemento no está disponible localmente.');
+
+  cerrarCorreccionesTecnico();
+  map.setView([Number(r.LATITUDE),Number(r.LONGITUDE)],20,{animate:true});
+}
+
+async function editarElementoCorreccionTecnico(correccionId){
+  const c=correccionesTecnico.find(x=>String(x.id)===String(correccionId));
+  if(!c)return;
+
+  const r=registroDeCorreccionTecnico(c);
+  if(!r)return alert('El elemento no está disponible localmente.');
+
+  cerrarCorreccionesTecnico();
+  await editarPunto(r.id);
+
+  setTimeout(()=>{
+    const form=document.getElementById('formOverlay');
+    if(!form)return;
+
+    let banner=document.getElementById('correctionEditBanner');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='correctionEditBanner';
+      banner.className='correctionTechReview';
+      const body=form.querySelector('.body');
+      if(body)body.prepend(banner);
+    }
+
+    banner.innerHTML=
+      `<b>⚠ Estás atendiendo una solicitud de corrección:</b><br>`+
+      `${esc(c.descripcion||'')}`+
+      (c.campo_objetivo?`<br><b>Dato/campo:</b> ${esc(c.campo_objetivo)}`:'');
+  },60);
+}
+
+async function marcarCorreccionCorregidaTecnico(id){
+  const c=correccionesTecnico.find(x=>String(x.id)===String(id));
+  if(!c)return;
+
+  const r=registroDeCorreccionTecnico(c);
+
+  if(r && r.sync_status!=='enviado'){
+    const continuar=confirm(
+      'Este elemento todavía tiene cambios o fotografías pendientes de enviar.\n\n'+
+      'Puedes marcar la corrección ahora; quedará guardada localmente y solo se notificará al MASTER después de que el elemento esté sincronizado.\n\n'+
+      '¿Continuar?'
+    );
+    if(!continuar)return;
+  }
+
+  const respuesta=prompt(
+    'Describe brevemente qué corregiste para que el MASTER pueda revisarlo:',
+    c.respuesta_tecnico||''
+  );
+
+  if(respuesta===null)return;
+  const limpio=String(respuesta||'').trim();
+  if(!limpio)return alert('Escribe una breve descripción de la corrección realizada.');
+
+  if(!navigator.onLine || (r&&r.sync_status!=='enviado')){
+    c.estado='corregida';
+    c.respuesta_tecnico=limpio;
+    c.fecha_corregida=new Date().toISOString();
+    c._pendiente_sync=true;
+
+    guardarCorreccionesTecnicoCache();
+    actualizarBadgeCorreccionesTecnico();
+    renderCorreccionesTecnico();
+    pintarRegistros();
+
+    alert(
+      'Corrección guardada en el celular.\n\n'+
+      'Se notificará al MASTER automáticamente cuando el elemento y la solicitud puedan sincronizarse.'
+    );
+    return;
+  }
+
+  try{
+    const {data,error}=await mappingSb.rpc(
+      'mapping_marcar_correccion_corregida',
+      {
+        p_correccion_id:id,
+        p_respuesta:limpio
+      }
+    );
+
+    if(error)throw error;
+
+    const actualizado=Array.isArray(data)?data[0]:data;
+    if(actualizado){
+      const i=correccionesTecnico.findIndex(x=>String(x.id)===String(id));
+      if(i>=0)correccionesTecnico[i]={...actualizado,_pendiente_sync:false};
+    }
+
+    guardarCorreccionesTecnicoCache();
+    actualizarBadgeCorreccionesTecnico();
+    renderCorreccionesTecnico();
+    pintarRegistros();
+
+    alert('Corrección enviada al MASTER para revisión.');
+  }catch(e){
+    console.error(e);
+
+    c.estado='corregida';
+    c.respuesta_tecnico=limpio;
+    c.fecha_corregida=new Date().toISOString();
+    c._pendiente_sync=true;
+
+    guardarCorreccionesTecnicoCache();
+    renderCorreccionesTecnico();
+    pintarRegistros();
+
+    alert(
+      'No fue posible enviar la confirmación ahora.\n\n'+
+      'Quedó guardada localmente y se reintentará cuando haya conexión.'
+    );
+  }
+}
+
 function crearMarcadorMapa(r){
   const color=colorTipoPunto(r.TIPO);
   const frHtml=tieneFinDeRed(r) ? '<span class="markerFRBelow">FR</span>' : '';
+  const corrPendientes=correccionesPendientesRegistroTecnico(r);
+  const corrHtml=corrPendientes.length
+    ? `<span class="mappingCorrectionMapBadge">${corrPendientes.length}</span>`
+    : '';
+
   return L.marker([r.LATITUDE,r.LONGITUDE],{
-    zIndexOffset:tieneFinDeRed(r)?3000:0,
+    zIndexOffset:corrPendientes.length?4200:(tieneFinDeRed(r)?3000:0),
     icon:L.divIcon({
       className:'customMapMarkerWrapper',
-      html:`<div class="markerSymbolHost">${htmlSimboloMapa(r.TIPO,color)}${frHtml}</div>`,
-      iconSize:[20,20],
-      iconAnchor:[10,10],
-      popupAnchor:[0,-10]
+      html:`<div class="markerSymbolHost mappingCorrectionMarkerHost">${htmlSimboloMapa(r.TIPO,color)}${frHtml}${corrHtml}</div>`,
+      iconSize:[28,28],
+      iconAnchor:[14,14],
+      popupAnchor:[0,-14]
     })
   });
 }
@@ -13885,7 +14738,21 @@ pintarRegistros=function(){
   arr.forEach(r=>{
     const mk=crearMarcadorMapa(r)
       .addTo(markerLayer)
-      .bindPopup(`<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br><b>Fin de red:</b> ${tieneFinDeRed(r)?'SI':'NO'} <small>(${esc(r.FINDERED||r.finder_ed||'sin valor')})</small><br><b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br><button class="popupEditBtn" onclick="editarPunto('${r.id}')">Editar</button><button class="popupMoveBtn" onclick="moverPunto('${r.id}')">Mover</button>`);
+      .bindPopup(()=>{
+        const corr=correccionesPendientesRegistroTecnico(r);
+        const corrHtml=corr.length
+          ? `<div class="mappingCorrectionPopupAlert">⚠ ${corr.length} corrección(es) pendiente(s)</div>`+
+            `<button class="popupCorrectionBtn" onclick="abrirCorreccionesTecnicoParaPunto('${esc(r.supabase_id||'')}','${esc(r.IDCAMPO||'')}')">Ver correcciones</button>`
+          : '';
+
+        return `<b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>`+
+          `${esc(r.TIPO)}<br>${esc(r.DIRECCION||'')}<br>`+
+          `<b>Fin de red:</b> ${tieneFinDeRed(r)?'SI':'NO'} <small>(${esc(r.FINDERED||r.finder_ed||'sin valor')})</small><br>`+
+          `<b>Conexiones:</b><br>${resumenConexiones(r,idx)}<br>`+
+          `${corrHtml}`+
+          `<button class="popupEditBtn" onclick="editarPunto('${r.id}')">Editar</button>`+
+          `<button class="popupMoveBtn" onclick="moverPunto('${r.id}')">Mover</button>`;
+      });
 
     if(['POSTE','C. AMERICANO','CERCHA','CANALIZADO','CLIENTE'].includes(r.TIPO)){
       mk.bindTooltip(htmlEtiquetaConsecutivo(r),{permanent:true,direction:'right',offset:[9,0],className:'posteConsecutivoTooltip',opacity:1});
@@ -13934,10 +14801,18 @@ window.addEventListener('online',()=>{
   actualizarBadgeModoOffline();
   actualizarEstadoSync();
   prepararShellOfflineMapping().catch(()=>{});
+
+  sincronizarCorreccionesPendientesTecnico()
+    .then(()=>cargarCorreccionesTecnico({silencioso:true}))
+    .then(()=>suscribirCorreccionesTecnico())
+    .catch(()=>{});
 });
 window.addEventListener('offline',()=>{
   actualizarBadgeModoOffline();
   actualizarEstadoSync();
+  cargarCorreccionesTecnicoCache();
+  actualizarBadgeCorreccionesTecnico();
+  renderCorreccionesTecnico();
 });
 window.addEventListener('load',async()=>{
   // Un estado "enviando" guardado en localStorage solo significa que la app
@@ -13969,6 +14844,8 @@ window.addEventListener('load',async()=>{
   setTimeout(verificarSesionMapping,150);
   actualizarBotonDistanciasMapa();
   actualizarIndicadorTipoProyecto();
+  cargarCorreccionesTecnicoCache();
+  actualizarBadgeCorreccionesTecnico();
   actualizarEstadoSync();
 });
 
@@ -14932,6 +15809,16 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
+
+
+
+
+
+
+
+
+
 
 
 
