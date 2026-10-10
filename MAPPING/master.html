@@ -2559,6 +2559,606 @@ header{
     min-width:0!important;
   }
 }
+
+/* ===== V69 · CONTROLES DE MAPA INDEPENDIENTES ===== */
+.mapLayerButtons{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+.mapLayerButtons .btn{
+  min-height:48px;
+  line-height:1.18;
+  font-size:10px;
+}
+#btnMapaOscuroMaster.layerOn{
+  background:#111827!important;
+  border-color:#67e8f9!important;
+  color:#e6fbff!important;
+  box-shadow:inset 0 0 0 1px rgba(103,232,249,.10),0 0 14px rgba(34,211,238,.08);
+}
+#btnDistanciasMaster.layerOn{
+  background:#7c3aed!important;
+  border-color:#a78bfa!important;
+}
+
+
+/* ===== V69.1 · FONDO OSCURO PURO, SIN MAPA BASE ===== */
+#map.masterMapDarkBlank,
+.masterMapDarkBlank{
+  background:#15191e!important;
+}
+.masterMapDarkBlank .leaflet-tile-pane{
+  display:none!important;
+}
+.masterMapDarkBlank .leaflet-control-attribution{
+  opacity:.48;
+}
+#btnMapaOscuroMaster.layerOn{
+  background:#111827!important;
+  border-color:#67e8f9!important;
+  color:#e6fbff!important;
+}
+
+
+/* ============================================================
+   V70 · HERRAMIENTAS MANUALES DEL MAPA
+   ============================================================ */
+.manualToolsCard{
+  border-color:rgba(250,204,21,.20)!important;
+  background:
+    radial-gradient(circle at 88% 4%,rgba(250,204,21,.055),transparent 28%),
+    linear-gradient(180deg,#13263a,#0d1b2a)!important;
+}
+
+.manualToolGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+
+.manualToolGrid .span2{
+  grid-column:1/-1;
+}
+
+.manualToolBtn{
+  margin:0!important;
+  min-height:40px;
+  border:1px solid #36526d!important;
+  background:#102236!important;
+  color:#e2e8f0!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease,background .14s ease!important;
+}
+
+.manualToolBtn:hover:not(:disabled){
+  transform:translateY(-1px);
+  border-color:#facc15!important;
+  box-shadow:0 5px 14px rgba(250,204,21,.08);
+}
+
+.manualToolBtn.active{
+  background:#854d0e!important;
+  border-color:#facc15!important;
+  color:#fff7cc!important;
+  box-shadow:0 0 0 1px rgba(250,204,21,.08),0 0 16px rgba(250,204,21,.09);
+}
+
+.manualToolBtn.secondary{
+  background:#172b40!important;
+}
+
+.manualToolBtn.dangerSoft{
+  background:#36131a!important;
+  border-color:#7f1d1d!important;
+  color:#fecaca!important;
+}
+
+.manualToolBtn:disabled{
+  opacity:.38!important;
+  cursor:not-allowed!important;
+  transform:none!important;
+}
+
+.manualMeasureReadout{
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:end;
+  gap:2px 8px;
+  margin-top:9px;
+  padding:8px 10px;
+  border:1px solid rgba(250,204,21,.20);
+  border-radius:10px;
+  background:#081725;
+}
+
+.manualMeasureReadout span{
+  grid-column:1/-1;
+  color:#94a3b8;
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.08em;
+}
+
+.manualMeasureReadout b{
+  color:#fde047;
+  font-size:18px;
+  line-height:1;
+}
+
+.manualMeasureReadout small{
+  color:#cbd5e1;
+  font-size:8px;
+  font-weight:800;
+}
+
+.manualToolsStatus{
+  margin-top:8px;
+  min-height:38px;
+  padding:8px 9px;
+  border-left:3px solid #facc15;
+  border-radius:8px;
+  background:#07111f;
+  color:#cbd5e1;
+  font-size:8px;
+  line-height:1.42;
+}
+
+.manualToolsStatus b{
+  color:#fef08a;
+}
+
+/* Cursores */
+#map.manualMeasureCursor,
+.manualMeasureCursor{
+  cursor:crosshair!important;
+}
+
+#map.manualNoteCursor,
+.manualNoteCursor{
+  cursor:copy!important;
+}
+
+/* Etiquetas de medición */
+.manualMeasureLabelIcon{
+  background:transparent!important;
+  border:0!important;
+}
+
+.manualMeasureBadge{
+  display:inline-block;
+  transform:translate(-50%,-50%);
+  white-space:nowrap;
+  pointer-events:none;
+  padding:3px 6px;
+  border:1px solid #facc15;
+  border-radius:7px;
+  background:rgba(17,24,39,.94);
+  color:#fde047;
+  font-size:9px;
+  line-height:1;
+  font-weight:1000;
+  box-shadow:0 2px 8px rgba(0,0,0,.42),0 0 10px rgba(250,204,21,.06);
+  text-shadow:0 1px 2px #000;
+}
+
+.manualMeasureBadge.total{
+  padding:4px 7px;
+  border-color:#67e8f9;
+  background:#0b2535;
+  color:#a5f3fc;
+  font-size:10px;
+}
+
+/* Notas */
+.manualNoteIcon{
+  background:transparent!important;
+  border:0!important;
+}
+
+.manualNoteBubble{
+  position:relative;
+  min-width:110px;
+  max-width:170px;
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 9px;
+  border:1px solid #fb923c;
+  border-radius:9px 9px 9px 2px;
+  background:rgba(67,32,8,.95);
+  color:#ffedd5;
+  box-shadow:0 5px 16px rgba(0,0,0,.35),0 0 14px rgba(251,146,60,.08);
+}
+
+.manualNoteBubble span{
+  flex:0 0 auto;
+  font-size:12px;
+}
+
+.manualNoteBubble b{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:8px;
+  line-height:1.2;
+}
+
+.manualPopup{
+  min-width:180px;
+  color:#0f172a;
+  font-size:11px;
+  line-height:1.45;
+}
+
+.manualNoteFull{
+  margin:7px 0;
+  padding:7px 8px;
+  border-radius:7px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+.manualPopupActions{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+
+.manualPopupActions button{
+  border:0;
+  border-radius:7px;
+  padding:6px 8px;
+  background:#0c7ea0;
+  color:#fff;
+  font-size:9px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.manualPopupActions button.danger{
+  background:#dc2626;
+}
+
+@media(max-width:900px){
+  .manualToolGrid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+
+/* ============================================================
+   V71 · SOLICITUDES DE CORRECCIÓN MASTER ↔ MAPPING
+   ============================================================ */
+.hdrCorrecciones{
+  --hdrAccent:#f59e0b!important;
+  position:relative!important;
+}
+.hdrCorrecciones .hdrIcon{
+  color:#fbbf24!important;
+  border-color:rgba(245,158,11,.22)!important;
+  background:rgba(245,158,11,.08)!important;
+}
+.correctionHeaderBadge{
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:2px;
+  border-radius:999px;
+  background:#dc2626;
+  color:#fff;
+  font-size:8px;
+  font-weight:1000;
+  box-shadow:0 0 12px rgba(239,68,68,.20);
+}
+.correctionHeaderBadge.zero{
+  background:#334155;
+  color:#cbd5e1;
+  box-shadow:none;
+}
+
+.masterCorrectionMarkerWrap{
+  position:relative;
+  width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+}
+.masterCorrectionMapBadge{
+  position:absolute;
+  right:-7px;
+  top:-9px;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #fff;
+  border-radius:999px;
+  background:#f59e0b;
+  color:#111827;
+  font-size:8px;
+  font-weight:1000;
+  box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(245,158,11,.12);
+  animation:masterCorrectionPulse 1.6s ease-in-out infinite;
+}
+@keyframes masterCorrectionPulse{
+  0%,100%{transform:scale(1);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 3px rgba(245,158,11,.10)}
+  50%{transform:scale(1.08);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 7px rgba(245,158,11,.02)}
+}
+
+.correctionCenterModal{width:min(1580px,98vw)!important}
+.correctionModalHead{
+  background:linear-gradient(110deg,#071827,#0a2438)!important;
+  border-bottom-color:rgba(245,158,11,.20)!important;
+}
+.correctionHeadActions{display:flex;gap:7px;align-items:center}
+.correctionHeadActions .btn{margin:0;width:auto}
+
+.correctionSummaryGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:10px;
+}
+.correctionSummaryCard{
+  position:relative;
+  overflow:hidden;
+  min-height:78px;
+  padding:11px 13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#0b1928;
+}
+.correctionSummaryCard::before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;width:4px;
+  background:var(--corrColor,#64748b);
+}
+.correctionSummaryCard span{
+  display:block;
+  color:#94a3b8;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+}
+.correctionSummaryCard b{
+  display:block;
+  margin-top:5px;
+  color:#fff;
+  font-size:24px;
+  font-weight:1000;
+}
+.correctionSummaryCard.pending{--corrColor:#f59e0b}
+.correctionSummaryCard.reopened{--corrColor:#ef4444}
+.correctionSummaryCard.fixed{--corrColor:#38bdf8}
+.correctionSummaryCard.closed{--corrColor:#22c55e}
+
+.correctionFilters{
+  display:grid;
+  grid-template-columns:1fr 1fr 1.5fr;
+  gap:8px;
+  align-items:end;
+  margin-bottom:10px;
+  padding:9px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#07111f;
+}
+.correctionFilters label{margin-top:0}
+.correctionTableWrap{max-height:65vh!important}
+.correctionTable{min-width:1320px!important}
+
+.corrState,
+.corrPriority{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:72px;
+  padding:4px 7px;
+  border-radius:999px;
+  font-size:8px;
+  font-weight:1000;
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+.corrState.pendiente{background:#92400e;color:#fde68a}
+.corrState.reabierta{background:#991b1b;color:#fecaca}
+.corrState.corregida{background:#075985;color:#bae6fd}
+.corrState.cerrada{background:#166534;color:#bbf7d0}
+.corrPriority.normal{background:#334155;color:#e2e8f0}
+.corrPriority.alta{background:#9a3412;color:#ffedd5}
+.corrPriority.urgente{background:#991b1b;color:#fee2e2}
+
+.correctionCellText{
+  max-width:310px;
+  white-space:normal;
+  line-height:1.38;
+}
+.correctionCellText small{
+  display:block;
+  margin-top:4px;
+  color:#94a3b8;
+}
+
+.correctionActions{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  min-width:190px;
+}
+.correctionActions .btn{margin:0!important}
+
+.correctionCreateModal{width:min(760px,96vw)!important}
+.correctionPointInfo{
+  margin-bottom:10px;
+  padding:10px 12px;
+  border:1px solid rgba(245,158,11,.25);
+  border-left:4px solid #f59e0b;
+  border-radius:10px;
+  background:#07111f;
+  color:#e2e8f0;
+  font-size:10px;
+  line-height:1.45;
+}
+.correctionCreateHint{
+  margin-top:9px;
+  padding:8px 10px;
+  border-radius:9px;
+  background:#102236;
+  border:1px solid #29415d;
+  color:#94a3b8;
+  font-size:9px;
+}
+.correctionCreateBtn{
+  background:linear-gradient(180deg,#d97706,#b45309)!important;
+  color:#fff!important;
+}
+
+.pointCorrectionSection{
+  border-color:rgba(245,158,11,.32)!important;
+}
+.pointCorrectionSection h3{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  background:linear-gradient(90deg,#3b2307,#132b43)!important;
+  color:#fde68a!important;
+}
+.pointCorrectionHeaderActions{
+  display:flex;
+  gap:5px;
+  align-items:center;
+}
+.pointCorrectionHeaderActions button{
+  width:auto;
+  border:1px solid rgba(251,191,36,.35);
+  border-radius:8px;
+  padding:5px 8px;
+  background:#92400e;
+  color:#fff7ed;
+  font-size:8px;
+  font-weight:900;
+  cursor:pointer;
+}
+.pointCorrectionBody{padding:10px}
+.pointCorrectionEmpty{
+  padding:9px;
+  border-radius:9px;
+  background:#07111f;
+  color:#94a3b8;
+  font-size:9px;
+}
+.pointCorrectionCard{
+  margin-bottom:8px;
+  padding:9px 10px;
+  border:1px solid #334155;
+  border-left:4px solid var(--corrCard,#64748b);
+  border-radius:10px;
+  background:#07111f;
+}
+.pointCorrectionCard:last-child{margin-bottom:0}
+.pointCorrectionCard.pendiente{--corrCard:#f59e0b}
+.pointCorrectionCard.reabierta{--corrCard:#ef4444}
+.pointCorrectionCard.corregida{--corrCard:#38bdf8}
+.pointCorrectionCard.cerrada{--corrCard:#22c55e}
+.pointCorrectionMeta{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:6px;
+}
+.pointCorrectionCard p{
+  margin:4px 0;
+  color:#e2e8f0;
+  font-size:10px;
+  line-height:1.4;
+}
+.pointCorrectionCard small{
+  color:#94a3b8;
+  font-size:8px;
+}
+.pointCorrectionReview{
+  margin-top:6px;
+  padding:7px 8px;
+  border-radius:8px;
+  background:#0d1b2a;
+  color:#bae6fd;
+  font-size:9px;
+}
+.pointCorrectionButtons{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  margin-top:7px;
+}
+.pointCorrectionButtons .btn{margin:0!important;width:auto!important}
+
+@media(max-width:900px){
+  .correctionSummaryGrid{grid-template-columns:1fr 1fr}
+  .correctionFilters{grid-template-columns:1fr}
+}
+@media(max-width:540px){
+  .correctionSummaryGrid{grid-template-columns:1fr}
+}
+
+
+/* ============================================================
+   V71.1 · JERARQUÍA DE MODALES DE CORRECCIÓN
+   El detalle del elemento permanece detrás y la solicitud
+   de corrección siempre se muestra en primer plano.
+   ============================================================ */
+
+/* Detalle del elemento: nivel normal de consulta. */
+#detallePuntoModal.open{
+  z-index:31000!important;
+}
+
+/* Centro de correcciones por encima de los modales generales. */
+#correccionesMasterModal.open{
+  z-index:34000!important;
+}
+
+/* Crear solicitud debe ser el modal superior cuando se abre
+   desde el detalle de un elemento. */
+#crearCorreccionModal.open{
+  z-index:37000!important;
+}
+
+/* Garantiza que la tarjeta quede sobre su propio backdrop. */
+#crearCorreccionModal .correctionCreateModal{
+  position:relative;
+  z-index:2;
+  box-shadow:
+    0 28px 90px rgba(0,0,0,.72),
+    0 0 0 1px rgba(245,158,11,.10),
+    0 0 34px rgba(245,158,11,.08)!important;
+}
+
+/* Backdrop un poco más marcado para diferenciar el segundo nivel
+   sin cerrar el detalle que queda debajo. */
+#crearCorreccionModal{
+  background:rgba(2,6,23,.90)!important;
+}
+
+/* El drilldown queda por debajo del modal de nueva corrección
+   si excepcionalmente ambos llegaran a estar abiertos. */
+#dashDrillModal.open{
+  z-index:32000!important;
+}
+
 </style>
 
 </head>
@@ -2589,6 +3189,9 @@ header{
     <button class="topActionBtn managementBtn hdrProyectos" onclick="abrirAdministrarProyectos()"><span class="hdrIcon">▱</span><span>Proyectos</span></button>
     <button class="topActionBtn hdrDashboard" onclick="abrirDashboardAvances()"><span class="hdrIcon">▥</span><span>Reporte de avances</span></button>
     <button class="topActionBtn hdrAsignaciones" onclick="abrirModalAsignaciones()"><span class="hdrIcon">✓</span><span>Asignaciones</span></button>
+    <button class="topActionBtn hdrCorrecciones" onclick="abrirCentroCorreccionesMaster()" title="Solicitudes de corrección">
+      <span class="hdrIcon">!</span><span>Correcciones</span><span class="correctionHeaderBadge" id="correccionesTopBadge">0</span>
+    </button>
     <div class="deliverablesTop" id="deliverablesTop">
       <button class="topActionBtn deliverablesTrigger deliverablesBtn hdrEntregables" type="button" onclick="toggleEntregables(event)" aria-haspopup="menu" aria-expanded="false"><span class="hdrIcon">◇</span><span>ENTREGABLES</span><span class="deliverablesArrow">⌄</span></button>
       <div class="deliverablesDropdown" id="entregablesMenu">
@@ -2692,11 +3295,50 @@ header{
     <h3>🎯 Capas visibles</h3>
     <div class="mapLayerButtons">
       <button class="btn layerOn" id="btnConexionesMaster" onclick="toggleConexionesMaster()">🔗 Conexiones ON</button>
-      <button class="btn layerOff" id="btnCartografiaMapaMaster" onclick="toggleCartografiaMapaMaster()" disabled>🗺️ Cartografía OFF</button>
+            <button class="btn layerOn" id="btnDistanciasMaster" onclick="toggleDistanciasMaster()">📏 Distancias ON</button>
+      <button class="btn layerOff" id="btnMapaOscuroMaster" onclick="toggleMapaOscuroMaster()">🌑 Fondo oscuro OFF</button>
+<button class="btn layerOff" id="btnCartografiaMapaMaster" onclick="toggleCartografiaMapaMaster()" disabled>🗺️ Cartografía OFF</button>
     </div>
     <div class="hint" style="margin-top:8px">
-      Las conexiones muestran distancia <b>GPS</b> y, cuando existe, distancia de <b>odómetro</b>.
+      <b>Conexiones</b> controla únicamente las líneas aguamarina.
+      <b>Distancias</b> muestra u oculta de forma independiente las etiquetas GPS / Odo.
+      <b>Fondo oscuro</b> oculta completamente el mapa base y deja un lienzo oscuro, sin API ni conexión externa.
       La cartografía corresponde al archivo cargado al proyecto desde el módulo Proyectos.
+    </div>
+  </div>
+
+  <div class="card mapFilterCard manualToolsCard">
+    <h3>🛠️ Herramientas manuales</h3>
+
+    <div class="manualToolGrid">
+      <button class="btn manualToolBtn" id="btnReglaManualMaster" type="button" onclick="toggleReglaManualMaster()">
+        📏 Medir
+      </button>
+      <button class="btn manualToolBtn" id="btnNotaManualMaster" type="button" onclick="activarNotaManualMaster()">
+        📝 Nota
+      </button>
+      <button class="btn manualToolBtn secondary" id="btnFinalizarMedicionMaster" type="button" onclick="finalizarMedicionManualMaster()" disabled>
+        ✓ Finalizar
+      </button>
+      <button class="btn manualToolBtn secondary" id="btnDeshacerMedicionMaster" type="button" onclick="deshacerPuntoMedicionManualMaster()" disabled>
+        ↶ Deshacer
+      </button>
+      <button class="btn manualToolBtn secondary span2" id="btnNotasVisiblesMaster" type="button" onclick="toggleNotasManualMaster()">
+        👁 Notas ON
+      </button>
+      <button class="btn manualToolBtn dangerSoft span2" type="button" onclick="limpiarHerramientasManualMaster()">
+        🗑 Limpiar mediciones y notas
+      </button>
+    </div>
+
+    <div class="manualMeasureReadout">
+      <span>MEDICIÓN ACTUAL</span>
+      <b id="manualMeasureTotalMaster">0 m</b>
+      <small id="manualMeasureSegmentsMaster">0 segmentos</small>
+    </div>
+
+    <div class="manualToolsStatus" id="manualToolsStatusMaster">
+      Selecciona <b>Medir</b> para trazar una regla o <b>Nota</b> para agregar una anotación sobre el mapa.
     </div>
   </div>
 
@@ -3241,6 +3883,124 @@ header{
   </div>
 </div>
 
+
+<!-- ===== CENTRO DE CORRECCIONES MASTER ===== -->
+<div class="modalOverlay" id="correccionesMasterModal">
+  <div class="modal wide correctionCenterModal">
+    <div class="modalHead correctionModalHead">
+      <div>
+        <h2>⚠️ Centro de correcciones</h2>
+        <small style="color:var(--muted)">Solicitudes enviadas al personal de campo y seguimiento de cierre</small>
+      </div>
+      <div class="correctionHeadActions">
+        <button class="btn blue small" type="button" onclick="cargarCorreccionesMasterGlobal(false).then(renderCentroCorreccionesMaster)">⟳ Actualizar</button>
+        <button class="close" onclick="correccionesMasterModal.classList.remove('open')">Cerrar</button>
+      </div>
+    </div>
+    <div class="modalBody">
+      <div class="correctionSummaryGrid">
+        <div class="correctionSummaryCard pending"><span>Pendientes técnico</span><b id="corrMasterPendientes">0</b></div>
+        <div class="correctionSummaryCard reopened"><span>Reabiertas</span><b id="corrMasterReabiertas">0</b></div>
+        <div class="correctionSummaryCard fixed"><span>Por revisar</span><b id="corrMasterCorregidas">0</b></div>
+        <div class="correctionSummaryCard closed"><span>Cerradas</span><b id="corrMasterCerradas">0</b></div>
+      </div>
+
+      <div class="correctionFilters">
+        <div>
+          <label>Proyecto</label>
+          <select id="corrMasterProyectoFiltro" onchange="renderCentroCorreccionesMaster()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="corrMasterEstadoFiltro" onchange="renderCentroCorreccionesMaster()">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="reabierta">Reabierta</option>
+            <option value="corregida">Corregida / por revisar</option>
+            <option value="cerrada">Cerrada</option>
+          </select>
+        </div>
+        <div>
+          <label>Buscar</label>
+          <input id="corrMasterBuscar" placeholder="IDCAMPO, técnico, descripción..." oninput="renderCentroCorreccionesMaster()">
+        </div>
+      </div>
+
+      <div class="tableWrap correctionTableWrap">
+        <table class="table correctionTable">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Elemento</th>
+              <th>Proyecto</th>
+              <th>Técnico</th>
+              <th>Solicitud</th>
+              <th>Respuesta técnico</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="corrMasterTabla"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CREAR SOLICITUD DE CORRECCIÓN ===== -->
+<div class="modalOverlay" id="crearCorreccionModal">
+  <div class="modal correctionCreateModal">
+    <div class="modalHead correctionModalHead">
+      <div>
+        <h2>⚠️ Solicitar corrección</h2>
+        <small style="color:var(--muted)">La solicitud será visible para el técnico responsable del elemento</small>
+      </div>
+      <button class="close" onclick="crearCorreccionModal.classList.remove('open')">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <input type="hidden" id="corrCrearPuntoId">
+      <div id="corrCrearPuntoInfo" class="correctionPointInfo"></div>
+
+      <div class="grid2">
+        <div>
+          <label>Tipo de corrección *</label>
+          <select id="corrCrearCategoria">
+            <option value="DATOS">Datos del elemento</option>
+            <option value="UBICACION">Ubicación / GPS</option>
+            <option value="CONEXIONES">Conexiones / distancias</option>
+            <option value="FOTOGRAFIAS">Fotografías</option>
+            <option value="IDENTIFICACION">Identificación / consecutivo</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label>Prioridad *</label>
+          <select id="corrCrearPrioridad">
+            <option value="normal">Normal</option>
+            <option value="alta">Alta</option>
+            <option value="urgente">Urgente</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Campo o dato a revisar</label>
+      <input id="corrCrearCampo" placeholder="Ej: Propietario, altura, foto frontal, CX2...">
+
+      <label>Descripción de la corrección *</label>
+      <textarea id="corrCrearDescripcion" style="min-height:120px" placeholder="Describe claramente qué debe revisar o corregir el técnico."></textarea>
+
+      <div class="correctionCreateHint">
+        La solicitud queda asociada directamente al elemento y al técnico que lo levantó.
+      </div>
+
+      <button class="btn correctionCreateBtn" type="button" onclick="guardarSolicitudCorreccionMaster()">⚠ Enviar solicitud al técnico</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== DASHBOARD DE AVANCES · V65 EJECUTIVO ===== -->
 <div class="modalOverlay" id="avanceModal">
   <div class="modal dashboardModal">
@@ -3650,7 +4410,19 @@ let map,layer=null,polygonMasterLayer=null;
 let cartografiaMapaMasterLayer=null;
 let cartografiaMapaMasterCache=new Map();
 let mostrarConexionesMaster=localStorage.getItem('master_mostrar_conexiones_v1')!=='0';
+let mostrarDistanciasMaster=localStorage.getItem('master_mostrar_distancias_v1')!=='0';
 let mostrarCartografiaMapaMaster=localStorage.getItem('master_mostrar_cartografia_v1')==='1';
+let mapaBaseOscuroMaster=localStorage.getItem('master_mapa_oscuro_v1')==='1';
+let mapaBaseLayersMaster={};
+let controlCapasBaseMaster=null;
+
+// Herramientas manuales del mapa (solo visuales/locales, no modifican mapping_puntos).
+let manualToolsLayer=null;
+let manualToolModeMaster='';
+let manualMeasureActiveMaster=[];
+let manualMapDataMaster={measurements:[],notes:[]};
+let manualNotesVisibleMaster=localStorage.getItem('master_notas_manual_visibles_v1')!=='0';
+let manualProjectIdMaster='';
 let geojsonProyectoPreview=null;
 let passwordSesionActual='';
 let dashboardPuntos=[];
@@ -3661,6 +4433,11 @@ let dashboardDrillTituloActual='';
 let dashboardDrillValorActual='';
 let dashboardDrillContextoActual='';
 let dashboardDrillAporteLabel='Aporte';
+
+// Solicitudes de corrección MASTER ↔ técnico.
+let correccionesMaster=[];
+let correccionPuntoActivoMaster=null;
+let correccionDetallePuntoIdMaster=null;
 
 // Ubicación actual de técnicos
 let ubicacionesTecnicos=[];
@@ -3687,16 +4464,79 @@ Chart.defaults.plugins.datalabels = {
 };
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function aplicarFondoMapaOscuroMaster(activo){
+  const mapEl=document.getElementById('map');
+  const container=map?.getContainer?.()||mapEl;
+
+  if(container){
+    container.classList.toggle('masterMapDarkBlank',!!activo);
+  }
+
+  if(mapEl){
+    mapEl.style.background=activo?'#15191e':'#e8eef4';
+  }
+}
+
 function initMap(){
   map=L.map('map').setView([4.65,-74.1],11);
-  const g=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'});
-  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'OSM'});
-  g.addTo(map);
-  L.control.layers({'Google Híbrido':g,'Calles':osm}).addTo(map);
+
+  const g=L.tileLayer(
+    'https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    {
+      subdomains:['mt0','mt1','mt2','mt3'],
+      maxNativeZoom:20,
+      maxZoom:22,
+      attribution:'Google'
+    }
+  );
+
+  const osm=L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      maxZoom:22,
+      attribution:'OSM'
+    }
+  );
+
+  mapaBaseLayersMaster={
+    'Google Híbrido':g,
+    'Calles':osm
+  };
+
+  if(mapaBaseOscuroMaster){
+    aplicarFondoMapaOscuroMaster(true);
+  }else{
+    g.addTo(map);
+    aplicarFondoMapaOscuroMaster(false);
+  }
+
+  controlCapasBaseMaster=L.control.layers(
+    mapaBaseLayersMaster,
+    null,
+    {
+      position:'topright',
+      collapsed:true
+    }
+  ).addTo(map);
+
+  map.on('baselayerchange',ev=>{
+    mapaBaseOscuroMaster=false;
+    localStorage.setItem('master_mapa_oscuro_v1','0');
+    aplicarFondoMapaOscuroMaster(false);
+    actualizarBotonesCapasMapaMaster();
+  });
+
   tecnicoLiveLayer=L.layerGroup().addTo(map);
+
+  // Capa independiente para regla, mediciones y notas manuales.
+  manualToolsLayer=L.layerGroup().addTo(map);
+  map.on('click',manejarClickHerramientaManualMaster);
+
   actualizarBotonesCapasMapaMaster();
   actualizarVisibilidadFiltrosMaster();
+  actualizarEstadoHerramientasManualMaster();
 }
+
 const LOGIN_MASTER_URL='login_master.html';
 
 function paginaActualMaster(){
@@ -3791,6 +4631,7 @@ async function cargarTodo(){
   // Después las asignaciones se limitan a esos proyectos visibles.
   await Promise.all([cargarEmpresas(),cargarProyectos(),cargarUsuarios()]);
   await cargarAsignaciones();
+  await cargarCorreccionesMasterGlobal(true);
   llenarSelects();
   actualizarKpis();
 
@@ -7191,12 +8032,60 @@ function toggleConexionesMaster(){
   pintarMapa();
 }
 
+function toggleDistanciasMaster(){
+  mostrarDistanciasMaster=!mostrarDistanciasMaster;
+  localStorage.setItem('master_mostrar_distancias_v1',mostrarDistanciasMaster?'1':'0');
+  actualizarBotonesCapasMapaMaster();
+  pintarMapa();
+}
+
+function aplicarMapaBaseMaster(nombre){
+  if(!map||!mapaBaseLayersMaster)return;
+
+  Object.values(mapaBaseLayersMaster).forEach(l=>{
+    try{
+      if(map.hasLayer(l))map.removeLayer(l);
+    }catch(_){}
+  });
+
+  if(nombre==='Oscuro'){
+    mapaBaseOscuroMaster=true;
+    aplicarFondoMapaOscuroMaster(true);
+  }else{
+    const layerBase=mapaBaseLayersMaster[nombre]||mapaBaseLayersMaster['Google Híbrido'];
+    if(layerBase)layerBase.addTo(map);
+    mapaBaseOscuroMaster=false;
+    aplicarFondoMapaOscuroMaster(false);
+  }
+
+  localStorage.setItem('master_mapa_oscuro_v1',mapaBaseOscuroMaster?'1':'0');
+  actualizarBotonesCapasMapaMaster();
+}
+
+function toggleMapaOscuroMaster(){
+  aplicarMapaBaseMaster(mapaBaseOscuroMaster?'Google Híbrido':'Oscuro');
+}
+
 function actualizarBotonesCapasMapaMaster(){
   const bc=document.getElementById('btnConexionesMaster');
   if(bc){
     bc.textContent=mostrarConexionesMaster?'🔗 Conexiones ON':'🔗 Conexiones OFF';
     bc.classList.toggle('layerOn',mostrarConexionesMaster);
     bc.classList.toggle('layerOff',!mostrarConexionesMaster);
+  }
+
+  const bd=document.getElementById('btnDistanciasMaster');
+  if(bd){
+    bd.textContent=mostrarDistanciasMaster?'📏 Distancias ON':'📏 Distancias OFF';
+    bd.classList.toggle('layerOn',mostrarDistanciasMaster);
+    bd.classList.toggle('layerOff',!mostrarDistanciasMaster);
+  }
+
+  const bo=document.getElementById('btnMapaOscuroMaster');
+  if(bo){
+    bo.textContent=mapaBaseOscuroMaster?'🌑 Fondo oscuro ON':'🌑 Fondo oscuro OFF';
+    bo.classList.toggle('layerOn',mapaBaseOscuroMaster);
+    bo.classList.toggle('layerOff',!mapaBaseOscuroMaster);
   }
 
   const b=document.getElementById('btnCartografiaMapaMaster');
@@ -7431,10 +8320,512 @@ function agregarEtiquetaDistanciaMaster(origen,destino,distSlot,grupo){
   }).addTo(grupo);
 }
 
+
+/* ============================================================
+   V70 · HERRAMIENTAS MANUALES DEL MAPA
+   - Regla / polilínea con distancia por segmento y acumulada
+   - Notas georreferenciadas
+   - Persistencia local por proyecto
+   ============================================================ */
+
+function manualStorageKeyMaster(proyectoId=manualProjectIdMaster){
+  const id=String(proyectoId||'').trim()||'SIN_PROYECTO';
+  return `master_herramientas_manual_v1_${id}`;
+}
+
+function manualIdMaster(pref='m'){
+  return `${pref}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+}
+
+function normalizarManualDataMaster(data){
+  const base={measurements:[],notes:[]};
+  if(!data||typeof data!=='object')return base;
+
+  base.measurements=Array.isArray(data.measurements)
+    ? data.measurements
+        .filter(x=>x&&Array.isArray(x.points)&&x.points.length>=2)
+        .map(x=>({
+          id:String(x.id||manualIdMaster('med')),
+          points:x.points
+            .map(p=>[Number(p?.[0]),Number(p?.[1])])
+            .filter(p=>p.every(Number.isFinite)),
+          created_at:x.created_at||new Date().toISOString()
+        }))
+        .filter(x=>x.points.length>=2)
+    : [];
+
+  base.notes=Array.isArray(data.notes)
+    ? data.notes
+        .map(x=>({
+          id:String(x?.id||manualIdMaster('nota')),
+          lat:Number(x?.lat),
+          lng:Number(x?.lng),
+          text:String(x?.text||'').trim(),
+          created_at:x?.created_at||new Date().toISOString()
+        }))
+        .filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng)&&x.text)
+    : [];
+
+  return base;
+}
+
+function guardarHerramientasManualMaster(){
+  if(!manualProjectIdMaster)return;
+
+  try{
+    localStorage.setItem(
+      manualStorageKeyMaster(),
+      JSON.stringify(manualMapDataMaster)
+    );
+  }catch(e){
+    console.warn('No fue posible guardar las herramientas manuales:',e);
+  }
+}
+
+function cargarHerramientasManualProyectoMaster(proyectoId){
+  manualProjectIdMaster=String(proyectoId||'');
+  manualToolModeMaster='';
+  manualMeasureActiveMaster=[];
+
+  let data={measurements:[],notes:[]};
+
+  if(manualProjectIdMaster){
+    try{
+      const raw=localStorage.getItem(manualStorageKeyMaster(manualProjectIdMaster));
+      if(raw)data=normalizarManualDataMaster(JSON.parse(raw));
+    }catch(e){
+      console.warn('No fue posible recuperar herramientas manuales:',e);
+    }
+  }
+
+  manualMapDataMaster=data;
+  renderHerramientasManualMaster();
+  actualizarEstadoHerramientasManualMaster();
+}
+
+function formatDistManualMaster(m){
+  const n=Number(m)||0;
+
+  if(n>=1000){
+    return `${new Intl.NumberFormat('es-CO',{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }).format(n/1000)} km`;
+  }
+
+  return `${new Intl.NumberFormat('es-CO',{
+    maximumFractionDigits:1
+  }).format(n)} m`;
+}
+
+function distanciaPuntosManualMaster(a,b){
+  if(!map||!a||!b)return 0;
+
+  const la=L.latLng(Number(a[0]),Number(a[1]));
+  const lb=L.latLng(Number(b[0]),Number(b[1]));
+
+  return map.distance(la,lb)||0;
+}
+
+function totalMedicionManualMaster(points){
+  const pts=Array.isArray(points)?points:[];
+  let total=0;
+
+  for(let i=1;i<pts.length;i++){
+    total+=distanciaPuntosManualMaster(pts[i-1],pts[i]);
+  }
+
+  return total;
+}
+
+function puntoMedioManualMaster(a,b){
+  return [
+    (Number(a[0])+Number(b[0]))/2,
+    (Number(a[1])+Number(b[1]))/2
+  ];
+}
+
+function etiquetaManualMaster(latlng,text,tipo='segmento'){
+  if(!manualToolsLayer)return null;
+
+  return L.marker(latlng,{
+    interactive:false,
+    keyboard:false,
+    icon:L.divIcon({
+      className:'manualMeasureLabelIcon',
+      html:`<span class="manualMeasureBadge ${tipo==='total'?'total':''}">${esc(text)}</span>`,
+      iconSize:[1,1],
+      iconAnchor:[0,0]
+    })
+  }).addTo(manualToolsLayer);
+}
+
+function renderUnaMedicionManualMaster(med,activa=false){
+  if(!manualToolsLayer)return;
+
+  const pts=Array.isArray(med?.points)?med.points:[];
+  if(!pts.length)return;
+
+  const latlngs=pts.map(p=>[Number(p[0]),Number(p[1])]);
+
+  // Vértices.
+  latlngs.forEach((p,i)=>{
+    L.circleMarker(p,{
+      radius:i===latlngs.length-1?5:4,
+      color:activa?'#fef08a':'#fde047',
+      fillColor:activa?'#f59e0b':'#eab308',
+      fillOpacity:1,
+      weight:2,
+      interactive:false
+    }).addTo(manualToolsLayer);
+  });
+
+  if(latlngs.length<2)return;
+
+  const total=totalMedicionManualMaster(pts);
+
+  const line=L.polyline(latlngs,{
+    color:activa?'#fbbf24':'#facc15',
+    weight:4,
+    opacity:.96,
+    dashArray:activa?'8,6':null,
+    lineCap:'round',
+    lineJoin:'round'
+  }).addTo(manualToolsLayer);
+
+  if(!activa){
+    line.bindPopup(
+      `<div class="manualPopup">`+
+        `<b>📏 Medición manual</b><br>`+
+        `<span>Total: <b>${esc(formatDistManualMaster(total))}</b></span><br>`+
+        `<span>${pts.length-1} segmento${pts.length-1===1?'':'s'}</span>`+
+        `<div class="manualPopupActions">`+
+          `<button onclick="eliminarMedicionManualMaster('${esc(med.id)}')">Eliminar medición</button>`+
+        `</div>`+
+      `</div>`
+    );
+  }
+
+  for(let i=1;i<pts.length;i++){
+    const seg=distanciaPuntosManualMaster(pts[i-1],pts[i]);
+    etiquetaManualMaster(
+      puntoMedioManualMaster(pts[i-1],pts[i]),
+      formatDistManualMaster(seg),
+      'segmento'
+    );
+  }
+
+  etiquetaManualMaster(
+    latlngs[latlngs.length-1],
+    `Σ ${formatDistManualMaster(total)}`,
+    'total'
+  );
+}
+
+function renderNotaManualMaster(nota){
+  if(!manualToolsLayer||!manualNotesVisibleMaster)return;
+
+  const texto=String(nota.text||'').trim();
+  const corto=texto.length>42?`${texto.slice(0,39)}…`:texto;
+
+  const marker=L.marker(
+    [Number(nota.lat),Number(nota.lng)],
+    {
+      icon:L.divIcon({
+        className:'manualNoteIcon',
+        html:`<div class="manualNoteBubble"><span>📝</span><b>${esc(corto)}</b></div>`,
+        iconSize:[170,38],
+        iconAnchor:[10,19]
+      }),
+      riseOnHover:true
+    }
+  ).addTo(manualToolsLayer);
+
+  marker.bindPopup(
+    `<div class="manualPopup manualNotePopup">`+
+      `<b>📝 Nota manual</b>`+
+      `<div class="manualNoteFull">${esc(texto)}</div>`+
+      `<div class="manualPopupActions">`+
+        `<button onclick="editarNotaManualMaster('${esc(nota.id)}')">Editar</button>`+
+        `<button class="danger" onclick="eliminarNotaManualMaster('${esc(nota.id)}')">Eliminar</button>`+
+      `</div>`+
+    `</div>`
+  );
+}
+
+function renderHerramientasManualMaster(){
+  if(!manualToolsLayer||!map)return;
+
+  manualToolsLayer.clearLayers();
+
+  (manualMapDataMaster.measurements||[]).forEach(m=>
+    renderUnaMedicionManualMaster(m,false)
+  );
+
+  if(manualMeasureActiveMaster.length){
+    renderUnaMedicionManualMaster(
+      {id:'active',points:manualMeasureActiveMaster},
+      true
+    );
+  }
+
+  (manualMapDataMaster.notes||[]).forEach(renderNotaManualMaster);
+
+  actualizarEstadoHerramientasManualMaster();
+}
+
+function setManualToolModeMaster(mode=''){
+  manualToolModeMaster=mode;
+
+  const mapEl=map?.getContainer?.();
+  if(mapEl){
+    mapEl.classList.toggle('manualMeasureCursor',mode==='measure');
+    mapEl.classList.toggle('manualNoteCursor',mode==='note');
+  }
+
+  actualizarEstadoHerramientasManualMaster();
+}
+
+function toggleReglaManualMaster(){
+  if(!manualProjectIdMaster){
+    return alert('Selecciona primero un proyecto.');
+  }
+
+  if(manualToolModeMaster==='measure'){
+    setManualToolModeMaster('');
+    return;
+  }
+
+  setManualToolModeMaster('measure');
+}
+
+function activarNotaManualMaster(){
+  if(!manualProjectIdMaster){
+    return alert('Selecciona primero un proyecto.');
+  }
+
+  setManualToolModeMaster(
+    manualToolModeMaster==='note'?'':'note'
+  );
+}
+
+function manejarClickHerramientaManualMaster(ev){
+  if(!ev?.latlng)return;
+
+  if(manualToolModeMaster==='measure'){
+    manualMeasureActiveMaster.push([
+      Number(ev.latlng.lat),
+      Number(ev.latlng.lng)
+    ]);
+
+    renderHerramientasManualMaster();
+    return;
+  }
+
+  if(manualToolModeMaster==='note'){
+    const texto=prompt('Escribe la nota que quieres dejar sobre el mapa:');
+
+    if(texto===null){
+      setManualToolModeMaster('');
+      return;
+    }
+
+    const limpio=String(texto||'').trim();
+    if(!limpio){
+      setManualToolModeMaster('');
+      return;
+    }
+
+    manualMapDataMaster.notes.push({
+      id:manualIdMaster('nota'),
+      lat:Number(ev.latlng.lat),
+      lng:Number(ev.latlng.lng),
+      text:limpio,
+      created_at:new Date().toISOString()
+    });
+
+    guardarHerramientasManualMaster();
+    setManualToolModeMaster('');
+    renderHerramientasManualMaster();
+  }
+}
+
+function finalizarMedicionManualMaster(){
+  if(manualMeasureActiveMaster.length<2){
+    if(manualMeasureActiveMaster.length===1){
+      alert('Agrega al menos un segundo punto para completar la medición.');
+    }
+    return;
+  }
+
+  manualMapDataMaster.measurements.push({
+    id:manualIdMaster('med'),
+    points:manualMeasureActiveMaster.map(p=>[Number(p[0]),Number(p[1])]),
+    created_at:new Date().toISOString()
+  });
+
+  manualMeasureActiveMaster=[];
+  guardarHerramientasManualMaster();
+  setManualToolModeMaster('');
+  renderHerramientasManualMaster();
+}
+
+function deshacerPuntoMedicionManualMaster(){
+  if(!manualMeasureActiveMaster.length)return;
+
+  manualMeasureActiveMaster.pop();
+  renderHerramientasManualMaster();
+}
+
+function cancelarMedicionManualMaster(){
+  manualMeasureActiveMaster=[];
+  setManualToolModeMaster('');
+  renderHerramientasManualMaster();
+}
+
+function toggleNotasManualMaster(){
+  manualNotesVisibleMaster=!manualNotesVisibleMaster;
+  localStorage.setItem(
+    'master_notas_manual_visibles_v1',
+    manualNotesVisibleMaster?'1':'0'
+  );
+  renderHerramientasManualMaster();
+}
+
+function editarNotaManualMaster(id){
+  const nota=manualMapDataMaster.notes.find(x=>String(x.id)===String(id));
+  if(!nota)return;
+
+  const nuevo=prompt('Editar nota:',nota.text);
+  if(nuevo===null)return;
+
+  const limpio=String(nuevo||'').trim();
+  if(!limpio)return alert('La nota no puede quedar vacía.');
+
+  nota.text=limpio;
+  guardarHerramientasManualMaster();
+  renderHerramientasManualMaster();
+}
+
+function eliminarNotaManualMaster(id){
+  const nota=manualMapDataMaster.notes.find(x=>String(x.id)===String(id));
+  if(!nota)return;
+
+  if(!confirm(`¿Eliminar esta nota?\n\n${nota.text}`))return;
+
+  manualMapDataMaster.notes=manualMapDataMaster.notes.filter(
+    x=>String(x.id)!==String(id)
+  );
+
+  guardarHerramientasManualMaster();
+  renderHerramientasManualMaster();
+}
+
+function eliminarMedicionManualMaster(id){
+  const med=manualMapDataMaster.measurements.find(x=>String(x.id)===String(id));
+  if(!med)return;
+
+  const total=formatDistManualMaster(totalMedicionManualMaster(med.points));
+  if(!confirm(`¿Eliminar esta medición manual de ${total}?`))return;
+
+  manualMapDataMaster.measurements=manualMapDataMaster.measurements.filter(
+    x=>String(x.id)!==String(id)
+  );
+
+  guardarHerramientasManualMaster();
+  renderHerramientasManualMaster();
+}
+
+function limpiarHerramientasManualMaster(){
+  if(
+    !manualMeasureActiveMaster.length &&
+    !manualMapDataMaster.measurements.length &&
+    !manualMapDataMaster.notes.length
+  ){
+    return;
+  }
+
+  if(!confirm(
+    '¿Eliminar todas las mediciones y notas manuales de este proyecto?\n\n'+
+    'Esto no elimina puntos del levantamiento.'
+  ))return;
+
+  manualMeasureActiveMaster=[];
+  manualMapDataMaster={measurements:[],notes:[]};
+
+  try{
+    if(manualProjectIdMaster){
+      localStorage.removeItem(manualStorageKeyMaster());
+    }
+  }catch(_){}
+
+  setManualToolModeMaster('');
+  renderHerramientasManualMaster();
+}
+
+function actualizarEstadoHerramientasManualMaster(){
+  const btnMedir=document.getElementById('btnReglaManualMaster');
+  const btnNota=document.getElementById('btnNotaManualMaster');
+  const btnFin=document.getElementById('btnFinalizarMedicionMaster');
+  const btnUndo=document.getElementById('btnDeshacerMedicionMaster');
+  const btnNotas=document.getElementById('btnNotasVisiblesMaster');
+  const totalEl=document.getElementById('manualMeasureTotalMaster');
+  const segEl=document.getElementById('manualMeasureSegmentsMaster');
+  const status=document.getElementById('manualToolsStatusMaster');
+
+  const midiendo=manualToolModeMaster==='measure';
+  const anotando=manualToolModeMaster==='note';
+  const n=manualMeasureActiveMaster.length;
+  const total=totalMedicionManualMaster(manualMeasureActiveMaster);
+
+  if(btnMedir){
+    btnMedir.classList.toggle('active',midiendo);
+    btnMedir.textContent=midiendo?'📏 Regla ACTIVA':'📏 Medir';
+  }
+
+  if(btnNota){
+    btnNota.classList.toggle('active',anotando);
+    btnNota.textContent=anotando?'📝 Toca el mapa…':'📝 Nota';
+  }
+
+  if(btnFin)btnFin.disabled=n<2;
+  if(btnUndo)btnUndo.disabled=n<1;
+
+  if(btnNotas){
+    btnNotas.textContent=manualNotesVisibleMaster
+      ? '👁 Notas ON'
+      : '👁 Notas OFF';
+    btnNotas.classList.toggle('active',manualNotesVisibleMaster);
+  }
+
+  if(totalEl)totalEl.textContent=formatDistManualMaster(total);
+  if(segEl)segEl.textContent=`${Math.max(0,n-1)} segmento${Math.max(0,n-1)===1?'':'s'}`;
+
+  if(status){
+    if(!manualProjectIdMaster){
+      status.innerHTML='Selecciona un proyecto para habilitar las herramientas manuales.';
+    }else if(midiendo){
+      status.innerHTML=
+        '<b>Regla activa:</b> haz clic sobre el mapa para agregar vértices. '+
+        'Puedes crear tantos segmentos como necesites y luego pulsar <b>Finalizar</b>.';
+    }else if(anotando){
+      status.innerHTML=
+        '<b>Nota activa:</b> haz clic en la ubicación del mapa donde quieres dejar la anotación.';
+    }else{
+      const meds=manualMapDataMaster.measurements.length;
+      const notas=manualMapDataMaster.notes.length;
+      status.innerHTML=
+        `Guardadas localmente: <b>${meds}</b> medición${meds===1?'':'es'} · `+
+        `<b>${notas}</b> nota${notas===1?'':'s'}.`;
+    }
+  }
+}
+
 async function cargarProyectoMapa(){
   const id=fProyecto.value;
 
   limpiarCartografiaMapaMaster();
+  cargarHerramientasManualProyectoMaster(id);
 
   if(!id){
     puntos=[];
@@ -7467,6 +8858,8 @@ async function cargarProyectoMapa(){
 
   puntos=data||[];
   kPuntos.textContent=puntos.length;
+
+  await cargarCorreccionesMasterGlobal(true);
 
   actualizarFiltrosAvanzadosMaster();
   actualizarBotonesCapasMapaMaster();
@@ -7526,7 +8919,7 @@ function pintarMapa(){
   const idsVisibles=new Set(lista.map(p=>String(p.id)));
   const lineas=new Set();
 
-  if(mostrarConexionesMaster){
+  if(mostrarConexionesMaster||mostrarDistanciasMaster){
     lista.forEach(p=>conexiones(p,idx).forEach(c=>{
       if(!idsVisibles.has(String(c.d.id)))return;
 
@@ -7534,22 +8927,28 @@ function pintarMapa(){
       if(lineas.has(key))return;
       lineas.add(key);
 
-      const linea=L.polyline(
-        [[p.latitude,p.longitude],[c.d.latitude,c.d.longitude]],
-        {
-          color:'#48d1cc',
-          weight:4,
-          opacity:.95,
-          dashArray:'10,6'
-        }
-      ).addTo(layer)
-       .bindPopup(
-         `<b>${esc(c.slot)}</b><br>`+
-         `${esc(p.idcampo)} ↔ ${esc(c.d.idcampo)}<br>`+
-         `<b>${esc(textoDistanciaConexionMaster(p,c.d,c.distSlot))}</b>`
-       );
+      // CONEXIONES: únicamente la línea aguamarina.
+      if(mostrarConexionesMaster){
+        L.polyline(
+          [[p.latitude,p.longitude],[c.d.latitude,c.d.longitude]],
+          {
+            color:'#48d1cc',
+            weight:4,
+            opacity:.95,
+            dashArray:'10,6'
+          }
+        ).addTo(layer)
+         .bindPopup(
+           `<b>${esc(c.slot)}</b><br>`+
+           `${esc(p.idcampo)} ↔ ${esc(c.d.idcampo)}<br>`+
+           `<b>${esc(textoDistanciaConexionMaster(p,c.d,c.distSlot))}</b>`
+         );
+      }
 
-      agregarEtiquetaDistanciaMaster(p,c.d,c.distSlot,layer);
+      // DISTANCIAS: etiquetas GPS / Odo completamente independientes.
+      if(mostrarDistanciasMaster){
+        agregarEtiquetaDistanciaMaster(p,c.d,c.distSlot,layer);
+      }
     }));
   }
 
@@ -7557,11 +8956,16 @@ function pintarMapa(){
     const lat=Number(p.latitude),lon=Number(p.longitude);
     if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
 
+    const correccionesActivas=correccionesActivasPuntoMaster(p.id);
+    const correctionBubble=correccionesActivas.length
+      ? `<span class="masterCorrectionMapBadge" title="${correccionesActivas.length} corrección(es) pendiente(s)">${correccionesActivas.length}</span>`
+      : '';
+
     const icon=L.divIcon({
       className:'',
-      html:simboloTipoMaster(p.tipo,colorTipoMaster()),
-      iconSize:[20,20],
-      iconAnchor:[10,10]
+      html:`<div class="masterCorrectionMarkerWrap">${simboloTipoMaster(p.tipo,colorTipoMaster())}${correctionBubble}</div>`,
+      iconSize:[24,24],
+      iconAnchor:[12,12]
     });
 
     const mk=L.marker([lat,lon],{icon})
@@ -10904,6 +12308,453 @@ window.addEventListener('afterprint',()=>{
   });
 });
 
+
+/* ============================================================
+   V71 · SOLICITUDES DE CORRECCIÓN · MASTER
+   ============================================================ */
+
+function corrEstadoMaster(c){
+  return String(c?.estado||'pendiente').toLowerCase();
+}
+
+function corrEsAbiertaMaster(c){
+  return ['pendiente','reabierta','corregida'].includes(corrEstadoMaster(c));
+}
+
+function correccionesActivasPuntoMaster(puntoId){
+  return correccionesMaster.filter(c=>
+    String(c.punto_id)===String(puntoId) &&
+    ['pendiente','reabierta'].includes(corrEstadoMaster(c))
+  );
+}
+
+function corrEstadoBadgeMaster(estado){
+  const e=String(estado||'pendiente').toLowerCase();
+  const txt={
+    pendiente:'Pendiente',
+    reabierta:'Reabierta',
+    corregida:'Corregida · por revisar',
+    cerrada:'Cerrada'
+  }[e]||e;
+
+  return `<span class="corrState ${esc(e)}">${esc(txt)}</span>`;
+}
+
+function corrPrioridadBadgeMaster(prioridad){
+  const p=String(prioridad||'normal').toLowerCase();
+  return `<span class="corrPriority ${esc(p)}">${esc(p)}</span>`;
+}
+
+function fechaHoraCorreccionMaster(v){
+  if(!v)return '—';
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime()))return String(v);
+  return d.toLocaleString('es-CO',{
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit'
+  });
+}
+
+function actualizarBadgeCorreccionesMaster(){
+  const abiertas=correccionesMaster.filter(c=>corrEsAbiertaMaster(c)).length;
+  const badge=document.getElementById('correccionesTopBadge');
+  if(badge){
+    badge.textContent=String(abiertas);
+    badge.classList.toggle('zero',abiertas===0);
+  }
+}
+
+async function cargarCorreccionesMasterGlobal(silencioso=true){
+  try{
+    const {data,error}=await sb
+      .from('mapping_correcciones')
+      .select('*')
+      .order('fecha_solicitud',{ascending:false})
+      .limit(3000);
+
+    if(error)throw error;
+
+    correccionesMaster=data||[];
+    actualizarBadgeCorreccionesMaster();
+
+    if(document.getElementById('correccionesMasterModal')?.classList.contains('open')){
+      renderCentroCorreccionesMaster();
+    }
+
+    return correccionesMaster;
+  }catch(e){
+    console.warn('Correcciones Master:',e);
+    if(!silencioso){
+      alert('No fue posible consultar las solicitudes de corrección: '+(e?.message||e));
+    }
+    return correccionesMaster;
+  }
+}
+
+async function cargarCorreccionesPuntoMaster(puntoId,silencioso=true){
+  try{
+    const {data,error}=await sb
+      .from('mapping_correcciones')
+      .select('*')
+      .eq('punto_id',puntoId)
+      .order('fecha_solicitud',{ascending:false});
+
+    if(error)throw error;
+
+    const ids=new Set((data||[]).map(x=>String(x.id)));
+    correccionesMaster=[
+      ...(data||[]),
+      ...correccionesMaster.filter(x=>
+        String(x.punto_id)!==String(puntoId) &&
+        !ids.has(String(x.id))
+      )
+    ];
+
+    actualizarBadgeCorreccionesMaster();
+    return data||[];
+  }catch(e){
+    console.warn('Correcciones del punto:',e);
+    if(!silencioso){
+      alert('No fue posible consultar las correcciones del elemento: '+(e?.message||e));
+    }
+    return correccionesMaster.filter(c=>String(c.punto_id)===String(puntoId));
+  }
+}
+
+function proyectoCorreccionMaster(c){
+  return proyectos.find(p=>String(p.id)===String(c.proyecto_id))||null;
+}
+
+function llenarFiltroProyectoCorreccionesMaster(){
+  const sel=document.getElementById('corrMasterProyectoFiltro');
+  if(!sel)return;
+  const keep=sel.value;
+
+  sel.innerHTML=
+    '<option value="">Todos</option>'+
+    proyectos.map(p=>
+      `<option value="${esc(p.id)}">${esc(p.codigo||'')} · ${esc(p.nombre||'Proyecto')}</option>`
+    ).join('');
+
+  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
+}
+
+async function abrirCentroCorreccionesMaster(){
+  cerrarEntregables();
+  llenarFiltroProyectoCorreccionesMaster();
+  correccionesMasterModal.classList.add('open');
+  await cargarCorreccionesMasterGlobal(false);
+  renderCentroCorreccionesMaster();
+}
+
+function renderCentroCorreccionesMaster(){
+  const tabla=document.getElementById('corrMasterTabla');
+  if(!tabla)return;
+
+  const proyectoId=String(document.getElementById('corrMasterProyectoFiltro')?.value||'');
+  const estado=String(document.getElementById('corrMasterEstadoFiltro')?.value||'').toLowerCase();
+  const q=String(document.getElementById('corrMasterBuscar')?.value||'').trim().toLowerCase();
+
+  document.getElementById('corrMasterPendientes').textContent=
+    correccionesMaster.filter(c=>corrEstadoMaster(c)==='pendiente').length;
+  document.getElementById('corrMasterReabiertas').textContent=
+    correccionesMaster.filter(c=>corrEstadoMaster(c)==='reabierta').length;
+  document.getElementById('corrMasterCorregidas').textContent=
+    correccionesMaster.filter(c=>corrEstadoMaster(c)==='corregida').length;
+  document.getElementById('corrMasterCerradas').textContent=
+    correccionesMaster.filter(c=>corrEstadoMaster(c)==='cerrada').length;
+
+  const lista=correccionesMaster.filter(c=>{
+    if(proyectoId && String(c.proyecto_id)!==proyectoId)return false;
+    if(estado && corrEstadoMaster(c)!==estado)return false;
+
+    if(q){
+      const texto=[
+        c.idcampo,c.tecnico_nombre,c.tecnico_email,c.descripcion,c.campo_objetivo,
+        c.categoria,c.respuesta_tecnico,c.observacion_revision
+      ].map(x=>String(x||'').toLowerCase()).join(' ');
+      if(!texto.includes(q))return false;
+    }
+
+    return true;
+  });
+
+  tabla.innerHTML=lista.length
+    ? lista.map(c=>{
+        const p=proyectoCorreccionMaster(c);
+        const e=corrEstadoMaster(c);
+
+        const acciones=[
+          `<button class="btn small blue" onclick="verElementoCorreccionMaster('${esc(c.punto_id)}','${esc(c.proyecto_id)}')">Ver elemento</button>`
+        ];
+
+        if(e==='corregida'){
+          acciones.push(
+            `<button class="btn small" onclick="cerrarCorreccionMaster('${esc(c.id)}')">✓ Cerrar</button>`,
+            `<button class="btn small warn" onclick="reabrirCorreccionMaster('${esc(c.id)}')">↺ Reabrir</button>`
+          );
+        }else if(e==='cerrada'){
+          acciones.push(
+            `<button class="btn small warn" onclick="reabrirCorreccionMaster('${esc(c.id)}')">↺ Reabrir</button>`
+          );
+        }
+
+        return `<tr>
+          <td>${corrEstadoBadgeMaster(c.estado)}</td>
+          <td>${corrPrioridadBadgeMaster(c.prioridad)}</td>
+          <td><b>${esc(c.idcampo||'—')}</b><br><small>${esc(c.categoria||'')}</small></td>
+          <td>${esc(p?.codigo||'')}<br><small>${esc(p?.nombre||'')}</small></td>
+          <td>${esc(c.tecnico_nombre||c.tecnico_email||'—')}</td>
+          <td class="correctionCellText">
+            ${c.campo_objetivo?`<b>${esc(c.campo_objetivo)}</b><br>`:''}
+            ${esc(c.descripcion||'')}
+            ${c.observacion_revision?`<small><b>Revisión:</b> ${esc(c.observacion_revision)}</small>`:''}
+          </td>
+          <td class="correctionCellText">${esc(c.respuesta_tecnico||'—')}</td>
+          <td>${fechaHoraCorreccionMaster(c.fecha_solicitud)}</td>
+          <td><div class="correctionActions">${acciones.join('')}</div></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="9">No hay solicitudes con los filtros seleccionados.</td></tr>';
+}
+
+async function verElementoCorreccionMaster(puntoId,proyectoId){
+  try{
+    const p=proyectos.find(x=>String(x.id)===String(proyectoId));
+    if(p && document.getElementById('fEmpresa')){
+      fEmpresa.value=p.empresa_id||'';
+      filtrarProyectosPorEmpresa();
+      if([...fProyecto.options].some(o=>String(o.value)===String(proyectoId))){
+        fProyecto.value=proyectoId;
+        await cargarProyectoMapa();
+      }
+    }
+
+    correccionesMasterModal.classList.remove('open');
+    await abrirDetallePunto(puntoId);
+  }catch(e){
+    console.error(e);
+    alert('No fue posible abrir el elemento: '+(e?.message||e));
+  }
+}
+
+function abrirSolicitudCorreccionMaster(puntoId){
+  const p=puntos.find(x=>String(x.id)===String(puntoId))
+    || dashboardPuntos.find(x=>String(x.id)===String(puntoId));
+
+  if(!p)return alert('No se encontró el elemento seleccionado.');
+
+  if(!p.tecnico_id){
+    return alert(
+      'Este elemento no tiene tecnico_id asociado. No es posible enviar una corrección hasta identificar al técnico responsable.'
+    );
+  }
+
+  correccionPuntoActivoMaster=p;
+  corrCrearPuntoId.value=p.id;
+  corrCrearCategoria.value='DATOS';
+  corrCrearPrioridad.value='normal';
+  corrCrearCampo.value='';
+  corrCrearDescripcion.value='';
+
+  corrCrearPuntoInfo.innerHTML=
+    `<b>${esc(p.idcampo||'Elemento')}</b> · ${esc(p.tipo||'')}<br>`+
+    `<b>Técnico:</b> ${esc(p.tecnico_nombre||p.tecnico_email||p.tecnico_id)}<br>`+
+    `<b>Proyecto:</b> ${esc((proyectos.find(x=>String(x.id)===String(p.proyecto_id))?.codigo)||p.proyecto_id||'')}`;
+
+  crearCorreccionModal.classList.add('open');
+  setTimeout(()=>corrCrearDescripcion.focus(),80);
+}
+
+async function guardarSolicitudCorreccionMaster(){
+  const p=correccionPuntoActivoMaster;
+  if(!p)return alert('No hay un elemento seleccionado.');
+
+  const descripcion=String(corrCrearDescripcion.value||'').trim();
+  if(!descripcion)return alert('Describe qué debe corregir el técnico.');
+
+  const payload={
+    proyecto_id:p.proyecto_id,
+    punto_id:p.id,
+    idcampo:p.idcampo||null,
+    tecnico_id:p.tecnico_id,
+    tecnico_email:p.tecnico_email||null,
+    tecnico_nombre:p.tecnico_nombre||p.tecnico_email||null,
+
+    solicitado_por:user.id,
+    solicitado_por_email:user.email||null,
+    solicitado_por_nombre:perfil?.nombre||user.email||null,
+    solicitado_por_rol:perfil?.rol||null,
+
+    categoria:corrCrearCategoria.value||'DATOS',
+    campo_objetivo:String(corrCrearCampo.value||'').trim()||null,
+    descripcion,
+    prioridad:corrCrearPrioridad.value||'normal',
+    estado:'pendiente'
+  };
+
+  const btn=document.querySelector('#crearCorreccionModal .correctionCreateBtn');
+  if(btn)btn.disabled=true;
+
+  try{
+    const {data,error}=await sb
+      .from('mapping_correcciones')
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if(error)throw error;
+
+    correccionesMaster=[
+      data,
+      ...correccionesMaster.filter(x=>String(x.id)!==String(data.id))
+    ];
+
+    actualizarBadgeCorreccionesMaster();
+    crearCorreccionModal.classList.remove('open');
+
+    if(correccionDetallePuntoIdMaster===String(p.id)){
+      detallePuntoContenido.innerHTML=
+        detallePuntoContenido.innerHTML.replace(
+          /<div class="readonlySection pointCorrectionSection">[\s\S]*$/,
+          ''
+        );
+      await abrirDetallePunto(p.id);
+    }else{
+      pintarMapa();
+    }
+
+    alert('Solicitud de corrección enviada al técnico.');
+  }catch(e){
+    console.error(e);
+    alert('No fue posible crear la solicitud: '+(e?.message||e));
+  }finally{
+    if(btn)btn.disabled=false;
+  }
+}
+
+async function cerrarCorreccionMaster(id){
+  const c=correccionesMaster.find(x=>String(x.id)===String(id));
+  if(!c)return;
+
+  if(!confirm(
+    `¿Cerrar la corrección de ${c.idcampo||'este elemento'}?\n\n`+
+    'Esto confirma que la respuesta del técnico fue revisada y aceptada.'
+  ))return;
+
+  const {error}=await sb
+    .from('mapping_correcciones')
+    .update({
+      estado:'cerrada',
+      fecha_cierre:new Date().toISOString(),
+      cerrado_por:user.id,
+      cerrado_por_email:user.email||null,
+      observacion_revision:null
+    })
+    .eq('id',id);
+
+  if(error)return alert('No fue posible cerrar la solicitud: '+error.message);
+
+  await refrescarCorreccionMasterDespuesCambio(c.punto_id);
+}
+
+async function reabrirCorreccionMaster(id){
+  const c=correccionesMaster.find(x=>String(x.id)===String(id));
+  if(!c)return;
+
+  const motivo=prompt(
+    'Indica qué falta por corregir o por qué se reabre la solicitud:',
+    c.observacion_revision||''
+  );
+
+  if(motivo===null)return;
+  const limpio=String(motivo||'').trim();
+  if(!limpio)return alert('Debes indicar el motivo de la reapertura.');
+
+  const {error}=await sb
+    .from('mapping_correcciones')
+    .update({
+      estado:'reabierta',
+      observacion_revision:limpio,
+      respuesta_tecnico:null,
+      fecha_corregida:null,
+      fecha_cierre:null,
+      cerrado_por:null,
+      cerrado_por_email:null,
+      reaperturas:Number(c.reaperturas||0)+1
+    })
+    .eq('id',id);
+
+  if(error)return alert('No fue posible reabrir la solicitud: '+error.message);
+
+  await refrescarCorreccionMasterDespuesCambio(c.punto_id);
+}
+
+async function refrescarCorreccionMasterDespuesCambio(puntoId){
+  await cargarCorreccionesMasterGlobal(true);
+  pintarMapa();
+
+  if(document.getElementById('correccionesMasterModal')?.classList.contains('open')){
+    renderCentroCorreccionesMaster();
+  }
+
+  if(
+    correccionDetallePuntoIdMaster &&
+    String(correccionDetallePuntoIdMaster)===String(puntoId) &&
+    document.getElementById('detallePuntoModal')?.classList.contains('open')
+  ){
+    await abrirDetallePunto(puntoId);
+  }
+}
+
+function renderCorreccionesPuntoMaster(p){
+  const lista=correccionesMaster
+    .filter(c=>String(c.punto_id)===String(p.id))
+    .sort((a,b)=>new Date(b.fecha_solicitud||0)-new Date(a.fecha_solicitud||0));
+
+  const cards=lista.length
+    ? lista.map(c=>{
+        const e=corrEstadoMaster(c);
+        const botones=[];
+
+        if(e==='corregida'){
+          botones.push(
+            `<button class="btn small" onclick="cerrarCorreccionMaster('${esc(c.id)}')">✓ Cerrar</button>`,
+            `<button class="btn small warn" onclick="reabrirCorreccionMaster('${esc(c.id)}')">↺ Reabrir</button>`
+          );
+        }else if(e==='cerrada'){
+          botones.push(
+            `<button class="btn small warn" onclick="reabrirCorreccionMaster('${esc(c.id)}')">↺ Reabrir</button>`
+          );
+        }
+
+        return `<div class="pointCorrectionCard ${esc(e)}">
+          <div class="pointCorrectionMeta">
+            ${corrEstadoBadgeMaster(c.estado)}
+            ${corrPrioridadBadgeMaster(c.prioridad)}
+            <small>${fechaHoraCorreccionMaster(c.fecha_solicitud)}</small>
+          </div>
+          ${c.campo_objetivo?`<p><b>Dato/campo:</b> ${esc(c.campo_objetivo)}</p>`:''}
+          <p>${esc(c.descripcion||'')}</p>
+          <small>Solicitado por ${esc(c.solicitado_por_nombre||c.solicitado_por_email||'MASTER')}</small>
+          ${c.respuesta_tecnico?`<div class="pointCorrectionReview"><b>Respuesta técnico:</b><br>${esc(c.respuesta_tecnico)}</div>`:''}
+          ${c.observacion_revision?`<div class="pointCorrectionReview" style="color:#fecaca"><b>Observación revisión:</b><br>${esc(c.observacion_revision)}</div>`:''}
+          ${botones.length?`<div class="pointCorrectionButtons">${botones.join('')}</div>`:''}
+        </div>`;
+      }).join('')
+    : '<div class="pointCorrectionEmpty">Este elemento no tiene solicitudes de corrección.</div>';
+
+  return `<div class="readonlySection pointCorrectionSection">
+    <h3>
+      <span>⚠️ Solicitudes de corrección</span>
+      <span class="pointCorrectionHeaderActions">
+        <button type="button" onclick="abrirSolicitudCorreccionMaster('${esc(p.id)}')">＋ Nueva solicitud</button>
+      </span>
+    </h3>
+    <div class="pointCorrectionBody">${cards}</div>
+  </div>`;
+}
+
 function roCampo(label,value,largo=false){
   const v=(value===null||value===undefined||value==='')?'—':value;
   return `<div class="roField"><label>${esc(label)}</label><div class="roValue ${largo?'long':''}">${esc(v)}</div></div>`;
@@ -10961,7 +12812,9 @@ async function abrirDetallePunto(id){
     ])
   ];
 
-  detallePuntoContenido.innerHTML=campos.join('');
+  correccionDetallePuntoIdMaster=String(p.id);
+  await cargarCorreccionesPuntoMaster(p.id,true);
+  detallePuntoContenido.innerHTML=campos.join('')+renderCorreccionesPuntoMaster(p);
   detalleFotos.innerHTML='<div class="hint">Consultando fotografías...</div>';
   detallePuntoModal.classList.add('open');
   await cargarFotosDetalle(p.id);
@@ -11585,6 +13438,8 @@ async function eliminarPoligonosDesdeDistribucion(){
 
 </body>
 </html>
+
+
 
 
 
