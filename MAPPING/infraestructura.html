@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>PDR-APP · MAPPING V101 · Correcciones de campo</title>
+<title>PDR-APP · MAPPING V102 · Correcciones proactivas</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -2091,6 +2091,149 @@ body.lightTheme .correctionTechToolbar select{
   .correctionTechSummary{grid-template-columns:1fr}
 }
 
+
+/* ============================================================
+   V102 · NOTIFICACIÓN PROACTIVA DE CORRECCIONES
+   ============================================================ */
+
+.menuFab{
+  overflow:visible!important;
+}
+.menuCorrectionNotifyBadge{
+  position:absolute;
+  right:-4px;
+  top:-5px;
+  min-width:20px;
+  height:20px;
+  padding:0 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #fff;
+  border-radius:999px;
+  background:#f59e0b;
+  color:#111827;
+  font-size:9px;
+  font-weight:1000;
+  line-height:1;
+  box-shadow:
+    0 3px 10px rgba(0,0,0,.40),
+    0 0 0 5px rgba(245,158,11,.12);
+  animation:mappingCorrectionPulse 1.45s ease-in-out infinite;
+  pointer-events:none;
+}
+
+.mapCorrectionAlert{
+  position:absolute;
+  z-index:890;
+  top:78px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(390px,calc(100% - 34px));
+  min-height:52px;
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border:1px solid rgba(251,191,36,.78);
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 15% 0%,rgba(251,191,36,.13),transparent 40%),
+    linear-gradient(180deg,rgba(76,45,6,.97),rgba(47,28,5,.97));
+  color:#fff7cc;
+  box-shadow:
+    0 11px 30px rgba(0,0,0,.34),
+    0 0 22px rgba(245,158,11,.13);
+  backdrop-filter:blur(12px) saturate(120%);
+  -webkit-backdrop-filter:blur(12px) saturate(120%);
+  text-align:left;
+  cursor:pointer;
+  animation:mapCorrectionAlertEnter .22s ease-out;
+}
+.mapCorrectionAlert:hover{
+  border-color:#fde047;
+  box-shadow:
+    0 13px 34px rgba(0,0,0,.38),
+    0 0 27px rgba(245,158,11,.18);
+}
+.mapCorrectionAlertIcon{
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:rgba(245,158,11,.17);
+  border:1px solid rgba(251,191,36,.30);
+  font-size:18px;
+}
+.mapCorrectionAlertText{
+  min-width:0;
+  flex:1 1 auto;
+}
+.mapCorrectionAlertText b{
+  display:block;
+  color:#fef3c7;
+  font-size:11px;
+  line-height:1.2;
+}
+.mapCorrectionAlertText small{
+  display:block;
+  margin-top:3px;
+  color:#fcd34d;
+  font-size:8px;
+  font-weight:800;
+}
+.mapCorrectionAlertCount{
+  flex:0 0 auto;
+  min-width:30px;
+  height:30px;
+  padding:0 7px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:#f59e0b;
+  color:#111827;
+  font-size:13px;
+  font-weight:1000;
+  box-shadow:0 0 0 4px rgba(245,158,11,.10);
+}
+
+@keyframes mapCorrectionAlertEnter{
+  from{opacity:0;transform:translate(-50%,-8px) scale(.985)}
+  to{opacity:1;transform:translate(-50%,0) scale(1)}
+}
+
+body.lightTheme .mapCorrectionAlert{
+  background:linear-gradient(180deg,#fff7d6,#ffefb0);
+  color:#78350f;
+  border-color:#f59e0b;
+}
+body.lightTheme .mapCorrectionAlertText b{color:#78350f}
+body.lightTheme .mapCorrectionAlertText small{color:#92400e}
+
+@media(max-width:620px){
+  .mapCorrectionAlert{
+    top:82px;
+    width:calc(100% - 28px);
+    min-height:48px;
+    padding:7px 8px;
+  }
+  .mapCorrectionAlertIcon{
+    width:30px;
+    height:30px;
+    flex-basis:30px;
+    font-size:16px;
+  }
+  .mapCorrectionAlertText b{font-size:10px}
+  .mapCorrectionAlertText small{font-size:7.5px}
+  .mapCorrectionAlertCount{
+    min-width:27px;
+    height:27px;
+    font-size:11px;
+  }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -2110,7 +2253,19 @@ body.lightTheme .correctionTechToolbar select{
         alt="PDR-APP" loading="eager" referrerpolicy="no-referrer"></div><div><h1>MAPPING Y SITE SURVEY</h1><small>Levantamiento de postería, cámaras y cruces · Base + satélite IGAC offline · ubicación técnica en vivo</small><div id="projectTypeTop" class="projectTypeBadge" style="display:none">MAPPING</div></div></div><div style="text-align:right"><div style="font-size:11px;color:var(--muted)" id="counterTop">0 puntos</div><div class="topSync" id="syncStatusTop">Sin sesión</div></div></header>
 <div id="map"></div><div class="crosshair" id="mapCrosshair"><span></span></div>
 <button class="gpsFab" id="gpsFabBtn" onclick="irGPS()" title="Activar / centrar GPS">➤</button>
-<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">☰</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
+<div class="gpsStatusPill warn" id="gpsStatusPill">GPS: esperando</div>
+<button class="mapCorrectionAlert" id="mapCorrectionAlert" type="button"
+        onclick="abrirCorreccionesDesdeAlertaTecnico()" style="display:none">
+  <span class="mapCorrectionAlertIcon">⚠</span>
+  <span class="mapCorrectionAlertText">
+    <b id="mapCorrectionAlertTitle">Correcciones pendientes</b>
+    <small id="mapCorrectionAlertSubtitle">Toca para revisar</small>
+  </span>
+  <span class="mapCorrectionAlertCount" id="mapCorrectionAlertCount">0</span>
+</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">
+  ☰
+  <span class="menuCorrectionNotifyBadge" id="menuCorrectionNotifyBadge" style="display:none">0</span>
+</button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav>
@@ -6848,6 +7003,9 @@ let proyectoActivo=JSON.parse(localStorage.getItem('mapping_proyecto_activo_v1')
 let correccionesTecnico=[];
 let correccionesRealtimeChannel=null;
 let corrTecnicoCargaEnCurso=false;
+let corrTecnicoRefreshTimer=null;
+let corrTecnicoRefreshInterval=null;
+let corrTecnicoPendientesAnterior=null;
 const LOCAL_KEY='mapping_sitesurvey_registros_v1';
 
 const FOTO_DB_NAME='mapping_sitesurvey_fotos_v1';
@@ -11243,6 +11401,13 @@ function toggleBaseMap(){
 }
 
 function toggleSideMenu(force){
+  const seAbrira=force===undefined
+    ? !document.getElementById('sideMenu')?.classList.contains('open')
+    : !!force;
+  if(seAbrira && navigator.onLine && proyectoActivo){
+    programarRefrescoCorreccionesTecnico(80);
+  }
+
   const e=document.getElementById('sideMenu');
   if(!e)return;
 
@@ -11617,7 +11782,16 @@ async function activarProyectoOfflineGuardado(){
       if(!n)return false;
 
       await cargarPuntosSupabase(false);
+
+      cargarCorreccionesTecnicoCache();
+      actualizarBadgeCorreccionesTecnico();
       await cargarCorreccionesTecnico({silencioso:true});
+
+      if(navigator.onLine){
+        suscribirCorreccionesTecnico();
+        programarRefrescoCorreccionesTecnico(700);
+      }
+
       pintarRegistros();
       ubicarEnUltimoElementoRegistrado();
       actualizarEstadoSync();
@@ -12029,8 +12203,16 @@ async function seleccionarProyecto(asignacionId){
 
     // Muy importante: false evita fitBounds de todos los puntos.
     await cargarPuntosSupabase(false);
+
+    // Mostrar de inmediato el último estado conocido del proyecto.
+    cargarCorreccionesTecnicoCache();
+    actualizarBadgeCorreccionesTecnico();
+
+    // Consulta online inmediata + reintentos. No requiere entrar al módulo.
     await cargarCorreccionesTecnico({silencioso:true});
     suscribirCorreccionesTecnico();
+    programarRefrescoCorreccionesTecnico(750);
+    setTimeout(()=>programarRefrescoCorreccionesTecnico(100),2400);
 
     // ÚNICO movimiento automático del mapa al seleccionar proyecto.
     ubicarEnUltimoElementoRegistrado();
@@ -14170,10 +14352,14 @@ function correccionesPendientesRegistroTecnico(r){
   );
 }
 
-function actualizarBadgeCorreccionesTecnico(){
-  const pendientes=correccionesTecnico.filter(c=>
+function cantidadCorreccionesPendientesTecnico(){
+  return correccionesTecnico.filter(c=>
     ['pendiente','reabierta'].includes(corrTechEstado(c))
   ).length;
+}
+
+function actualizarBadgeCorreccionesTecnico(){
+  const pendientes=cantidadCorreccionesPendientesTecnico();
 
   const badge=document.getElementById('correctionMenuBadge');
   if(badge){
@@ -14185,6 +14371,106 @@ function actualizarBadgeCorreccionesTecnico(){
   if(btn){
     btn.classList.toggle('hasPendingCorrections',pendientes>0);
   }
+
+  // Badge pequeño en el botón hamburguesa.
+  const menuBadge=document.getElementById('menuCorrectionNotifyBadge');
+  if(menuBadge){
+    menuBadge.textContent=String(pendientes);
+    menuBadge.style.display=pendientes>0?'flex':'none';
+  }
+
+  // Aviso visible directamente sobre el mapa.
+  const alertBox=document.getElementById('mapCorrectionAlert');
+  const alertTitle=document.getElementById('mapCorrectionAlertTitle');
+  const alertSub=document.getElementById('mapCorrectionAlertSubtitle');
+  const alertCount=document.getElementById('mapCorrectionAlertCount');
+
+  if(alertBox){
+    alertBox.style.display=pendientes>0?'flex':'none';
+  }
+
+  if(alertCount)alertCount.textContent=String(pendientes);
+
+  if(alertTitle){
+    alertTitle.textContent=
+      pendientes===1
+        ? 'Tienes 1 corrección pendiente'
+        : `Tienes ${pendientes} correcciones pendientes`;
+  }
+
+  if(alertSub){
+    const reabiertas=correccionesTecnico.filter(c=>corrTechEstado(c)==='reabierta').length;
+    alertSub.textContent=reabiertas>0
+      ? `${reabiertas} reabierta${reabiertas===1?'':'s'} · toca para revisar`
+      : 'Toca para revisar las solicitudes del MASTER';
+  }
+
+  // Vibración corta solo cuando aparece una cantidad nueva de pendientes.
+  if(
+    corrTecnicoPendientesAnterior!==null &&
+    pendientes>corrTecnicoPendientesAnterior &&
+    pendientes>0 &&
+    typeof navigator.vibrate==='function'
+  ){
+    try{navigator.vibrate([120,70,120])}catch(_){}
+  }
+
+  corrTecnicoPendientesAnterior=pendientes;
+}
+
+async function abrirCorreccionesDesdeAlertaTecnico(){
+  toggleSideMenu(false);
+  await abrirCorreccionesTecnico();
+}
+
+function programarRefrescoCorreccionesTecnico(delay=500){
+  if(corrTecnicoRefreshTimer){
+    clearTimeout(corrTecnicoRefreshTimer);
+    corrTecnicoRefreshTimer=null;
+  }
+
+  const proyectoProgramado=String(
+    proyectoActivo?.proyecto_id||proyectoActivo?.id||''
+  );
+
+  if(!proyectoProgramado||!mappingUser)return;
+
+  corrTecnicoRefreshTimer=setTimeout(async()=>{
+    corrTecnicoRefreshTimer=null;
+
+    const proyectoActual=String(
+      proyectoActivo?.proyecto_id||proyectoActivo?.id||''
+    );
+
+    if(!proyectoActual||proyectoActual!==proyectoProgramado)return;
+
+    // Si otra carga estaba en curso, no perdemos la actualización:
+    // reintentamos automáticamente unos milisegundos después.
+    if(corrTecnicoCargaEnCurso){
+      programarRefrescoCorreccionesTecnico(650);
+      return;
+    }
+
+    await cargarCorreccionesTecnico({silencioso:true}).catch(()=>{});
+  },Math.max(0,Number(delay)||0));
+}
+
+function iniciarRefrescoPeriodicoCorreccionesTecnico(){
+  if(corrTecnicoRefreshInterval){
+    clearInterval(corrTecnicoRefreshInterval);
+    corrTecnicoRefreshInterval=null;
+  }
+
+  corrTecnicoRefreshInterval=setInterval(()=>{
+    if(
+      navigator.onLine &&
+      mappingUser &&
+      proyectoActivo &&
+      !document.hidden
+    ){
+      programarRefrescoCorreccionesTecnico(100);
+    }
+  },45000);
 }
 
 function correccionTechStateBadge(c){
@@ -14270,7 +14556,10 @@ async function sincronizarCorreccionesPendientesTecnico(){
 }
 
 async function cargarCorreccionesTecnico({silencioso=true}={}){
-  if(corrTecnicoCargaEnCurso)return correccionesTecnico;
+  if(corrTecnicoCargaEnCurso){
+    programarRefrescoCorreccionesTecnico(650);
+    return correccionesTecnico;
+  }
 
   if(!mappingUser||!proyectoActivo){
     correccionesTecnico=[];
@@ -14298,6 +14587,7 @@ async function cargarCorreccionesTecnico({silencioso=true}={}){
       .from('mapping_correcciones')
       .select('*')
       .eq('proyecto_id',proyectoActivo.proyecto_id)
+      .eq('tecnico_id',mappingUser.id)
       .order('fecha_solicitud',{ascending:false});
 
     if(error)throw error;
@@ -14363,10 +14653,16 @@ function suscribirCorreccionesTecnico(){
         const row=payload?.new||payload?.old||{};
         if(String(row.proyecto_id||'')!==String(proyectoActivo?.proyecto_id||''))return;
 
-        cargarCorreccionesTecnico({silencioso:true}).catch(()=>{});
+        // Actualizamos sin que el técnico tenga que abrir el módulo.
+        programarRefrescoCorreccionesTecnico(120);
       }
     )
-    .subscribe();
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){
+        // Al confirmar la suscripción hacemos una lectura inicial adicional.
+        programarRefrescoCorreccionesTecnico(180);
+      }
+    });
 }
 
 async function actualizarDesdeSupabaseCompleto(){
@@ -14801,6 +15097,7 @@ window.addEventListener('online',()=>{
   actualizarBadgeModoOffline();
   actualizarEstadoSync();
   prepararShellOfflineMapping().catch(()=>{});
+  programarRefrescoCorreccionesTecnico(150);
 
   sincronizarCorreccionesPendientesTecnico()
     .then(()=>cargarCorreccionesTecnico({silencioso:true}))
@@ -14846,7 +15143,21 @@ window.addEventListener('load',async()=>{
   actualizarIndicadorTipoProyecto();
   cargarCorreccionesTecnicoCache();
   actualizarBadgeCorreccionesTecnico();
+  iniciarRefrescoPeriodicoCorreccionesTecnico();
   actualizarEstadoSync();
+});
+
+
+window.addEventListener('focus',()=>{
+  if(navigator.onLine && mappingUser && proyectoActivo){
+    programarRefrescoCorreccionesTecnico(120);
+  }
+});
+
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && navigator.onLine && mappingUser && proyectoActivo){
+    programarRefrescoCorreccionesTecnico(120);
+  }
 });
 
 document.addEventListener('DOMContentLoaded',()=>{
