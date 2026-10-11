@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>PDR-APP · MAPPING V102 · Correcciones proactivas</title>
+<title>PDR-APP · MAPPING V109 · Editor visual de etiquetas</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -5107,7 +5107,64 @@ function pdrDibujarTextoTrazo(ctx,texto,x,y,opt={}){
   if(stroke){ctx.lineWidth=opt.lineWidth||4;ctx.strokeStyle=stroke;ctx.strokeText(texto,x,y);}
   ctx.fillStyle=fill;ctx.fillText(texto,x,y);
 }
+
+function pdrValidHexColor(color,fallback="#ffffff"){return /^#[0-9a-f]{6}$/i.test(String(color||''))?String(color):fallback;}
+function pdrColorToRgba(hex,opacity=1){const h=pdrValidHexColor(hex);const n=parseInt(h.slice(1),16);const a=Math.max(0,Math.min(1,Number(opacity)||0));return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+function pdrDefaultVisualStyles(){
+ const base=(font=3.2,color='#ffffff',opacity=1)=>({font_size_pct:font,color,opacity,border_width_pct:0.35});
+ return {fecha:base(3.3),hora:base(3.3),latitud:base(2.2),longitud:base(2.2),barrio:base(2.5),ciudad:base(2.8),direccion:base(2),consecutivo:base(2.3),tecnico:base(2.2),proyecto:base(2.2),logo:base(4.4),mini_mapa:{font_size_pct:2.2,color:'#ffffff',opacity:.92,border_width_pct:.35},franja_superior:{font_size_pct:0,color:'#F5DF1B',opacity:1,border_width_pct:.35},franja_inferior:{font_size_pct:0,color:'#F5DF1B',opacity:1,border_width_pct:.35}};
+}
+function pdrNormalizeVisualStyles(styles,defaultStripeColor='#F5DF1B'){
+ const defaults=pdrDefaultVisualStyles();
+ defaults.franja_superior.color=defaultStripeColor;defaults.franja_inferior.color=defaultStripeColor;
+ if(styles&&typeof styles==='object')for(const key of Object.keys(defaults)){const s=styles[key];if(s&&typeof s==='object'){defaults[key]={font_size_pct:Number(s.font_size_pct)||defaults[key].font_size_pct,color:pdrValidHexColor(s.color,defaults[key].color),opacity:Math.max(.1,Math.min(1,Number(s.opacity)||defaults[key].opacity)),border_width_pct:Number(s.border_width_pct)||defaults[key].border_width_pct};}}
+ return defaults;
+}
+
+/* V110 · Etiquetas configurables por proyecto: se respetan los campos, posiciones y estilos del Master. */
 async function pdrEtiquetarEvidencia(file){
+ const cfg=proyectoActivo?.fotos_config;
+ if(cfg?.etiquetar_fotos!==true)return file;
+ const layout=cfg.etiqueta_diseno;
+ if(!layout||typeof layout!=='object'||!layout.visual_posiciones)return pdrEtiquetarEvidenciaOriginal(file);
+ if(!file||!String(file.type||'').startsWith('image/'))return file;
+ const image=await cargarImagenParaOptimizar(file);
+ const w=image.width||image.naturalWidth,h=image.height||image.naturalHeight;
+ const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+ const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,w,h);if(image.close)image.close();
+ const lat=Number(document.getElementById('LATITUDE')?.value),lon=Number(document.getElementById('LONGITUDE')?.value);
+ const fields=Array.isArray(layout.campos)?layout.campos:[];
+ const available=Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180;
+ if(fields.some(k=>['latitud','longitud','mini_mapa'].includes(k))&&!available)throw new Error('No hay coordenadas GPS válidas para etiquetar la fotografía.');
+ const now=new Date();const txt=id=>String(document.getElementById(id)?.value||'').trim();
+ const mapping={fecha:pdrFormatoFechaEtiqueta(now),hora:pdrFormatoHoraEtiqueta(now),latitud:available?'LAT: '+lat.toFixed(8):'',longitud:available?'LON: '+lon.toFixed(8):'',barrio:txt('BARRIO')||'Sin barrio',ciudad:txt('CIUDAD')||proyectoActivo?.ciudad||'Sin ciudad',direccion:txt('DIRECCION')||'N/D',consecutivo:txt('CONSECUTIV')||'N/D',tecnico:txt('TECNICO')||'N/D',proyecto:proyectoActivo?.nombre||proyectoActivo?.codigo||txt('PROYECTO')||''};
+ const positions=layout.visual_posiciones;
+ const stripeColor=pdrValidHexColor(layout.color||'#F5DF1B','#F5DF1B');
+ const styles=pdrNormalizeVisualStyles(layout.visual_styles,stripeColor);
+ const textScale=Math.max(0.4,Math.min(2.4,Number(layout.tamano_texto)||1));
+ const keys=[...fields.filter(k=>k!=='mini_mapa'),'logo','franja_superior','franja_inferior',...(fields.includes('mini_mapa')?['mini_mapa']:[])];
+ const getP=key=>{const p=positions[key];if(!p||!['x','y','w','h'].every(a=>Number.isFinite(Number(p[a]))))return null;return {x:Math.max(0,Math.min(w,Number(p.x)*w/100)),y:Math.max(0,Math.min(h,Number(p.y)*h/100)),w:Math.max(1,Math.min(w,Number(p.w)*w/100)),h:Math.max(1,Math.min(h,Number(p.h)*h/100))};};
+ ctx.textBaseline='top';ctx.textAlign='left';
+ const logo=typeof layout.logo_data==='string'&&layout.logo_data.startsWith('data:image/')?layout.logo_data:null;
+ for(const key of keys){const p=getP(key);if(!p)continue;const st=styles[key]||{};
+  if(key.startsWith('franja_')){ctx.fillStyle=pdrColorToRgba(st.color||stripeColor,st.opacity??1);ctx.fillRect(p.x,p.y,p.w,Math.max(2,p.h));continue;}
+  if(key==='logo'){
+    if(logo){try{const logoImage=await pdrCargarImagenUrl(logo);const iw=logoImage.naturalWidth||logoImage.width,ih=logoImage.naturalHeight||logoImage.height;const scale=Math.min(p.w/iw,p.h/ih);ctx.globalAlpha=st.opacity??1;ctx.drawImage(logoImage,p.x,p.y,iw*scale,ih*scale);ctx.globalAlpha=1;}catch(e){const font=Math.max(10,Math.round((st.font_size_pct||4.4)*w/100*textScale));ctx.font='900 '+font+'px Arial,sans-serif';ctx.globalAlpha=st.opacity??1;pdrDibujarTextoTrazo(ctx,'PDR',p.x,p.y,{fill:st.color||'#ffffff',stroke:'rgba(0,0,0,.72)',lineWidth:Math.max(1.5,font*.16)});ctx.globalAlpha=1;}}
+    else{const font=Math.max(10,Math.round((st.font_size_pct||4.4)*w/100*textScale));ctx.font='900 '+font+'px Arial,sans-serif';ctx.globalAlpha=st.opacity??1;pdrDibujarTextoTrazo(ctx,'PDR',p.x,p.y,{fill:st.color||'#ffffff',stroke:'rgba(0,0,0,.72)',lineWidth:Math.max(1.5,font*.16)});ctx.globalAlpha=1;}continue;
+  }
+  if(key==='mini_mapa'){
+    const mini=await pdrCrearMiniMapaEtiqueta(lat,lon,Math.max(30,Math.round(p.w)),Math.max(25,Math.round(p.h)));
+    ctx.save();ctx.globalAlpha=st.opacity??0.92;pdrRedondearRect(ctx,p.x,p.y,p.w,p.h,Math.max(4,w*.008));ctx.clip();ctx.drawImage(mini,p.x,p.y,p.w,p.h);ctx.restore();
+    ctx.save();pdrRedondearRect(ctx,p.x,p.y,p.w,p.h,Math.max(4,w*.008));ctx.strokeStyle=st.color||'#ffffff';ctx.lineWidth=Math.max(1,Math.round((st.border_width_pct||0.35)*w/100));ctx.stroke();ctx.restore();continue;
+  }
+  const value=String(mapping[key]??'');const font=Math.max(8,Math.round((st.font_size_pct||2.6)*w/100*textScale));ctx.font='900 '+font+'px Arial,sans-serif';ctx.globalAlpha=st.opacity??1;
+  pdrDibujarTextoTrazo(ctx,value,p.x,p.y,{fill:st.color||'#ffffff',stroke:'rgba(0,0,0,.72)',lineWidth:Math.max(1.5,font*.16)});ctx.globalAlpha=1;
+ }
+ const blob=await canvasABlobJPEG(canvas,.92);
+ return new File([blob],(file.name||'PDR_foto').replace(/\.[^.]+$/,'')+'_PDR.jpg',{type:'image/jpeg',lastModified:now.getTime()});
+}
+
+async function pdrEtiquetarEvidenciaOriginal(file){
   if(proyectoActivo?.fotos_config?.etiquetar_fotos!==true)return file;
   if(!file || !String(file.type||'').startsWith('image/'))return file;
   const lat=Number(document.getElementById('LATITUDE')?.value);
@@ -5126,17 +5183,23 @@ async function pdrEtiquetarEvidencia(file){
   const pad=Math.round(base*0.65);
   const safeBottom=Math.round(base*0.9);
   const logoH=Math.round(base*3.4);
-  const stripeY1=h-Math.round(base*5.2);
-  const stripeY2=h-Math.round(base*1.05);
+  const dateFont=Math.round(base*1.22);
+  const coordFont=Math.round(base*0.80);
+  const barrioFont=Math.round(base*0.96);
+  const ciudadFont=Math.round(base*1.18);
+  const dateText=pdrFormatoFechaEtiqueta(fecha);
+  const timeText=pdrFormatoHoraEtiqueta(fecha);
   const mapW=pdrClamp(Math.round(w*0.29),130,250);
   const mapH=Math.round(mapW*0.72);
   const mapX=w-pad-mapW;
-  const mapY=h-safeBottom-mapH-Math.round(base*0.6);
-  const dateY=stripeY1-Math.round(base*0.48);
-  const latY=dateY+Math.round(base*1.38);
-  const lonY=latY+Math.round(base*1.05);
-  const barrioY=lonY+Math.round(base*1.12);
-  const ciudadY=barrioY+Math.round(base*1.08);
+  const stripeY2=h-Math.round(base*0.92);
+  const ciudadY=stripeY2-ciudadFont-Math.round(base*0.18);
+  const barrioY=ciudadY-barrioFont-Math.round(base*0.16);
+  const lonY=barrioY-coordFont-Math.round(base*0.16);
+  const latY=lonY-coordFont-Math.round(base*0.10);
+  const stripeY1=latY-Math.round(base*0.22);
+  const dateY=stripeY1-dateFont-Math.round(base*0.30);
+  const mapY=Math.max(pad,stripeY1-Math.round(base*0.18));
 
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,.22)';
@@ -5153,27 +5216,30 @@ async function pdrEtiquetarEvidencia(file){
   ctx.beginPath();ctx.moveTo(pad,stripeY1);ctx.lineTo(w-pad,stripeY1);ctx.stroke();
   ctx.lineWidth=Math.max(2,Math.round(base*0.12));
   ctx.beginPath();ctx.moveTo(pad,stripeY2);ctx.lineTo(w-pad,stripeY2);ctx.stroke();
+  ctx.font='900 '+dateFont+'px Arial, sans-serif';
+  const dateWidthForSep=ctx.measureText(dateText).width;
+  const sepX=pad+Math.round(dateWidthForSep+base*0.42);
   ctx.lineWidth=Math.max(3,Math.round(base*0.17));
-  const sepX=pad+Math.round(base*4.05);
-  ctx.beginPath();ctx.moveTo(sepX,dateY-Math.round(base*0.85));ctx.lineTo(sepX,dateY+Math.round(base*0.32));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(sepX,dateY-Math.round(base*0.10));ctx.lineTo(sepX,dateY+dateFont-Math.round(base*0.12));ctx.stroke();
   ctx.restore();
 
   ctx.textBaseline='top';
   ctx.textAlign='left';
-  ctx.font='900 '+Math.round(base*1.45)+'px Arial, sans-serif';
-  pdrDibujarTextoTrazo(ctx,pdrFormatoFechaEtiqueta(fecha),pad,dateY,{fill:'rgba(255,255,255,.97)',stroke:'rgba(0,0,0,.65)',lineWidth:Math.max(2,Math.round(base*0.13))});
-  const horaX=sepX+Math.round(base*0.45);
-  pdrDibujarTextoTrazo(ctx,pdrFormatoHoraEtiqueta(fecha),horaX,dateY,{fill:'rgba(255,255,255,.97)',stroke:'rgba(0,0,0,.65)',lineWidth:Math.max(2,Math.round(base*0.13))});
+  ctx.font='900 '+dateFont+'px Arial, sans-serif';
+  const dateWidth=ctx.measureText(dateText).width;
+  pdrDibujarTextoTrazo(ctx,dateText,pad,dateY,{fill:'rgba(255,255,255,.97)',stroke:'rgba(0,0,0,.65)',lineWidth:Math.max(2,Math.round(base*0.13))});
+  const horaX=sepX+Math.round(base*0.42);
+  pdrDibujarTextoTrazo(ctx,timeText,horaX,dateY,{fill:'rgba(255,255,255,.97)',stroke:'rgba(0,0,0,.65)',lineWidth:Math.max(2,Math.round(base*0.13))});
 
-  ctx.font='800 '+Math.round(base*0.92)+'px Arial, sans-serif';
+  ctx.font='800 '+coordFont+'px Arial, sans-serif';
   pdrDibujarTextoTrazo(ctx,'LAT: '+lat.toFixed(8),pad,latY,{fill:'rgba(255,255,255,.95)',stroke:'rgba(0,0,0,.60)',lineWidth:Math.max(1.5,Math.round(base*0.10))});
   pdrDibujarTextoTrazo(ctx,'LON: '+lon.toFixed(8),pad,lonY,{fill:'rgba(255,255,255,.95)',stroke:'rgba(0,0,0,.60)',lineWidth:Math.max(1.5,Math.round(base*0.10))});
 
-  ctx.font='900 '+Math.round(base*1.02)+'px Arial, sans-serif';
+  ctx.font='900 '+barrioFont+'px Arial, sans-serif';
   const barrioTxt=pdrUpperEtiqueta(barrio)||'SIN BARRIO';
   const ciudadTxt=pdrUpperEtiqueta(ciudad)||'SIN CIUDAD';
   pdrDibujarTextoTrazo(ctx,barrioTxt,pad,barrioY,{fill:'rgba(255,255,255,.98)',stroke:'rgba(0,0,0,.62)',lineWidth:Math.max(2,Math.round(base*0.11))});
-  ctx.font='900 '+Math.round(base*1.25)+'px Arial, sans-serif';
+  ctx.font='900 '+ciudadFont+'px Arial, sans-serif';
   pdrDibujarTextoTrazo(ctx,ciudadTxt,pad,ciudadY,{fill:'rgba(255,255,255,.98)',stroke:'rgba(0,0,0,.62)',lineWidth:Math.max(2,Math.round(base*0.12))});
 
   const miniCanvas=await pdrCrearMiniMapaEtiqueta(lat,lon,mapW,mapH);
@@ -16355,6 +16421,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
 
 
 
