@@ -5054,13 +5054,45 @@ function pdrDibujarPinMapa(ctx,x,y,tam){
   ctx.beginPath();ctx.arc(x,y-r*0.48,r*0.38,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
-async function pdrCrearMiniMapaEtiqueta(lat,lon,w,h){
+/* V112: Google Maps opcional con función autenticada; OSM sigue como respaldo. */
+async function pdrCrearMiniMapaGoogle(lat,lon,w,h,config={}){
+  if(typeof mappingSb==='undefined')throw new Error('Supabase no disponible');
+  const {data:{session},error:authError}=await mappingSb.auth.getSession();
+  if(authError||!session?.access_token)throw new Error('Inicia sesión para solicitar mapas Google');
+  const zoom=Math.max(14,Math.min(20,Number(config.zoom)||18));
+  const maptype=['roadmap','satellite','hybrid','terrain'].includes(config.estilo)?config.estilo:'roadmap';
+  const width=Math.max(60,Math.min(640,Math.round(w)));
+  const height=Math.max(60,Math.min(640,Math.round(h)));
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),12000);
+  try{
+    const response=await fetch(MAPPING_SUPABASE_URL+'/functions/v1/pdr-google-static-map',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,
+        'apikey':MAPPING_SUPABASE_ANON},
+      body:JSON.stringify({lat,lon,zoom,maptype,width,height,marker:config.marcador!=='ninguno'}),
+      signal:controller.signal
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok||!payload.image_data)throw new Error(payload.error||'Mapa Google no disponible ('+response.status+')');
+    const imagen=await pdrCargarImagenUrl(payload.image_data);
+    const mapa=document.createElement('canvas');mapa.width=width;mapa.height=height;
+    mapa.getContext('2d').drawImage(imagen,0,0,width,height);
+    return mapa;
+  }finally{clearTimeout(timeout);}
+}
+async function pdrCrearMiniMapaEtiqueta(lat,lon,w,h,config={}){
+  const provider=String(config.proveedor||config.provider||'osm').toLowerCase();
+  if(provider==='google'){
+    try{return await pdrCrearMiniMapaGoogle(lat,lon,w,h,config);}
+    catch(error){console.warn('[PDR] Mini mapa Google no disponible; usando OpenStreetMap.',error);}
+  }
   const mapa=document.createElement('canvas');mapa.width=w;mapa.height=h;
   const ctx=mapa.getContext('2d');
   ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(0,0,w,h);
   let cargoMapaReal=false;
   try{
-    const zoom=17,tileSize=256;
+    const zoom=Math.max(14,Math.min(19,Number(config.zoom)||17)),tileSize=256;
     const world=pdrLatLonToWorld(lat,lon,zoom);
     const x0=world.x-w/2, y0=world.y-h/2;
     const x1=world.x+w/2, y1=world.y+h/2;
@@ -5085,11 +5117,14 @@ async function pdrCrearMiniMapaEtiqueta(lat,lon,w,h){
     }
   }catch(_err){cargoMapaReal=false;}
   if(!cargoMapaReal)pdrDibujarPlaceholderMapa(ctx,w,h,lat,lon);
-  ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(0,0,w,22);
-  pdrDibujarPinMapa(ctx,w*0.54,h*0.5,Math.min(w,h)*0.2);
-  ctx.fillStyle='rgba(15,23,42,.74)';
-  ctx.font='700 '+Math.max(10,Math.round(w*0.06))+'px Arial, sans-serif';
-  ctx.fillText('Ubicación',10,15);
+  if(config.marcador!=='ninguno')pdrDibujarPinMapa(ctx,w*.54,h*.5,Math.min(w,h)*.2);
+  // Atribución del proveedor para fotografías etiquetadas.
+  ctx.fillStyle='rgba(255,255,255,.85)';
+  ctx.fillRect(0,h-15,w,15);
+  ctx.fillStyle='#334155';
+  ctx.font='10px Arial,sans-serif';
+  ctx.textBaseline='top';
+  ctx.fillText(cargoMapaReal?'© OpenStreetMap contributors':'Mapa de referencia',4,h-13);
   return mapa;
 }
 function pdrRedondearRect(ctx,x,y,w,h,r){
@@ -5153,7 +5188,7 @@ async function pdrEtiquetarEvidencia(file){
     else{const font=Math.max(10,Math.round((st.font_size_pct||4.4)*w/100*textScale));ctx.font='900 '+font+'px Arial,sans-serif';ctx.globalAlpha=st.opacity??1;pdrDibujarTextoTrazo(ctx,'PDR',p.x,p.y,{fill:st.color||'#ffffff',stroke:'rgba(0,0,0,.72)',lineWidth:Math.max(1.5,font*.16)});ctx.globalAlpha=1;}continue;
   }
   if(key==='mini_mapa'){
-    const mini=await pdrCrearMiniMapaEtiqueta(lat,lon,Math.max(30,Math.round(p.w)),Math.max(25,Math.round(p.h)));
+    const mini=await pdrCrearMiniMapaEtiqueta(lat,lon,Math.max(60,Math.round(p.w)),Math.max(60,Math.round(p.h)),layout.mini_mapa_config||{});
     ctx.save();ctx.globalAlpha=st.opacity??0.92;pdrRedondearRect(ctx,p.x,p.y,p.w,p.h,Math.max(4,w*.008));ctx.clip();ctx.drawImage(mini,p.x,p.y,p.w,p.h);ctx.restore();
     ctx.save();pdrRedondearRect(ctx,p.x,p.y,p.w,p.h,Math.max(4,w*.008));ctx.strokeStyle=st.color||'#ffffff';ctx.lineWidth=Math.max(1,Math.round((st.border_width_pct||0.35)*w/100));ctx.stroke();ctx.restore();continue;
   }
@@ -5243,7 +5278,7 @@ async function pdrEtiquetarEvidenciaOriginal(file){
   ctx.font='900 '+ciudadFont+'px Arial, sans-serif';
   pdrDibujarTextoTrazo(ctx,ciudadTxt,pad,ciudadY,{fill:'rgba(255,255,255,.98)',stroke:'rgba(0,0,0,.62)',lineWidth:Math.max(2,Math.round(base*0.12))});
 
-  const miniCanvas=await pdrCrearMiniMapaEtiqueta(lat,lon,mapW,mapH);
+  const miniCanvas=await pdrCrearMiniMapaEtiqueta(lat,lon,mapW,mapH,proyectoActivo?.fotos_config?.etiqueta_diseno?.mini_mapa_config||{});
   ctx.save();
   ctx.shadowColor='rgba(0,0,0,.28)';ctx.shadowBlur=Math.round(base*0.55);ctx.shadowOffsetY=Math.round(base*0.18);
   pdrRedondearRect(ctx,mapX,mapY,mapW,mapH,Math.round(base*0.58));
@@ -16422,6 +16457,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
+
 
 
 
