@@ -4988,12 +4988,48 @@ function renderFotos(t){
       </div>`);
   });
 }
+
+/* PDR: estampado irreversible de evidencia al momento de la captura.
+   La configuración viaja en mapping_proyectos.fotos_config.etiquetar_fotos. */
+async function pdrEtiquetarEvidencia(file){
+  if(proyectoActivo?.fotos_config?.etiquetar_fotos!==true)return file;
+  if(!file || !String(file.type||'').startsWith('image/'))return file;
+  const lat=Number(document.getElementById('LATITUDE')?.value);
+  const lon=Number(document.getElementById('LONGITUDE')?.value);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))throw new Error('No hay coordenadas válidas para etiquetar la fotografía.');
+  const fecha=new Date();
+  const ciudad=document.getElementById('CIUDAD')?.value||proyectoActivo?.ciudad||'Sin ciudad';
+  const barrio=document.getElementById('BARRIO')?.value||'Sin barrio';
+  const imagen=await cargarImagenParaOptimizar(file);
+  const w=imagen.width||imagen.naturalWidth,h=imagen.height||imagen.naturalHeight;
+  const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');ctx.drawImage(imagen,0,0,w,h);
+  if(imagen.close)imagen.close();
+  const fs=Math.max(15,Math.round(w*.037)),pad=Math.round(fs*.45),lh=fs*1.32;
+  const lines=[fecha.toLocaleString('es-CO',{dateStyle:'short',timeStyle:'medium',hour12:false}),
+    'LAT: '+lat.toFixed(8),'LON: '+lon.toFixed(8),'Barrio: '+barrio,'Ciudad: '+ciudad];
+  ctx.font='bold '+fs+'px Arial,sans-serif';
+  const maxText=Math.max(...lines.map(v=>ctx.measureText(v).width));
+  const boxW=Math.min(w,Math.ceil(maxText+pad*2)),boxH=Math.ceil(lines.length*lh+pad*2);
+  ctx.fillStyle='rgba(0,0,0,.53)';ctx.fillRect(0,h-boxH,boxW,boxH);
+  ctx.fillStyle='#fff';ctx.textBaseline='top';
+  lines.forEach((line,i)=>ctx.fillText(line,pad,h-boxH+pad+i*lh,w-pad*2));
+  const logoFs=Math.round(fs*2.2);
+  ctx.font='900 '+logoFs+'px Arial,sans-serif';
+  const logoW=ctx.measureText('PDR').width;
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(0,0,logoW+pad*2,logoFs+pad*2);
+  ctx.fillStyle='#fff';ctx.fillText('PDR',pad,pad);
+  const blob=await canvasABlobJPEG(canvas,.91);
+  return new File([blob],(file.name||'PDR_foto').replace(/\.[^.]+$/,'')+'_PDR.jpg',{type:'image/jpeg',lastModified:fecha.getTime()});
+}
+
 async function cargarFoto(id,input){
   const f=input.files?.[0];
   if(!f)return;
 
   // Se conserva el archivo ORIGINAL intacto para IndexedDB / ZIP.
-  photos[id]={blob:f,nombre_original:f.name||''};
+  let fotoFinal;try{fotoFinal=await pdrEtiquetarEvidencia(f);}catch(e){alert('No se pudo etiquetar la foto: '+e.message);input.value='';return;}
+  photos[id]={blob:fotoFinal,nombre_original:fotoFinal.name||''};
 
   const status=document.getElementById('status_'+id);
   if(status){
@@ -5004,10 +5040,10 @@ async function cargarFoto(id,input){
 
   // La foto original NO se pinta directamente en el DOM.
   // Se crea una miniatura liviana para evitar parpadeos en Android.
-  await mostrarPreviewFotoLocal(id,f,'Foto original guardada localmente');
+  await mostrarPreviewFotoLocal(id,fotoFinal,'Foto guardada localmente');
 
   if(status){
-    status.textContent=`📱 Original guardado · ${formatearBytesStorage(f.size)}`;
+    status.textContent=`📱 Original guardado · ${formatearBytesStorage(fotoFinal.size)}`;
   }
 
   const card=document.getElementById('photoCard_'+id);
@@ -16079,6 +16115,7 @@ async function capturarFotoIA(){
 }
 
 async function guardarCapturaIAEnFormulario(id,file,detections,audit){
+  file=await pdrEtiquetarEvidencia(file);
   photos[id]={
     blob:file,
     nombre_original:file.name||'',
