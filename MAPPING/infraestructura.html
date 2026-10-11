@@ -5157,8 +5157,9 @@ async function pdrEtiquetarEvidencia(file){
     ctx.save();ctx.globalAlpha=st.opacity??0.92;pdrRedondearRect(ctx,p.x,p.y,p.w,p.h,Math.max(4,w*.008));ctx.clip();ctx.drawImage(mini,p.x,p.y,p.w,p.h);ctx.restore();
     ctx.save();pdrRedondearRect(ctx,p.x,p.y,p.w,p.h,Math.max(4,w*.008));ctx.strokeStyle=st.color||'#ffffff';ctx.lineWidth=Math.max(1,Math.round((st.border_width_pct||0.35)*w/100));ctx.stroke();ctx.restore();continue;
   }
-  const value=String(mapping[key]??'');const font=Math.max(8,Math.round((st.font_size_pct||2.6)*w/100*textScale));ctx.font='900 '+font+'px Arial,sans-serif';ctx.globalAlpha=st.opacity??1;
-  pdrDibujarTextoTrazo(ctx,value,p.x,p.y,{fill:st.color||'#ffffff',stroke:'rgba(0,0,0,.72)',lineWidth:Math.max(1.5,font*.16)});ctx.globalAlpha=1;
+  const value=String(mapping[key]??'');const font=Math.max(1,Math.round((st.font_size_pct||2.6)*w/100*textScale));ctx.font='900 '+font+'px Arial,sans-serif';ctx.globalAlpha=st.opacity??1;
+  ctx.save();ctx.beginPath();ctx.rect(p.x,p.y,p.w,Math.max(p.h,font*1.08));ctx.clip();
+  pdrDibujarTextoTrazo(ctx,value,p.x,p.y,{fill:st.color||'#ffffff',stroke:'rgba(0,0,0,.72)',lineWidth:Math.max(1,font*.13)});ctx.restore();ctx.globalAlpha=1;
  }
  const blob=await canvasABlobJPEG(canvas,.92);
  return new File([blob],(file.name||'PDR_foto').replace(/\.[^.]+$/,'')+'_PDR.jpg',{type:'image/jpeg',lastModified:now.getTime()});
@@ -16421,6 +16422,17 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
