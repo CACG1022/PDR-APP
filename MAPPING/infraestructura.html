@@ -4991,6 +4991,122 @@ function renderFotos(t){
 
 /* PDR: estampado irreversible de evidencia al momento de la captura.
    La configuración viaja en mapping_proyectos.fotos_config.etiquetar_fotos. */
+function pdrClamp(valor,min,max){return Math.max(min,Math.min(max,valor));}
+function pdrFormatoFechaEtiqueta(fecha){
+  try{return fecha.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});}catch(_){return fecha.toLocaleDateString('es-CO');}
+}
+function pdrFormatoHoraEtiqueta(fecha){
+  try{return fecha.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}catch(_){return fecha.toLocaleTimeString('es-CO',{hour12:false});}
+}
+function pdrTextoSeguroEtiqueta(v,fallback=''){
+  return String(v??fallback).trim()||fallback;
+}
+function pdrUpperEtiqueta(v){
+  return pdrTextoSeguroEtiqueta(v,'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+}
+function pdrLatLonToWorld(lat,lon,zoom){
+  const tile=256,scale=tile*Math.pow(2,zoom);
+  const sin=Math.sin((lat*Math.PI)/180);
+  const x=((lon+180)/360)*scale;
+  const y=(0.5-Math.log((1+sin)/(1-sin))/(4*Math.PI))*scale;
+  return {x,y};
+}
+async function pdrCargarImagenUrl(url){
+  return await new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.decoding='async';
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('No se pudo cargar: '+url));
+    img.src=url;
+  });
+}
+function pdrDibujarPlaceholderMapa(ctx,w,h,lat,lon){
+  ctx.fillStyle='rgba(248,250,252,.92)';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='rgba(226,232,240,.95)';
+  for(let i=0;i<6;i++){
+    const y=Math.round((i+1)*(h/7));
+    ctx.fillRect(0,y,w,1);
+  }
+  ctx.strokeStyle='rgba(203,213,225,.95)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(10,h*0.72);ctx.bezierCurveTo(w*0.22,h*0.45,w*0.42,h*0.81,w*0.72,h*0.38);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(w*0.1,h*0.22);ctx.bezierCurveTo(w*0.34,h*0.18,w*0.48,h*0.34,w*0.88,h*0.24);ctx.stroke();
+  ctx.fillStyle='rgba(71,85,105,.9)';
+  ctx.font='600 '+Math.max(10,Math.round(w*0.065))+'px Arial, sans-serif';
+  ctx.fillText('Mini mapa',10,16);
+  ctx.font='500 '+Math.max(8,Math.round(w*0.045))+'px Arial, sans-serif';
+  ctx.fillText(lat.toFixed(5)+', '+lon.toFixed(5),10,h-10);
+}
+function pdrDibujarPinMapa(ctx,x,y,tam){
+  const r=Math.max(6,tam*0.27);
+  ctx.save();
+  ctx.fillStyle='#e53935';
+  ctx.strokeStyle='rgba(255,255,255,.96)';
+  ctx.lineWidth=Math.max(2,tam*0.1);
+  ctx.beginPath();
+  ctx.arc(x,y-r*0.55,r,Math.PI*0.15,Math.PI*0.85,true);
+  ctx.quadraticCurveTo(x+r*0.95,y-r*0.2,x,y+r*1.82);
+  ctx.quadraticCurveTo(x-r*0.95,y-r*0.2,x-r,y-r*0.55);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.97)';
+  ctx.beginPath();ctx.arc(x,y-r*0.48,r*0.38,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+async function pdrCrearMiniMapaEtiqueta(lat,lon,w,h){
+  const mapa=document.createElement('canvas');mapa.width=w;mapa.height=h;
+  const ctx=mapa.getContext('2d');
+  ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(0,0,w,h);
+  let cargoMapaReal=false;
+  try{
+    const zoom=17,tileSize=256;
+    const world=pdrLatLonToWorld(lat,lon,zoom);
+    const x0=world.x-w/2, y0=world.y-h/2;
+    const x1=world.x+w/2, y1=world.y+h/2;
+    const txMin=Math.floor(x0/tileSize), txMax=Math.floor(x1/tileSize);
+    const tyMin=Math.floor(y0/tileSize), tyMax=Math.floor(y1/tileSize);
+    const maxTile=Math.pow(2,zoom);
+    const tareas=[];
+    for(let tx=txMin;tx<=txMax;tx++){
+      for(let ty=tyMin;ty<=tyMax;ty++){
+        if(ty<0||ty>=maxTile)continue;
+        const wrapTx=((tx%maxTile)+maxTile)%maxTile;
+        const px=Math.round(tx*tileSize-x0);
+        const py=Math.round(ty*tileSize-y0);
+        const url='https://tile.openstreetmap.org/'+zoom+'/'+wrapTx+'/'+ty+'.png';
+        tareas.push(pdrCargarImagenUrl(url).then(img=>({img,px,py})).catch(()=>null));
+      }
+    }
+    const tiles=(await Promise.all(tareas)).filter(Boolean);
+    if(tiles.length){
+      for(const tile of tiles){ctx.drawImage(tile.img,tile.px,tile.py,tileSize,tileSize);}
+      cargoMapaReal=true;
+    }
+  }catch(_err){cargoMapaReal=false;}
+  if(!cargoMapaReal)pdrDibujarPlaceholderMapa(ctx,w,h,lat,lon);
+  ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(0,0,w,22);
+  pdrDibujarPinMapa(ctx,w*0.54,h*0.5,Math.min(w,h)*0.2);
+  ctx.fillStyle='rgba(15,23,42,.74)';
+  ctx.font='700 '+Math.max(10,Math.round(w*0.06))+'px Arial, sans-serif';
+  ctx.fillText('Ubicación',10,15);
+  return mapa;
+}
+function pdrRedondearRect(ctx,x,y,w,h,r){
+  const rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
+}
+function pdrDibujarTextoTrazo(ctx,texto,x,y,opt={}){
+  const fill=opt.fill||'#fff',stroke=opt.stroke||'rgba(0,0,0,.55)';
+  if(stroke){ctx.lineWidth=opt.lineWidth||4;ctx.strokeStyle=stroke;ctx.strokeText(texto,x,y);}
+  ctx.fillStyle=fill;ctx.fillText(texto,x,y);
+}
 async function pdrEtiquetarEvidencia(file){
   if(proyectoActivo?.fotos_config?.etiquetar_fotos!==true)return file;
   if(!file || !String(file.type||'').startsWith('image/'))return file;
@@ -4998,28 +5114,86 @@ async function pdrEtiquetarEvidencia(file){
   const lon=Number(document.getElementById('LONGITUDE')?.value);
   if(!Number.isFinite(lat)||!Number.isFinite(lon))throw new Error('No hay coordenadas válidas para etiquetar la fotografía.');
   const fecha=new Date();
-  const ciudad=document.getElementById('CIUDAD')?.value||proyectoActivo?.ciudad||'Sin ciudad';
-  const barrio=document.getElementById('BARRIO')?.value||'Sin barrio';
+  const ciudad=pdrTextoSeguroEtiqueta(document.getElementById('CIUDAD')?.value||proyectoActivo?.ciudad||'Sin ciudad','Sin ciudad');
+  const barrio=pdrTextoSeguroEtiqueta(document.getElementById('BARRIO')?.value||'Sin barrio','Sin barrio');
   const imagen=await cargarImagenParaOptimizar(file);
   const w=imagen.width||imagen.naturalWidth,h=imagen.height||imagen.naturalHeight;
   const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
   const ctx=canvas.getContext('2d');ctx.drawImage(imagen,0,0,w,h);
   if(imagen.close)imagen.close();
-  const fs=Math.max(15,Math.round(w*.037)),pad=Math.round(fs*.45),lh=fs*1.32;
-  const lines=[fecha.toLocaleString('es-CO',{dateStyle:'short',timeStyle:'medium',hour12:false}),
-    'LAT: '+lat.toFixed(8),'LON: '+lon.toFixed(8),'Barrio: '+barrio,'Ciudad: '+ciudad];
-  ctx.font='bold '+fs+'px Arial,sans-serif';
-  const maxText=Math.max(...lines.map(v=>ctx.measureText(v).width));
-  const boxW=Math.min(w,Math.ceil(maxText+pad*2)),boxH=Math.ceil(lines.length*lh+pad*2);
-  ctx.fillStyle='rgba(0,0,0,.53)';ctx.fillRect(0,h-boxH,boxW,boxH);
-  ctx.fillStyle='#fff';ctx.textBaseline='top';
-  lines.forEach((line,i)=>ctx.fillText(line,pad,h-boxH+pad+i*lh,w-pad*2));
-  const logoFs=Math.round(fs*2.2);
-  ctx.font='900 '+logoFs+'px Arial,sans-serif';
-  const logoW=ctx.measureText('PDR').width;
-  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(0,0,logoW+pad*2,logoFs+pad*2);
-  ctx.fillStyle='#fff';ctx.fillText('PDR',pad,pad);
-  const blob=await canvasABlobJPEG(canvas,.91);
+
+  const base=Math.max(14,Math.round(w*0.0185));
+  const pad=Math.round(base*0.65);
+  const safeBottom=Math.round(base*0.9);
+  const logoH=Math.round(base*3.4);
+  const stripeY1=h-Math.round(base*5.2);
+  const stripeY2=h-Math.round(base*1.05);
+  const mapW=pdrClamp(Math.round(w*0.29),130,250);
+  const mapH=Math.round(mapW*0.72);
+  const mapX=w-pad-mapW;
+  const mapY=h-safeBottom-mapH-Math.round(base*0.6);
+  const dateY=stripeY1-Math.round(base*0.48);
+  const latY=dateY+Math.round(base*1.38);
+  const lonY=latY+Math.round(base*1.05);
+  const barrioY=lonY+Math.round(base*1.12);
+  const ciudadY=barrioY+Math.round(base*1.08);
+
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  ctx.fillRect(0,0,Math.round(base*5.35),logoH);
+  ctx.font='900 '+Math.round(base*2.45)+'px Arial, sans-serif';
+  ctx.textBaseline='top';
+  pdrDibujarTextoTrazo(ctx,'PDR',Math.round(base*0.35),Math.round(base*0.22),{fill:'rgba(255,255,255,.96)',stroke:'rgba(0,0,0,.18)',lineWidth:2});
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle='#f0c419';
+  ctx.lineCap='square';
+  ctx.lineWidth=Math.max(3,Math.round(base*0.18));
+  ctx.beginPath();ctx.moveTo(pad,stripeY1);ctx.lineTo(w-pad,stripeY1);ctx.stroke();
+  ctx.lineWidth=Math.max(2,Math.round(base*0.12));
+  ctx.beginPath();ctx.moveTo(pad,stripeY2);ctx.lineTo(w-pad,stripeY2);ctx.stroke();
+  ctx.lineWidth=Math.max(3,Math.round(base*0.17));
+  const sepX=pad+Math.round(base*4.05);
+  ctx.beginPath();ctx.moveTo(sepX,dateY-Math.round(base*0.85));ctx.lineTo(sepX,dateY+Math.round(base*0.32));ctx.stroke();
+  ctx.restore();
+
+  ctx.textBaseline='top';
+  ctx.textAlign='left';
+  ctx.font='900 '+Math.round(base*1.45)+'px Arial, sans-serif';
+  pdrDibujarTextoTrazo(ctx,pdrFormatoFechaEtiqueta(fecha),pad,dateY,{fill:'rgba(255,255,255,.97)',stroke:'rgba(0,0,0,.65)',lineWidth:Math.max(2,Math.round(base*0.13))});
+  const horaX=sepX+Math.round(base*0.45);
+  pdrDibujarTextoTrazo(ctx,pdrFormatoHoraEtiqueta(fecha),horaX,dateY,{fill:'rgba(255,255,255,.97)',stroke:'rgba(0,0,0,.65)',lineWidth:Math.max(2,Math.round(base*0.13))});
+
+  ctx.font='800 '+Math.round(base*0.92)+'px Arial, sans-serif';
+  pdrDibujarTextoTrazo(ctx,'LAT: '+lat.toFixed(8),pad,latY,{fill:'rgba(255,255,255,.95)',stroke:'rgba(0,0,0,.60)',lineWidth:Math.max(1.5,Math.round(base*0.10))});
+  pdrDibujarTextoTrazo(ctx,'LON: '+lon.toFixed(8),pad,lonY,{fill:'rgba(255,255,255,.95)',stroke:'rgba(0,0,0,.60)',lineWidth:Math.max(1.5,Math.round(base*0.10))});
+
+  ctx.font='900 '+Math.round(base*1.02)+'px Arial, sans-serif';
+  const barrioTxt=pdrUpperEtiqueta(barrio)||'SIN BARRIO';
+  const ciudadTxt=pdrUpperEtiqueta(ciudad)||'SIN CIUDAD';
+  pdrDibujarTextoTrazo(ctx,barrioTxt,pad,barrioY,{fill:'rgba(255,255,255,.98)',stroke:'rgba(0,0,0,.62)',lineWidth:Math.max(2,Math.round(base*0.11))});
+  ctx.font='900 '+Math.round(base*1.25)+'px Arial, sans-serif';
+  pdrDibujarTextoTrazo(ctx,ciudadTxt,pad,ciudadY,{fill:'rgba(255,255,255,.98)',stroke:'rgba(0,0,0,.62)',lineWidth:Math.max(2,Math.round(base*0.12))});
+
+  const miniCanvas=await pdrCrearMiniMapaEtiqueta(lat,lon,mapW,mapH);
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.28)';ctx.shadowBlur=Math.round(base*0.55);ctx.shadowOffsetY=Math.round(base*0.18);
+  pdrRedondearRect(ctx,mapX,mapY,mapW,mapH,Math.round(base*0.58));
+  ctx.fillStyle='rgba(255,255,255,.82)';
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  pdrRedondearRect(ctx,mapX,mapY,mapW,mapH,Math.round(base*0.58));
+  ctx.clip();
+  ctx.drawImage(miniCanvas,mapX,mapY,mapW,mapH);
+  ctx.restore();
+  ctx.save();
+  pdrRedondearRect(ctx,mapX,mapY,mapW,mapH,Math.round(base*0.58));
+  ctx.strokeStyle='rgba(255,255,255,.88)';ctx.lineWidth=Math.max(2,Math.round(base*0.11));ctx.stroke();
+  ctx.restore();
+
+  const blob=await canvasABlobJPEG(canvas,.93);
   return new File([blob],(file.name||'PDR_foto').replace(/\.[^.]+$/,'')+'_PDR.jpg',{type:'image/jpeg',lastModified:fecha.getTime()});
 }
 
@@ -5043,7 +5217,7 @@ async function cargarFoto(id,input){
   await mostrarPreviewFotoLocal(id,fotoFinal,'Foto guardada localmente');
 
   if(status){
-    status.textContent=`📱 Original guardado · ${formatearBytesStorage(fotoFinal.size)}`;
+    status.textContent=`${fotoFinal.name.endsWith('_PDR.jpg')?'✅ FOTO ETIQUETADA':'📷 FOTO SIN ETIQUETAS'} · ${formatearBytesStorage(fotoFinal.size)} · Toca la imagen para verla completa`;
   }
 
   const card=document.getElementById('photoCard_'+id);
@@ -7549,6 +7723,28 @@ async function crearMiniaturaFoto(blob){
   }
 }
 
+
+/* V104: visor a resolución completa de la evidencia realmente guardada. */
+function pdrVerFotoCompleta(tipo){
+  const file=photos?.[tipo]?.blob;
+  if(!(file instanceof Blob)){
+    alert('La fotografía no está disponible localmente para ampliar.');
+    return;
+  }
+  const url=URL.createObjectURL(file);
+  const fondo=document.createElement('div');
+  fondo.style.cssText='position:fixed;inset:0;z-index:90000;background:rgba(0,0,0,.96);display:flex;flex-direction:column;padding:12px;gap:10px';
+  const boton=document.createElement('button');
+  boton.type='button';boton.textContent='✕ Cerrar fotografía';
+  boton.style.cssText='border:0;border-radius:10px;background:#dc2626;color:white;font-weight:900;padding:12px';
+  const img=document.createElement('img');
+  img.src=url;img.alt='Fotografía original almacenada';
+  img.style.cssText='width:100%;height:calc(100% - 90px);object-fit:contain;min-height:0';
+  const cerrar=()=>{URL.revokeObjectURL(url);fondo.remove()};
+  boton.onclick=cerrar;fondo.onclick=e=>{if(e.target===fondo)cerrar()};
+  fondo.append(boton,img);document.body.append(fondo);
+}
+
 async function mostrarPreviewFotoLocal(tipo,blob,titulo='Foto local de este dispositivo'){
   const img=document.getElementById('prev_'+tipo);
   if(!img || !(blob instanceof Blob))return;
@@ -7562,6 +7758,8 @@ async function mostrarPreviewFotoLocal(tipo,blob,titulo='Foto local de este disp
   img.decoding='async';
   img.loading='eager';
   img.title='Preparando vista previa...';
+  img.style.cursor='zoom-in';
+  img.onclick=()=>pdrVerFotoCompleta(tipo);
 
   try{
     const mini=await crearMiniaturaFoto(blob);
@@ -12077,8 +12275,8 @@ async function cargarProyectosAsignados(){
     if(a){
       proyectoActivo={
         ...a,
-        ...a.mapping_proyectos,
         ...proyectoActivo,
+        ...a.mapping_proyectos,
         empresa:a.mapping_proyectos?.mapping_empresas||proyectoActivo.empresa||null,
         proyecto_id:a.proyecto_id,
         asignacion_id:a.id
@@ -16134,7 +16332,7 @@ async function guardarCapturaIAEnFormulario(id,file,detections,audit){
   };
   const status=document.getElementById('status_'+id);
   if(status){
-    status.textContent=`🤖 Foto IA guardada · ${formatearBytesStorage(file.size)}`;
+    status.textContent=`🤖 ${file.name.endsWith('_PDR.jpg')?'✅ FOTO ETIQUETADA':'📷 FOTO SIN ETIQUETAS'} · ${formatearBytesStorage(file.size)} · Toca la imagen para verla completa`;
     status.className='photoStatus local';status.style.display='inline-flex';
   }
   await mostrarPreviewFotoLocal(id,file,'Foto capturada con Auditor IA');
@@ -16157,6 +16355,17 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
