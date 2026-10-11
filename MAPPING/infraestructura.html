@@ -1281,7 +1281,12 @@ button.appControlLocked{
 
 
 /* ===== V91 · CÁMARA IA LOCAL · YOLO11 + ONNX RUNTIME WEB ===== */
-.aiPhotoActions{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:7px}
+.aiPhotoActions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;margin-top:7px}
+.aiPhotoSplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0;overflow:hidden;border-radius:9px}
+.aiPhotoSplit .btn{border-radius:0!important;padding-left:5px!important;padding-right:5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.aiPhotoSplit .btn:first-child{border-right:1px solid rgba(255,255,255,.34)!important}
+.aiPhotoSplit .btn:last-child{background:#2563a5!important}
+.aiPhotoSplit .btn:active{filter:brightness(1.13)}
 .aiPhotoActions .btn{min-width:0}
 .aiAttachBtn{background:#334155!important;padding-left:10px!important;padding-right:10px!important}
 .aiPhotoResult{display:none;margin-top:8px;border:1px solid #334155;border-radius:10px;padding:8px;background:#081420;font-size:10px;line-height:1.35}
@@ -4965,10 +4970,14 @@ function renderFotos(t){
       <div class="photoCard" id="photoCard_${id}">
         <label>${label} <span class="req">*</span></label>
         <div class="aiPhotoActions">
-          <button class="btn blue" type="button" onclick="abrirCamaraIA('${id}', ${'`'}${label}${'`'})">🤖 Cámara IA</button>
-          <button class="btn aiAttachBtn" type="button" onclick="document.getElementById('file_${id}').click()" title="Adjuntar sin IA">📎</button>
+          <div class="aiPhotoSplit" role="group" aria-label="Elegir modo de captura">
+            <button class="btn blue" type="button" onclick="document.getElementById('file_${id}').click()" title="Tomar foto normal con cámara">📷 Foto normal</button>
+            <button class="btn blue" type="button" onclick="abrirCamaraIA('${id}', ${'`'}${label}${'`'})" title="Tomar foto con auditoría IA">🤖 Foto IA</button>
+          </div>
+          <button class="btn aiAttachBtn" type="button" onclick="document.getElementById('file_attach_${id}').click()" title="Adjuntar foto de galería">📎</button>
         </div>
         <input id="file_${id}" type="file" accept="image/*" capture="environment" style="display:none" onchange="cargarFoto('${id}',this)">
+        <input id="file_attach_${id}" type="file" accept="image/*" style="display:none" onchange="cargarFoto('${id}',this)">
 
         <div class="photoStatus" id="status_${id}" style="display:none"></div>
         <div class="aiPhotoResult" id="aiResult_${id}"></div>
@@ -16457,6 +16466,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
+
 
 
 
