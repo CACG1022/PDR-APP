@@ -9892,7 +9892,57 @@ async function descargarMapaBaseOSMOffline(){
   }
 }
 
+// V115: El adaptador MapLibre-Leaflet no comparte la misma transformación
+// de giro que leaflet-rotate. Evitamos desfasar el mapa base y los polígonos.
+let pdrOfflineRotacionBloqueada=false;
+let pdrOfflineRotacionControlPrevio=null;
+let pdrOfflineRotacionReentrante=false;
+function pdrBloquearRotacionOfflineVector(){
+  if(!map||pdrOfflineRotacionBloqueada)return;
+  pdrOfflineRotacionBloqueada=true;
+  try{map.touchRotate?.disable?.();}catch(_e){}
+  try{map.dragRotate?.disable?.();}catch(_e){}
+  if(typeof map.setBearing==='function')try{map.setBearing(0);}catch(_e){}
+  const control=map.rotateControl||map._rotateControl;
+  if(control?._container){
+    pdrOfflineRotacionControlPrevio=control._container.style.display;
+    control._container.style.display='none';
+  }
+  const bar=document.getElementById('pdrAvisoOrientacionOffline');
+  if(bar)bar.style.display='block';
+}
+function pdrRestaurarRotacionOfflineVector(){
+  if(!pdrOfflineRotacionBloqueada)return;
+  pdrOfflineRotacionBloqueada=false;
+  try{map?.touchRotate?.enable?.();}catch(_e){}
+  // dragRotate y shiftKeyRotate estaban deshabilitados antes de activar offline.
+  const control=map?.rotateControl||map?._rotateControl;
+  if(control?._container){
+    control._container.style.display=pdrOfflineRotacionControlPrevio??'';
+  }
+  pdrOfflineRotacionControlPrevio=null;
+  const bar=document.getElementById('pdrAvisoOrientacionOffline');
+  if(bar)bar.style.display='none';
+}
+function pdrVigilarRotacionOfflineVector(){
+  if(!pdrOfflineRotacionBloqueada||pdrOfflineRotacionReentrante)return;
+  const angulo=typeof map?.getBearing==='function'?map.getBearing():0;
+  if(Math.abs(angulo)>0.01&&typeof map?.setBearing==='function'){
+    pdrOfflineRotacionReentrante=true;
+    try{map.setBearing(0);}finally{pdrOfflineRotacionReentrante=false;}
+  }
+}
+// Se instala una sola vez y no modifica los demás modos de mapa.
+document.addEventListener('DOMContentLoaded',()=>{
+  const aviso=document.createElement('div');
+  aviso.id='pdrAvisoOrientacionOffline';
+  aviso.textContent='🧭 Mapa base offline: orientación norte fija para mantener alineados los polígonos.';
+  aviso.style.cssText='display:none;position:absolute;left:54px;right:68px;top:108px;z-index:850;background:rgba(15,23,42,.89);color:#e2e8f0;padding:7px 10px;border:1px solid #38bdf8;border-radius:9px;font:11px/1.25 system-ui,sans-serif;pointer-events:none;text-align:center;';
+  document.getElementById('map')?.appendChild(aviso);
+});
+
 function quitarMapaOSMOffline(){
+  pdrRestaurarRotacionOfflineVector();
   if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer)){
     map.removeLayer(osmOfflineMapLibreLayer);
   }
@@ -9926,6 +9976,10 @@ async function activarMapaOSMOffline(mostrarAlerta=true){
   quitarMapasBaseDirectos();
   quitarMapaOSMOffline();
 
+  pdrBloquearRotacionOfflineVector();
+  map.off('rotate',pdrVigilarRotacionOfflineVector);
+  map.on('rotate',pdrVigilarRotacionOfflineVector);
+
   osmOfflineMapLibreLayer=L.maplibreGL({
     style:estiloMapLibreOSMOffline(),
     interactive:false,
@@ -9933,7 +9987,12 @@ async function activarMapaOSMOffline(mostrarAlerta=true){
     maxZoom:22
   });
 
-  osmOfflineMapLibreLayer.addTo(map);
+  try{
+    osmOfflineMapLibreLayer.addTo(map);
+  }catch(error){
+    pdrRestaurarRotacionOfflineVector();
+    throw error;
+  }
 
   offlineBaseActivo=false;
   offlineDirectTipoActivo='osm';
@@ -16634,42 +16693,6 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 </script>
 
 </body></html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
