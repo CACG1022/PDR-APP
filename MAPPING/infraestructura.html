@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>PDR-APP · MAPPING V109 · Editor visual de etiquetas</title>
+<title>PDR-APP · MAPPING V116 · Rotación offline alineada</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -2239,6 +2239,10 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
   }
 }
 
+/* V116: mapa vectorial offline independiente de rotación Leaflet */
+#map > .leaflet-map-pane{z-index:2!important}
+#pdrOfflineNativeMap{isolation:isolate}
+#pdrOfflineNativeMap .maplibregl-control-container{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -2574,6 +2578,10 @@ const OSM_OFFLINE_MAXZOOM=14;
 const OSM_OFFLINE_BUFFER_METERS=350;
 const OSM_OFFLINE_MAX_TILES_PER_POLYGON=3500;
 let osmOfflineMapLibreLayer=null;
+let osmOfflineNativeMap=null;
+let osmOfflineNativeHost=null;
+let osmOfflineSyncFrame=0;
+let osmOfflineSyncResize=null;
 let osmOfflineTileTemplateCache='';
 let osmOfflineProtocolInstalled=false;
 const IGAC_OFFLINE_PROVIDER='satellite_igac';
@@ -3657,7 +3665,7 @@ function cerrarSelectorMapaBase(){
 
 function mapaBaseActual(){
   if(igacOfflineLayer&&map?.hasLayer(igacOfflineLayer))return 'offline_sat_igac';
-  if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer))return 'offline_osm';
+  if(osmOfflineNativeMap)return 'offline_osm';
   if(map?.hasLayer(hyb))return 'hyb';
   if(map?.hasLayer(osm))return 'osm';
   return 'dark';
@@ -9892,119 +9900,139 @@ async function descargarMapaBaseOSMOffline(){
   }
 }
 
-// V115: El adaptador MapLibre-Leaflet no comparte la misma transformación
-// de giro que leaflet-rotate. Evitamos desfasar el mapa base y los polígonos.
-let pdrOfflineRotacionBloqueada=false;
-let pdrOfflineRotacionControlPrevio=null;
-let pdrOfflineRotacionReentrante=false;
-function pdrBloquearRotacionOfflineVector(){
-  if(!map||pdrOfflineRotacionBloqueada)return;
-  pdrOfflineRotacionBloqueada=true;
-  try{map.touchRotate?.disable?.();}catch(_e){}
-  try{map.dragRotate?.disable?.();}catch(_e){}
-  if(typeof map.setBearing==='function')try{map.setBearing(0);}catch(_e){}
-  const control=map.rotateControl||map._rotateControl;
-  if(control?._container){
-    pdrOfflineRotacionControlPrevio=control._container.style.display;
-    control._container.style.display='none';
+// V116: MapLibre independiente del pane de Leaflet.
+// Leaflet conserva gestos, rotación, puntos y polígonos. MapLibre representa
+// SOLO la cartografía offline y sigue la misma cámara geográfica.
+function pdrSincronizarCamaraOSMOffline(){
+  if(!osmOfflineNativeMap||!map)return;
+  const centro=map.getCenter();
+  const bearing=typeof map.getBearing==='function'?map.getBearing():0;
+  const size=map.getSize();
+  if(!centro||!Number.isFinite(centro.lat)||!Number.isFinite(centro.lng))return;
+  if(osmOfflineNativeHost){
+    const ancho=Math.max(1,Math.round(size.x));
+    const alto=Math.max(1,Math.round(size.y));
+    if(osmOfflineNativeHost.clientWidth!==ancho||osmOfflineNativeHost.clientHeight!==alto){
+      osmOfflineNativeHost.style.width=ancho+'px';
+      osmOfflineNativeHost.style.height=alto+'px';
+      osmOfflineNativeMap.resize();
+    }
   }
-  const bar=document.getElementById('pdrAvisoOrientacionOffline');
-  if(bar)bar.style.display='block';
+  osmOfflineNativeMap.jumpTo({
+    center:[centro.lng,centro.lat],
+    zoom:map.getZoom(),
+    bearing:((Number(bearing)||0)%360+360)%360,
+    pitch:0
+  });
 }
-function pdrRestaurarRotacionOfflineVector(){
-  if(!pdrOfflineRotacionBloqueada)return;
-  pdrOfflineRotacionBloqueada=false;
-  try{map?.touchRotate?.enable?.();}catch(_e){}
-  // dragRotate y shiftKeyRotate estaban deshabilitados antes de activar offline.
-  const control=map?.rotateControl||map?._rotateControl;
-  if(control?._container){
-    control._container.style.display=pdrOfflineRotacionControlPrevio??'';
+function pdrProgramarSyncOSMOffline(){
+  if(!osmOfflineNativeMap||osmOfflineSyncFrame)return;
+  osmOfflineSyncFrame=requestAnimationFrame(()=>{
+    osmOfflineSyncFrame=0;
+    pdrSincronizarCamaraOSMOffline();
+  });
+}
+function pdrDesconectarSyncOSMOffline(){
+  if(map){
+    map.off('move zoom zoomend moveend rotate resize viewreset',pdrProgramarSyncOSMOffline);
+    map.off('zoomanim',pdrSyncZoomAnimOSMOffline);
   }
-  pdrOfflineRotacionControlPrevio=null;
-  const bar=document.getElementById('pdrAvisoOrientacionOffline');
-  if(bar)bar.style.display='none';
+  if(osmOfflineSyncFrame){cancelAnimationFrame(osmOfflineSyncFrame);osmOfflineSyncFrame=0;}
+  if(osmOfflineSyncResize){clearTimeout(osmOfflineSyncResize);osmOfflineSyncResize=null;}
 }
-function pdrVigilarRotacionOfflineVector(){
-  if(!pdrOfflineRotacionBloqueada||pdrOfflineRotacionReentrante)return;
-  const angulo=typeof map?.getBearing==='function'?map.getBearing():0;
-  if(Math.abs(angulo)>0.01&&typeof map?.setBearing==='function'){
-    pdrOfflineRotacionReentrante=true;
-    try{map.setBearing(0);}finally{pdrOfflineRotacionReentrante=false;}
-  }
+function pdrSyncZoomAnimOSMOffline(ev){
+  // Sincronizar mientras Leaflet anima una transición de zoom.
+  if(!osmOfflineNativeMap||!ev?.center)return;
+  osmOfflineNativeMap.jumpTo({
+    center:[ev.center.lng,ev.center.lat],
+    zoom:ev.zoom,
+    bearing:typeof map.getBearing==='function'?map.getBearing():0,
+    pitch:0
+  });
 }
-// Se instala una sola vez y no modifica los demás modos de mapa.
-document.addEventListener('DOMContentLoaded',()=>{
-  const aviso=document.createElement('div');
-  aviso.id='pdrAvisoOrientacionOffline';
-  aviso.textContent='🧭 Mapa base offline: orientación norte fija para mantener alineados los polígonos.';
-  aviso.style.cssText='display:none;position:absolute;left:54px;right:68px;top:108px;z-index:850;background:rgba(15,23,42,.89);color:#e2e8f0;padding:7px 10px;border:1px solid #38bdf8;border-radius:9px;font:11px/1.25 system-ui,sans-serif;pointer-events:none;text-align:center;';
-  document.getElementById('map')?.appendChild(aviso);
-});
-
 function quitarMapaOSMOffline(){
-  pdrRestaurarRotacionOfflineVector();
-  if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer)){
-    map.removeLayer(osmOfflineMapLibreLayer);
+  pdrDesconectarSyncOSMOffline();
+  if(osmOfflineNativeMap){
+    try{osmOfflineNativeMap.remove();}catch(e){console.warn('Liberar mapa offline',e);}
   }
+  osmOfflineNativeMap=null;
+  if(osmOfflineNativeHost){
+    try{osmOfflineNativeHost.remove();}catch(_e){}
+  }
+  osmOfflineNativeHost=null;
   osmOfflineMapLibreLayer=null;
 }
 
 async function activarMapaOSMOffline(mostrarAlerta=true){
   const r=await resumenOSMOffline();
-
   if(!r.descargados){
-    if(mostrarAlerta){
-      alert('Todavía no has descargado el mapa base offline de este proyecto.');
-    }
+    if(mostrarAlerta)alert('Todavía no has descargado el mapa base offline de este proyecto.');
     return false;
   }
-
-  if(!window.L?.maplibreGL||!window.maplibregl){
-    if(mostrarAlerta)alert('No fue posible cargar el motor del mapa offline.');
+  if(!window.maplibregl?.Map){
+    if(mostrarAlerta)alert('No fue posible cargar MapLibre, el motor del mapa offline.');
     return false;
   }
-
   if(!instalarProtocoloOSMOffline()){
     if(mostrarAlerta)alert('No fue posible iniciar el modo offline.');
     return false;
   }
-
   [hyb,osm,darkBase,offlineBaseGroup].forEach(layer=>{
     if(layer&&map.hasLayer(layer))map.removeLayer(layer);
   });
-
   quitarMapasBaseDirectos();
   quitarMapaOSMOffline();
 
-  pdrBloquearRotacionOfflineVector();
-  map.off('rotate',pdrVigilarRotacionOfflineVector);
-  map.on('rotate',pdrVigilarRotacionOfflineVector);
-
-  osmOfflineMapLibreLayer=L.maplibreGL({
-    style:estiloMapLibreOSMOffline(),
-    interactive:false,
-    attribution:'© OpenStreetMap contributors · OpenFreeMap',
-    maxZoom:22
-  });
-
+  // Se monta al lado del mapPane (nunca dentro del rotatePane). Así MapLibre
+  // recibe la rotación sólo una vez, sin heredar el transform de Leaflet.
+  const root=map.getContainer();
+  const size=map.getSize();
+  const host=document.createElement('div');
+  host.id='pdrOfflineNativeMap';
+  host.style.cssText='position:absolute;left:0;top:0;z-index:1;pointer-events:none;overflow:hidden;';
+  host.style.width=Math.max(1,Math.round(size.x))+'px';
+  host.style.height=Math.max(1,Math.round(size.y))+'px';
+  root.insertBefore(host,root.firstChild);
+  osmOfflineNativeHost=host;
   try{
-    osmOfflineMapLibreLayer.addTo(map);
+    const centro=map.getCenter();
+    osmOfflineNativeMap=new maplibregl.Map({
+      container:host,
+      style:estiloMapLibreOSMOffline(),
+      center:[centro.lng,centro.lat],
+      zoom:map.getZoom(),
+      bearing:typeof map.getBearing==='function'?map.getBearing():0,
+      pitch:0,
+      interactive:false,
+      attributionControl:false,
+      fadeDuration:0,
+      trackResize:false,
+      renderWorldCopies:true,
+      preserveDrawingBuffer:false
+    });
+    osmOfflineNativeMap.on('error',ev=>console.warn('[PDR] Mapa base offline',ev.error||ev));
+    osmOfflineNativeMap.on('load',pdrProgramarSyncOSMOffline);
+    map.on('move zoom zoomend moveend rotate resize viewreset',pdrProgramarSyncOSMOffline);
+    map.on('zoomanim',pdrSyncZoomAnimOSMOffline);
+    osmOfflineSyncResize=setTimeout(()=>{
+      osmOfflineSyncResize=null;
+      osmOfflineNativeMap?.resize();
+      pdrSincronizarCamaraOSMOffline();
+    },150);
+    pdrSincronizarCamaraOSMOffline();
   }catch(error){
-    pdrRestaurarRotacionOfflineVector();
+    quitarMapaOSMOffline();
     throw error;
   }
 
   offlineBaseActivo=false;
   offlineDirectTipoActivo='osm';
   baseMapApagado=false;
-
   localStorage.setItem('mapping_base_map_v1','offline_osm');
-
-  document.getElementById('map')?.classList.remove('basemapOff');
+  root.classList.remove('basemapOff');
   actualizarBotonBaseMap();
   actualizarEstadoSelectorMapaBase();
   cerrarSelectorMapaBase();
-
   return true;
 }
 
@@ -11915,7 +11943,7 @@ function actualizarBotonBaseMap(){
     return;
   }
 
-  if(osmOfflineMapLibreLayer&&map?.hasLayer(osmOfflineMapLibreLayer)){
+  if(osmOfflineNativeMap){
     b.textContent='📦 OpenStreetMap offline activo';
     return;
   }
