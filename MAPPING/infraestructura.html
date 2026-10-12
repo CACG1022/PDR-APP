@@ -2531,6 +2531,17 @@ const photoDefs={
 };
 let registros=JSON.parse(localStorage.getItem('mapping_sitesurvey_registros_v1')||'[]');
 let map,selectedLat,selectedLng,gpsMarker,gpsAccuracyCircle,editingId=null,photos={};
+// V119: evita aceptar guardados mientras Canvas/cámara todavía procesa la fotografía.
+let pdrCapturasEnProceso=0;
+let pdrCapturaFormularioVersion=0;
+let pdrGuardadoFotoEnCurso=false;
+function pdrFormularioCapturaActivo(){
+  return !!(document.getElementById('formOverlay')?.classList.contains('open') ||
+    document.getElementById('resumeFormFab')?.style.display==='block' ||
+    document.getElementById('aiCameraOverlay')?.classList.contains('open') ||
+    pdrCapturasEnProceso>0 || pdrGuardadoFotoEnCurso);
+}
+
 let gpsWatchId=null;
 let gpsUltimaPosicion=null;
 
@@ -4407,7 +4418,7 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-function abrirFormulario(){editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();}
+function abrirFormulario(){pdrCapturaFormularioVersion++;editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();}
 
 function llevarFormularioAlInicio(){
   const overlay=document.getElementById('formOverlay');
@@ -5319,6 +5330,8 @@ async function pdrEtiquetarEvidenciaOriginal(file){
 async function cargarFoto(id,input){
   const f=input.files?.[0];
   if(!f)return;
+  pdrCapturasEnProceso++;
+  try{
 
   // Se conserva el archivo ORIGINAL intacto para IndexedDB / ZIP.
   let fotoFinal;try{fotoFinal=await pdrEtiquetarEvidencia(f);}catch(e){alert('No se pudo etiquetar la foto: '+e.message);input.value='';return;}
@@ -5347,6 +5360,10 @@ async function cargarFoto(id,input){
 
   // Recalcular únicamente el estado visual necesario.
   requestAnimationFrame(actualizarResaltadoObligatorios);
+  }finally{
+    pdrCapturasEnProceso=Math.max(0,pdrCapturasEnProceso-1);
+    // Dejar que el botón Guardar espere capturas pendientes.
+  }
 }
 let conexionesVisibles=1;
 let conexionesOtroVisibles=1;
@@ -8011,16 +8028,30 @@ function pdrVerFotoCompleta(tipo){
   }
   const url=URL.createObjectURL(file);
   const fondo=document.createElement('div');
-  fondo.style.cssText='position:fixed;inset:0;z-index:90000;background:rgba(0,0,0,.96);display:flex;flex-direction:column;padding:12px;gap:10px';
+  fondo.className='pdrFotoVisorEstable';
+  fondo.style.cssText='position:fixed;inset:0;z-index:90000;background:#020617;display:flex;flex-direction:column;padding:10px;isolation:isolate;overflow:hidden;overscroll-behavior:contain';
   const boton=document.createElement('button');
   boton.type='button';boton.textContent='✕ Cerrar fotografía';
-  boton.style.cssText='border:0;border-radius:10px;background:#dc2626;color:white;font-weight:900;padding:12px';
+  boton.style.cssText='flex:0 0 auto;border:0;border-radius:10px;background:#dc2626;color:white;font-weight:900;padding:12px';
+  const contenedor=document.createElement('div');
+  contenedor.style.cssText='flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;touch-action:pan-x pan-y';
   const img=document.createElement('img');
-  img.src=url;img.alt='Fotografía original almacenada';
-  img.style.cssText='width:100%;height:calc(100% - 90px);object-fit:contain;min-height:0';
-  const cerrar=()=>{URL.revokeObjectURL(url);fondo.remove()};
-  boton.onclick=cerrar;fondo.onclick=e=>{if(e.target===fondo)cerrar()};
-  fondo.append(boton,img);document.body.append(fondo);
+  img.alt='Fotografía original almacenada';
+  img.decoding='async';img.loading='eager';
+  img.style.cssText='max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;opacity:0;transition:opacity .12s linear;animation:none!important;transform:none!important;filter:none!important';
+  const mensaje=document.createElement('span');mensaje.textContent='Cargando fotografía…';
+  mensaje.style.cssText='color:#cbd5e1;font-size:13px;position:absolute;pointer-events:none';
+  const cerrar=()=>{img.onload=null;img.onerror=null;fondo.remove();setTimeout(()=>URL.revokeObjectURL(url),100)};
+  boton.onclick=cerrar;
+  img.onload=async()=>{
+    try{await img.decode?.()}catch(_){}
+    if(!fondo.isConnected)return;
+    mensaje.remove();img.style.opacity='1';
+  };
+  img.onerror=()=>{mensaje.textContent='No se pudo abrir la fotografía.'};
+  contenedor.append(mensaje,img);fondo.append(boton,contenedor);
+  document.body.append(fondo);
+  img.src=url;
 }
 
 async function mostrarPreviewFotoLocal(tipo,blob,titulo='Foto local de este dispositivo'){
@@ -13344,6 +13375,13 @@ async function validarFotosObligatorias(){
 }
 
 guardarPunto=async function(){
+  if(pdrGuardadoFotoEnCurso)return;
+  if(pdrCapturasEnProceso>0){
+    alert('La fotografía todavía se está procesando. Espera a que termine y vuelve a pulsar Guardar punto.');
+    return;
+  }
+  pdrGuardadoFotoEnCurso=true;
+  try{
   // Si se activó conexión a otro polígono, valida que cada CXnPOL
   // apunte a un elemento real del proyecto antes de continuar.
   if(!(await validarConexionesOtroPoligono()))return;
@@ -13383,6 +13421,7 @@ guardarPunto=async function(){
   pintarRegistros();
   cerrarFormulario();
   if(syncEnCurso)actualizarProgresoSync('Nuevo punto guardado localmente. Quedará para el próximo envío.');
+  }finally{pdrGuardadoFotoEnCurso=false;}
 }
 
 function filaSupabase(r){
@@ -14612,7 +14651,7 @@ async function sincronizarPendientesBackground(){
   }
 
   syncEnCurso=false;
-  try{await cargarPuntosSupabase(false)}catch(e){console.warn('Reconciliación final sync:',e)}
+  if(!pdrFormularioCapturaActivo()){try{await cargarPuntosSupabase(false)}catch(e){console.warn('Reconciliación final sync:',e)}}
   try{await sincronizarCorreccionesPendientesTecnico()}catch(e){console.warn('Sync final de correcciones:',e)}
   refrescarUIEstadoSincronizacion();
   finalizarPanelSync();
@@ -16756,7 +16795,7 @@ async function pdrSyncReportar(estado='esperando',mensaje=''){
  if(error)console.warn('Reporte sync:',error.message);
 }
 async function pdrSyncEjecutarAutomatico(comandoId=null){
- if(syncEnCurso||pdrSyncControlBusy||!navigator.onLine||!mappingUser||!proyectoActivo)return false;
+ if(syncEnCurso||pdrSyncControlBusy||pdrFormularioCapturaActivo()||!navigator.onLine||!mappingUser||!proyectoActivo)return false;
  pdrSyncControlBusy=true;
  try{
   if(comandoId){
@@ -16780,6 +16819,7 @@ async function pdrSyncEjecutarAutomatico(comandoId=null){
 }
 async function pdrSyncControlTick(){
  if(pdrSyncControlBusy||syncEnCurso||!navigator.onLine||!mappingUser?.id||!proyectoActivo?.proyecto_id)return;
+ if(pdrFormularioCapturaActivo())return;
  if(document.visibilityState==='hidden')return;
  pdrSyncControlBusy=true;
  try{
@@ -16805,6 +16845,7 @@ window.addEventListener('online',()=>setTimeout(()=>pdrSyncControlTick().catch(c
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pdrSyncControlTick().catch(console.warn)});
 setTimeout(()=>pdrSyncControlTick().catch(console.warn),5000);
 </script></body></html>
+
 
 
 
