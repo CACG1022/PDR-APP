@@ -3665,7 +3665,7 @@ function cerrarSelectorMapaBase(){
 
 function mapaBaseActual(){
   if(igacOfflineLayer&&map?.hasLayer(igacOfflineLayer))return 'offline_sat_igac';
-  if(osmOfflineNativeMap)return 'offline_osm';
+  if(pdrOfflineLeafletVectorLayer&&map?.hasLayer(pdrOfflineLeafletVectorLayer))return 'offline_osm';
   if(map?.hasLayer(hyb))return 'hyb';
   if(map?.hasLayer(osm))return 'osm';
   return 'dark';
@@ -9900,139 +9900,159 @@ async function descargarMapaBaseOSMOffline(){
   }
 }
 
-// V116: MapLibre independiente del pane de Leaflet.
-// Leaflet conserva gestos, rotación, puntos y polígonos. MapLibre representa
-// SOLO la cartografía offline y sigue la misma cámara geográfica.
-function pdrSincronizarCamaraOSMOffline(){
-  if(!osmOfflineNativeMap||!map)return;
-  const centro=map.getCenter();
-  const bearing=typeof map.getBearing==='function'?map.getBearing():0;
-  const size=map.getSize();
-  if(!centro||!Number.isFinite(centro.lat)||!Number.isFinite(centro.lng))return;
-  if(osmOfflineNativeHost){
-    const ancho=Math.max(1,Math.round(size.x));
-    const alto=Math.max(1,Math.round(size.y));
-    if(osmOfflineNativeHost.clientWidth!==ancho||osmOfflineNativeHost.clientHeight!==alto){
-      osmOfflineNativeHost.style.width=ancho+'px';
-      osmOfflineNativeHost.style.height=alto+'px';
-      osmOfflineNativeMap.resize();
+// V117: Dibujado vectorial offline dentro del GridLayer de Leaflet.
+// Una única proyección/transformación maneja zoom, giro y polígonos.
+// Las teselas MVT se leen desde el IndexedDB existente (.pdrmap compatible).
+let pdrOfflineLeafletVectorLayer=null;
+function pdrMvtReader(bytes,start=0,end=bytes.length){
+  return {bytes,pos:start,end};
+}
+function pdrMvtVar(r){
+  let n=0,shift=0;
+  while(r.pos<r.end){
+    const b=r.bytes[r.pos++];n+=(b&127)*2**shift;
+    if(!(b&128))return n;
+    shift+=7;if(shift>56)throw Error('MVT varint fuera de rango');
+  }
+  throw Error('MVT truncado');
+}
+function pdrMvtBytes(r){const len=pdrMvtVar(r);const a=r.pos;r.pos+=len;if(r.pos>r.end)throw Error('MVT inválido');return [a,r.pos];}
+function pdrMvtSkip(r,wire){
+  if(wire===0){pdrMvtVar(r);return;}
+  if(wire===1){r.pos+=8;return;}
+  if(wire===5){r.pos+=4;return;}
+  if(wire===2){pdrMvtBytes(r);return;}
+  throw Error('Formato MVT no admitido');
+}
+function pdrMvtString(r,a,b){return new TextDecoder().decode(r.bytes.subarray(a,b));}
+function pdrMvtPacked(r){const [a,b]=pdrMvtBytes(r);const q=pdrMvtReader(r.bytes,a,b),out=[];while(q.pos<b)out.push(pdrMvtVar(q));return out;}
+function pdrMvtValue(r,a,b){
+  const q=pdrMvtReader(r.bytes,a,b);let value='';
+  while(q.pos<b){const tag=pdrMvtVar(q),f=tag>>3,w=tag&7;
+    if(f===1&&w===2){const [x,y]=pdrMvtBytes(q);value=pdrMvtString(q,x,y);}
+    else if((f===4||f===5||f===6||f===7)&&w===0)value=pdrMvtVar(q);
+    else if((f===2||f===3)&&w===5){value=new DataView(q.bytes.buffer,q.bytes.byteOffset+q.pos,4).getFloat32(0,true);q.pos+=4;}
+    else if((f===2||f===3)&&w===1){value=new DataView(q.bytes.buffer,q.bytes.byteOffset+q.pos,8).getFloat64(0,true);q.pos+=8;}
+    else pdrMvtSkip(q,w);
+  }return value;
+}
+function pdrMvtFeature(r,a,b){
+  const q=pdrMvtReader(r.bytes,a,b),f={type:0,tags:[],geometry:[]};
+  while(q.pos<b){const tag=pdrMvtVar(q),n=tag>>3,w=tag&7;
+    if(n===2&&w===2)f.tags.push(...pdrMvtPacked(q));
+    else if(n===3&&w===0)f.type=pdrMvtVar(q);
+    else if(n===4&&w===2)f.geometry.push(...pdrMvtPacked(q));
+    else pdrMvtSkip(q,w);
+  }return f;
+}
+function pdrMvtParseTile(bytes){
+  const r=pdrMvtReader(bytes),layers=[];
+  while(r.pos<r.end){const tag=pdrMvtVar(r),n=tag>>3,w=tag&7;
+    if(n!==3||w!==2){pdrMvtSkip(r,w);continue;}
+    const [a,b]=pdrMvtBytes(r),q=pdrMvtReader(bytes,a,b);
+    const l={name:'',extent:4096,features:[],keys:[],values:[]};
+    while(q.pos<b){const t=pdrMvtVar(q),f=t>>3,k=t&7;
+      if(f===1&&k===2){const [x,y]=pdrMvtBytes(q);l.name=pdrMvtString(q,x,y);}
+      else if(f===2&&k===2){const [x,y]=pdrMvtBytes(q);l.features.push(pdrMvtFeature(q,x,y));}
+      else if(f===3&&k===2){const [x,y]=pdrMvtBytes(q);l.keys.push(pdrMvtString(q,x,y));}
+      else if(f===4&&k===2){const [x,y]=pdrMvtBytes(q);l.values.push(pdrMvtValue(q,x,y));}
+      else if(f===5&&k===0)l.extent=pdrMvtVar(q);
+      else pdrMvtSkip(q,k);
+    }layers.push(l);
+  }return layers;
+}
+function pdrMvtGeom(g){
+  const paths=[];let x=0,y=0,i=0,current=null;
+  const signed=n=>(n%2)?-(n+1)/2:n/2;
+  while(i<g.length){const op=g[i++],cmd=op&7,count=Math.floor(op/8);
+    if(cmd===1||cmd===2){for(let j=0;j<count&&i+1<g.length;j++){
+      x+=signed(g[i++]);y+=signed(g[i++]);
+      if(cmd===1){current=[[x,y]];paths.push(current);}else if(current)current.push([x,y]);
+    }}else if(cmd===7){for(let j=0;j<count;j++)if(current&&current.length>2)current.push(current[0]);}
+    else break;
+  }return paths;
+}
+function pdrMvtProps(feature,layer){const props={};for(let i=0;i+1<feature.tags.length;i+=2){
+  const key=layer.keys[feature.tags[i]],value=layer.values[feature.tags[i+1]];
+  if(key!==undefined)props[key]=value;
+}return props;}
+function pdrDibujarMvtTile(canvas,buffer){
+  const ctx=canvas.getContext('2d');const size=canvas.width;
+  ctx.fillStyle='#eef2e9';ctx.fillRect(0,0,size,size);
+  const layers=pdrMvtParseTile(new Uint8Array(buffer));
+  const orden=['landcover','landuse','water','waterway','building','transportation','boundary','place','transportation_name'];
+  layers.sort((a,b)=>orden.indexOf(a.name)-orden.indexOf(b.name));
+  const texts=[];
+  for(const l of layers){if(!orden.includes(l.name))continue;
+    const scale=size/(l.extent||4096);
+    for(const f of l.features){
+      const props=pdrMvtProps(f,l),type=String(props.class||props.subclass||'').toLowerCase();
+      const paths=pdrMvtGeom(f.geometry);if(!paths.length)continue;
+      let stroke='',fill='',width=1;
+      if(l.name==='landcover'){fill=type==='wood'?'#d6e8cd':'#e3edd4';}
+      else if(l.name==='landuse'){fill=type==='residential'?'#e9e6e1':'#e0ecd7';}
+      else if(l.name==='water'){fill='#a5d2e6';}
+      else if(l.name==='waterway'){stroke='#85bcd4';width=1.2;}
+      else if(l.name==='building'){fill='#d5cdc5';stroke='#bfb7ae';width=.45;}
+      else if(l.name==='transportation'){
+        if(type==='motorway'||type==='trunk'){stroke='#f1b271';width=3.6;}
+        else if(type==='primary'||type==='secondary'){stroke='#f6d79c';width=2.8;}
+        else {stroke='#ffffff';width=1.8;}
+      }else if(l.name==='boundary'){stroke='#9ca3af';width=.75;}
+      if(fill||stroke){ctx.beginPath();for(const path of paths){path.forEach(([x,y],i)=>{if(i===0)ctx.moveTo(x*scale,y*scale);else ctx.lineTo(x*scale,y*scale);});}
+        if(fill){ctx.fillStyle=fill;ctx.fill('evenodd');}
+        if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();}
+      }
+      if((l.name==='transportation'||l.name==='place'||l.name==='transportation_name')&&props.name){
+        let points=paths[0];if(points?.length){let p=points[Math.floor(points.length/2)];
+          texts.push({x:p[0]*scale,y:p[1]*scale,name:String(props.name).slice(0,35),major:l.name==='place'});
+        }
+      }
     }
   }
-  osmOfflineNativeMap.jumpTo({
-    center:[centro.lng,centro.lat],
-    zoom:map.getZoom(),
-    bearing:((Number(bearing)||0)%360+360)%360,
-    pitch:0
-  });
-}
-function pdrProgramarSyncOSMOffline(){
-  if(!osmOfflineNativeMap||osmOfflineSyncFrame)return;
-  osmOfflineSyncFrame=requestAnimationFrame(()=>{
-    osmOfflineSyncFrame=0;
-    pdrSincronizarCamaraOSMOffline();
-  });
-}
-function pdrDesconectarSyncOSMOffline(){
-  if(map){
-    map.off('move zoom zoomend moveend rotate resize viewreset',pdrProgramarSyncOSMOffline);
-    map.off('zoomanim',pdrSyncZoomAnimOSMOffline);
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  for(let i=0;i<texts.length&&i<65;i++){
+    const t=texts[i];ctx.font=(t.major?'bold 11px':'10px')+' Arial,sans-serif';
+    ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=3;ctx.strokeText(t.name,t.x,t.y);
+    ctx.fillStyle='#4b5563';ctx.fillText(t.name,t.x,t.y);
   }
-  if(osmOfflineSyncFrame){cancelAnimationFrame(osmOfflineSyncFrame);osmOfflineSyncFrame=0;}
-  if(osmOfflineSyncResize){clearTimeout(osmOfflineSyncResize);osmOfflineSyncResize=null;}
-}
-function pdrSyncZoomAnimOSMOffline(ev){
-  // Sincronizar mientras Leaflet anima una transición de zoom.
-  if(!osmOfflineNativeMap||!ev?.center)return;
-  osmOfflineNativeMap.jumpTo({
-    center:[ev.center.lng,ev.center.lat],
-    zoom:ev.zoom,
-    bearing:typeof map.getBearing==='function'?map.getBearing():0,
-    pitch:0
-  });
 }
 function quitarMapaOSMOffline(){
-  pdrDesconectarSyncOSMOffline();
-  if(osmOfflineNativeMap){
-    try{osmOfflineNativeMap.remove();}catch(e){console.warn('Liberar mapa offline',e);}
+  if(pdrOfflineLeafletVectorLayer&&map?.hasLayer(pdrOfflineLeafletVectorLayer)){
+    map.removeLayer(pdrOfflineLeafletVectorLayer);
   }
-  osmOfflineNativeMap=null;
-  if(osmOfflineNativeHost){
-    try{osmOfflineNativeHost.remove();}catch(_e){}
-  }
-  osmOfflineNativeHost=null;
-  osmOfflineMapLibreLayer=null;
+  pdrOfflineLeafletVectorLayer=null;
+  osmOfflineNativeMap=null;osmOfflineNativeHost=null;osmOfflineMapLibreLayer=null;
 }
-
 async function activarMapaOSMOffline(mostrarAlerta=true){
   const r=await resumenOSMOffline();
-  if(!r.descargados){
-    if(mostrarAlerta)alert('Todavía no has descargado el mapa base offline de este proyecto.');
-    return false;
-  }
-  if(!window.maplibregl?.Map){
-    if(mostrarAlerta)alert('No fue posible cargar MapLibre, el motor del mapa offline.');
-    return false;
-  }
-  if(!instalarProtocoloOSMOffline()){
-    if(mostrarAlerta)alert('No fue posible iniciar el modo offline.');
-    return false;
-  }
-  [hyb,osm,darkBase,offlineBaseGroup].forEach(layer=>{
-    if(layer&&map.hasLayer(layer))map.removeLayer(layer);
+  if(!r.descargados){if(mostrarAlerta)alert('Todavía no has descargado el mapa base offline de este proyecto.');return false;}
+  [hyb,osm,darkBase,offlineBaseGroup].forEach(layer=>{if(layer&&map.hasLayer(layer))map.removeLayer(layer);});
+  quitarMapasBaseDirectos();quitarMapaOSMOffline();quitarSateliteIGACOffline();
+  const LOffline=L.GridLayer.extend({
+    createTile(coords,done){
+      const tile=document.createElement('canvas');const size=this.getTileSize();
+      tile.width=size.x;tile.height=size.y;
+      const project=String(proyectoActivo?.proyecto_id||'');
+      obtenerTileDirectoCualquierPoligono(project,OSM_OFFLINE_PROVIDER,coords.z,coords.x,coords.y)
+        .then(async rec=>{
+          if(rec?.blob){const buffer=await rec.blob.arrayBuffer();pdrDibujarMvtTile(tile,buffer);}
+          else{const ctx=tile.getContext('2d');ctx.fillStyle='#eef2e9';ctx.fillRect(0,0,tile.width,tile.height);}
+          done(null,tile);
+        }).catch(err=>{console.warn('[PDR] Tesela vectorial offline',coords,err);done(null,tile);});
+      return tile;
+    }
   });
-  quitarMapasBaseDirectos();
-  quitarMapaOSMOffline();
-
-  // Se monta al lado del mapPane (nunca dentro del rotatePane). Así MapLibre
-  // recibe la rotación sólo una vez, sin heredar el transform de Leaflet.
-  const root=map.getContainer();
-  const size=map.getSize();
-  const host=document.createElement('div');
-  host.id='pdrOfflineNativeMap';
-  host.style.cssText='position:absolute;left:0;top:0;z-index:1;pointer-events:none;overflow:hidden;';
-  host.style.width=Math.max(1,Math.round(size.x))+'px';
-  host.style.height=Math.max(1,Math.round(size.y))+'px';
-  root.insertBefore(host,root.firstChild);
-  osmOfflineNativeHost=host;
-  try{
-    const centro=map.getCenter();
-    osmOfflineNativeMap=new maplibregl.Map({
-      container:host,
-      style:estiloMapLibreOSMOffline(),
-      center:[centro.lng,centro.lat],
-      zoom:map.getZoom(),
-      bearing:typeof map.getBearing==='function'?map.getBearing():0,
-      pitch:0,
-      interactive:false,
-      attributionControl:false,
-      fadeDuration:0,
-      trackResize:false,
-      renderWorldCopies:true,
-      preserveDrawingBuffer:false
-    });
-    osmOfflineNativeMap.on('error',ev=>console.warn('[PDR] Mapa base offline',ev.error||ev));
-    osmOfflineNativeMap.on('load',pdrProgramarSyncOSMOffline);
-    map.on('move zoom zoomend moveend rotate resize viewreset',pdrProgramarSyncOSMOffline);
-    map.on('zoomanim',pdrSyncZoomAnimOSMOffline);
-    osmOfflineSyncResize=setTimeout(()=>{
-      osmOfflineSyncResize=null;
-      osmOfflineNativeMap?.resize();
-      pdrSincronizarCamaraOSMOffline();
-    },150);
-    pdrSincronizarCamaraOSMOffline();
-  }catch(error){
-    quitarMapaOSMOffline();
-    throw error;
-  }
-
-  offlineBaseActivo=false;
-  offlineDirectTipoActivo='osm';
-  baseMapApagado=false;
+  pdrOfflineLeafletVectorLayer=new LOffline({
+    tileSize:256,minZoom:OSM_OFFLINE_MINZOOM,maxNativeZoom:OSM_OFFLINE_MAXZOOM,
+    maxZoom:22,keepBuffer:3,updateWhenZooming:true,
+    attribution:'© OpenStreetMap contributors · OpenFreeMap (offline)'
+  });
+  pdrOfflineLeafletVectorLayer.addTo(map);
+  offlineBaseActivo=false;offlineDirectTipoActivo='osm';baseMapApagado=false;
   localStorage.setItem('mapping_base_map_v1','offline_osm');
-  root.classList.remove('basemapOff');
-  actualizarBotonBaseMap();
-  actualizarEstadoSelectorMapaBase();
-  cerrarSelectorMapaBase();
+  map.getContainer().classList.remove('basemapOff');
+  actualizarBotonBaseMap();actualizarEstadoSelectorMapaBase();cerrarSelectorMapaBase();
   return true;
 }
 
@@ -11943,7 +11963,7 @@ function actualizarBotonBaseMap(){
     return;
   }
 
-  if(osmOfflineNativeMap){
+  if(pdrOfflineLeafletVectorLayer&&map?.hasLayer(pdrOfflineLeafletVectorLayer)){
     b.textContent='📦 OpenStreetMap offline activo';
     return;
   }
