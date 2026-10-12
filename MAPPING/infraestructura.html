@@ -16740,7 +16740,81 @@ window.addEventListener('resize',()=>{if(aiEl('aiCameraOverlay')?.classList.cont
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&aiEl('aiCameraOverlay')?.classList.contains('open'))cerrarCamaraIA()});
 </script>
 
-</body></html>
+<script>
+// ===== V118 · SYNC REMOTO / PROGRAMADO =====
+let pdrSyncControlBusy=false,pdrSyncUltimoIntervalo=0,pdrSyncIntervaloMin=0,pdrSyncUltimaConfiguracion=0;
+function pdrSyncPending(){return registrosProyectoActual().filter(r=>r.sync_status!=='enviado'||r.sync_error)}
+function pdrSyncPendingFotos(){return pdrSyncPending().reduce((n,r)=>n+Object.keys(r.fotos||{}).length,0)}
+async function pdrSyncReportar(estado='esperando',mensaje=''){
+ if(!mappingUser?.id||!proyectoActivo?.proyecto_id||!navigator.onLine)return;
+ const {error}=await mappingSb.from('mapping_sync_estado').upsert({
+  proyecto_id:proyectoActivo.proyecto_id,tecnico_id:mappingUser.id,
+  registros_pendientes:pdrSyncPending().length,fotos_pendientes:pdrSyncPendingFotos(),
+  estado,mensaje:String(mensaje||'').slice(0,400),ultimo_contacto:new Date().toISOString(),
+  ultimo_envio:estado==='completado'||estado==='con_errores'?new Date().toISOString():undefined
+ },{onConflict:'proyecto_id,tecnico_id'});
+ if(error)console.warn('Reporte sync:',error.message);
+}
+async function pdrSyncEjecutarAutomatico(comandoId=null){
+ if(syncEnCurso||pdrSyncControlBusy||!navigator.onLine||!mappingUser||!proyectoActivo)return false;
+ pdrSyncControlBusy=true;
+ try{
+  if(comandoId){
+   const u=await mappingSb.from('mapping_sync_comandos').update({estado:'ejecutando',iniciado_en:new Date().toISOString()}).eq('id',comandoId).eq('tecnico_id',mappingUser.id).eq('estado','pendiente');
+   if(u.error)throw u.error;
+  }
+  await pdrSyncReportar('enviando','Sincronización iniciada');
+  await sincronizarPendientesBackground();
+  const error=syncResumen.error>0;
+  const estado=error?'con_errores':'completado';
+  await pdrSyncReportar(estado,`${syncResumen.ok} enviados, ${syncResumen.error} errores`);
+  if(comandoId){await mappingSb.from('mapping_sync_comandos').update({estado:error?'error':'completado',finalizado_en:new Date().toISOString(),resultado:`${syncResumen.ok} enviados, ${syncResumen.error} errores`}).eq('id',comandoId).eq('tecnico_id',mappingUser.id);}
+  pdrSyncUltimoIntervalo=Date.now();
+  return true;
+ }catch(e){
+  console.warn('Sincronización automática:',e);
+  await pdrSyncReportar('error',e.message||String(e)).catch(()=>{});
+  if(comandoId)await mappingSb.from('mapping_sync_comandos').update({estado:'error',finalizado_en:new Date().toISOString(),resultado:String(e.message||e).slice(0,350)}).eq('id',comandoId).eq('tecnico_id',mappingUser.id).catch(()=>{});
+  return false;
+ }finally{pdrSyncControlBusy=false;}
+}
+async function pdrSyncControlTick(){
+ if(pdrSyncControlBusy||syncEnCurso||!navigator.onLine||!mappingUser?.id||!proyectoActivo?.proyecto_id)return;
+ if(document.visibilityState==='hidden')return;
+ pdrSyncControlBusy=true;
+ try{
+  const now=Date.now(),id=proyectoActivo.proyecto_id;
+  if(now-pdrSyncUltimaConfiguracion>60000){
+   const {data,error}=await mappingSb.from('mapping_sync_config').select('intervalo_minutos').eq('proyecto_id',id).maybeSingle();
+   if(!error)pdrSyncIntervaloMin=Number(data?.intervalo_minutos||0);
+   pdrSyncUltimaConfiguracion=now;
+  }
+  await pdrSyncReportar('esperando');
+  const {data:comandos,error:cmdErr}=await mappingSb.from('mapping_sync_comandos').select('id').eq('proyecto_id',id).eq('tecnico_id',mappingUser.id).eq('estado','pendiente').order('creado_en',{ascending:true}).limit(1);
+  if(cmdErr)console.warn('Control remoto:',cmdErr.message);
+  const comando=comandos?.[0];
+  const tocaIntervalo=pdrSyncIntervaloMin>0 && (now-pdrSyncUltimoIntervalo>=pdrSyncIntervaloMin*60000);
+  if(!comando&&!tocaIntervalo)return;
+  pdrSyncControlBusy=false;
+  await pdrSyncEjecutarAutomatico(comando?.id||null);
+ }catch(e){console.warn('Control de sincronización:',e)}
+ finally{pdrSyncControlBusy=false;}
+}
+setInterval(()=>{pdrSyncControlTick().catch(console.warn)},30000);
+window.addEventListener('online',()=>setTimeout(()=>pdrSyncControlTick().catch(console.warn),1500));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pdrSyncControlTick().catch(console.warn)});
+setTimeout(()=>pdrSyncControlTick().catch(console.warn),5000);
+</script></body></html>
+
+
+
+
+
+
+
+
+
+
 
 
 
