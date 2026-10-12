@@ -3228,6 +3228,7 @@ header{
     <button class="topActionBtn adminOnly managementBtn hdrUsuarios" onclick="abrirGestionUsuarios()"><span class="hdrIcon">◉</span><span>Usuarios</span></button>
     <button class="topActionBtn managementBtn hdrProyectos" onclick="abrirAdministrarProyectos()"><span class="hdrIcon">▱</span><span>Proyectos</span></button>
     <button class="topActionBtn hdrDashboard" onclick="abrirDashboardAvances()"><span class="hdrIcon">▥</span><span>Reporte de avances</span></button>
+    <button class="topActionBtn hdrDashboard" onclick="abrirControlSyncMaster()"><span class="hdrIcon">↻</span><span>Sincronización</span></button>
     <button class="topActionBtn hdrAsignaciones" onclick="abrirModalAsignaciones()"><span class="hdrIcon">✓</span><span>Asignaciones</span></button>
     <button class="topActionBtn hdrCorrecciones" onclick="abrirCentroCorreccionesMaster()" title="Solicitudes de corrección">
       <span class="hdrIcon">!</span><span>Correcciones</span><span class="correctionHeaderBadge" id="correccionesTopBadge">0</span>
@@ -3757,6 +3758,19 @@ header{
             <div id="poligonosStorageEstado" class="polygonStorageStatus">
               Selecciona un proyecto para consultar el archivo almacenado.
             </div>
+          </div>
+
+          <div class="projectSubCard" id="pdrMasterOfflinePanel">
+            <h3>🗺️ Exportar mapa base de todos los polígonos</h3>
+            <div class="hint">Prepara un único archivo .pdrmap para el proyecto completo. Los técnicos pueden cargarlo en Mapping V114 mediante «Cargar mapa recibido»; solo se incorporan sus polígonos asignados. Requiere conexión y permiso del proveedor para descarga y redistribución.</div>
+            <label for="pdrMasterOfflineProject">Proyecto</label>
+            <select id="pdrMasterOfflineProject" onchange="pdrMasterOfflinePreview()" onfocus="pdrMasterOfflineProjects()"></select>
+            <div class="polygonStorageActions" style="margin-top:10px">
+              <button class="btn blue" type="button" id="pdrMasterOfflineStart" onclick="pdrMasterOfflineExport()">⬇ Preparar y descargar mapa base (.pdrmap)</button>
+              <button class="btn gray" type="button" id="pdrMasterOfflineCancel" onclick="pdrMasterOfflineAbort()" style="display:none">Cancelar descarga</button>
+            </div>
+            <progress id="pdrMasterOfflineProgress" max="100" value="0" style="width:100%;height:14px;margin-top:12px"></progress>
+            <div id="pdrMasterOfflineStatus" class="polygonStorageStatus" role="status" aria-live="polite">Selecciona un proyecto. Formato compatible con Mapping V114 (mapa base OpenFreeMap, zoom 10–14).</div>
           </div>
         </div>
       </div>
@@ -5319,6 +5333,7 @@ async function cargarProyectos(){
   }
 
   proyectos=(data||[]).filter(p=>puedeVerProyectoMaster(p));
+  pdrMasterOfflineProjects();
   kProyectos.textContent=proyectos.length;
 
   if(document.getElementById('adminProyectosModal')?.classList.contains('open')){
@@ -13957,8 +13972,217 @@ for(const tipo of ['crear','existente']){
  box.querySelectorAll('[data-minimapa-proveedor],[data-minimapa-zoom],[data-minimapa-marcador],[data-minimapa-estilo]').forEach(el=>el.addEventListener('input',()=>pdrUpdateMiniMapPreview(tipo)));
  pdrApplyMiniMapConfig(tipo,{});
 }
+
+// V81 · Exportación cartografía base de todos los polígonos de un proyecto.
+// Compatible byte por byte con formato PDRMAP1 importado por Mapping V114.
+const PDR_MASTER_MAP_PROVIDER='osm_openfreemap';
+const PDR_MASTER_MAP_MINZOOM=10, PDR_MASTER_MAP_MAXZOOM=14;
+const PDR_MASTER_MAP_BUFFER_METERS=350;
+let pdrMasterMapController=null;
+let pdrMasterMapBusy=false;
+function pdrMasterOfflineStatus(msg,pct){
+ const e=document.getElementById('pdrMasterOfflineStatus');if(e)e.textContent=msg;
+ const bar=document.getElementById('pdrMasterOfflineProgress');if(bar&&Number.isFinite(pct))bar.value=Math.max(0,Math.min(100,pct));
+}
+function pdrMasterOfflineProjects(){
+ const select=document.getElementById('pdrMasterOfflineProject');if(!select)return;
+ const value=select.value;
+ select.innerHTML='<option value="">Seleccionar proyecto…</option>';
+ for(const p of (typeof proyectos!=='undefined'?proyectos:[])){
+  if(!puedeVerProyectoMaster(p))continue;
+  const opt=document.createElement('option');opt.value=String(p.id);
+  opt.textContent=String(p.nombre||p.codigo||p.id);select.appendChild(opt);
+ }
+ if([...select.options].some(o=>o.value===value))select.value=value;
+}
+function pdrMasterOfflinePreview(){
+ const select=document.getElementById('pdrMasterOfflineProject');
+ const p=(typeof proyectos!=='undefined'?proyectos:[]).find(x=>String(x.id)===select?.value);
+ pdrMasterOfflineStatus(p?'Proyecto: '+(p.nombre||p.codigo||p.id)+'. Preparará todos sus polígonos activos (zoom 10–14).':'Selecciona un proyecto.',0);
+}
+function pdrMasterOfflineAbort(){if(pdrMasterMapController)pdrMasterMapController.abort();}
+function pdrMasterLonX(lon,z){return Math.max(0,Math.min(2**z-1,Math.floor((Number(lon)+180)/360*2**z)));}
+function pdrMasterLatY(lat,z){const a=Math.max(-85.05112878,Math.min(85.05112878,Number(lat)))*Math.PI/180;return Math.max(0,Math.min(2**z-1,Math.floor((1-Math.log(Math.tan(a)+1/Math.cos(a))/Math.PI)/2*2**z)));}
+function pdrMasterBounds(feature){
+ let west=Infinity,south=Infinity,east=-Infinity,north=-Infinity;
+ function scan(coords){if(!Array.isArray(coords))return;
+  if(coords.length>=2&&Number.isFinite(Number(coords[0]))&&Number.isFinite(Number(coords[1]))){const lon=Number(coords[0]),lat=Number(coords[1]);west=Math.min(west,lon);east=Math.max(east,lon);south=Math.min(south,lat);north=Math.max(north,lat);return;}
+  coords.forEach(scan);
+ }
+ scan(feature?.geometry?.coordinates);
+ if(![west,south,east,north].every(Number.isFinite))throw Error('Geometría inválida en un polígono.');
+ const dLat=PDR_MASTER_MAP_BUFFER_METERS/111320;
+ const dLon=PDR_MASTER_MAP_BUFFER_METERS/(111320*Math.max(.15,Math.cos(((south+north)/2)*Math.PI/180)));
+ return {west:Math.max(-180,west-dLon),east:Math.min(180,east+dLon),south:Math.max(-85,south-dLat),north:Math.min(85,north+dLat)};
+}
+function pdrMasterTilesFor(bounds){
+ const all=[];
+ for(let z=PDR_MASTER_MAP_MINZOOM;z<=PDR_MASTER_MAP_MAXZOOM;z++){
+  const xa=pdrMasterLonX(bounds.west,z),xb=pdrMasterLonX(bounds.east,z);
+  const ya=pdrMasterLatY(bounds.north,z),yb=pdrMasterLatY(bounds.south,z);
+  for(let x=Math.min(xa,xb);x<=Math.max(xa,xb);x++)for(let y=Math.min(ya,yb);y<=Math.max(ya,yb);y++)all.push({z,x,y});
+ }
+ return all;
+}
+async function pdrMasterTileTemplate(signal){
+ const r=await fetch('https://tiles.openfreemap.org/styles/liberty',{signal});if(!r.ok)throw Error('No se pudo consultar OpenFreeMap (HTTP '+r.status+')');
+ const style=await r.json();
+ for(const source of Object.values(style.sources||{})){
+  if(source?.type!=='vector')continue;
+  if(source.tiles?.length)return source.tiles[0];
+  if(source.url){const t=await fetch(source.url,{signal});if(t.ok){const data=await t.json();if(data.tiles?.length)return data.tiles[0];}}
+ }
+ throw Error('No se encontró la plantilla de teselas vectoriales.');
+}
+function pdrMasterSafeFileName(v){return String(v||'PROYECTO').replace(/[^\w-]/g,'_').slice(0,55);}
+function pdrMasterCheckAbort(signal){if(signal.aborted)throw new DOMException('Descarga cancelada','AbortError');}
+async function pdrMasterOfflineExport(){
+ if(pdrMasterMapBusy)return;
+ const select=document.getElementById('pdrMasterOfflineProject');
+ const p=(typeof proyectos!=='undefined'?proyectos:[]).find(x=>String(x.id)===select?.value);
+ if(!p||!puedeVerProyectoMaster(p)){alert('Selecciona un proyecto autorizado.');return;}
+ if(!p.poligonos_url&&!p.poligonos_drive_url){alert('El proyecto no tiene archivo GeoJSON de polígonos.');return;}
+ if(!navigator.onLine){alert('Necesitas Internet para preparar el paquete.');return;}
+ if(!confirm('Se solicitará la cartografía base de TODOS los polígonos del proyecto. Esto puede consumir datos y demorar varios minutos. Confirma que tienes permiso para descargar y compartir este contenido. ¿Continuar?'))return;
+ pdrMasterMapBusy=true;const controller=new AbortController();pdrMasterMapController=controller;
+ const start=document.getElementById('pdrMasterOfflineStart'),cancel=document.getElementById('pdrMasterOfflineCancel');
+ if(start)start.disabled=true;if(cancel)cancel.style.display='';
+ try{
+  pdrMasterOfflineStatus('Consultando polígonos del proyecto…',1);
+  const list=await obtenerPoligonosProyecto(p.id);
+  if(!list.length)throw Error('Este proyecto no tiene polígonos activos.');
+  const geoResp=await fetch(p.poligonos_url||p.poligonos_drive_url,{signal:controller.signal});
+  if(!geoResp.ok)throw Error('No se pudo descargar GeoJSON (HTTP '+geoResp.status+').');
+  const geo=await geoResp.json();
+  if(!Array.isArray(geo.features))throw Error('El archivo de polígonos no es GeoJSON FeatureCollection.');
+  const candidates=[];
+  for(const poly of list){
+   const feature=geo.features[Number(poly.feature_index)] || geo.features.find(f=>normalizarCodigoPoligono(f?.properties?.POLIGONO||f?.properties?.nombre||f?.properties?.NOMBRE)===normalizarCodigoPoligono(poly.codigo));
+   if(!feature?.geometry||!['Polygon','MultiPolygon'].includes(feature.geometry.type))throw Error('No se pudo identificar el polígono '+poly.codigo+' en el GeoJSON.');
+   const bounds=pdrMasterBounds(feature), tiles=pdrMasterTilesFor(bounds);
+   if(tiles.length>3500)throw Error(poly.codigo+' requiere '+tiles.length+' teselas; supera el límite de 3500 por polígono.');
+   candidates.push({poly,bounds,tiles});
+  }
+  const total=candidates.reduce((n,c)=>n+c.tiles.length,0);
+  if(total>15000)throw Error('Este proyecto requiere '+total+' teselas y excede el límite de seguridad de 15.000. Divide el proyecto antes de exportar.');
+  if(!total)throw Error('No se encontraron teselas para descargar.');
+  const template=await pdrMasterTileTemplate(controller.signal);
+  const manifest={formato:'PDRMAP1',version:1,proyecto_id:String(p.id),proyecto_nombre:String(p.nombre||p.codigo||''),creado_en:new Date().toISOString(),paquetes:[],tiles:[]};
+  const blobs=[];let offset=0,processed=0,failures=0;
+  for(const {poly,bounds,tiles} of candidates){
+   const packageKey=[String(p.id),String(poly.id),PDR_MASTER_MAP_PROVIDER].join('__');
+   let successes=0,bytes=0,failed=0;
+   for(let i=0;i<tiles.length;i+=8){
+    pdrMasterCheckAbort(controller.signal);
+    const batch=tiles.slice(i,i+8);
+    const results=await Promise.all(batch.map(async t=>{
+     try{
+      const url=template.replace('{z}',t.z).replace('{x}',t.x).replace('{y}',t.y);
+      const r=await fetch(url,{signal:controller.signal,cache:'default'});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      const blob=await r.blob();if(!blob.size)throw Error('Tesela vacía');
+      return {t,blob};
+     }catch(e){if(controller.signal.aborted)throw e;console.warn('Tesela fallida',t,e);return null;}
+    }));
+    for(const r of results){if(!r){failed++;failures++;continue;}
+     manifest.tiles.push({poligono_id:String(poly.id),provider:PDR_MASTER_MAP_PROVIDER,z:r.t.z,x:r.t.x,y:r.t.y,offset,size:r.blob.size,type:r.blob.type||'application/octet-stream'});
+     blobs.push(r.blob);offset+=r.blob.size;bytes+=r.blob.size;successes++;
+    }
+    processed+=batch.length;
+    pdrMasterOfflineStatus(poly.codigo+': '+Math.min(i+batch.length,tiles.length)+'/'+tiles.length+' teselas · '+processed+'/'+total+' totales · '+failures+' fallidas',Math.round(processed/total*95));
+    await new Promise(resolve=>setTimeout(resolve,0));
+   }
+   if(!successes)throw Error('No se pudo descargar el mapa de '+poly.codigo+'.');
+   manifest.paquetes.push({package_key:packageKey,proyecto_id:String(p.id),poligono_id:String(poly.id),poligono_codigo:String(poly.codigo||''),poligono_nombre:String(poly.nombre||''),provider:PDR_MASTER_MAP_PROVIDER,min_zoom:PDR_MASTER_MAP_MINZOOM,max_zoom:PDR_MASTER_MAP_MAXZOOM,tile_count:successes,expected_tiles:tiles.length,failed_tiles:failed,size:bytes,bounds,attribution:'© OpenStreetMap contributors · OpenFreeMap',downloaded_at:new Date().toISOString(),source_version:'openfreemap-liberty'});
+  }
+  pdrMasterCheckAbort(controller.signal);
+  const jsonBytes=new TextEncoder().encode(JSON.stringify(manifest));
+  const header=new Uint8Array(12);const magic='PDRMAP1!';for(let i=0;i<8;i++)header[i]=magic.charCodeAt(i);
+  new DataView(header.buffer).setUint32(8,jsonBytes.length,true);
+  const file=new File([header,jsonBytes,...blobs],'PDR_'+pdrMasterSafeFileName(p.nombre||p.codigo||p.id)+'_MAPA_BASE_'+new Date().toISOString().slice(0,10)+'.pdrmap',{type:'application/octet-stream'});
+  const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  const mb=(file.size/1048576).toFixed(1);
+  pdrMasterOfflineStatus('✅ Archivo .pdrmap descargado: '+manifest.paquetes.length+' polígonos, '+manifest.tiles.length+' teselas, '+mb+' MB'+(failures?' · '+failures+' teselas fallidas; conviene reintentar antes de distribuir.':''),100);
+ }catch(e){const cancelled=controller.signal.aborted;pdrMasterOfflineStatus(cancelled?'Descarga cancelada.':('Error: '+(e?.message||e)),0);if(!cancelled){console.error('PDR Master mapa offline',e);alert('No se pudo exportar el mapa: '+(e?.message||e));}}
+ finally{pdrMasterMapBusy=false;pdrMasterMapController=null;if(start)start.disabled=false;if(cancel)cancel.style.display='none';}
+}
 </script>
-</body>
+
+<div class="modalOverlay" id="pdrSyncMasterModal">
+ <div class="modal wide"><div class="modalHead"><h2>↻ Control remoto de sincronización</h2><button class="close" onclick="document.getElementById('pdrSyncMasterModal').classList.remove('open')">Cerrar</button></div>
+ <div class="modalBody">
+  <div class="hint">Las solicitudes se ejecutan cuando Mapping está abierto, autenticado y conectado. La información almacenada solo en el teléfono no puede enviarse mientras la aplicación esté cerrada o sin Internet.</div>
+  <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+   <div><label>Proyecto</label><select id="pdrSyncMasterProyecto" onchange="pdrSyncMasterCambioProyecto()"></select></div>
+   <div><label>Enviar automáticamente</label><select id="pdrSyncMasterIntervalo"><option value="0">Desactivado · solo manual/remoto</option><option value="5">Cada 5 minutos</option><option value="15">Cada 15 minutos</option><option value="30">Cada 30 minutos</option><option value="60">Cada 60 minutos</option></select></div>
+  </div>
+  <div class="miniActions" style="margin:12px 0"><button class="btn blue" onclick="pdrSyncMasterGuardarIntervalo()">Guardar intervalo</button><button class="btn" onclick="pdrSyncMasterSolicitarTodos()">Solicitar envío a todos</button><button class="btn gray" onclick="pdrSyncMasterCargar()">Actualizar estados</button></div>
+  <p id="pdrSyncMasterAviso" class="hint">Selecciona un proyecto.</p>
+  <div class="tableWrap"><table class="table"><thead><tr><th>Técnico</th><th>Estado último reporte</th><th>Pendientes</th><th>Fotos</th><th>Último contacto</th><th>Acción</th></tr></thead><tbody id="pdrSyncMasterCuerpo"></tbody></table></div>
+  <small style="color:var(--muted)">Los pendientes corresponden al último reporte recibido del dispositivo; no representan acceso directo al almacenamiento del celular.</small>
+ </div></div>
+</div>
+<script>
+// ===== V82 · CENTRO DE SINCRONIZACIÓN =====
+let pdrSyncMasterRefresh=null;
+function pdrSyncMasterMsg(s){const x=document.getElementById('pdrSyncMasterAviso');if(x)x.textContent=s;}
+function abrirControlSyncMaster(){
+ const p=document.getElementById('pdrSyncMasterProyecto');
+ p.innerHTML=(proyectos||[]).filter(x=>puedeVerProyectoMaster(x)).map(x=>`<option value="${x.id}">${esc(x.codigo||x.nombre||'Proyecto')} · ${esc(x.nombre||'')}</option>`).join('');
+ document.getElementById('pdrSyncMasterModal').classList.add('open');
+ pdrSyncMasterCambioProyecto();
+}
+async function pdrSyncMasterCambioProyecto(){
+ const id=document.getElementById('pdrSyncMasterProyecto').value;
+ if(!id)return pdrSyncMasterMsg('No hay proyectos disponibles.');
+ const {data,error}=await sb.from('mapping_sync_config').select('intervalo_minutos').eq('proyecto_id',id).maybeSingle();
+ if(error)return pdrSyncMasterMsg('Ejecuta primero el SQL de sincronización: '+error.message);
+ document.getElementById('pdrSyncMasterIntervalo').value=String(data?.intervalo_minutos??0);
+ await pdrSyncMasterCargar();
+}
+async function pdrSyncMasterGuardarIntervalo(){
+ const id=document.getElementById('pdrSyncMasterProyecto').value;
+ if(!exigirProyectoPermitidoMaster(id,'configurar el envío automático'))return;
+ const n=Number(document.getElementById('pdrSyncMasterIntervalo').value);
+ const {error}=await sb.from('mapping_sync_config').upsert({proyecto_id:id,intervalo_minutos:n,actualizado_por:user.id},{onConflict:'proyecto_id'});
+ pdrSyncMasterMsg(error?'No se pudo guardar: '+error.message:`Intervalo guardado: ${n?`cada ${n} minutos`:'desactivado'}.`);
+}
+async function pdrSyncMasterSolicitar(tecnicoId){
+ const id=document.getElementById('pdrSyncMasterProyecto').value;
+ if(!exigirProyectoPermitidoMaster(id,'solicitar envíos'))return;
+ const {error}=await sb.from('mapping_sync_comandos').insert({proyecto_id:id,tecnico_id:tecnicoId,solicitado_por:user.id,estado:'pendiente'});
+ pdrSyncMasterMsg(error?'Error solicitando envío: '+error.message:'Solicitud creada. Mapping la atenderá cuando esté abierto y conectado.');
+ await pdrSyncMasterCargar();
+}
+async function pdrSyncMasterSolicitarTodos(){
+ const id=document.getElementById('pdrSyncMasterProyecto').value;
+ if(!exigirProyectoPermitidoMaster(id,'solicitar envíos'))return;
+ const técnicos=[...new Set((asignaciones||[]).filter(a=>String(a.proyecto_id)===String(id) && String(a.estado_asignacion||'')!=='finalizado').map(a=>a.tecnico_id).filter(Boolean))];
+ if(!técnicos.length)return pdrSyncMasterMsg('No hay técnicos asignados.');
+ if(!confirm(`¿Solicitar el envío de pendientes a ${técnicos.length} técnico(s)?`))return;
+ const {error}=await sb.from('mapping_sync_comandos').insert(técnicos.map(tecnico_id=>({proyecto_id:id,tecnico_id,solicitado_por:user.id,estado:'pendiente'})));
+ pdrSyncMasterMsg(error?'Error: '+error.message:`Se registraron ${técnicos.length} solicitudes.`);
+ await pdrSyncMasterCargar();
+}
+async function pdrSyncMasterCargar(){
+ const id=document.getElementById('pdrSyncMasterProyecto').value;if(!id)return;
+ const [estados,comandos]=await Promise.all([
+  sb.from('mapping_sync_estado').select('*').eq('proyecto_id',id),
+  sb.from('mapping_sync_comandos').select('tecnico_id,estado,creado_en').eq('proyecto_id',id).order('creado_en',{ascending:false}).limit(200)
+ ]);
+ if(estados.error||comandos.error)return pdrSyncMasterMsg('Error al consultar estados: '+(estados.error||comandos.error).message);
+ const arr=[...new Map((asignaciones||[]).filter(a=>String(a.proyecto_id)===String(id)).map(a=>[String(a.tecnico_id),a])).values()];
+ const eMap=new Map((estados.data||[]).map(e=>[String(e.tecnico_id),e]));
+ const cMap=new Map();(comandos.data||[]).forEach(c=>{if(!cMap.has(String(c.tecnico_id)))cMap.set(String(c.tecnico_id),c)});
+ document.getElementById('pdrSyncMasterCuerpo').innerHTML=arr.map(a=>{
+  const e=eMap.get(String(a.tecnico_id)),c=cMap.get(String(a.tecnico_id));
+  const u=usuarios.find(x=>String(x.id)===String(a.tecnico_id));
+  const fecha=e?.ultimo_contacto?new Date(e.ultimo_contacto).toLocaleString('es-CO'):'Sin reporte';
+  return `<tr><td>${esc(u?.nombre||a.tecnico_nombre||a.tecnico_email||a.tecnico_id)}</td><td>${esc(e?.estado||'Sin reporte')}<br><small>Orden: ${esc(c?.estado||'—')}</small></td><td>${Number(e?.registros_pendientes||0)}</td><td>${Number(e?.fotos_pendientes||0)}</td><td>${esc(fecha)}</td><td><button class="btn blue" onclick="pdrSyncMasterSolicitar('${a.tecnico_id}')">Enviar ahora</button></td></tr>`;
+ }).join('')||'<tr><td colspan="6">No hay asignaciones para este proyecto.</td></tr>';
+ pdrSyncMasterMsg('Estados actualizados. Los dispositivos reportan información mientras tienen conexión.');
+}
+</script></body>
 </html>
 
 
