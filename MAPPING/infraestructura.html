@@ -5543,6 +5543,7 @@ function mostrarSiguienteConexionOtro(){
 
   conexionesOtroVisibles++;
   setNumeroConexionesOtro(conexionesOtroVisibles,false);
+  setTimeout(pdrAplicarCamposProyecto,0);
 
   const i=conexionesOtroVisibles;
   poblarSelectPoligonoDestino(i);
@@ -5745,6 +5746,7 @@ function mostrarSiguienteConexion(){
   if(conexionesVisibles>=4)return;
   conexionesVisibles++;
   setNumeroConexiones(conexionesVisibles,false);
+  setTimeout(pdrAplicarCamposProyecto,0);
   const row=document.getElementById(`cxRow${conexionesVisibles}`);
   if(row){
     row.classList.remove('cxRowHidden');
@@ -5942,7 +5944,7 @@ function val(id){return document.getElementById(id)?.value??''}function num(id){
 function obtenerCamposObligatoriosActivos(){
   const t=TIPO?.value||'';
   if(esClienteViabilidad()){
-    return ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO','CX1','DISTODO1'];
+    return ['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO','CX1','DISTODO1'].filter(id=>pdrCampoVisible(id)&&pdrCampoObligatorio(id,true));
   }
   const ids=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO'];
   if(tipoProyectoActivo()==='VIABILIDAD')ids.push('COSTADO');
@@ -5970,7 +5972,7 @@ function obtenerCamposObligatoriosActivos(){
   // En el primer elemento del polígono no existen conexiones previas.
   // A partir del segundo, CX1 es obligatorio y CX2-CX4 solo si están visibles.
   if(Number(CONSECUTIV?.value||0)>=2){
-    for(let i=1;i<=conexionesVisibles;i++)ids.push(`CX${i}`);
+    for(let i=1;i<=conexionesVisibles;i++)if(pdrCampoVisible(`CX${i}`))ids.push(`CX${i}`);
   }
 
   if(String(CXOTROPOL?.value||'NO').toUpperCase()==='SI'){
@@ -5979,7 +5981,11 @@ function obtenerCamposObligatoriosActivos(){
     }
   }
 
-  return [...new Set(ids)].filter(id=>pdrCampoVisible(id));
+  for(const id of Object.values(PDR_FORM_CAMPO_GRUPOS).flat()){
+    if(pdrCampoOpcion(id).obligatorio===true && document.getElementById(id) &&
+       !PDR_FORM_CAMPO_GRUPOS.CONEXIONES.includes(id))ids.push(id);
+  }
+  return [...new Set(ids)].filter(id=>pdrCampoVisible(id)&&pdrCampoObligatorio(id,true));
 }
 
 function campoEstaVacio(id){
@@ -6710,10 +6716,14 @@ function validar(){
   const baseReq=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO'];
   if(tipoProyectoActivo()==='VIABILIDAD' && !esClienteViabilidad())baseReq.push('COSTADO');
   baseReq.forEach(id=>{
-    if(pdrCampoVisible(id)&&!val(id))falt.push(id);
+    if(pdrCampoVisible(id)&&pdrCampoObligatorio(id,true)&&!val(id))falt.push(id);
   });
 
   const t=TIPO.value;
+  const grupoCampos=new Set([...(PDR_FORM_CAMPO_GRUPOS.IDENTIFICACION||[]),...(PDR_FORM_CAMPO_GRUPOS[t]||[]),...(PDR_FORM_CAMPO_GRUPOS.INVENTARIO||[])]);
+  for(const id of grupoCampos){
+    if(pdrCampoVisible(id)&&pdrCampoOpcion(id).obligatorio===true&&document.getElementById(id)&&!val(id))falt.push(id);
+  }
 
   if(val('DIRECCION') && !direccionCompletaColombia(val('DIRECCION'))){
     marcarObligatoriosFaltantes(['DIRECCION']);
@@ -6767,13 +6777,13 @@ function validar(){
 
   if(t==='POSTE'){
     ['PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA','TENSION','RIENDA','ELECTRICOS','FINDERED'].forEach(id=>{
-      if(pdrCampoVisible(id)&&val(id)==='')falt.push(id);
+      if(pdrCampoVisible(id)&&pdrCampoObligatorio(id,true)&&val(id)==='')falt.push(id);
     });
   }
 
   if(t==='C. AMERICANO'||t==='CERCHA'){
     ['PROPIETARI','FINDERED'].forEach(id=>{
-      if(pdrCampoVisible(id)&&val(id)==='')falt.push(id);
+      if(pdrCampoVisible(id)&&pdrCampoObligatorio(id,true)&&val(id)==='')falt.push(id);
     });
   }
 
@@ -6784,7 +6794,7 @@ function validar(){
       'TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC',
       'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'
     ].forEach(id=>{
-      if(pdrCampoVisible(id)&&val(id)==='')falt.push(id);
+      if(pdrCampoVisible(id)&&pdrCampoObligatorio(id,true)&&val(id)==='')falt.push(id);
     });
     for(const id of ['CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL']){
       if(pdrCampoVisible(id)&&val(id).includes('-')){
@@ -6812,7 +6822,7 @@ function validar(){
       return false;
     }
 
-    if(ret<=0 && sus<=0){
+    if(ret<=0 && sus<=0 && (pdrCampoVisible('HERRAJES_RETENCION')||pdrCampoVisible('HERRAJES_SUSPENSION'))){
       alert('Para un POSTE de VIABILIDAD debes proyectar herrajes de RETENCIÓN o herrajes de SUSPENSIÓN. Ingresa una cantidad mayor a 0 en uno de los dos campos.');
       document.getElementById('HERRAJES_RETENCION')?.focus();
       return false;
@@ -6829,6 +6839,7 @@ function validar(){
     // Desde el segundo elemento, CX1 es obligatorio.
     // CX2-CX4 son obligatorios únicamente si el técnico los ha mostrado.
     for(let i=1;i<=conexionesVisibles;i++){
+      if(!pdrCampoVisible('CX'+i) && i!==1)continue;
       const raw=String(val('CX'+i)??'').trim();
 
       // Vacío sí es inválido, pero 0 es válido = "sin conexión".
@@ -16853,29 +16864,65 @@ setTimeout(()=>pdrSyncControlTick().catch(console.warn),5000);
 </script>
 <script>
 /* V120: catálogo de propietarios (Supabase + caché offline) y configuración por proyecto */
-const PDR_FORM_CAMPO_GRUPOS={"POSTE": ["PROPIETARI", "ALTURA", "TIPO_POSTE", "MATERIAL", "ROTURA", "TENSION", "RIENDA", "ELECTRICOS", "CABLES", "RESERVAS", "EMPALMES", "NAPS", "BAJANTES", "FUENTES", "AMPLIFI", "PACVI", "FINDERED"], "C. AMERICANO": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CERCHA": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CANALIZADO": ["PROPIETARI", "TIPOCAMARA", "SUBIDA_A_P", "CONF_DUCTO", "DUCTO_ELEC", "DUCT_TELCO", "DUCT_LIBRE", "DUCT_UTIL", "CABLES", "RESERVAS", "NAPS", "BAJANTES", "AMPLIFI", "PACVI"], "INVENTARIO": ["ELECTRICOS_GEN", "ELEM_RED", "PROEMPALME", "PRONAP", "EXISTENCIA", "CANT_RESER", "HERRAJES_RETENCION", "HERRAJES_SUSPENSION", "PROY_BAJANTE", "ES_ACCESO_CLIENTE", "DISTANCIA_INTERNA"]};
+const PDR_FORM_CAMPO_GRUPOS={'IDENTIFICACION':['TIPO','POLIGONO','CONSECUTIV','IDCAMPO','CIUDAD','BARRIO','TECNICO','PROYECTO','TIPO_PROYECTO','LATITUDE','LONGITUDE','DIRECCION','COSTADO','ESTADO'],'CONEXIONES':['CX1','CX2','CX3','CX4','TELCX1','TELCX2','TELCX3','TELCX4','DISTODO1','DISTODO2','DISTODO3','DISTODO4','CXOTROPOL','CX1POL','CX1CONSE','CX2POL','CX2CONSE','CX3POL','CX3CONSE','CX4POL','CX4CONSE','DISTODO5','DISTODO6','DISTODO7','DISTODO8'],"POSTE": ["PROPIETARI", "ALTURA", "TIPO_POSTE", "MATERIAL", "ROTURA", "TENSION", "RIENDA", "ELECTRICOS", "CABLES", "RESERVAS", "EMPALMES", "NAPS", "BAJANTES", "FUENTES", "AMPLIFI", "PACVI", "FINDERED"], "C. AMERICANO": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CERCHA": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CANALIZADO": ["PROPIETARI", "TIPOCAMARA", "SUBIDA_A_P", "CONF_DUCTO", "DUCTO_ELEC", "DUCT_TELCO", "DUCT_LIBRE", "DUCT_UTIL", "CABLES", "RESERVAS", "NAPS", "BAJANTES", "AMPLIFI", "PACVI"], "INVENTARIO": ["ELECTRICOS_GEN", "ELEM_RED", "PROEMPALME", "PRONAP", "EXISTENCIA", "CANT_RESER", "HERRAJES_RETENCION", "HERRAJES_SUSPENSION", "PROY_BAJANTE", "ES_ACCESO_CLIENTE", "DISTANCIA_INTERNA", "OBSERVACIO"]};
 const PDR_PROPIETARIOS_CACHE='pdr_mapping_propietarios_global_v120';
 let pdrUltimaConsultaCampos=0;
+const PDR_CAMPOS_AUTOMATICOS=new Set(['POLIGONO','CONSECUTIV','IDCAMPO','PROYECTO','TIPO_PROYECTO','LATITUDE','LONGITUDE']);
+const PDR_CAMPOS_PROTEGIDOS=new Set(['TIPO','CX1']);
+function pdrCampoGrupo(id){
+ if(PDR_FORM_CAMPO_GRUPOS.IDENTIFICACION.includes(id))return 'IDENTIFICACION';
+ if(PDR_FORM_CAMPO_GRUPOS.CONEXIONES.includes(id))return 'CONEXIONES';
+ if(PDR_FORM_CAMPO_GRUPOS.INVENTARIO.includes(id)||id==='OBSERVACIO')return 'INVENTARIO';
+ return String(document.getElementById('TIPO')?.value||'');
+}
+function pdrCampoOpcion(id){
+ const grupo=pdrCampoGrupo(id),cfg=proyectoActivo?.campos_config;
+ const opt=cfg?._opciones?.[grupo]?.[id];
+ if(opt)return opt;
+ const lista=cfg?.[grupo];
+ return {visible:!Array.isArray(lista)||lista.includes(id),obligatorio:null,solo_lectura:false};
+}
 function pdrCampoVisible(id){
- const t=String(document.getElementById('TIPO')?.value||'');
- const inventario=PDR_FORM_CAMPO_GRUPOS.INVENTARIO;
- const grupo=inventario.includes(id)?'INVENTARIO':t;
- const defs=PDR_FORM_CAMPO_GRUPOS[grupo];
- if(!defs||!defs.includes(id))return true;
- const cfg=proyectoActivo?.campos_config;
- return !cfg||!Array.isArray(cfg[grupo])||cfg[grupo].includes(id);
+ if(PDR_CAMPOS_PROTEGIDOS.has(id))return true;
+ return pdrCampoOpcion(id).visible!==false;
+}
+function pdrCampoObligatorio(id,base){
+ if(PDR_CAMPOS_PROTEGIDOS.has(id))return !!base;
+ const v=pdrCampoOpcion(id).obligatorio;
+ return v===true?true:v===false?false:!!base;
+}
+function pdrCampoContenedor(el,id){
+ if(!el)return null;
+ if(id==='CXOTROPOL')return document.getElementById('wrapCXOtroPol');
+ if(id==='OBSERVACIO')return document.getElementById('wrapObservacion');
+ if(PDR_FORM_CAMPO_GRUPOS.IDENTIFICACION.includes(id))return document.getElementById('wrap'+id[0]+id.slice(1).toLowerCase())||el.closest('#formOverlay #wrapTipo,#formOverlay #wrapPoligono,#formOverlay #wrapConsecutiv,#formOverlay #wrapIdcampo,#formOverlay #wrapCiudad,#formOverlay #wrapBarrio,#formOverlay #wrapTecnico,#formOverlay #wrapProyecto,#formOverlay #wrapTipoProyecto,#formOverlay #wrapLatitude,#formOverlay #wrapLongitude,#formOverlay #wrapDireccion,#formOverlay #wrapCostado,#formOverlay #wrapEstado');
+ if(PDR_FORM_CAMPO_GRUPOS.CONEXIONES.includes(id)){
+  // Conexiones generadas dinámicamente: nunca ocultar todo el renglón por un solo campo.
+  return el.closest('[data-pdr-field],.cxRemoveCell')||el.parentElement;
+ }
+ return el.closest('#secPoste > .sectionBody > .grid3 > div,#secCamara > .sectionBody > .grid > div,#gridProyeccion > div,#wrapObservacion');
 }
 function pdrAplicarCamposProyecto(){
- const t=String(document.getElementById('TIPO')?.value||'');
- const defs=[...(PDR_FORM_CAMPO_GRUPOS[t]||[]),...PDR_FORM_CAMPO_GRUPOS.INVENTARIO];
- const todos=new Set(Object.values(PDR_FORM_CAMPO_GRUPOS).flat());
+ const todos=new Set(Object.values(PDR_FORM_CAMPO_GRUPOS).flat());todos.add('OBSERVACIO');
  for(const id of todos){
   const el=document.getElementById(id);if(!el)continue;
-  const ocultar=defs.includes(id)&&!pdrCampoVisible(id);
-  const wrap=el.closest('#secPoste > .sectionBody > .grid3 > div,#secCamara > .sectionBody > .grid > div,#gridProyeccion > div,#wrapObservacion');
-  if(!wrap)continue;
-  if(ocultar){wrap.dataset.pdrCamposOculto='1';wrap.style.display='none';}
-  else if(wrap.dataset.pdrCamposOculto==='1'){wrap.style.removeProperty('display');delete wrap.dataset.pdrCamposOculto;}
+  const cont=pdrCampoContenedor(el,id);if(!cont)continue;
+  const grupo=pdrCampoGrupo(id);
+  // Solo se manipulan grupos de campos que aplican al tipo actual.
+  const aplica=grupo==='IDENTIFICACION'||grupo==='CONEXIONES'||grupo==='INVENTARIO'||grupo===String(document.getElementById('TIPO')?.value||'');
+  const ocultar=aplica&&!pdrCampoVisible(id);
+  if(ocultar){cont.dataset.pdrCamposOculto='1';cont.style.display='none';}
+  else if(cont.dataset.pdrCamposOculto==='1'){cont.style.removeProperty('display');delete cont.dataset.pdrCamposOculto;}
+  const opt=pdrCampoOpcion(id);
+  if(!PDR_CAMPOS_AUTOMATICOS.has(id)&&!PDR_CAMPOS_PROTEGIDOS.has(id)){
+   if(!('pdrOriginalReadonly' in el.dataset))el.dataset.pdrOriginalReadonly=el.readOnly?'1':'0';
+   el.readOnly=opt.solo_lectura===true||el.dataset.pdrOriginalReadonly==='1';
+   // Los select no tienen atributo readOnly: mantenerlos visibles sin permitir cambios.
+   if(el.tagName==='SELECT'){
+    if(!('pdrOriginalDisabled' in el.dataset))el.dataset.pdrOriginalDisabled=el.disabled?'1':'0';
+    el.disabled=(opt.solo_lectura===true)||el.dataset.pdrOriginalDisabled==='1';
+   }
+  }
  }
  if(typeof actualizarResaltadoObligatorios==='function')setTimeout(actualizarResaltadoObligatorios,0);
 }
@@ -16916,4 +16963,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 </body></html>
+
+
 
