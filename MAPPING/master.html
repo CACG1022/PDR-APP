@@ -3844,11 +3844,29 @@ header{
       <!-- CAMPOS · CONFIGURACIÓN INDEPENDIENTE POR PROYECTO -->
       <div class="projectTabPanel" id="projectTab_campos">
         <div class="projectSubCard" id="pdrCamposGestion" style="margin-top:14px;border:1px solid #275a76;border-radius:13px;padding:13px;background:#0b1928">
-  <h3>🧩 CAMPOS DEL FORMULARIO</h3>
-  <p style="font-size:12px;color:#aac3d6">Selecciona el proyecto y configura qué campos estarán visibles en Mapping, incluyendo Inventario / proyección. Los campos indispensables de identificación y conexiones permanecen protegidos.</p>
+  <h3>🧩 CAMPOS DEL FORMULARIO · CONFIGURACIÓN COMPLETA</h3>
+  <p style="font-size:12px;color:#aac3d6">Selecciona el proyecto y configura visibilidad, obligatoriedad y solo lectura por campo, incluyendo Identificación, Conexiones e Inventario / proyección. Puedes elegir visibilidad, obligatoriedad y solo lectura. TIPO y CX1 mantienen validaciones esenciales; los campos calculados automáticamente siempre se generan internamente.</p>
   <label>Proyecto (nombre completo)</label>
-  <select id="pdrCamposProyecto" onchange="pdrMasterCargarCampos()"><option value="">Seleccionar proyecto...</option></select>
-  <div id="pdrCamposChecks" style="margin-top:12px"></div>
+  <select id="pdrCamposProyecto" onchange="pdrCamposVistaTemporal=null;pdrMasterCargarCampos();pdrCamposPlantillaListar()"><option value="">Seleccionar proyecto...</option></select>
+  <div style="border:1px solid #246481;background:#0d2535;border-radius:12px;padding:12px;margin-top:12px">
+    <h3 style="margin:0 0 7px">📚 Plantillas de configuración de campos</h3>
+    <p style="font-size:11px;color:#aac3d6;margin:5px 0 10px">Guarda las opciones actuales con un nombre para reutilizarlas en otros proyectos de la misma empresa. Aplicar una plantilla solo modifica el editor; pulsa «Guardar campos del proyecto» para confirmar los cambios en ese proyecto.</p>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end">
+      <label style="margin:0">Nombre de plantilla<input id="pdrCamposPlantillaNombre" maxlength="80" placeholder="Ej.: Inventario FO urbano completo"></label>
+      <button type="button" class="btn blue" onclick="pdrCamposPlantillaGuardar()">💾 Guardar plantilla</button>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:8px">
+      <label style="margin:0">Plantillas guardadas en Supabase<select id="pdrCamposPlantillaSelect"><option value="">Seleccionar plantilla…</option></select></label>
+      <button type="button" class="btn blue" onclick="pdrCamposPlantillaAplicar()">↙ Cargar plantilla</button>
+    </div>
+    <div class="miniActions" style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap">
+      <button type="button" class="btn gray" onclick="pdrCamposPlantillaListar()">↻ Actualizar lista</button>
+      <button type="button" class="btn gray" onclick="pdrCamposPlantillaRenombrar()">✏ Renombrar</button>
+      <button type="button" class="btn danger" onclick="pdrCamposPlantillaEliminar()">🗑 Eliminar</button>
+    </div>
+    <div id="pdrCamposPlantillaEstado" style="font-size:11px;color:#aed7e8;margin-top:8px" aria-live="polite">Selecciona un proyecto para ver las plantillas de su empresa.</div>
+  </div>
+  <div id="pdrCamposChecks" style="margin-top:12px;overflow-x:auto"></div>
   <button type="button" class="btn blue" onclick="pdrMasterGuardarCampos()" style="margin-top:10px">💾 Guardar campos del proyecto</button>
   <div id="pdrCamposEstado" class="hint">Selecciona un proyecto. Por defecto se muestran todos los campos.</div>
   <hr style="border:0;border-top:1px solid #29415d;margin:18px 0">
@@ -3856,7 +3874,7 @@ header{
   <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end"><label>Nuevo propietario<input id="pdrNuevoPropietario" maxlength="90" placeholder="Nombre del propietario"></label><button type="button" class="btn blue" onclick="pdrMasterAgregarPropietario()">+ Agregar</button></div>
   <div style="margin-top:8px"><button type="button" class="btn gray" onclick="pdrMasterCargarPropietarios()">↻ Actualizar catálogo</button></div>
   <div id="pdrPropietariosLista" style="margin-top:10px;max-height:350px;overflow:auto"></div>
-</div
+</div>
       </div>
 
       <!-- CARTOGRAPHY -->
@@ -14209,7 +14227,7 @@ async function pdrSyncMasterCargar(){
 </script>
 <script>
 /* V83: catálogo de propietarios y visibilidad configurable del formulario */
-const PDR_FORM_CAMPO_GRUPOS={"POSTE": ["PROPIETARI", "ALTURA", "TIPO_POSTE", "MATERIAL", "ROTURA", "TENSION", "RIENDA", "ELECTRICOS", "CABLES", "RESERVAS", "EMPALMES", "NAPS", "BAJANTES", "FUENTES", "AMPLIFI", "PACVI", "FINDERED"], "C. AMERICANO": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CERCHA": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CANALIZADO": ["PROPIETARI", "TIPOCAMARA", "SUBIDA_A_P", "CONF_DUCTO", "DUCTO_ELEC", "DUCT_TELCO", "DUCT_LIBRE", "DUCT_UTIL", "CABLES", "RESERVAS", "NAPS", "BAJANTES", "AMPLIFI", "PACVI"], "INVENTARIO": ["ELECTRICOS_GEN", "ELEM_RED", "PROEMPALME", "PRONAP", "EXISTENCIA", "CANT_RESER", "HERRAJES_RETENCION", "HERRAJES_SUSPENSION", "PROY_BAJANTE", "ES_ACCESO_CLIENTE", "DISTANCIA_INTERNA"]};
+const PDR_FORM_CAMPO_GRUPOS={'IDENTIFICACION':['TIPO','POLIGONO','CONSECUTIV','IDCAMPO','CIUDAD','BARRIO','TECNICO','PROYECTO','TIPO_PROYECTO','LATITUDE','LONGITUDE','DIRECCION','COSTADO','ESTADO'],'CONEXIONES':['CX1','CX2','CX3','CX4','TELCX1','TELCX2','TELCX3','TELCX4','DISTODO1','DISTODO2','DISTODO3','DISTODO4','CXOTROPOL','CX1POL','CX1CONSE','CX2POL','CX2CONSE','CX3POL','CX3CONSE','CX4POL','CX4CONSE','DISTODO5','DISTODO6','DISTODO7','DISTODO8'],"POSTE": ["PROPIETARI", "ALTURA", "TIPO_POSTE", "MATERIAL", "ROTURA", "TENSION", "RIENDA", "ELECTRICOS", "CABLES", "RESERVAS", "EMPALMES", "NAPS", "BAJANTES", "FUENTES", "AMPLIFI", "PACVI", "FINDERED"], "C. AMERICANO": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CERCHA": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CANALIZADO": ["PROPIETARI", "TIPOCAMARA", "SUBIDA_A_P", "CONF_DUCTO", "DUCTO_ELEC", "DUCT_TELCO", "DUCT_LIBRE", "DUCT_UTIL", "CABLES", "RESERVAS", "NAPS", "BAJANTES", "AMPLIFI", "PACVI"], "INVENTARIO": ["ELECTRICOS_GEN", "ELEM_RED", "PROEMPALME", "PRONAP", "EXISTENCIA", "CANT_RESER", "HERRAJES_RETENCION", "HERRAJES_SUSPENSION", "PROY_BAJANTE", "ES_ACCESO_CLIENTE", "DISTANCIA_INTERNA", "OBSERVACIO"]};
 const PDR_FORM_CAMPOS_NOMBRES={"ELECTRICOS_GEN": "Elementos eléctricos existentes", "ELEM_RED": "Elementos de red", "PROEMPALME": "Proyección de empalme", "PRONAP": "Proyección de NAP", "EXISTENCIA": "Existencia", "CANT_RESER": "Cantidad de reservas", "HERRAJES_RETENCION": "Herrajes de retención", "HERRAJES_SUSPENSION": "Herrajes de suspensión", "PROY_BAJANTE": "Proyección de bajante", "ES_ACCESO_CLIENTE": "¿Es elemento de acceso al cliente?", "DISTANCIA_INTERNA": "Distancia interna (m)"};
 function pdrAdminCamposProyectoSelect(){
  const sel=document.getElementById('pdrCamposProyecto');if(!sel)return;
@@ -14217,24 +14235,135 @@ function pdrAdminCamposProyectoSelect(){
  sel.innerHTML='<option value="">Seleccionar proyecto...</option>'+lista.filter(p=>typeof puedeVerProyectoMaster!=='function'||puedeVerProyectoMaster(p)).map(p=>{const empresa=(typeof empresas!=='undefined'&&Array.isArray(empresas)?empresas:[]).find(e=>String(e.id)===String(p.empresa_id));return `<option value="${esc(p.id)}">${esc(empresa?.nombre_corto||empresa?.nombre||'SIN EMPRESA')} · ${esc(p.codigo||'')} · ${esc(p.nombre||'')}</option>`;}).join('');
  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
 }
+const PDR_CAMPOS_AUTOMATICOS=new Set(['POLIGONO','CONSECUTIV','IDCAMPO','PROYECTO','TIPO_PROYECTO','LATITUDE','LONGITUDE']);
+const PDR_CAMPOS_PROTEGIDOS=new Set(['TIPO','CX1']);
+const PDR_CAMPOS_LABELS={
+ TIPO:'TIPO',POLIGONO:'POLIGONO',CONSECUTIV:'CONSECUTIV',IDCAMPO:'IDCAMPO',
+ CIUDAD:'CIUDAD',BARRIO:'BARRIO',TECNICO:'TECNICO',PROYECTO:'PROYECTO',TIPO_PROYECTO:'TIPO PROYECTO',
+ LATITUDE:'LATITUDE',LONGITUDE:'LONGITUDE',DIRECCION:'DIRECCION',COSTADO:'COSTADO',ESTADO:'ESTADO',
+ PROPIETARI:'PROPIETARI',ALTURA:'ALTURA',TIPO_POSTE:'TIPO POSTE',MATERIAL:'MATERIAL',ROTURA:'ROTURA',TENSION:'TENSION',
+ RIENDA:'RIENDA',ELECTRICOS:'ELECTRICOS',CABLES:'CABLES EXISTENTES',RESERVAS:'RESERVAS EXISTENTES',
+ EMPALMES:'EMPALMES EXISTENTES',NAPS:'NAPS EXISTENTES',BAJANTES:'BAJANTES EXISTENTES',FUENTES:'FUENTES',
+ AMPLIFI:'AMPLIFICADORES',PACVI:'PACVI',FINDERED:'ES FIN DE RED?',
+ TIPOCAMARA:'TIPOCAMARA',SUBIDA_A_P:'SUBIDA A POSTE?',CONF_DUCTO:'CONFIGURACION DE DUCTOS',
+ DUCTO_ELEC:'DUCTO ELECTRICO',DUCT_TELCO:'DUCT TELCO',DUCT_LIBRE:'DUCTOS LIBRES',DUCT_UTIL:'DUCTO A UTILIZAR',
+ CX1:'CX1',CX2:'CX2',CX3:'CX3',CX4:'CX4',TELCX1:'¿ES CRUCE TELEMATICO? (CX1)',TELCX2:'¿ES CRUCE TELEMATICO? (CX2)',
+ TELCX3:'¿ES CRUCE TELEMATICO? (CX3)',TELCX4:'¿ES CRUCE TELEMATICO? (CX4)',
+ DISTODO1:'DISTANCIA ODÓMETRO CX1',DISTODO2:'DISTANCIA ODÓMETRO CX2',DISTODO3:'DISTANCIA ODÓMETRO CX3',DISTODO4:'DISTANCIA ODÓMETRO CX4',
+ CXOTROPOL:'¿CONEXIÓN A ELEMENTO DE OTRO POLÍGONO?',CX1POL:'CX1POL',CX1CONSE:'CONSECUTIVO CX1POL',
+ CX2POL:'CX2POL',CX2CONSE:'CONSECUTIVO CX2POL',CX3POL:'CX3POL',CX3CONSE:'CONSECUTIVO CX3POL',
+ CX4POL:'CX4POL',CX4CONSE:'CONSECUTIVO CX4POL',DISTODO5:'DISTANCIA ODÓMETRO CX1POL',
+ DISTODO6:'DISTANCIA ODÓMETRO CX2POL',DISTODO7:'DISTANCIA ODÓMETRO CX3POL',DISTODO8:'DISTANCIA ODÓMETRO CX4POL',
+ ELECTRICOS_GEN:'ELEMENTOS ELECTRICOS EXISTENTES',ELEM_RED:'ELEMENTOS DE RED',
+ PROEMPALME:'PROYECCION DE EMPALME',PRONAP:'PROYECCION DE NAP',EXISTENCIA:'EXISTENCIA',
+ CANT_RESER:'CANT RESER',HERRAJES_RETENCION:'HERRAJES DE RETENCIÓN',HERRAJES_SUSPENSION:'HERRAJES DE SUSPENSIÓN',
+ PROY_BAJANTE:'PROYECCIÓN DE BAJANTE',ES_ACCESO_CLIENTE:'¿ESTE ELEMENTO ES DE ACCESO AL CLIENTE?',
+ DISTANCIA_INTERNA:'DISTANCIA INTERNA (m)',OBSERVACIO:'OBSERVACION'
+};
+
 function pdrMasterCargarCampos(){
  const id=document.getElementById('pdrCamposProyecto')?.value;
  const p=(typeof proyectos!=='undefined'?proyectos:[]).find(x=>String(x.id)===String(id));
  const box=document.getElementById('pdrCamposChecks');if(!box)return;
  if(!p){box.innerHTML='';return;}
- const config=p.campos_config||{};
- box.innerHTML=Object.entries(PDR_FORM_CAMPO_GRUPOS).map(([tipo,ids])=>`<section style="border:1px solid #29415d;border-radius:10px;padding:9px;margin:8px 0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${tipo==='INVENTARIO'?'📦 INVENTARIO / PROYECCIÓN':tipo}</b><span><button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',true)">Todos</button> <button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',false)">Ninguno</button></span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;margin-top:10px">${ids.map(c=>`<label style="font-size:11px;display:flex;align-items:center;gap:5px"><input type="checkbox" style="width:18px;height:18px" data-pdr-campo="${c}" data-pdr-tipo="${tipo}" ${!Array.isArray(config[tipo])||config[tipo].includes(c)?'checked':''}>${PDR_FORM_CAMPOS_NOMBRES[c]||c.replaceAll('_',' ')}</label>`).join('')}</div></section>`).join('');
- document.getElementById('pdrCamposEstado').textContent='Los cambios se aplicarán al actualizar los proyectos en Mapping.';
+ const cfg=pdrCamposVistaTemporal||p.campos_config||{},op=cfg._opciones||{};
+ box.innerHTML=Object.entries(PDR_FORM_CAMPO_GRUPOS).map(([tipo,ids])=>`<section style="border:1px solid #29415d;border-radius:12px;padding:12px;margin:10px 0">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>${tipo==='INVENTARIO'?'📦 INVENTARIO / PROYECCIÓN':tipo==='IDENTIFICACION'?'📍 1. IDENTIFICACIÓN Y UBICACIÓN':tipo==='CONEXIONES'?'🔗 3. CONEXIONES':tipo}</b><span><button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',true)">Todos</button> <button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',false)">Ninguno opcional</button></span></div>
+ <div style="display:grid;grid-template-columns:minmax(94px,0.8fr) minmax(205px,1.7fr) 66px 86px 87px;min-width:580px;gap:5px;align-items:center;margin-top:11px">
+ <b style="font-size:10px">Campo</b><b style="font-size:10px">Descripción (en formulario)</b><b style="font-size:9px;text-align:center">Visible</b><b style="font-size:9px;text-align:center">Obligatorio</b><b style="font-size:9px;text-align:center">Solo lectura</b>
+ ${ids.map(c=>{const old=!Array.isArray(cfg[tipo])||cfg[tipo].includes(c);const opt=op[tipo]?.[c]||{};const visible=opt.visible??old;const required=opt.obligatorio??null;const auto=PDR_CAMPOS_AUTOMATICOS.has(c);const locked=PDR_CAMPOS_PROTEGIDOS.has(c);return `<span style="font-size:10px;min-width:0;overflow-wrap:anywhere;font-weight:800">${esc(c)}</span><span style="font-size:10px;min-width:0;overflow-wrap:anywhere">${esc(PDR_CAMPOS_LABELS[c]||PDR_FORM_CAMPOS_NOMBRES[c]||c.replaceAll('_',' '))}</span>
+ <input type="checkbox" data-pdr-campo="${c}" data-pdr-tipo="${tipo}" data-pdr-attr="visible" ${visible?'checked':''} ${locked?'disabled title="Campo protegido por reglas del registro"':''} style="width:17px;height:17px;justify-self:center">
+ <select data-pdr-campo="${c}" data-pdr-tipo="${tipo}" data-pdr-attr="obligatorio" ${auto||locked?'disabled title="Validación interna protegida"':''} style="font-size:10px;padding:5px 2px;min-width:0"><option value="auto" ${required===null?'selected':''}>Auto</option><option value="si" ${required===true?'selected':''}>Sí</option><option value="no" ${required===false?'selected':''}>No</option></select>
+ <input type="checkbox" data-pdr-campo="${c}" data-pdr-tipo="${tipo}" data-pdr-attr="lectura" ${auto||opt.solo_lectura?'checked':''} ${auto||locked?'disabled title="Campo calculado automáticamente"':''} style="width:17px;height:17px;justify-self:center">`;}).join('')}
+ </div></section>`).join('');
+ document.getElementById('pdrCamposEstado').textContent='Auto conserva la obligatoriedad original. Los campos automáticos pueden ocultarse pero se siguen calculando. TIPO y CX1 mantienen sus reglas esenciales.';
 }
-function pdrCamposSeleccionar(tipo,activo){document.querySelectorAll('#pdrCamposChecks input[data-pdr-tipo]').forEach(c=>{if(c.dataset.pdrTipo===tipo)c.checked=activo;});}
+function pdrCamposSeleccionar(tipo,activo){document.querySelectorAll('#pdrCamposChecks input[data-pdr-tipo][data-pdr-attr="visible"]').forEach(c=>{if(c.dataset.pdrTipo===tipo&&!c.disabled)c.checked=activo;});}
+function pdrCamposLeerEditor(){
+ const config={_opciones:{}};
+ for(const [tipo,ids] of Object.entries(PDR_FORM_CAMPO_GRUPOS)){
+  config[tipo]=[];config._opciones[tipo]={};
+  for(const c of ids){
+   const items=[...document.querySelectorAll('#pdrCamposChecks [data-pdr-tipo][data-pdr-campo]')].filter(x=>x.dataset.pdrTipo===tipo&&x.dataset.pdrCampo===c);
+   const get=key=>items.find(x=>x.dataset.pdrAttr===key);
+   const visible=!!get('visible')?.checked || PDR_CAMPOS_PROTEGIDOS.has(c);
+   const ob=get('obligatorio')?.value||'auto';
+   const solo=!!get('lectura')?.checked || PDR_CAMPOS_AUTOMATICOS.has(c);
+   if(visible)config[tipo].push(c);
+   config._opciones[tipo][c]={visible,obligatorio:ob==='auto'?null:ob==='si',solo_lectura:solo};
+  }
+ }
+ return config;
+}
 async function pdrMasterGuardarCampos(){
  const id=document.getElementById('pdrCamposProyecto')?.value;if(!id)return alert('Selecciona un proyecto.');
  if(typeof exigirProyectoPermitidoMaster==='function'&&!exigirProyectoPermitidoMaster(id,'editar campos'))return;
- const config={};Object.keys(PDR_FORM_CAMPO_GRUPOS).forEach(t=>config[t]=[...document.querySelectorAll('#pdrCamposChecks input[data-pdr-tipo]')].filter(x=>x.dataset.pdrTipo===t&&x.checked).map(x=>x.dataset.pdrCampo));
+ const config=pdrCamposLeerEditor();
  const {error}=await sb.from('mapping_proyectos').update({campos_config:config}).eq('id',id);
- if(error)return alert('Error guardando campos: '+error.message+'\n¿Ejecutaste el SQL V83?');
- const p=proyectos.find(p=>String(p.id)===String(id));if(p)p.campos_config=config;
- document.getElementById('pdrCamposEstado').textContent='✅ Campos guardados en Supabase. Mapping los recibe al actualizar el proyecto.';
+ if(error)return alert('Error guardando campos: '+error.message);
+ const p=proyectos.find(x=>String(x.id)===String(id));if(p)p.campos_config=config;pdrCamposVistaTemporal=null;
+ document.getElementById('pdrCamposEstado').textContent='✅ Configuración guardada en Supabase para '+(p?.nombre||'el proyecto')+'.';
+}
+// ===== V87: biblioteca de plantillas de CAMPOS (Supabase, por empresa) =====
+const PDR_CAMPOS_TPL_TABLA='mapping_plantillas_campos';
+let pdrCamposPlantillas=[];
+let pdrCamposVistaTemporal=null;
+let pdrCamposPlantillaEmpresaActual='';
+function pdrCamposProyectoActual(){return (typeof proyectos!=='undefined'?proyectos:[]).find(p=>String(p.id)===String(document.getElementById('pdrCamposProyecto')?.value));}
+function pdrCamposPlantillaMensaje(t){const n=document.getElementById('pdrCamposPlantillaEstado');if(n)n.textContent=t;}
+function pdrCamposPlantillaEmpresa(){return String(pdrCamposProyectoActual()?.empresa_id||'');}
+function pdrCamposPlantillaElegida(){return pdrCamposPlantillas.find(t=>String(t.id)===String(document.getElementById('pdrCamposPlantillaSelect')?.value));}
+async function pdrCamposPlantillaListar(){
+ const empresaId=pdrCamposPlantillaEmpresa(),sel=document.getElementById('pdrCamposPlantillaSelect');
+ if(!sel)return;
+ pdrCamposPlantillas=[];pdrCamposPlantillaEmpresaActual='';
+ sel.innerHTML='<option value="">Seleccionar plantilla…</option>';
+ if(!empresaId){pdrCamposPlantillaMensaje('Selecciona un proyecto para consultar plantillas de su empresa.');return;}
+ pdrCamposPlantillaMensaje('Consultando plantillas en Supabase…');
+ const {data,error}=await sb.from(PDR_CAMPOS_TPL_TABLA).select('id,empresa_id,nombre,config,updated_at').eq('empresa_id',empresaId).order('nombre').limit(200);
+ if(error){pdrCamposPlantillaMensaje('No se pudieron consultar plantillas. Ejecuta el SQL V87. '+error.message);return;}
+ if(empresaId!==pdrCamposPlantillaEmpresa())return;
+ pdrCamposPlantillas=data||[];pdrCamposPlantillaEmpresaActual=empresaId;
+ for(const tpl of pdrCamposPlantillas){const opt=document.createElement('option');opt.value=tpl.id;opt.textContent=tpl.nombre;sel.add(opt);}
+ pdrCamposPlantillaMensaje(`Se encontraron ${pdrCamposPlantillas.length} plantilla(s). Puedes cargarlas sobre el proyecto seleccionado.`);
+}
+async function pdrCamposPlantillaGuardar(){
+ const p=pdrCamposProyectoActual();if(!p)return alert('Selecciona un proyecto.');
+ if(typeof exigirProyectoPermitidoMaster==='function'&&!exigirProyectoPermitidoMaster(p.id,'guardar plantilla de campos'))return;
+ const nombre=document.getElementById('pdrCamposPlantillaNombre')?.value.trim().slice(0,80);
+ if(!nombre)return alert('Escribe un nombre para la plantilla.');
+ const config=pdrCamposLeerEditor();
+ const existente=pdrCamposPlantillas.find(t=>t.nombre.toLocaleLowerCase('es')===nombre.toLocaleLowerCase('es'));
+ if(existente&&!confirm('Ya existe una plantilla con este nombre. ¿Deseas reemplazar su configuración?'))return;
+ const q=existente?sb.from(PDR_CAMPOS_TPL_TABLA).update({config,updated_at:new Date().toISOString()}).eq('id',existente.id):sb.from(PDR_CAMPOS_TPL_TABLA).insert({empresa_id:p.empresa_id,nombre,config});
+ const {error}=await q;
+ if(error)return alert('No se pudo guardar la plantilla: '+error.message);
+ await pdrCamposPlantillaListar();
+ const sel=document.getElementById('pdrCamposPlantillaSelect');const guardada=pdrCamposPlantillas.find(t=>t.nombre===nombre);if(sel&&guardada)sel.value=guardada.id;
+ pdrCamposPlantillaMensaje('✅ Plantilla «'+nombre+'» guardada en Supabase. Ahora puedes aplicarla a otros proyectos de la misma empresa.');
+}
+function pdrCamposPlantillaAplicar(){
+ const tpl=pdrCamposPlantillaElegida();if(!tpl)return alert('Selecciona una plantilla.');
+ if(String(tpl.empresa_id)!==pdrCamposPlantillaEmpresa())return alert('La plantilla no corresponde a la empresa seleccionada.');
+ if(!tpl.config||typeof tpl.config!=='object')return alert('La plantilla no contiene una configuración válida.');
+ pdrCamposVistaTemporal=JSON.parse(JSON.stringify(tpl.config));
+ pdrMasterCargarCampos();
+ pdrCamposPlantillaMensaje('✅ Plantilla «'+tpl.nombre+'» cargada en el editor. Revisa las opciones y pulsa «Guardar campos del proyecto» para aplicarla definitivamente.');
+}
+async function pdrCamposPlantillaRenombrar(){
+ const tpl=pdrCamposPlantillaElegida();if(!tpl)return alert('Selecciona una plantilla.');
+ const nombre=prompt('Nuevo nombre de plantilla:',tpl.nombre)?.trim().slice(0,80);
+ if(!nombre||nombre===tpl.nombre)return;
+ const {error}=await sb.from(PDR_CAMPOS_TPL_TABLA).update({nombre,updated_at:new Date().toISOString()}).eq('id',tpl.id).eq('empresa_id',pdrCamposPlantillaEmpresa());
+ if(error)return alert('No se pudo renombrar: '+error.message);
+ await pdrCamposPlantillaListar();pdrCamposPlantillaMensaje('✅ Plantilla renombrada.');
+}
+async function pdrCamposPlantillaEliminar(){
+ const tpl=pdrCamposPlantillaElegida();if(!tpl)return alert('Selecciona una plantilla.');
+ if(!confirm('¿Eliminar definitivamente la plantilla «'+tpl.nombre+'»? Esto no modifica proyectos donde ya se haya aplicado.'))return;
+ const {error}=await sb.from(PDR_CAMPOS_TPL_TABLA).delete().eq('id',tpl.id).eq('empresa_id',pdrCamposPlantillaEmpresa());
+ if(error)return alert('No se pudo eliminar: '+error.message);
+ await pdrCamposPlantillaListar();pdrCamposPlantillaMensaje('Plantilla eliminada.');
 }
 async function pdrMasterCargarPropietarios(){
  const box=document.getElementById('pdrPropietariosLista');if(!box)return;
@@ -14259,3 +14388,4 @@ async function pdrMasterEstadoPropietario(id,activo){
 </script>
 </body>
 </html>
+
