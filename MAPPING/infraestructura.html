@@ -4335,29 +4335,24 @@ function iniciarWatchdogGPS(){
   },5000);
 }
 
+// V122: GPS automático al abrir Mapping y al ingresar a un proyecto.
+// El navegador puede solicitar permiso la primera vez; no es posible omitirlo.
+let pdrGPSInicioEnCurso=false;
+let pdrGPSPermisoListener=null;
 async function prepararGPSInicial(){
   if(!navigator.geolocation){
     setEstadoGPS('error','GPS no disponible');
     return;
   }
-
-  setEstadoGPS('warn','GPS: toca 📍');
-
+  if(pdrGPSInicioEnCurso)return;
+  pdrGPSInicioEnCurso=true;
   try{
+    let permiso=null;
     if(navigator.permissions?.query){
-      const permiso=await navigator.permissions.query({name:'geolocation'});
-
-      if(permiso.state==='granted'){
-        gpsActivado=true;
-        iniciarWatchGPS(true);
-        iniciarWatchdogGPS();
-        obtenerGPSAhora(false).catch(()=>{});
-      }else if(permiso.state==='denied'){
-        setEstadoGPS('error','GPS: permiso bloqueado');
-      }else{
-        setEstadoGPS('warn','GPS: toca 📍 para activar');
-      }
-
+      try{permiso=await navigator.permissions.query({name:'geolocation'});}catch(e){console.warn('Permiso GPS:',e);}
+    }
+    if(permiso && permiso!==pdrGPSPermisoListener){
+      pdrGPSPermisoListener=permiso;
       permiso.onchange=()=>{
         if(permiso.state==='granted'){
           gpsActivado=true;
@@ -4366,21 +4361,29 @@ async function prepararGPSInicial(){
           obtenerGPSAhora(false).catch(()=>{});
         }else if(permiso.state==='denied'){
           detenerSeguimientoGPS();
+          gpsActivado=false;
           setEstadoGPS('error','GPS: permiso bloqueado');
         }else{
-          setEstadoGPS('warn','GPS: toca 📍 para activar');
+          setEstadoGPS('warn','GPS: esperando autorización…');
         }
       };
-
+    }
+    if(permiso?.state==='denied'){
+      detenerSeguimientoGPS();
+      gpsActivado=false;
+      setEstadoGPS('error','GPS: permiso bloqueado');
       return;
     }
-  }catch(e){
-    console.warn('Permissions API GPS:',e);
+    gpsActivado=true;
+    iniciarWatchGPS();
+    iniciarWatchdogGPS();
+    // También solicita autorización si el permiso está en estado "prompt".
+    // No recentrar el mapa automáticamente: respetar la última posición del proyecto.
+    setEstadoGPS('warn',permiso?.state==='prompt'?'GPS: autorizar ubicación…':'GPS: buscando señal…');
+    obtenerGPSAhora(false).catch(()=>{});
+  }finally{
+    pdrGPSInicioEnCurso=false;
   }
-
-  // En navegadores sin Permissions API no generamos automáticamente
-  // un diálogo de permiso: se solicita al tocar el botón GPS.
-  setEstadoGPS('warn','GPS: toca 📍 para activar');
 }
 
 async function irGPS(){
@@ -4412,13 +4415,12 @@ async function irGPS(){
 }
 
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible' && gpsActivado){
-    iniciarWatchGPS(true);
-    obtenerGPSAhora(false).catch(()=>{});
+  if(document.visibilityState==='visible'){
+    prepararGPSInicial().catch(e=>console.warn('Reinicio GPS automático:',e));
   }
 });
 
-function abrirFormulario(){pdrCapturaFormularioVersion++;editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();}
+function abrirFormulario(){pdrCapturaFormularioVersion++;editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();pdrAplicarCamposProyecto();}
 
 function llevarFormularioAlInicio(){
   const overlay=document.getElementById('formOverlay');
@@ -4975,6 +4977,7 @@ function cambiarTipo(){
 
   aplicarConfiguracionTipoProyecto();
   aplicarCamposPorTipoElemento();
+  pdrAplicarCamposProyecto();
 
   if(cliente)configurarConexionCliente();
   setTimeout(actualizarResaltadoObligatorios,0);
@@ -5976,7 +5979,7 @@ function obtenerCamposObligatoriosActivos(){
     }
   }
 
-  return [...new Set(ids)];
+  return [...new Set(ids)].filter(id=>pdrCampoVisible(id));
 }
 
 function campoEstaVacio(id){
@@ -6707,7 +6710,7 @@ function validar(){
   const baseReq=['TIPO','POLIGONO','CIUDAD','BARRIO','TECNICO','DIRECCION','ESTADO'];
   if(tipoProyectoActivo()==='VIABILIDAD' && !esClienteViabilidad())baseReq.push('COSTADO');
   baseReq.forEach(id=>{
-    if(!val(id))falt.push(id);
+    if(pdrCampoVisible(id)&&!val(id))falt.push(id);
   });
 
   const t=TIPO.value;
@@ -6764,13 +6767,13 @@ function validar(){
 
   if(t==='POSTE'){
     ['PROPIETARI','ALTURA','TIPO_POSTE','MATERIAL','ROTURA','TENSION','RIENDA','ELECTRICOS','FINDERED'].forEach(id=>{
-      if(val(id)==='')falt.push(id);
+      if(pdrCampoVisible(id)&&val(id)==='')falt.push(id);
     });
   }
 
   if(t==='C. AMERICANO'||t==='CERCHA'){
     ['PROPIETARI','FINDERED'].forEach(id=>{
-      if(val(id)==='')falt.push(id);
+      if(pdrCampoVisible(id)&&val(id)==='')falt.push(id);
     });
   }
 
@@ -6781,10 +6784,10 @@ function validar(){
       'TIPOCAMARA','SUBIDA_A_P','CONF_DUCTO','DUCTO_ELEC',
       'DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL'
     ].forEach(id=>{
-      if(val(id)==='')falt.push(id);
+      if(pdrCampoVisible(id)&&val(id)==='')falt.push(id);
     });
     for(const id of ['CONF_DUCTO','DUCTO_ELEC','DUCT_TELCO','DUCT_LIBRE','DUCT_UTIL']){
-      if(val(id).includes('-')){
+      if(pdrCampoVisible(id)&&val(id).includes('-')){
         actualizarResaltadoObligatorios();
         const campoErr=document.getElementById(id);
         if(campoErr){
@@ -12796,6 +12799,9 @@ async function seleccionarProyecto(asignacionId){
       asignacion_id:a.id
     };
 
+    // GPS encendido al ingresar al proyecto, sin exigir tocar el botón naranja.
+    prepararGPSInicial().catch(e=>console.warn('GPS al cambiar proyecto:',e));
+
     localStorage.setItem(
       'mapping_proyecto_activo_v1',
       JSON.stringify(proyectoActivo)
@@ -16844,25 +16850,70 @@ setInterval(()=>{pdrSyncControlTick().catch(console.warn)},30000);
 window.addEventListener('online',()=>setTimeout(()=>pdrSyncControlTick().catch(console.warn),1500));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pdrSyncControlTick().catch(console.warn)});
 setTimeout(()=>pdrSyncControlTick().catch(console.warn),5000);
-</script></body></html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+</script>
+<script>
+/* V120: catálogo de propietarios (Supabase + caché offline) y configuración por proyecto */
+const PDR_FORM_CAMPO_GRUPOS={"POSTE": ["PROPIETARI", "ALTURA", "TIPO_POSTE", "MATERIAL", "ROTURA", "TENSION", "RIENDA", "ELECTRICOS", "CABLES", "RESERVAS", "EMPALMES", "NAPS", "BAJANTES", "FUENTES", "AMPLIFI", "PACVI", "FINDERED"], "C. AMERICANO": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CERCHA": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CANALIZADO": ["PROPIETARI", "TIPOCAMARA", "SUBIDA_A_P", "CONF_DUCTO", "DUCTO_ELEC", "DUCT_TELCO", "DUCT_LIBRE", "DUCT_UTIL", "CABLES", "RESERVAS", "NAPS", "BAJANTES", "AMPLIFI", "PACVI"], "INVENTARIO": ["ELECTRICOS_GEN", "ELEM_RED", "PROEMPALME", "PRONAP", "EXISTENCIA", "CANT_RESER", "HERRAJES_RETENCION", "HERRAJES_SUSPENSION", "PROY_BAJANTE", "ES_ACCESO_CLIENTE", "DISTANCIA_INTERNA"]};
+const PDR_PROPIETARIOS_CACHE='pdr_mapping_propietarios_global_v120';
+let pdrUltimaConsultaCampos=0;
+function pdrCampoVisible(id){
+ const t=String(document.getElementById('TIPO')?.value||'');
+ const inventario=PDR_FORM_CAMPO_GRUPOS.INVENTARIO;
+ const grupo=inventario.includes(id)?'INVENTARIO':t;
+ const defs=PDR_FORM_CAMPO_GRUPOS[grupo];
+ if(!defs||!defs.includes(id))return true;
+ const cfg=proyectoActivo?.campos_config;
+ return !cfg||!Array.isArray(cfg[grupo])||cfg[grupo].includes(id);
+}
+function pdrAplicarCamposProyecto(){
+ const t=String(document.getElementById('TIPO')?.value||'');
+ const defs=[...(PDR_FORM_CAMPO_GRUPOS[t]||[]),...PDR_FORM_CAMPO_GRUPOS.INVENTARIO];
+ const todos=new Set(Object.values(PDR_FORM_CAMPO_GRUPOS).flat());
+ for(const id of todos){
+  const el=document.getElementById(id);if(!el)continue;
+  const ocultar=defs.includes(id)&&!pdrCampoVisible(id);
+  const wrap=el.closest('#secPoste > .sectionBody > .grid3 > div,#secCamara > .sectionBody > .grid > div,#gridProyeccion > div,#wrapObservacion');
+  if(!wrap)continue;
+  if(ocultar){wrap.dataset.pdrCamposOculto='1';wrap.style.display='none';}
+  else if(wrap.dataset.pdrCamposOculto==='1'){wrap.style.removeProperty('display');delete wrap.dataset.pdrCamposOculto;}
+ }
+ if(typeof actualizarResaltadoObligatorios==='function')setTimeout(actualizarResaltadoObligatorios,0);
+}
+function pdrAplicarCatalogoPropietarios(nombres){
+ const el=document.getElementById('PROPIETARI');if(!el||!Array.isArray(nombres))return;
+ const seleccion=el.value;
+ const lista=[...new Set(nombres.map(v=>String(v||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+ if(seleccion&&!lista.includes(seleccion))lista.unshift(seleccion); // conservar valor de registros históricos
+ el.replaceChildren(new Option('Seleccione...',''),...lista.map(v=>new Option(v,v)));
+ el.value=seleccion||'';
+}
+async function pdrActualizarCatalogoPropietarios(){
+ try{
+  const cache=JSON.parse(localStorage.getItem(PDR_PROPIETARIOS_CACHE)||'null');
+  if(Array.isArray(cache))pdrAplicarCatalogoPropietarios(cache);
+ }catch(_){}
+ if(!navigator.onLine||typeof mappingSb==='undefined'||!mappingUser)return;
+ const {data,error}=await mappingSb.from('mapping_propietarios').select('nombre').eq('activo',true).order('nombre');
+ if(error){console.warn('Catálogo de propietarios:',error.message);return;}
+ const lista=(data||[]).map(x=>x.nombre);localStorage.setItem(PDR_PROPIETARIOS_CACHE,JSON.stringify(lista));pdrAplicarCatalogoPropietarios(lista);
+}
+async function pdrActualizarCamposProyecto(){
+ if(!navigator.onLine||typeof mappingSb==='undefined'||!mappingUser||!proyectoActivo?.proyecto_id)return;
+ const id=proyectoActivo.proyecto_id;
+ const {data,error}=await mappingSb.from('mapping_proyectos').select('campos_config').eq('id',id).maybeSingle();
+ if(error){console.warn('Configuración campos:',error.message);return;}
+ if(String(proyectoActivo?.proyecto_id)!==String(id))return;
+ proyectoActivo.campos_config=data?.campos_config||null;
+ try{localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));}catch(_){}
+ pdrAplicarCamposProyecto();
+}
+async function pdrActualizarCatalogosFormulario(){await Promise.allSettled([pdrActualizarCatalogoPropietarios(),pdrActualizarCamposProyecto()]);}
+document.addEventListener('DOMContentLoaded',()=>{
+ setTimeout(pdrActualizarCatalogosFormulario,3500);
+ setInterval(()=>{if(navigator.onLine&&document.visibilityState==='visible')pdrActualizarCatalogosFormulario();},120000);
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pdrActualizarCatalogosFormulario();});
+ document.addEventListener('change',e=>{if(e.target?.id==='TIPO')pdrAplicarCamposProyecto();});
+});
+</script>
+</body></html>
 
