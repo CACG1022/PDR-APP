@@ -3603,6 +3603,7 @@ header{
         <button class="projectTabBtn adminOnly" data-project-tab="crear" onclick="cambiarTabProyecto('crear',this)">＋ Crear</button>
         <button class="projectTabBtn" data-project-tab="poligonos" onclick="cambiarTabProyecto('poligonos',this)">⬡ Polígonos</button>
         <button class="projectTabBtn" data-project-tab="fotos" onclick="cambiarTabProyecto('fotos',this)">📷 Fotografías</button>
+        <button class="projectTabBtn" data-project-tab="campos" onclick="cambiarTabProyecto('campos',this)">🧩 Campos</button>
         <button class="projectTabBtn" data-project-tab="cartografia" onclick="cambiarTabProyecto('cartografia',this)">🗺️ Cartografía</button>
         <button class="projectTabBtn" data-project-tab="asignaciones" onclick="cambiarTabProyecto('asignaciones',this)">👷 Asignaciones</button>
       </div>
@@ -3835,7 +3836,27 @@ header{
             <div class="projectPhotoSummary" id="fotoConfigExistenteResumen">Selecciona un proyecto.</div>
           </div>
           <button class="btn blue" onclick="guardarConfigFotosProyectoExistente()">Guardar configuración de fotos</button>
+
+
         </div>
+      </div>
+
+      <!-- CAMPOS · CONFIGURACIÓN INDEPENDIENTE POR PROYECTO -->
+      <div class="projectTabPanel" id="projectTab_campos">
+        <div class="projectSubCard" id="pdrCamposGestion" style="margin-top:14px;border:1px solid #275a76;border-radius:13px;padding:13px;background:#0b1928">
+  <h3>🧩 CAMPOS DEL FORMULARIO</h3>
+  <p style="font-size:12px;color:#aac3d6">Selecciona el proyecto y configura qué campos estarán visibles en Mapping, incluyendo Inventario / proyección. Los campos indispensables de identificación y conexiones permanecen protegidos.</p>
+  <label>Proyecto (nombre completo)</label>
+  <select id="pdrCamposProyecto" onchange="pdrMasterCargarCampos()"><option value="">Seleccionar proyecto...</option></select>
+  <div id="pdrCamposChecks" style="margin-top:12px"></div>
+  <button type="button" class="btn blue" onclick="pdrMasterGuardarCampos()" style="margin-top:10px">💾 Guardar campos del proyecto</button>
+  <div id="pdrCamposEstado" class="hint">Selecciona un proyecto. Por defecto se muestran todos los campos.</div>
+  <hr style="border:0;border-top:1px solid #29415d;margin:18px 0">
+  <h3>🏢 Catálogo global de propietarios</h3>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end"><label>Nuevo propietario<input id="pdrNuevoPropietario" maxlength="90" placeholder="Nombre del propietario"></label><button type="button" class="btn blue" onclick="pdrMasterAgregarPropietario()">+ Agregar</button></div>
+  <div style="margin-top:8px"><button type="button" class="btn gray" onclick="pdrMasterCargarPropietarios()">↻ Actualizar catálogo</button></div>
+  <div id="pdrPropietariosLista" style="margin-top:10px;max-height:350px;overflow:auto"></div>
+</div
       </div>
 
       <!-- CARTOGRAPHY -->
@@ -13115,6 +13136,9 @@ function cambiarTabProyecto(tab,boton=null){
     setTimeout(actualizarEstadoPoligonosStorageMaster,0);
   }else if(tab==='fotos'){
     cargarConfigFotosProyectoExistente();
+  }else if(tab==='campos'){
+    pdrAdminCamposProyectoSelect();
+    pdrMasterCargarCampos();
   }else if(tab==='cartografia'){
     actualizarEstadoCartografiaMaster();
   }else if(tab==='asignaciones'){
@@ -14182,15 +14206,56 @@ async function pdrSyncMasterCargar(){
  }).join('')||'<tr><td colspan="6">No hay asignaciones para este proyecto.</td></tr>';
  pdrSyncMasterMsg('Estados actualizados. Los dispositivos reportan información mientras tienen conexión.');
 }
-</script></body>
+</script>
+<script>
+/* V83: catálogo de propietarios y visibilidad configurable del formulario */
+const PDR_FORM_CAMPO_GRUPOS={"POSTE": ["PROPIETARI", "ALTURA", "TIPO_POSTE", "MATERIAL", "ROTURA", "TENSION", "RIENDA", "ELECTRICOS", "CABLES", "RESERVAS", "EMPALMES", "NAPS", "BAJANTES", "FUENTES", "AMPLIFI", "PACVI", "FINDERED"], "C. AMERICANO": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CERCHA": ["PROPIETARI", "FINDERED", "ESTADO", "OBSERVACIO"], "CANALIZADO": ["PROPIETARI", "TIPOCAMARA", "SUBIDA_A_P", "CONF_DUCTO", "DUCTO_ELEC", "DUCT_TELCO", "DUCT_LIBRE", "DUCT_UTIL", "CABLES", "RESERVAS", "NAPS", "BAJANTES", "AMPLIFI", "PACVI"], "INVENTARIO": ["ELECTRICOS_GEN", "ELEM_RED", "PROEMPALME", "PRONAP", "EXISTENCIA", "CANT_RESER", "HERRAJES_RETENCION", "HERRAJES_SUSPENSION", "PROY_BAJANTE", "ES_ACCESO_CLIENTE", "DISTANCIA_INTERNA"]};
+const PDR_FORM_CAMPOS_NOMBRES={"ELECTRICOS_GEN": "Elementos eléctricos existentes", "ELEM_RED": "Elementos de red", "PROEMPALME": "Proyección de empalme", "PRONAP": "Proyección de NAP", "EXISTENCIA": "Existencia", "CANT_RESER": "Cantidad de reservas", "HERRAJES_RETENCION": "Herrajes de retención", "HERRAJES_SUSPENSION": "Herrajes de suspensión", "PROY_BAJANTE": "Proyección de bajante", "ES_ACCESO_CLIENTE": "¿Es elemento de acceso al cliente?", "DISTANCIA_INTERNA": "Distancia interna (m)"};
+function pdrAdminCamposProyectoSelect(){
+ const sel=document.getElementById('pdrCamposProyecto');if(!sel)return;
+ const keep=sel.value;const lista=(typeof proyectos!=='undefined'&&Array.isArray(proyectos))?proyectos:[];
+ sel.innerHTML='<option value="">Seleccionar proyecto...</option>'+lista.filter(p=>typeof puedeVerProyectoMaster!=='function'||puedeVerProyectoMaster(p)).map(p=>{const empresa=(typeof empresas!=='undefined'&&Array.isArray(empresas)?empresas:[]).find(e=>String(e.id)===String(p.empresa_id));return `<option value="${esc(p.id)}">${esc(empresa?.nombre_corto||empresa?.nombre||'SIN EMPRESA')} · ${esc(p.codigo||'')} · ${esc(p.nombre||'')}</option>`;}).join('');
+ if([...sel.options].some(o=>o.value===keep))sel.value=keep;
+}
+function pdrMasterCargarCampos(){
+ const id=document.getElementById('pdrCamposProyecto')?.value;
+ const p=(typeof proyectos!=='undefined'?proyectos:[]).find(x=>String(x.id)===String(id));
+ const box=document.getElementById('pdrCamposChecks');if(!box)return;
+ if(!p){box.innerHTML='';return;}
+ const config=p.campos_config||{};
+ box.innerHTML=Object.entries(PDR_FORM_CAMPO_GRUPOS).map(([tipo,ids])=>`<section style="border:1px solid #29415d;border-radius:10px;padding:9px;margin:8px 0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${tipo==='INVENTARIO'?'📦 INVENTARIO / PROYECCIÓN':tipo}</b><span><button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',true)">Todos</button> <button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',false)">Ninguno</button></span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;margin-top:10px">${ids.map(c=>`<label style="font-size:11px;display:flex;align-items:center;gap:5px"><input type="checkbox" style="width:18px;height:18px" data-pdr-campo="${c}" data-pdr-tipo="${tipo}" ${!Array.isArray(config[tipo])||config[tipo].includes(c)?'checked':''}>${PDR_FORM_CAMPOS_NOMBRES[c]||c.replaceAll('_',' ')}</label>`).join('')}</div></section>`).join('');
+ document.getElementById('pdrCamposEstado').textContent='Los cambios se aplicarán al actualizar los proyectos en Mapping.';
+}
+function pdrCamposSeleccionar(tipo,activo){document.querySelectorAll('#pdrCamposChecks input[data-pdr-tipo]').forEach(c=>{if(c.dataset.pdrTipo===tipo)c.checked=activo;});}
+async function pdrMasterGuardarCampos(){
+ const id=document.getElementById('pdrCamposProyecto')?.value;if(!id)return alert('Selecciona un proyecto.');
+ if(typeof exigirProyectoPermitidoMaster==='function'&&!exigirProyectoPermitidoMaster(id,'editar campos'))return;
+ const config={};Object.keys(PDR_FORM_CAMPO_GRUPOS).forEach(t=>config[t]=[...document.querySelectorAll('#pdrCamposChecks input[data-pdr-tipo]')].filter(x=>x.dataset.pdrTipo===t&&x.checked).map(x=>x.dataset.pdrCampo));
+ const {error}=await sb.from('mapping_proyectos').update({campos_config:config}).eq('id',id);
+ if(error)return alert('Error guardando campos: '+error.message+'\n¿Ejecutaste el SQL V83?');
+ const p=proyectos.find(p=>String(p.id)===String(id));if(p)p.campos_config=config;
+ document.getElementById('pdrCamposEstado').textContent='✅ Campos guardados en Supabase. Mapping los recibe al actualizar el proyecto.';
+}
+async function pdrMasterCargarPropietarios(){
+ const box=document.getElementById('pdrPropietariosLista');if(!box)return;
+ const {data,error}=await sb.from('mapping_propietarios').select('id,nombre,activo').order('nombre');
+ if(error){box.textContent='Error: '+error.message+' (verifica SQL V83)';return;}
+ box.innerHTML=(data||[]).map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #29415d;padding:8px 0"><span>${String(p.nombre).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><button type="button" class="btn ${p.activo?'gray':'blue'} small" onclick="pdrMasterEstadoPropietario('${p.id}',${!p.activo})">${p.activo?'Desactivar':'Activar'}</button></div>`).join('')||'<p>Catálogo vacío.</p>';
+}
+async function pdrMasterAgregarPropietario(){
+ if(typeof exigirAdminMaster==='function'&&!exigirAdminMaster('agregar propietarios'))return;
+ const input=document.getElementById('pdrNuevoPropietario');const nombre=String(input?.value||'').trim().replace(/\s+/g,' ').toUpperCase();if(!nombre)return alert('Escribe el propietario.');
+ const {error}=await sb.from('mapping_propietarios').insert({nombre,activo:true});
+ if(error)return alert('No se pudo agregar: '+error.message);
+ input.value='';await pdrMasterCargarPropietarios();
+}
+async function pdrMasterEstadoPropietario(id,activo){
+ if(typeof exigirAdminMaster==='function'&&!exigirAdminMaster('modificar propietarios'))return;
+ const {error}=await sb.from('mapping_propietarios').update({activo}).eq('id',id);
+ if(error)return alert('No se pudo actualizar: '+error.message);
+ await pdrMasterCargarPropietarios();
+}
+(function(){let previo='';setInterval(()=>{const lista=typeof proyectos!=='undefined'&&Array.isArray(proyectos)?proyectos:[];const firma=lista.map(x=>x.id).join('|');if(firma!==previo){previo=firma;pdrAdminCamposProyectoSelect();if(document.getElementById('projectTab_campos')?.classList.contains('active'))pdrMasterCargarCampos();}},2500);document.addEventListener('DOMContentLoaded',()=>{pdrAdminCamposProyectoSelect();pdrMasterCargarPropietarios();});})();
+</script>
+</body>
 </html>
-
-
-
-
-
-
-
-
-
-
