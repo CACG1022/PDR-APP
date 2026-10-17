@@ -3314,6 +3314,18 @@ header{
     <select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select>
     <label>Proyecto</label>
     <select id="fProyecto" onchange="cargarProyectoMapa()"></select>
+    <div style="margin:12px 0;padding:10px;border:1px solid #246481;border-radius:10px;background:#0c2537">
+      <label for="pdrBuscarConsecutivoMaster" style="margin-top:0">🔎 Buscar elemento por consecutivo</label>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:7px">
+        <input id="pdrBuscarConsecutivoMaster" type="number" min="1" step="1" inputmode="numeric" placeholder="Escribe el consecutivo (ej.: 15)" aria-label="Consecutivo a buscar" onkeydown="if(event.key==='Enter')pdrBuscarConsecutivoMaster(0)" style="display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;font-size:14px;padding:11px 12px">
+        <button type="button" class="btn blue" onclick="pdrBuscarConsecutivoMaster(0)" style="width:100%;margin:0;min-height:39px">🔎 Buscar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:7px">
+        <button type="button" class="btn gray" onclick="pdrBuscarConsecutivoMaster(-1)" style="width:100%;min-width:0;margin:0;padding:9px 5px">◀ Anterior</button>
+        <button type="button" class="btn blue" onclick="pdrBuscarConsecutivoMaster(1)" style="width:100%;min-width:0;margin:0;padding:9px 5px">Siguiente ▶</button>
+      </div>
+      <div id="pdrBuscarConsecutivoEstado" style="font-size:11px;color:#b5deea;margin-top:7px" aria-live="polite">Busca dentro del proyecto seleccionado.</div>
+    </div>
     <label>Tipo de elemento</label>
     <select id="fTipo" onchange="actualizarVisibilidadFiltrosMaster();pintarMapa()">
       <option value="">Todos los tipos</option>
@@ -3865,6 +3877,14 @@ header{
       <button type="button" class="btn danger" onclick="pdrCamposPlantillaEliminar()">🗑 Eliminar</button>
     </div>
     <div id="pdrCamposPlantillaEstado" style="font-size:11px;color:#aed7e8;margin-top:8px" aria-live="polite">Selecciona un proyecto para ver las plantillas de su empresa.</div>
+  </div>
+  <div style="border:1px solid #246481;border-radius:12px;padding:12px;margin-top:12px;background:#0c2537">
+    <h3 style="margin:0 0 7px">📏 Distancias y odómetro por proyecto</h3>
+    <p style="font-size:11px;color:#aac3d6;margin:0 0 9px">Estas opciones se guardan con la configuración del proyecto y en las plantillas de campos. Afectan el formulario y las etiquetas de conexión del mapa.</p>
+    <label style="display:flex;align-items:center;gap:10px"><input id="pdrCfgOdoCampo" type="checkbox" style="width:18px;height:18px"> Mostrar campos «Distancia odómetro» en las conexiones</label>
+    <label style="display:flex;align-items:center;gap:10px"><input id="pdrCfgGpsEtiqueta" type="checkbox" style="width:18px;height:18px"> Mostrar distancia GPS en las etiquetas del mapa</label>
+    <label style="display:flex;align-items:center;gap:10px"><input id="pdrCfgOdoEtiqueta" type="checkbox" style="width:18px;height:18px"> Mostrar distancia odómetro en las etiquetas del mapa</label>
+    <small style="color:#94a3b8">Colores: GPS azul cian · Odómetro fucsia. Ocultar el odómetro no borra mediciones existentes.</small>
   </div>
   <div id="pdrCamposChecks" style="margin-top:12px;overflow-x:auto"></div>
   <button type="button" class="btn blue" onclick="pdrMasterGuardarCampos()" style="margin-top:10px">💾 Guardar campos del proyecto</button>
@@ -8484,12 +8504,20 @@ function distanciaOdoConexionMaster(p,slot){
   return Number.isFinite(n)&&n>0?n:0;
 }
 
+function pdrMasterDistanciaPreferencias(){
+ const id=String(document.getElementById('fProyecto')?.value||'');
+ const p=proyectos.find(x=>String(x.id)===id);
+ return p?.campos_config?._distancias||{};
+}
 function textoDistanciaConexionMaster(origen,destino,distSlot){
-  const gps=distanciaConexionGPSMaster(origen,destino);
-  const odo=distanciaOdoConexionMaster(origen,distSlot);
-  const fmt=n=>new Intl.NumberFormat('es-CO',{maximumFractionDigits:1}).format(n||0);
-  if(odo>0)return `GPS ${fmt(gps)} m / Odo ${fmt(odo)} m`;
-  return `GPS ${fmt(gps)} m`;
+ const pref=pdrMasterDistanciaPreferencias();
+ const gps=distanciaConexionGPSMaster(origen,destino);
+ const odo=distanciaOdoConexionMaster(origen,distSlot);
+ const fmt=n=>new Intl.NumberFormat('es-CO',{maximumFractionDigits:1}).format(n||0);
+ const partes=[];
+ if(pref.mostrar_gps_mapa!==false)partes.push(`GPS ${fmt(gps)} m`);
+ if(pref.mostrar_odometro_mapa!==false&&odo>0)partes.push(`Odo ${fmt(odo)} m`);
+ return partes.join(' / ');
 }
 
 function agregarEtiquetaDistanciaMaster(origen,destino,distSlot,grupo){
@@ -8499,12 +8527,18 @@ function agregarEtiquetaDistanciaMaster(origen,destino,distSlot,grupo){
 
   const mid=[(lat1+lat2)/2,(lon1+lon2)/2];
   const txt=textoDistanciaConexionMaster(origen,destino,distSlot);
+  if(!txt)return;
+  const pref=pdrMasterDistanciaPreferencias();
+  const gps=pref.mostrar_gps_mapa!==false ? `GPS ${new Intl.NumberFormat('es-CO',{maximumFractionDigits:1}).format(distanciaConexionGPSMaster(origen,destino))} m`:'';
+  const odo=distanciaOdoConexionMaster(origen,distSlot);
+  const odotxt=pref.mostrar_odometro_mapa!==false&&odo>0?`Odo ${new Intl.NumberFormat('es-CO',{maximumFractionDigits:1}).format(odo)} m`:'';
+  const partes=[gps?`<span style="color:#22d3ee">${gps}</span>`:'',odotxt?`<span style="color:#ff2bd6">${odotxt}</span>`:''].filter(Boolean).join(' / ');
 
   L.marker(mid,{
     interactive:false,
     icon:L.divIcon({
       className:'connectionDistanceLabel',
-      html:`<span class="connectionDistanceBadge">${esc(txt)}</span>`,
+      html:`<span class="connectionDistanceBadge">${partes}</span>`,
       iconSize:[1,1],
       iconAnchor:[0,0]
     })
@@ -9012,8 +9046,42 @@ function actualizarEstadoHerramientasManualMaster(){
   }
 }
 
+// V88: navegación entre consecutivos repetidos del proyecto seleccionado.
+let pdrBusquedaMaster={proyecto:'',valor:'',ids:[],indice:-1};
+let pdrBusquedaMasterMarcador=null;
+function pdrLimpiarBusquedaMaster(){
+  pdrBusquedaMaster={proyecto:'',valor:'',ids:[],indice:-1};
+  if(pdrBusquedaMasterMarcador&&map){try{map.removeLayer(pdrBusquedaMasterMarcador)}catch(_){}}
+  pdrBusquedaMasterMarcador=null;
+  const el=document.getElementById('pdrBuscarConsecutivoEstado');if(el)el.textContent='Busca dentro del proyecto seleccionado.';
+}
+function pdrBuscarConsecutivoMaster(paso=0){
+  const proyecto=String(document.getElementById('fProyecto')?.value||'');
+  const valor=String(document.getElementById('pdrBuscarConsecutivoMaster')?.value||'').trim();
+  const estado=document.getElementById('pdrBuscarConsecutivoEstado');
+  if(!proyecto){if(estado)estado.textContent='Selecciona un proyecto primero.';return;}
+  if(!/^\d+$/.test(valor)||Number(valor)<1){if(estado)estado.textContent='Digita un consecutivo válido.';return;}
+  if(pdrBusquedaMaster.proyecto!==proyecto||pdrBusquedaMaster.valor!==valor||paso===0){
+    const encontrados=puntos.filter(p=>Number(p.consecutiv)===Number(valor)).sort((x,y)=>
+      String(x.poligono||'').localeCompare(String(y.poligono||''),'es',{numeric:true})||String(x.id||'').localeCompare(String(y.id||'')));
+    pdrBusquedaMaster={proyecto,valor,ids:encontrados.map(p=>String(p.id)),indice:0};
+  }else if(pdrBusquedaMaster.ids.length){
+    pdrBusquedaMaster.indice=(pdrBusquedaMaster.indice+paso+pdrBusquedaMaster.ids.length)%pdrBusquedaMaster.ids.length;
+  }
+  const {ids,indice}=pdrBusquedaMaster;
+  if(!ids.length){if(estado)estado.textContent='No se encontraron coincidencias para '+valor+'.';return;}
+  const p=puntos.find(x=>String(x.id)===ids[indice]);if(!p)return;
+  const lat=Number(p.latitude),lon=Number(p.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)){if(estado)estado.textContent='El registro no tiene coordenadas válidas.';return;}
+  if(pdrBusquedaMasterMarcador){try{map.removeLayer(pdrBusquedaMasterMarcador)}catch(_){}}
+  pdrBusquedaMasterMarcador=L.circleMarker([lat,lon],{radius:19,color:'#facc15',weight:4,fillColor:'#facc15',fillOpacity:0.13,interactive:true}).addTo(map);
+  pdrBusquedaMasterMarcador.on('click',()=>abrirDetallePunto(p.id));
+  map.setView([lat,lon],Math.max(map.getZoom(),19),{animate:true});
+  if(estado)estado.textContent=`Coincidencia ${indice+1} de ${ids.length} · ${p.poligono||'Sin polígono'} · ${p.tipo||''}`;
+}
 async function cargarProyectoMapa(){
   const id=fProyecto.value;
+  pdrLimpiarBusquedaMaster();
 
   limpiarCartografiaMapaMaster();
   cargarHerramientasManualProyectoMaster(id);
@@ -14267,6 +14335,11 @@ function pdrMasterCargarCampos(){
  const box=document.getElementById('pdrCamposChecks');if(!box)return;
  if(!p){box.innerHTML='';return;}
  const cfg=pdrCamposVistaTemporal||p.campos_config||{},op=cfg._opciones||{};
+ const prefs=cfg._distancias||{};
+ for(const [id,valor] of [['pdrCfgOdoCampo',prefs.mostrar_odometro_campo!==false],['pdrCfgGpsEtiqueta',prefs.mostrar_gps_mapa!==false],['pdrCfgOdoEtiqueta',prefs.mostrar_odometro_mapa!==false]]){
+  const control=document.getElementById(id);if(control)control.checked=valor;
+ }
+
  box.innerHTML=Object.entries(PDR_FORM_CAMPO_GRUPOS).map(([tipo,ids])=>`<section style="border:1px solid #29415d;border-radius:12px;padding:12px;margin:10px 0">
  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>${tipo==='INVENTARIO'?'📦 INVENTARIO / PROYECCIÓN':tipo==='IDENTIFICACION'?'📍 1. IDENTIFICACIÓN Y UBICACIÓN':tipo==='CONEXIONES'?'🔗 3. CONEXIONES':tipo}</b><span><button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',true)">Todos</button> <button type="button" class="btn gray small" onclick="pdrCamposSeleccionar('${tipo}',false)">Ninguno opcional</button></span></div>
  <div style="display:grid;grid-template-columns:minmax(94px,0.8fr) minmax(205px,1.7fr) 66px 86px 87px;min-width:580px;gap:5px;align-items:center;margin-top:11px">
@@ -14280,7 +14353,11 @@ function pdrMasterCargarCampos(){
 }
 function pdrCamposSeleccionar(tipo,activo){document.querySelectorAll('#pdrCamposChecks input[data-pdr-tipo][data-pdr-attr="visible"]').forEach(c=>{if(c.dataset.pdrTipo===tipo&&!c.disabled)c.checked=activo;});}
 function pdrCamposLeerEditor(){
- const config={_opciones:{}};
+ const config={_opciones:{},_distancias:{
+  mostrar_odometro_campo:document.getElementById('pdrCfgOdoCampo')?.checked!==false,
+  mostrar_gps_mapa:document.getElementById('pdrCfgGpsEtiqueta')?.checked!==false,
+  mostrar_odometro_mapa:document.getElementById('pdrCfgOdoEtiqueta')?.checked!==false
+ }};
  for(const [tipo,ids] of Object.entries(PDR_FORM_CAMPO_GRUPOS)){
   config[tipo]=[];config._opciones[tipo]={};
   for(const c of ids){
