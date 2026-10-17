@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>PDR-APP · MAPPING V116 · Rotación offline alineada</title>
+<title>PDR-APP · MAPPING V127 · Conexiones CX persistentes</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -344,6 +344,7 @@ label.labelObligatorioDiligenciado{
   background:transparent!important;
   border:0!important;
 }
+.pdrDistanceGPS{color:#22d3ee!important} .pdrDistanceOdo{color:#ff2bd6!important}
 .connectionDistanceBadge{
   display:inline-block;
   transform:translate(-50%,-50%);
@@ -2243,6 +2244,38 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
 #map > .leaflet-map-pane{z-index:2!important}
 #pdrOfflineNativeMap{isolation:isolate}
 #pdrOfflineNativeMap .maplibregl-control-container{display:none!important}
+
+/* ===== V128 · MENÚ PRINCIPAL VISIBLE Y CIERRE INTUITIVO ===== */
+#btnMenuPrincipal{
+  background:linear-gradient(145deg,#087de0,#1047b9)!important;
+  color:#fff!important;
+  border:2px solid #a5ecff!important;
+  box-shadow:0 5px 19px rgba(8,125,224,.55),inset 0 1px 0 rgba(255,255,255,.35)!important;
+  transition:background .2s ease,box-shadow .2s ease,transform .2s ease!important;
+}
+#btnMenuPrincipal.menuVisible{
+  background:linear-gradient(145deg,#16bde1,#0874bc)!important;
+  border-color:#fff!important;
+  box-shadow:0 0 0 5px rgba(34,211,238,.22),0 0 24px 8px rgba(34,211,238,.56),inset 0 1px 0 rgba(255,255,255,.38)!important;
+  animation:pdrMenuLuzV128 1.6s ease-in-out infinite;
+}
+#btnMenuPrincipal.menuVisible::after{
+  content:'Toca para cerrar';
+  position:absolute;right:57px;top:50%;transform:translateY(-50%);
+  padding:6px 8px;border-radius:9px;background:#0c354f;color:#e9fbff;
+  border:1px solid #34d3eb;font-size:10px;font-weight:800;
+  white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none;
+}
+@keyframes pdrMenuLuzV128{
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.30)}
+}
+#sideMenu.open{
+  border-color:#38bdf8!important;
+  box-shadow:0 16px 45px rgba(0,0,0,.55),0 0 0 2px rgba(56,189,248,.15)!important;
+}
+@media (prefers-reduced-motion: reduce){#btnMenuPrincipal.menuVisible{animation:none!important}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -2271,7 +2304,7 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
     <small id="mapCorrectionAlertSubtitle">Toca para revisar</small>
   </span>
   <span class="mapCorrectionAlertCount" id="mapCorrectionAlertCount">0</span>
-</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Menú">
+</button><button class="menuFab" id="btnMenuPrincipal" onclick="toggleSideMenu()" title="Abrir menú principal" aria-label="Abrir menú principal" aria-expanded="false" aria-controls="sideMenu">
   ☰
   <span class="menuCorrectionNotifyBadge" id="menuCorrectionNotifyBadge" style="display:none">0</span>
 </button><button class="fab" id="fabAgregar" onclick="abrirFormulario()">+</button>
@@ -2335,6 +2368,7 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
   <button onclick="orientarMapaNorte();toggleSideMenu(false)">🧭 Orientar al norte</button>
   <button onclick="abrirDashboardTecnico();toggleSideMenu(false)">📊 Mi avance</button>
   <button onclick="abrirAlmacenamientoIndexedDB();toggleSideMenu(false)">💾 Espacio local / IndexedDB</button>
+  <button onclick="pdrExportarDiagnostico();toggleSideMenu(false)" title="Generar registro técnico sin fotos ni credenciales">🩺 Exportar diagnóstico</button>
   <button onclick="exportarFotosOriginalesZIP();toggleSideMenu(false)">📤 Compartir fotos originales</button>
   <button onclick="finalizarAsignacion();toggleSideMenu(false)">✓ Finalizar mi asignación</button>
   <button onclick="logoutMapping()">⏻ Cerrar sesión</button>
@@ -5725,11 +5759,16 @@ function setNumeroConexiones(cantidad,reiniciarOcultas=false){
     const dist=document.getElementById(`DISTODO${i}`);
 
     if(!mostrar){
-      if(cx)cx.value='0';
-      if(tel)tel.value='0';
-      if(dist)dist.value='0';
+      // Solo limpiar al reiniciar explícitamente, nunca al recalcular el formulario.
+      // Los campos ocultos pueden contener un dato que el usuario acaba de capturar.
+      if(reiniciarOcultas){
+        if(cx)cx.value='0';
+        if(tel)tel.value='0';
+        if(dist)dist.value='0';
+      }
     }else{
-      if(i>1 && cx && (reiniciarOcultas || Number(cx.value)===0))cx.value='';
+      // V127: no sobrescribir un CX2–CX4 válido al redibujar las filas.
+      if(i>1 && cx && reiniciarOcultas)cx.value='';
       if(tel && tel.value==='')tel.value='0';
       if(dist && dist.value==='')dist.value='0';
     }
@@ -5880,7 +5919,9 @@ function actualizarVisibilidadSeccionConexiones(){
     setNumeroConexiones(1,false);
     setTimeout(configurarConexionCliente,0);
   }else if(!editingId){
-    setNumeroConexiones(1,true);
+    // V127: recalcular el formulario NO equivale a abrir un punto nuevo.
+    // Conservar todas las conexiones que el técnico ya desplegó y diligenció.
+    setNumeroConexiones(conexionesVisibles,false);
     restaurarConexionNoCliente();
   }
 
@@ -6921,7 +6962,17 @@ function validar(){
   return true;
 }
 
-function guardarPunto(){if(!validar())return;const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+function guardarPunto(){
+  // V127: comprobar CX antes y después de validar; sin alterar sus valores.
+  const _cxPrevio=Array.from({length:4},(_,i)=>document.getElementById('CX'+(i+1))?.value ?? '');
+  const _cxFilasPrevias=conexionesVisibles;
+  if(!validar())return;
+  if(conexionesVisibles<_cxFilasPrevias || _cxPrevio.some((v,i)=>v!==String(document.getElementById('CX'+(i+1))?.value ?? ''))){
+    // Si un manejador externo reconstruyó las conexiones, restablecer lo escrito.
+    setNumeroConexiones(_cxFilasPrevias,false);
+    _cxPrevio.forEach((v,i)=>{const el=document.getElementById('CX'+(i+1));if(el)el.value=v;});
+  }
+  const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -12056,29 +12107,43 @@ function toggleBaseMap(){
   actualizarBotonBaseMap();
 }
 
+function pdrActualizarIndicadorMenuV128(abierto){
+  const boton=document.getElementById('btnMenuPrincipal');
+  if(!boton)return;
+  boton.classList.toggle('menuVisible',!!abierto);
+  boton.setAttribute('aria-expanded',String(!!abierto));
+  boton.setAttribute('aria-label',abierto?'Cerrar menú principal':'Abrir menú principal');
+  boton.title=abierto?'Toca para cerrar el menú':'Abrir menú principal';
+}
 function toggleSideMenu(force){
-  const seAbrira=force===undefined
-    ? !document.getElementById('sideMenu')?.classList.contains('open')
-    : !!force;
-  if(seAbrira && navigator.onLine && proyectoActivo){
+  const menu=document.getElementById('sideMenu');
+  if(!menu)return;
+  const abrir=force===undefined?!menu.classList.contains('open'):!!force;
+  if(abrir && !exigirPoligonoParaTrabajar('abrir el menú')){
+    menu.classList.remove('open');
+    pdrActualizarIndicadorMenuV128(false);
+    return;
+  }
+  menu.classList.toggle('open',abrir);
+  pdrActualizarIndicadorMenuV128(abrir);
+  if(abrir && navigator.onLine && proyectoActivo){
     programarRefrescoCorreccionesTecnico(80);
   }
-
-  const e=document.getElementById('sideMenu');
-  if(!e)return;
-
-  if(force===false){
-    e.classList.remove('open');
-    return;
-  }
-
-  if(!exigirPoligonoParaTrabajar('abrir el menú')){
-    e.classList.remove('open');
-    return;
-  }
-
-  e.classList.toggle('open');
 }
+// Tocar el mapa o cualquier región exterior oculta el menú sin interferir con su contenido.
+document.addEventListener('click',function(evento){
+  const menu=document.getElementById('sideMenu');
+  if(!menu?.classList.contains('open'))return;
+  const objetivo=evento.target;
+  if(objetivo instanceof Node && (menu.contains(objetivo)||document.getElementById('btnMenuPrincipal')?.contains(objetivo)))return;
+  toggleSideMenu(false);
+});
+// Si el usuario presiona Atrás/Escape, ocultar el menú primero.
+document.addEventListener('keydown',function(evento){
+  if(evento.key==='Escape' && document.getElementById('sideMenu')?.classList.contains('open')){
+    toggleSideMenu(false);
+  }
+});
 function abrirPanelProyectos(){document.getElementById('projectsOverlay').classList.add('open');pintarProyectosAsignados()}
 function cerrarPanelProyectos(){document.getElementById('projectsOverlay').classList.remove('open')}
 
@@ -15640,29 +15705,31 @@ function formatearDistanciaMapa(m){
   return n<100?`${n.toFixed(1)} m`:`${Math.round(n)} m`;
 }
 
+function pdrDistanciasPrefsMapping(){return proyectoActivo?.campos_config?._distancias||{};}
+function pdrAplicarVisibilidadOdomentroProyecto(){
+ const visible=pdrDistanciasPrefsMapping().mostrar_odometro_campo!==false;
+ for(let i=1;i<=8;i++){
+  const el=document.getElementById(`DISTODO${i}`);
+  const cont=el?.parentElement;if(!cont)continue;
+  cont.style.display=(visible&&pdrCampoVisible(`DISTODO${i}`))?'':'none';
+ }
+}
 function agregarEtiquetaDistanciaConexion(c){
-  if(!mostrarDistanciasMapa)return;
-
-  const gps=distanciaGeodesicaMetros(c.origen,c.destino);
-  const odo=distanciaOdomentroConexion(c);
-  const mid=puntoMedioConexion(c.origen,c.destino);
-
-  const htmlLabel=`
-    <div class="connectionDistanceBadge">
-      GPS ${formatearDistanciaMapa(gps)}${odo!==null?` / Odo ${formatearDistanciaMapa(odo)}`:''}
-    </div>`;
-
-  L.marker(mid,{
-    interactive:false,
-    keyboard:false,
-    icon:L.divIcon({
-      className:'connectionDistanceLabel',
-      html:htmlLabel,
-      iconSize:[1,1],
-      iconAnchor:[0,0]
-    }),
-    zIndexOffset:2500
-  }).addTo(markerLayer);
+ if(!mostrarDistanciasMapa)return;
+ const pref=pdrDistanciasPrefsMapping();
+ const gps=pref.mostrar_gps_mapa!==false?distanciaGeodesicaMetros(c.origen,c.destino):null;
+ const odo=pref.mostrar_odometro_mapa!==false?distanciaOdomentroConexion(c):null;
+ if(gps===null&&odo===null)return;
+ const mid=puntoMedioConexion(c.origen,c.destino);
+ const htmlLabel=`<div class="connectionDistanceBadge">${[
+  gps!==null?`<span class="pdrDistanceGPS">GPS ${formatearDistanciaMapa(gps)}</span>`:'',
+  odo!==null?`<span class="pdrDistanceOdo">Odo ${formatearDistanciaMapa(odo)}</span>`:''
+ ].filter(Boolean).join(' / ')}</div>`;
+ L.marker(mid,{
+  interactive:false,keyboard:false,
+  icon:L.divIcon({className:'connectionDistanceLabel',html:htmlLabel,iconSize:[1,1],iconAnchor:[0,0]}),
+  zIndexOffset:2500
+ }).addTo(markerLayer);
 }
 
 pintarRegistros=function(){
@@ -15691,8 +15758,8 @@ pintarRegistros=function(){
       }
     ).addTo(markerLayer).bindPopup(
       `<b>${esc(c.slot)}</b><br>${esc(r.IDCAMPO)} ↔ ${esc(c.destino.IDCAMPO)}<br>`+
-      `<b>GPS:</b> ${formatearDistanciaMapa(distanciaGeodesicaMetros(c.origen,c.destino))}`+
-      (distanciaOdomentroConexion(c)!==null?`<br><b>${String(c.origen?.TIPO).toUpperCase()==='CLIENTE'?'Fibra interna':'Odo'}:</b> ${formatearDistanciaMapa(distanciaOdomentroConexion(c))}`:'')
+      (pdrDistanciasPrefsMapping().mostrar_gps_mapa!==false?`<b>GPS:</b> ${formatearDistanciaMapa(distanciaGeodesicaMetros(c.origen,c.destino))}`:'')+
+      (pdrDistanciasPrefsMapping().mostrar_odometro_mapa!==false&&distanciaOdomentroConexion(c)!==null?`<br><b>${String(c.origen?.TIPO).toUpperCase()==='CLIENTE'?'Fibra interna':'Odo'}:</b> ${formatearDistanciaMapa(distanciaOdomentroConexion(c))}`:'')
     );
 
     agregarEtiquetaDistanciaConexion(c);
@@ -16924,6 +16991,7 @@ function pdrAplicarCamposProyecto(){
    }
   }
  }
+ pdrAplicarVisibilidadOdomentroProyecto();
  if(typeof actualizarResaltadoObligatorios==='function')setTimeout(actualizarResaltadoObligatorios,0);
 }
 function pdrAplicarCatalogoPropietarios(nombres){
@@ -16962,7 +17030,189 @@ document.addEventListener('DOMContentLoaded',()=>{
  document.addEventListener('change',e=>{if(e.target?.id==='TIPO')pdrAplicarCamposProyecto();});
 });
 </script>
+<script>
+/* ===== PDR V124 · DIAGNÓSTICO LOCAL, SIN DATOS PERSONALES =====
+   Registro limitado a eventos técnicos, persistente ante recarga del proceso.
+   No incluye fotografías, contenidos de formulario, URLs, tokens ni coordenadas. */
+(function(){
+  'use strict';
+  const KEY='pdr_diag_v124_events', START='pdr_diag_v124_session';
+  const MAX_EVENTS=160, MAX_DAYS=7;
+  let events=[];
+  const safeStorage=(fn,fallback)=>{try{return fn()}catch(_){return fallback}};
+  const now=()=>new Date().toISOString();
+  const safeText=(s)=>String(s??'').replace(/https?:\/\/\S+/gi,'[url]')
+    .replace(/(?:Bearer\s+)[^\s]+/gi,'[redactado]')
+    .replace(/(?:AIza)[A-Za-z0-9_-]+/g,'[clave]')
+    .replace(/[-+]?\d{1,3}\.\d{4,}/g,'[numero]').slice(0,180);
+  const allowed={capture:['field','step','kind','size_mb','duration_ms','ok'],sync:['step','duration_ms','ok','pending_count'],
+    form:['step','type'],navigation:['step','persisted'],error:['kind','name','message','line'],storage:['step','error'],system:['step']};
+  try{
+    const old=JSON.parse(localStorage.getItem(KEY)||'[]');
+    if(Array.isArray(old))events=old.filter(e=>e&&Date.now()-Date.parse(e.at)<MAX_DAYS*86400000).slice(-MAX_EVENTS);
+  }catch(_){}
+  function log(kind,details={}){
+    try{
+      const fields=allowed[kind]||allowed.system, clean={};
+      for(const k of fields){if(details[k]!==undefined){const v=details[k];clean[k]=typeof v==='number'?Math.round(v*100)/100:typeof v==='boolean'?v:safeText(v);}}
+      events.push({at:now(),kind,details:clean});
+      if(events.length>MAX_EVENTS)events=events.slice(-MAX_EVENTS);
+      safeStorage(()=>localStorage.setItem(KEY,JSON.stringify(events)),null);
+    }catch(_){}
+  }
+  window.pdrDiagLog=log;
+  const last=safeStorage(()=>JSON.parse(sessionStorage.getItem(START)||'null'),null);
+  const nav=performance?.getEntriesByType?.('navigation')?.[0];
+  log('navigation',{step:nav?.type||'unknown',persisted:false});
+  if(last?.formOpen)log('form',{step:'sesion_previa_termino_con_formulario_abierto'});
+  const state=()=>({formOpen:!!document.getElementById('formOverlay')?.classList.contains('open'),at:now()});
+  const saveState=()=>safeStorage(()=>sessionStorage.setItem(START,JSON.stringify(state())),null);
+  setInterval(saveState,4000);
+  window.addEventListener('pagehide',e=>{log('navigation',{step:'pagehide',persisted:e.persisted});saveState()});
+  window.addEventListener('pageshow',e=>log('navigation',{step:'pageshow',persisted:e.persisted}));
+  document.addEventListener('visibilitychange',()=>{log('navigation',{step:document.hidden?'oculto':'visible'});saveState()});
+  window.addEventListener('error',e=>{
+    log('error',{kind:'javascript',name:e?.error?.name||'Error',message:e?.message||'Error sin detalle',line:e?.lineno||0});
+  });
+  window.addEventListener('unhandledrejection',e=>{
+    const r=e.reason;log('error',{kind:'promise',name:r?.name||'Promise',message:r?.message||'Rechazo sin detalle'});
+  });
+  // No se guardan nombres de fotos ni valores de campos.
+  document.addEventListener('click',e=>{
+    const button=e.target?.closest?.('button');
+    if(!button)return;
+    if(button.id==='fabAgregar'||String(button.getAttribute('onclick')||'').startsWith('abrirFormulario'))log('form',{step:'abrir_nuevo'});
+    if(String(button.getAttribute('onclick')||'').startsWith('guardarPunto'))log('form',{step:'solicitar_guardar'});
+    if(button.classList?.contains('aiCaptureBtn'))log('capture',{step:'ia_capturar_click'});
+  },true);
+  document.addEventListener('change',e=>{
+    const el=e.target;
+    if(el?.type==='file'&&el.files?.length){
+      const id=String(el.id||'');
+      log('capture',{field:/^(FOTO\d*|FOTO\d+CAM)$/.test(id)?id:'archivo_foto',step:'archivo_recibido',kind:'normal',size_mb:el.files[0].size/1048576});
+    }
+  },true);
+  // Se instrumentan las funciones existentes sin alterar sus valores de retorno.
+  function wrapAsync(name,kind,meta){
+    const fn=window[name];if(typeof fn!=='function'||fn.__pdrDiagnostico)return;
+    const replacement=function(...args){
+      const info=meta?.(...args)||{},t=performance.now();log(kind,{...info,step:'inicio'});
+      let out;
+      try{out=fn.apply(this,args)}catch(err){log(kind,{...info,step:'error',ok:false,duration_ms:performance.now()-t});throw err;}
+      if(out&&typeof out.then==='function')return out.then(value=>{log(kind,{...info,step:'fin',ok:true,duration_ms:performance.now()-t});return value;},err=>{log(kind,{...info,step:'error',ok:false,duration_ms:performance.now()-t});throw err;});
+      log(kind,{...info,step:'fin',ok:true,duration_ms:performance.now()-t});return out;
+    };
+    replacement.__pdrDiagnostico=true;window[name]=replacement;
+  }
+  wrapAsync('cargarFoto','capture',(id)=>({field:safeText(id),kind:'normal'}));
+  wrapAsync('capturarFotoIA','capture',()=>({kind:'ia'}));
+  wrapAsync('pdrEtiquetarEvidencia','capture',()=>({step:'etiquetar'}));
+  wrapAsync('sincronizarPendientesBackground','sync',()=>({}));
+  const form=new MutationObserver(()=>saveState());
+  const formNode=document.getElementById('formOverlay');if(formNode)form.observe(formNode,{attributes:true,attributeFilter:['class']});
+  saveState();
+  // V126: El selector de aplicaciones debe abrirse directamente desde un toque
+  // del usuario. No hacer await entre ese toque y navigator.share().
+  let diagFile=null, diagContent='', diagName='', diagBlob=null;
+  function diagPanel(){
+    let o=document.getElementById('pdrDiagnosticoCompartirOverlay');
+    if(o)return o;
+    o=document.createElement('div');o.id='pdrDiagnosticoCompartirOverlay';
+    o.style.cssText='position:fixed;inset:0;z-index:99000;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML=`<div role="dialog" aria-modal="true" aria-label="Exportar diagnóstico" style="background:#0d1b2a;border:1px solid #36526d;border-radius:16px;padding:18px;width:min(430px,100%);color:#fff;box-shadow:0 14px 50px #0008">
+      <h3 style="margin:0 0 8px;color:#cffafe">🩺 Compartir diagnóstico</h3>
+      <p style="font-size:12px;line-height:1.5;color:#cbd5e1;margin:0 0 14px">Elige la aplicación para compartir el archivo JSON (WhatsApp, Gmail, Drive, Bluetooth, etc.). Si el navegador no admite compartir archivos, puedes descargarlo.</p>
+      <button type="button" id="pdrDiagShareApps" class="btn blue" style="width:100%;margin-bottom:9px">📤 Elegir aplicación para compartir</button>
+      <button type="button" id="pdrDiagDownload" class="btn" style="width:100%;margin-bottom:9px">⬇ Descargar archivo JSON</button>
+      <button type="button" id="pdrDiagCopy" class="btn gray" style="width:100%;margin-bottom:9px">📋 Copiar diagnóstico</button>
+      <button type="button" id="pdrDiagClose" class="btn gray" style="width:100%;background:#334155">Cerrar</button>
+      <div id="pdrDiagStatus" role="status" style="font-size:11px;line-height:1.4;color:#fcd34d;margin-top:10px"></div></div>`;
+    document.body.appendChild(o);
+    o.querySelector('#pdrDiagShareApps').addEventListener('click',function(){
+      const status=o.querySelector('#pdrDiagStatus');status.textContent='';
+      if(!diagFile)return;
+      if(typeof navigator.share!=='function'||(typeof navigator.canShare==='function'&&!navigator.canShare({files:[diagFile]}))){
+        status.textContent='Este navegador o contenedor Android no admite compartir archivos directamente. Usa Descargar JSON para guardarlo y luego compartirlo desde Archivos.';
+        return;
+      }
+      // IMPORTANTE: llamada inmediata desde el click; no await previo.
+      let sharing;
+      try{sharing=navigator.share({files:[diagFile],title:'Diagnóstico PDR-APP'});}
+      catch(e){status.textContent='No se pudo abrir el selector de apps: '+String(e?.message||e);return;}
+      Promise.resolve(sharing).then(()=>{
+        log('system',{step:'diagnostico_compartido'});o.style.display='none';
+      }).catch(e=>{
+        if(e?.name!=='AbortError'){
+          log('error',{kind:'export',name:e?.name||'Share',message:e?.message||'No se pudo compartir'});
+          status.textContent='No se pudo compartir: '+String(e?.message||e);
+        }
+      });
+    });
+    o.querySelector('#pdrDiagDownload').addEventListener('click',function(){
+      if(!diagBlob)return;
+      try{
+        const url=URL.createObjectURL(diagBlob);
+        const a=document.createElement('a');a.href=url;a.download=diagName;a.style.display='none';
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),60000);
+        log('system',{step:'descarga_solicitada'});
+        o.querySelector('#pdrDiagStatus').textContent='Se solicitó la descarga. Busca el archivo en Descargas.';
+      }catch(e){o.querySelector('#pdrDiagStatus').textContent='No se pudo descargar: '+String(e?.message||e);}
+    });
+    o.querySelector('#pdrDiagCopy').addEventListener('click',async function(){
+      try{await navigator.clipboard.writeText(diagContent);o.querySelector('#pdrDiagStatus').textContent='Diagnóstico copiado al portapapeles.';}
+      catch(e){
+        const t=document.createElement('textarea');t.value=diagContent;
+        t.style.cssText='position:fixed;inset:5%;width:90%;height:80%;z-index:999999;background:white;color:black';
+        document.body.appendChild(t);t.focus();t.select();
+        o.querySelector('#pdrDiagStatus').textContent='Selecciona y copia el texto mostrado.';
+      }
+    });
+    o.querySelector('#pdrDiagClose').addEventListener('click',()=>{o.style.display='none';});
+    return o;
+  }
+  window.pdrExportarDiagnostico=async function(){
+    log('system',{step:'exportar_diagnostico'});
+    const heap=performance?.memory;
+    let estimate=null;
+    try{if(navigator.storage?.estimate){const s=await navigator.storage.estimate();estimate={usage_mb:Math.round((s.usage||0)/1048576),quota_mb:Math.round((s.quota||0)/1048576)};}}catch(_){}
+    const report={
+      format:'PDR-DIAGNOSTICO-V126',generated_at:now(),
+      warning:'Datos aproximados; un cierre del proceso Android puede no registrar un error JavaScript.',
+      environment:{user_agent:navigator.userAgent.slice(0,250),platform:navigator.platform||'',online:navigator.onLine,
+        device_memory_gb:navigator.deviceMemory??null,logical_processors:navigator.hardwareConcurrency??null,
+        js_heap_mb:heap?{used:Math.round(heap.usedJSHeapSize/1048576),total:Math.round(heap.totalJSHeapSize/1048576),limit:Math.round(heap.jsHeapSizeLimit/1048576)}:null,
+        storage:estimate,navigation_type:nav?.type||'unknown'},
+      status:{form_open:state().formOpen,photos_processing:typeof pdrCapturasEnProceso==='number'?pdrCapturasEnProceso:null,
+        sync_active:typeof syncEnCurso==='boolean'?syncEnCurso:null},events:events.slice(-MAX_EVENTS)
+    };
+    diagContent=JSON.stringify(report,null,2);
+    diagBlob=new Blob([diagContent],{type:'application/json'});
+    diagName='PDR_DIAGNOSTICO_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+    diagFile=new File([diagBlob],diagName,{type:'application/json'});
+    const panel=diagPanel();
+    panel.querySelector('#pdrDiagStatus').textContent='';
+    panel.style.display='flex';
+    const b=panel.querySelector('#pdrDiagShareApps');
+    const supported=typeof navigator.share==='function'&&
+      (typeof navigator.canShare!=='function'||navigator.canShare({files:[diagFile]}));
+    b.disabled=!supported;
+    if(!supported)panel.querySelector('#pdrDiagStatus').textContent='Tu navegador no permite compartir archivos directamente. Descarga el JSON y compártelo desde el administrador de archivos de Android.';
+  };
+})();
+</script>
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
