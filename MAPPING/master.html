@@ -14788,11 +14788,12 @@ async function pdrDescargarFotosProyecto(){
 
 // V93: gestiona versiones de archivo fotográfico con inventario autoritativo en Supabase.
 let pdrZipProyectoActualV93='',pdrZipEstadoV93=null,pdrZipOcupadoV93=false;
+let pdrZipVerificacionAutomaticaV98=null;
 function pdrZipElV93(id){return document.getElementById(id);}
 function pdrZipEsAdminV96(){return String(perfil?.rol||'').trim().toLowerCase()==='admin' && perfil?.activo!==false;}
 function pdrZipVisibilidadRegenerarV96(){const b=pdrZipElV93('pdrZipRegenerarV95');if(b){b.hidden=!pdrZipEsAdminV96();b.style.display=pdrZipEsAdminV96()?'':'none';}}
 function pdrZipMensajeV93(t){const el=pdrZipElV93('pdrZipMensajeV93');if(el)el.textContent=t||'';}
-function pdrCerrarZipFotograficoV93(){pdrZipElV93('pdrZipV93Modal').style.display='none';}
+function pdrCerrarZipFotograficoV93(){pdrZipElV93('pdrZipV93Modal').style.display='none';if(pdrZipVerificacionAutomaticaV98){clearInterval(pdrZipVerificacionAutomaticaV98);pdrZipVerificacionAutomaticaV98=null;}}
 function pdrZipBloquearV93(v){pdrZipOcupadoV93=v;for(const id of ['pdrZipVerificarV93','pdrZipGenerarV93','pdrZipRegenerarV95','pdrZipDescargarV93']){const b=pdrZipElV93(id);if(b)b.disabled=!!v;}}
 async function pdrZipSolicitarFuncionV93(action,extras={}){
  const {data:{session},error:sesionError}=await sb.auth.getSession();
@@ -14815,6 +14816,9 @@ async function pdrAbrirZipFotograficoV93(){
  pdrZipElV93('pdrZipProyectoV93').textContent=String(p.nombre||p.nombre_proyecto||p.codigo||'Proyecto');
  pdrZipElV93('pdrZipV93Modal').style.display='flex';
  pdrZipVisibilidadRegenerarV96();
+ if(pdrZipVerificacionAutomaticaV98)clearInterval(pdrZipVerificacionAutomaticaV98);
+ // Consulta ligera únicamente mientras esté abierto el panel, sin llamar a n8n.
+ pdrZipVerificacionAutomaticaV98=setInterval(()=>{if(pdrZipElV93('pdrZipV93Modal')?.style.display==='flex'&&!pdrZipOcupadoV93&&pdrZipEstadoV93?.estado==='GENERANDO')pdrVerificarZipV93();},20000);
  await pdrVerificarZipV93();
 }
 async function pdrVerificarZipV93(){
@@ -14825,8 +14829,9 @@ async function pdrVerificarZipV93(){
   const zip=d.archivo||{};let txt=`Fotografías sincronizadas: ${d.total_fotos??0}\nFotos en el último ZIP: ${zip.total_fotos??0}\nEstado: ${d.estado||'SIN GENERAR'}`;
   if(zip.creado_en)txt+=`\nÚltima generación: ${new Date(zip.creado_en).toLocaleString('es-CO')}`;
   if(d.pendientes!==undefined)txt+=`\nFotos añadidas o modificadas desde el ZIP: ${d.pendientes}`;
+  if(d.estado==='GENERANDO'&&d.trabajo?.creado_en){const min=Math.max(0,Math.floor((Date.now()-new Date(d.trabajo.creado_en).getTime())/60000));txt+=`\nPreparación en curso: ${min} min (verificación automática cada 20 s)`;}
   pdrZipElV93('pdrZipResumenV93').textContent=txt;
-  pdrZipMensajeV93(d.estado==='ACTUALIZADO'?'La última versión contiene las fotografías sincronizadas al momento de verificar.':d.estado==='GENERANDO'?'n8n está preparando la nueva versión. Pulsa Verificar después.':d.estado==='DESACTUALIZADO'?'El inventario ha cambiado. Puedes conservar o descargar el ZIP anterior y solicitar una versión nueva.':'El archivo aún no existe o necesita actualizarse.');
+  pdrZipMensajeV93(d.estado==='ACTUALIZADO'?'La última versión contiene las fotografías sincronizadas al momento de verificar.':d.estado==='GENERANDO'?'El servidor está preparando un solo ZIP con todas las fotos; esta pantalla comprueba el resultado automáticamente cada 20 segundos. El tiempo depende de Drive y la capacidad del servidor.':d.estado==='DESACTUALIZADO'?'El inventario ha cambiado. Puedes conservar o descargar el ZIP anterior y solicitar una versión nueva.':'El archivo aún no existe o necesita actualizarse.');
   pdrZipElV93('pdrZipGenerarV93').disabled=d.estado==='ACTUALIZADO'||d.estado==='GENERANDO'||!(d.total_fotos>0);
   pdrZipElV93('pdrZipDescargarV93').disabled=!zip.drive_id;
   pdrZipElV93('pdrZipRegenerarV95').disabled=d.estado==='GENERANDO'||!(d.total_fotos>0);
@@ -14854,16 +14859,40 @@ async function pdrRegenerarZipV95(){
 }
 async function pdrDescargarZipV93(){
  if(pdrZipOcupadoV93)return;
- pdrZipBloquearV93(true);pdrZipMensajeV93('Descargando archivo ZIP desde Google Drive mediante n8n…');
+ pdrZipBloquearV93(true);pdrZipMensajeV93('Autorizando descarga directa del ZIP…');
  try{
-  const response=await pdrZipSolicitarFuncionV93('download');
-  const blob=await response.blob();if(!blob.size)throw new Error('El ZIP llegó vacío');
-  if(!['application/zip','application/octet-stream','application/x-zip-compressed'].includes(blob.type)&&!(await blob.slice(0,2).text()).startsWith('PK'))throw new Error('La respuesta recibida no parece ser un ZIP');
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='PDR_FOTOS_'+String(pdrZipElV93('pdrZipProyectoV93')?.textContent||'PROYECTO').replace(/[^a-z0-9_-]/gi,'_').slice(0,55)+'.zip';
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),90000);
-  pdrZipMensajeV93('Descarga enviada al navegador. Si el ZIP está desactualizado, descarga una nueva versión cuando n8n termine.');
- }catch(e){pdrZipMensajeV93('No fue posible descargar: '+(e?.message||e));}
+  const response=await pdrZipSolicitarFuncionV93('download_ticket');
+  const data=await response.json();
+  if(!data.ok||!data.ticket||!data.download_url)throw new Error('No se recibió autorización de descarga');
+  const endpoint=new URL(data.download_url);
+  if(endpoint.protocol!=='https:')throw new Error('La dirección de descarga no es HTTPS');
+  // POST a un iframe oculto: evita abrir una pestaña adicional.
+  // Los bytes del ZIP viajan de n8n al navegador, sin pasar por Supabase.
+  // Cada descarga usa un destino único para no interrumpir descargas previas.
+  const frame=document.createElement('iframe');
+  const frameName='pdrZipDownload_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  frame.name=frameName;
+  frame.title='Descarga fotográfica';
+  frame.setAttribute('aria-hidden','true');
+  frame.style.cssText='position:absolute;width:0;height:0;border:0;visibility:hidden;pointer-events:none';
+  document.body.appendChild(frame);
+  const form=document.createElement('form');
+  form.method='POST';form.action=endpoint.href;form.target=frameName;form.style.display='none';
+  const field=document.createElement('input');field.type='hidden';field.name='ticket';field.value=data.ticket;
+  form.appendChild(field);
+  // Nombre de archivo para descarga (solo presentación; la autorización depende del ticket).
+  // Se alinea con la carpeta relativa de fotografías que usa Cartera universal.
+  const nombreProyecto=String(pdrZipElV93('pdrZipProyectoV93')?.textContent||'PROYECTO')
+    .replace(/[\\/:*?"<>|]/g,'_').replace(/[^a-zA-Z0-9_.-]/g,'_').slice(0,80)||'PROYECTO';
+  const nombreDescarga=document.createElement('input');
+  nombreDescarga.type='hidden';nombreDescarga.name='nombre_archivo';
+  nombreDescarga.value=`PDR_FOTOS_${nombreProyecto}.zip`;
+  form.appendChild(nombreDescarga);
+  document.body.appendChild(form);form.submit();form.remove();
+  // No retirar el iframe inmediatamente: algunos navegadores cancelan la descarga.
+  setTimeout(()=>{try{frame.remove();}catch(_){}},5*60*1000);
+  pdrZipMensajeV93('Descarga solicitada. El archivo debe aparecer en las descargas del navegador, sin abrir otra pestaña. Si no comienza, comprueba el historial de descargas y la última ejecución de n8n.');
+ }catch(e){pdrZipMensajeV93('No fue posible iniciar la descarga: '+(e?.message||e));}
  finally{pdrZipBloquearV93(false);}
 }
 </script>
@@ -14885,5 +14914,6 @@ async function pdrDescargarZipV93(){
 </div>
 </body>
 </html>
+
 
 
