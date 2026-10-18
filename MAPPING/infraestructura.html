@@ -2419,7 +2419,7 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
 </div></div></div>
 
 
-<div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><div class="modalHeadActions"><button class="close" onclick="cerrarFormulario()">Cerrar</button></div></div><div class="body">
+<div class="overlay" id="formOverlay"><div class="modal"><div class="modalHead"><h2>Registrar elemento</h2><div class="modalHeadActions"><button class="close" onclick="pdr130CancelarFormulario()">Cerrar</button></div></div><div class="body">
 <div class="hint">La coordenada se toma exactamente de la <b>mira central del mapa</b>. Los campos visibles cambian según el valor de <b>TIPO</b>, replicando la lógica del formulario de AGREGAR2.</div>
 <div class="section"><h3>1. Identificación y ubicación</h3><div class="sectionBody"><div class="grid">
 <div id="wrapTipo"><label>TIPO <span class="req">*</span></label><select id="TIPO" onchange="cambiarTipo()"><option value="">Seleccione...</option><option>POSTE</option><option>CANALIZADO</option><option>C. AMERICANO</option><option>CERCHA</option><option id="tipoClienteOption" value="CLIENTE" hidden disabled>CLIENTE</option></select></div>
@@ -2514,7 +2514,7 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
 </div></div>
 
 <div class="section" id="secFotos"><h3>5. Registro fotográfico</h3><div class="sectionBody"><div class="photoGrid" id="photoGrid"></div></div></div>
-<div class="actions"><button class="btn gray" onclick="cerrarFormulario()">Cancelar</button><button class="btn" onclick="guardarPunto()">Guardar punto</button></div>
+<div class="actions"><button class="btn gray" onclick="pdr130CancelarFormulario()">Cancelar</button><button class="btn" onclick="guardarPunto()">Guardar punto</button></div>
 </div></div></div>
 
 <!-- ===== V91 · CÁMARA IA LOCAL ===== -->
@@ -4454,7 +4454,7 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-function abrirFormulario(){pdrCapturaFormularioVersion++;editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();pdrAplicarCamposProyecto();}
+function abrirFormulario(){pdr131EdicionTurno++;pdr130ComenzarNuevo();pdrCapturaFormularioVersion++;editingId=null;photos={};limpiarForm();const c=map.getCenter();selectedLat=c.lat;selectedLng=c.lng;LATITUDE.value=c.lat.toFixed(8);LONGITUDE.value=c.lng.toFixed(8);recalcularIds();formOverlay.classList.add('open');document.body.classList.add('formularioAbierto');llevarFormularioAlInicio();pdrAplicarCamposProyecto();}
 
 function llevarFormularioAlInicio(){
   const overlay=document.getElementById('formOverlay');
@@ -4504,6 +4504,7 @@ function reanudarFormulario(){
 }
 
 function cerrarFormulario(){
+  pdr131EdicionTurno++;
   formularioMinimizado=false;
   liberarTodasPreviewFoto();
   formOverlay.classList.remove('open');
@@ -5027,7 +5028,7 @@ function renderFotos(t){
         <label>${label} <span class="req">*</span></label>
         <div class="aiPhotoActions">
           <div class="aiPhotoSplit" role="group" aria-label="Elegir modo de captura">
-            <button class="btn blue" type="button" onclick="document.getElementById('file_${id}').click()" title="Tomar foto normal con cámara">📷 Foto normal</button>
+            <button class="btn blue" type="button" onclick="pdr130AbrirCamaraNormal('${id}')" title="Tomar foto normal con cámara">📷 Foto normal</button>
             <button class="btn blue" type="button" onclick="abrirCamaraIA('${id}', ${'`'}${label}${'`'})" title="Tomar foto con auditoría IA">🤖 Foto IA</button>
           </div>
           <button class="btn aiAttachBtn" type="button" onclick="document.getElementById('file_attach_${id}').click()" title="Adjuntar foto de galería">📎</button>
@@ -5368,11 +5369,14 @@ async function cargarFoto(id,input){
   const f=input.files?.[0];
   if(!f)return;
   pdrCapturasEnProceso++;
+  pdr130Log("capture", "procesar_foto_inicio",id);
   try{
 
   // Se conserva el archivo ORIGINAL intacto para IndexedDB / ZIP.
   let fotoFinal;try{fotoFinal=await pdrEtiquetarEvidencia(f);}catch(e){alert('No se pudo etiquetar la foto: '+e.message);input.value='';return;}
   photos[id]={blob:fotoFinal,nombre_original:fotoFinal.name||''};
+  try{await pdr130PersistirFoto(id,fotoFinal);pdr130Log('capture','foto_persistida_local',id);}
+  catch(e){console.warn('Respaldo de foto:',e);pdr130Log('storage','respaldo_foto_fallido',id);}
 
   const status=document.getElementById('status_'+id);
   if(status){
@@ -5396,6 +5400,7 @@ async function cargarFoto(id,input){
   }
 
   // Recalcular únicamente el estado visual necesario.
+  pdr130GuardarBorrador();
   requestAnimationFrame(actualizarResaltadoObligatorios);
   }finally{
     pdrCapturasEnProceso=Math.max(0,pdrCapturasEnProceso-1);
@@ -6963,16 +6968,18 @@ function validar(){
 }
 
 function guardarPunto(){
+  pdr130GuardarBorrador();
+  pdr130Log('form','guardar_iniciado');
   // V127: comprobar CX antes y después de validar; sin alterar sus valores.
   const _cxPrevio=Array.from({length:4},(_,i)=>document.getElementById('CX'+(i+1))?.value ?? '');
   const _cxFilasPrevias=conexionesVisibles;
-  if(!validar())return;
+  if(!validar()){pdr130Log('form','guardar_validacion_fallida');return;}
   if(conexionesVisibles<_cxFilasPrevias || _cxPrevio.some((v,i)=>v!==String(document.getElementById('CX'+(i+1))?.value ?? ''))){
     // Si un manejador externo reconstruyó las conexiones, restablecer lo escrito.
     setNumeroConexiones(_cxFilasPrevias,false);
     _cxPrevio.forEach((v,i)=>{const el=document.getElementById('CX'+(i+1));if(el)el.value=v;});
   }
-  const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+  const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pdr130LimpiarBorrador();pdr130Log('form','guardar_local_confirmado');pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -7269,11 +7276,13 @@ function pintarRegistros(){
   });
   counterTop.textContent=`${registros.length} puntos`;
 }
-function pintarLista(){const idx=indicePuntos();recordsList.innerHTML=registros.length?registros.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b><br>${esc(r.DIRECCION||'')}<br>${r.LATITUDE.toFixed(7)}, ${r.LONGITUDE.toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn" onclick="moverPunto('${r.id}');cerrarRegistros()">Mover</button><button class="btn danger" onclick="eliminarPunto('${r.id}')">Eliminar</button></div></div>`).join(''):'<div class="hint">Todavía no hay puntos registrados.</div>';}
-function zoomPunto(id){const r=registros.find(x=>x.id===id);if(!r)return;cerrarRegistros();map.setView([r.LATITUDE,r.LONGITUDE],20)}function eliminarPunto(id){if(!confirm('¿Eliminar este punto?'))return;registros=registros.filter(x=>x.id!==id);persist();pintarRegistros();pintarLista();}
+function pintarLista(){const idx=indicePuntos();recordsList.innerHTML=registros.length?registros.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b><br>${esc(r.DIRECCION||'')}<br>${r.LATITUDE.toFixed(7)}, ${r.LONGITUDE.toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn" onclick="moverPunto('${r.id}');cerrarRegistros()">Mover</button><button class="btn" style="background:#0f9e84;color:#fff" onclick="cerrarRegistros();editarPunto('${r.id}')">✎ Editar</button></div></div>`).join(''):'<div class="hint">Todavía no hay puntos registrados.</div>';}
+function zoomPunto(id){const r=registros.find(x=>x.id===id);if(!r)return;cerrarRegistros();map.setView([r.LATITUDE,r.LONGITUDE],20)}function eliminarPunto(id){alert('No está permitido eliminar puntos levantados. Utiliza Editar para modificar su información.');return false;}
 async function editarPunto(id){
   const r=registros.find(x=>x.id===id);
   if(!r)return;
+  // V131: invalidar las tareas fotográficas de otros formularios y abrir de inmediato.
+  const turno=++pdr131EdicionTurno;
   editingId=id;
   limpiarForm();
   aplicarOpcionesPoligonosAsignados(r.POLIGONO);
@@ -7306,8 +7315,6 @@ async function editarPunto(id){
   aplicarConfiguracionTipoProyecto();
   if(esClienteViabilidad())configurarConexionCliente();
   actualizarAccesoCliente();
-  await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
-  await renderizarFotosRemotasEnFormulario(r);
   ajustarConexionesEdicion(r);
   ajustarConexionesOtroEdicion(r);
   sincronizarChecksPin();
@@ -7316,7 +7323,21 @@ async function editarPunto(id){
     `Registro existente: ${r.POLIGONO||'sin polígono'}`
   );
   formOverlay.classList.add('open');
+  document.body.classList.add('formularioAbierto');
   llevarFormularioAlInicio();
+  // Mostrar campos ya: la descarga y decodificación de fotos no debe bloquear el editor.
+  requestAnimationFrame(()=>{
+    (async()=>{
+      try{
+        await cargarFotosFormularioDesdeIDB(r.offline_id||r.id);
+        if(turno!==pdr131EdicionTurno||editingId!==id||!formOverlay.classList.contains('open'))return;
+        await renderizarFotosRemotasEnFormulario(r);
+      }catch(e){
+        console.warn('Carga diferida de fotografías:',e);
+        pdr130Log('photos','carga_edicion_fallida');
+      }
+    })();
+  });
 }
 function exportarJSON(){download(JSON.stringify({capa:'AGREGAR2_WEB',crs:'EPSG:4326',registros},null,2),'AGREGAR2_web.json','application/json')}
 function exportarGeoJSON(){const gj={type:'FeatureCollection',name:'AGREGAR2_WEB',crs:{type:'name',properties:{name:'EPSG:4326'}},features:registros.map(r=>{const p={...r};delete p.geometry;delete p.fotos;return {type:'Feature',geometry:r.geometry,properties:p}})};download(JSON.stringify(gj,null,2),'AGREGAR2_web.geojson','application/geo+json')}
@@ -15799,19 +15820,11 @@ pintarRegistros=function(){
       : `${arr.length}/${todos.length} visibles`;
   }
 }
-pintarLista=function(){const arr=registrosVisiblesPorTipo(),idx=indicePuntos();recordsList.innerHTML=arr.length?arr.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>${esc(r.DIRECCION||'')}<br>${Number(r.LATITUDE).toFixed(7)}, ${Number(r.LONGITUDE).toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn danger" onclick="eliminarPunto('${r.id}')">Eliminar</button></div></div>`).join(''):'<div class="hint">No hay elementos visibles con el filtro seleccionado.</div>'}
+pintarLista=function(){const arr=registrosVisiblesPorTipo(),idx=indicePuntos();recordsList.innerHTML=arr.length?arr.slice().reverse().map(r=>`<div class="record"><span class="badge ${String(r.TIPO).replace('. ','').replace(' ','')}">${esc(r.TIPO)}</span> <b>${esc(r.IDCAMPO)}</b> <span class="statusPill ${r.sync_status||'pendiente'}">${esc(textoEstadoSync(r))}</span><br>${esc(r.DIRECCION||'')}<br>${Number(r.LATITUDE).toFixed(7)}, ${Number(r.LONGITUDE).toFixed(7)}<br><b>Conexiones:</b> ${obtenerConexionesDelRegistro(r,idx).map(c=>esc(c.destino.IDCAMPO)).join(', ')||'Sin conexiones'}<div class="actions"><button class="btn blue" onclick="zoomPunto('${r.id}')">Ver mapa</button><button class="btn" style="background:#0f9e84;color:#fff" onclick="cerrarRegistros();editarPunto('${r.id}')">✎ Editar</button></div></div>`).join(''):'<div class="hint">No hay elementos visibles con el filtro seleccionado.</div>'}
+// V132: el técnico no puede borrar puntos desde la lista ni llamando esta función.
 eliminarPunto=async function(id){
-  const r=registros.find(x=>x.id===id);
-  if(!r||!confirm('¿Eliminar este punto?'))return;
-  if(r.supabase_id&&navigator.onLine){
-    const {error}=await mappingSb.from('mapping_puntos').delete().eq('id',r.supabase_id);
-    if(error){alert('No se pudo borrar de Supabase: '+error.message);return}
-  }
-  try{await eliminarFotosIDB(r.offline_id||r.id)}catch(e){console.warn('No se pudieron eliminar fotos locales:',e)}
-  registros=registros.filter(x=>x.id!==id);
-  persist();
-  pintarRegistros();
-  pintarLista();
+  alert('No está permitido eliminar puntos levantados. Utiliza Editar para modificar su información.');
+  return false;
 }
 exportarJSON=function(){const arr=registrosProyectoActual();download(JSON.stringify({proyecto:proyectoActivo,capa:'AGREGAR2_WEB',crs:'EPSG:4326',registros:arr},null,2),`${proyectoActivo?.codigo||'mapping'}_AGREGAR2.json`,'application/json')}
 exportarGeoJSON=function(){const arr=registrosProyectoActual();const gj={type:'FeatureCollection',name:proyectoActivo?.codigo||'AGREGAR2_WEB',features:arr.map(r=>{const p={...r};delete p.geometry;delete p.fotos;return {type:'Feature',geometry:r.geometry||{type:'Point',coordinates:[r.LONGITUDE,r.LATITUDE]},properties:p}})};download(JSON.stringify(gj,null,2),`${proyectoActivo?.codigo||'mapping'}.geojson`,'application/geo+json')}
@@ -17201,7 +17214,151 @@ document.addEventListener('DOMContentLoaded',()=>{
   };
 })();
 </script>
+
+<script>
+/* PDR V130 - Borrador de formulario y fotos resistente a recreación de WebView.
+   Los datos permanecen SOLO en el dispositivo. No se sincroniza el borrador. */
+const PDR130_KEY='pdr_mapping_borrador_v130';
+const PDR130_DB='pdr_mapping_fotos_borrador_v130';
+let pdr130Restaurando=false, pdr130NoGuardar=false, pdr130Version=0, pdr130PendienteAvisado=false;
+// Nuevo identificador en cada carga real de la página. No se renueva al editar ni minimizar.
+const pdr131SesionActual=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'_'+Math.random();
+let pdr131EdicionTurno=0;
+let pdr130Timer=null, pdr130UltimaFotoPendiente=Promise.resolve();
+function pdr130Log(kind,step,field){try{window.pdrDiagLog?.(kind,{step,field});}catch(_){}}
+function pdr130ProyectoId(){return String(proyectoActivo?.proyecto_id||'');}
+function pdr130Borrador(){try{return JSON.parse(localStorage.getItem(PDR130_KEY)||'null');}catch(_){return null;}}
+function pdr130FormularioActivo(){return !!(document.getElementById('formOverlay')?.classList.contains('open')||formularioMinimizado||document.getElementById('aiCameraOverlay')?.classList.contains('open'));}
+function pdr130GuardarBorrador(){
+ if(pdr130NoGuardar||pdr130Restaurando||!pdr130FormularioActivo()||!pdr130ProyectoId())return;
+ try{
+  const fields={};
+  document.querySelectorAll('#formOverlay input[id],#formOverlay select[id],#formOverlay textarea[id]').forEach(el=>{
+   if(el.type==='file'||el.type==='password'||el.id.startsWith('file_'))return;
+   fields[el.id]=el.type==='checkbox'?el.checked:el.value;
+  });
+  const snapshot={version:131,sesion:pdr131SesionActual,at:new Date().toISOString(),proyecto_id:pdr130ProyectoId(),asignacion_id:String(proyectoActivo?.asignacion_id||''),editing_id:editingId||null,fields,conexionesVisibles,conexionesOtroVisibles,minimizado:!!formularioMinimizado};
+  localStorage.setItem(PDR130_KEY,JSON.stringify(snapshot));
+ }catch(e){pdr130Log('storage','borrador_error');console.warn('PDR borrador:',e);}
+}
+function pdr130GuardarPronto(){clearTimeout(pdr130Timer);pdr130Timer=setTimeout(pdr130GuardarBorrador,250);}
+function pdr130ComenzarNuevo(){
+ // Una apertura deliberada no se considera fallo y nunca dispara aviso de recuperación.
+ pdr130NoGuardar=false;
+ pdr130PendienteAvisado=true;
+}
+function pdr130CancelarFormulario(){
+ if(pdr130FormularioActivo() && !confirm('¿Descartar este formulario y su borrador local?'))return;
+ pdr130LimpiarBorrador();cerrarFormulario();
+}
+function pdr130AbrirCamaraNormal(id){
+ pdr130GuardarBorrador();pdr130Log('capture','abrir_camara_externa',id);
+ document.getElementById('file_'+id)?.click();
+}
+function pdr130AbrirDB(){return new Promise((resolve,reject)=>{
+ const req=indexedDB.open(PDR130_DB,1);
+ req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('fotos'))req.result.createObjectStore('fotos',{keyPath:'id'});};
+ req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+});}
+async function pdr130PersistirFoto(id,blob){
+ const pid=pdr130ProyectoId();if(!pid||!(blob instanceof Blob))return;
+ const db=await pdr130AbrirDB();
+ try{await new Promise((resolve,reject)=>{
+  const tx=db.transaction('fotos','readwrite');tx.objectStore('fotos').put({id:pid+'__'+id,proyecto_id:pid,campo:id,blob,nombre:blob.name||'',at:Date.now()});
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+ });}finally{db.close();}
+}
+async function pdr130LeerFotos(pid){const db=await pdr130AbrirDB();try{return await new Promise((resolve,reject)=>{
+ const req=db.transaction('fotos','readonly').objectStore('fotos').getAll();req.onsuccess=()=>resolve((req.result||[]).filter(x=>x.proyecto_id===pid));req.onerror=()=>reject(req.error);
+});}finally{db.close();}}
+async function pdr130BorrarFotos(pid){const db=await pdr130AbrirDB();try{await new Promise((resolve,reject)=>{
+ const tx=db.transaction('fotos','readwrite');const store=tx.objectStore('fotos');const req=store.getAllKeys();req.onsuccess=()=>{for(const key of req.result||[])if(String(key).startsWith(pid+'__'))store.delete(key);};
+ tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+});}finally{db.close();}}
+function pdr130LimpiarBorrador(){
+ clearTimeout(pdr130Timer);pdr130NoGuardar=true;pdr130Version++;
+ const prev=pdr130Borrador();try{localStorage.removeItem(PDR130_KEY);}catch(_){}
+ if(prev?.proyecto_id)pdr130BorrarFotos(prev.proyecto_id).catch(e=>console.warn('Limpiar fotos borrador:',e));
+}
+async function pdr130Restaurar(snapshot){
+ if(!snapshot||!pdr130ProyectoId()||String(snapshot.proyecto_id)!==pdr130ProyectoId())return;
+ pdr130Restaurando=true;pdr130NoGuardar=true;
+ try{
+  // No usar editarPunto: los datos pueden no estar todavía en Supabase.
+  abrirFormulario();
+  const f=snapshot.fields||{};
+  if(f.TIPO){document.getElementById('TIPO').value=f.TIPO;cambiarTipo();}
+  for(const [id,v] of Object.entries(f)){
+   const el=document.getElementById(id);if(!el||el.type==='file')continue;
+   if(el.type==='checkbox')el.checked=!!v;else el.value=v;
+  }
+  if(typeof setNumeroConexiones==='function')setNumeroConexiones(Math.max(1,Number(snapshot.conexionesVisibles)||1),false);
+  if(typeof setNumeroConexionesOtro==='function')setNumeroConexionesOtro(Math.max(1,Number(snapshot.conexionesOtroVisibles)||1),false);
+  // Las rutinas de visibilidad pueden actualizar controles; reaplicar sus valores.
+  for(const [id,v] of Object.entries(f)){
+   const el=document.getElementById(id);if(!el||el.type==='file')continue;
+   if(el.type==='checkbox')el.checked=!!v;else el.value=v;
+  }
+  editingId=snapshot.editing_id||null;
+  selectedLat=Number(f.LATITUDE)||selectedLat;selectedLng=Number(f.LONGITUDE)||selectedLng;
+  if(f.CXOTROPOL==='SI'&&typeof toggleOtroPol==='function')toggleOtroPol();
+  const fotos=await pdr130LeerFotos(pdr130ProyectoId());
+  for(const item of fotos){
+   if(!document.getElementById('photoCard_'+item.campo))continue;
+   photos[item.campo]={blob:item.blob,nombre_original:item.nombre||''};
+   await mostrarPreviewFotoLocal(item.campo,item.blob,'Fotografía recuperada').catch(()=>{});
+  }
+  pdr130Log('form','borrador_recuperado');
+  if(typeof actualizarResaltadoObligatorios==='function')actualizarResaltadoObligatorios();
+  alert('Formulario recuperado. Revisa los datos y fotografías antes de guardar.');
+ }catch(e){pdr130Log('error','restauracion_fallida');console.error('Restauración borrador PDR:',e);alert('No fue posible recuperar todo el formulario: '+e.message);}
+ finally{pdr130Restaurando=false;pdr130NoGuardar=false;pdr130GuardarBorrador();}
+}
+function pdr130OfrecerRecuperacion(){
+ if(pdr130PendienteAvisado||pdr130FormularioActivo())return;
+ const borrador=pdr130Borrador();
+ // V131: el borrador histórico de V130 no implica por sí mismo un cierre inesperado.
+ // Solo una sesión ANTERIOR, con formulario activo y datos pendientes, es recuperable.
+ if(!borrador?.fields||!borrador.proyecto_id||!borrador.sesion||borrador.sesion===pdr131SesionActual)return;
+ if(!pdr130ProyectoId()||String(borrador.proyecto_id)!==pdr130ProyectoId())return;
+ if(typeof trabajoProyectoHabilitado!=='undefined'&&!trabajoProyectoHabilitado)return;
+ pdr130PendienteAvisado=true;
+ const fecha=new Date(borrador.at).toLocaleString('es-CO');
+ if(confirm('PDR-APP detectó que el formulario de la sesión anterior quedó sin guardar ('+fecha+').\n\n¿Deseas recuperarlo con las fotografías disponibles?')){
+   pdr130Restaurar(borrador);
+ }else{
+   // Si lo rechaza no insistimos en cada visita; limpiar respaldo de esta sesión interrumpida.
+   pdr130LimpiarBorrador();
+   pdr130NoGuardar=false;
+ }
+}
+// Escribir campos en cada cambio y en segundo plano; registrar operación cámara.
+document.addEventListener('input',e=>{if(e.target?.closest?.('#formOverlay'))pdr130GuardarPronto();},true);
+document.addEventListener('change',e=>{if(e.target?.closest?.('#formOverlay')&&e.target.type!=='file')pdr130GuardarPronto();},true);
+document.addEventListener('click',e=>{
+ const b=e.target?.closest?.('button');if(!b)return;
+ if(b.getAttribute('onclick')?.includes('abrirCamaraIA')){pdr130GuardarBorrador();pdr130Log('capture','abrir_camara_ia');}
+ if(b.getAttribute('onclick')?.includes('file_attach_')){pdr130GuardarBorrador();pdr130Log('capture','abrir_galeria');}
+},true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){pdr130GuardarBorrador();pdr130Log('navigation','paso_segundo_plano');}},true);
+window.addEventListener('pagehide',()=>pdr130GuardarBorrador());
+// Respaldo periódico menos frecuente; la captura y los cambios siguen respaldándose inmediatamente.
+setInterval(()=>{if(pdr130FormularioActivo())pdr130GuardarBorrador();else if(!pdr130PendienteAvisado)pdr130OfrecerRecuperacion();},10000);
+window.addEventListener('pageshow',()=>setTimeout(pdr130OfrecerRecuperacion,1500));
+// V131: capturar el cierre del WebView, sin avisar durante la misma sesión.
+
+</script>
 </body></html>
+
+
+
+
+
+
+
+
+
+
 
 
 
