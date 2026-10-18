@@ -2355,9 +2355,9 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
 
 <div class="sideMenu" id="sideMenu">
   <button onclick="abrirPanelProyectos();toggleSideMenu(false)">👷 Mis proyectos</button>
-  <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotos → n8n / Drive · rutas → Supabase</div>
+  <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotografías y registros del proyecto</div>
   <button onclick="reenviarTodo();toggleSideMenu(false)">⟳ Reenviar todo</button>
-  <button onclick="actualizarDesdeSupabaseCompleto();toggleSideMenu(false)">☁ Actualizar desde Supabase</button>
+  <button onclick="actualizarDesdeSupabaseCompleto();toggleSideMenu(false)">☁ Actualizar registros</button>
   <button class="correctionMenuBtn" id="btnCorreccionesTecnico" onclick="abrirCorreccionesTecnico();toggleSideMenu(false)">
     ⚠ Correcciones <span class="correctionMenuBadge" id="correctionMenuBadge">0</span>
   </button>
@@ -5122,7 +5122,7 @@ function pdrDibujarPinMapa(ctx,x,y,tam){
 }
 /* V112: Google Maps opcional con función autenticada; OSM sigue como respaldo. */
 async function pdrCrearMiniMapaGoogle(lat,lon,w,h,config={}){
-  if(typeof mappingSb==='undefined')throw new Error('Supabase no disponible');
+  if(typeof mappingSb==='undefined')throw new Error('Servicio de datos no disponible');
   const {data:{session},error:authError}=await mappingSb.auth.getSession();
   if(authError||!session?.access_token)throw new Error('Inicia sesión para solicitar mapas Google');
   const zoom=Math.max(14,Math.min(20,Number(config.zoom)||18));
@@ -6314,7 +6314,7 @@ async function actualizarAlmacenamientoIndexedDB(){
     }else if(fotos.length===0){
       stHint.textContent='✅ IndexedDB no tiene fotos locales. Las fotos sincronizadas ya fueron liberadas.';
     }else{
-      stHint.textContent='Las fotos originales se conservan en este dispositivo para poder exportarlas. Las copias optimizadas son las que se envían a n8n/Drive.';
+      stHint.textContent='Las fotos originales se conservan en este dispositivo para exportarlas. Las copias optimizadas se guardan en línea.';
     }
   }catch(e){
     console.error(e);
@@ -6325,8 +6325,8 @@ async function actualizarAlmacenamientoIndexedDB(){
 async function limpiarFotosLocalesConfirmadas(){
   try{
     const continuar=confirm(
-      'Esta opción eliminará del celular las fotografías ORIGINALES que ya estén confirmadas en Drive/Supabase.\n\n'+
-      'Las copias optimizadas seguirán disponibles en Drive.\n\n'+
+      'Esta opción eliminará del celular las fotografías ORIGINALES que ya estén respaldadas en línea.\n\n'+
+      'Las copias optimizadas seguirán disponibles en línea.\n\n'+
       'Si necesitas conservar los originales, usa primero "Preparar / compartir DCIM".\n\n'+
       '¿Deseas continuar?'
     );
@@ -9474,7 +9474,7 @@ async function cargarPoligonosAsignadosTecnico(){
     if((!navigator.onLine || errorEsConexionMapping(error)) && cached.length){
       poligonosAsignados=cached;
     }else if(error){
-      console.warn('No se pudieron cargar polígonos asignados:',error?.message||error);
+      console.warn('No se pudieron cargar los polígonos asignados:',error?.message||error);
       aplicarOpcionesPoligonosAsignados();
       bloquearSinPoligonos('No fue posible verificar tus polígonos asignados.');
       return 0;
@@ -11525,7 +11525,7 @@ async function descargarBlobMapaOffline(path){
     .download(path);
 
   if(error)throw error;
-  if(!(data instanceof Blob))throw new Error('Supabase no devolvió un archivo válido.');
+  if(!(data instanceof Blob))throw new Error('El servidor no devolvió un archivo válido.');
   return data;
 }
 
@@ -13810,7 +13810,7 @@ async function enviarFotoMappingN8N(r,tipo,b64){
   }catch(fetchError){
     throw crearErrorSync(
       'N8N_CONEXION',
-      `No fue posible conectar con n8n al enviar ${tipo} después de varios reintentos: ${fetchError?.message||fetchError}`,
+      `No fue posible conectar con el servicio de fotografías al enviar ${tipo} después de varios reintentos: ${fetchError?.message||fetchError}`,
       {
         sync_code:'FETCH_FAILED',
         tipo_foto:tipo,
@@ -13833,7 +13833,7 @@ async function enviarFotoMappingN8N(r,tipo,b64){
 
     throw crearErrorSync(
       'N8N_HTTP',
-      `n8n rechazó ${tipo}: HTTP ${resp.status} ${resp.statusText||''}`.trim(),
+      `No se pudo enviar ${tipo}: HTTP ${resp.status} ${resp.statusText||''}`.trim(),
       {
         status:resp.status,
         sync_code:codigo,
@@ -13862,7 +13862,7 @@ async function enviarFotoMappingN8N(r,tipo,b64){
   if(!url && !ruta){
     throw crearErrorSync(
       'N8N_RESPUESTA',
-      `n8n recibió ${tipo}, pero la respuesta no contiene URL ni ruta de Drive.`,
+      `El servicio recibió ${tipo}, pero no confirmó el archivo.`,
       {
         sync_code:'SIN_URL_RUTA',
         tipo_foto:tipo,
@@ -13882,7 +13882,7 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
   if(!tieneReferencia){
     throw crearErrorSync(
       'N8N_RESPUESTA',
-      `La foto ${tipo} fue enviada, pero n8n no devolvió URL/ruta.`,
+      `La foto ${tipo} fue enviada, pero el servicio no confirmó su ubicación.`,
       {
         sync_code:'SIN_URL_RUTA',
         tipo_foto:tipo,
@@ -13945,7 +13945,7 @@ async function guardarReferenciaFotoN8N(puntoId,r,tipo,resultado){
   if(error){
     throw crearErrorSync(
       'SUPABASE_FOTO_GUARDAR',
-      `Supabase no pudo guardar la referencia de ${tipo}: ${error.message}`,
+      `No se pudo registrar la fotografía ${tipo}: ${error.message}`,
       {
         sync_code:error.code||'SUPABASE_INSERT_ERROR',
         status:error.status||null,
@@ -14079,7 +14079,7 @@ async function subirFotosN8N(r,puntoId){
       if(photos && photos[tipo])delete photos[tipo];
 
       console.info(
-        `Foto ${tipo} confirmada en Drive/Supabase. Original conservado localmente.`,
+        `Foto ${tipo} respaldada correctamente. Original conservado localmente.`,
         {
           original:tamano,
           enviado:fotoEnvio?.envio_bytes||0
@@ -14132,7 +14132,7 @@ async function asegurarSesionValida(){
     if(esErrorRedTransitorio(ref.error)){
       throw crearErrorSync(
         'SUPABASE_CONEXION',
-        'No fue posible comunicarse con Supabase para renovar la sesión.',
+        'No fue posible conectarse para renovar la sesión.',
         {
           sync_code:'SUPABASE_NETWORK',
           sync_detail:textoSeguroSync(ref.error,1000)
@@ -14142,8 +14142,8 @@ async function asegurarSesionValida(){
 
     await mappingSb.auth.signOut().catch(()=>{});
     mappingUser=null;
-    irLoginMapping('La sesión de Supabase venció o ya no es válida. Inicia sesión nuevamente.');
-    throw new Error('La sesión de Supabase venció o ya no es válida. Inicia sesión nuevamente.');
+    irLoginMapping('Tu sesión venció o ya no es válida. Inicia sesión nuevamente.');
+    throw new Error('Tu sesión venció o ya no es válida. Inicia sesión nuevamente.');
   }
 
   session=ref.data.session||session;
@@ -14169,8 +14169,8 @@ async function asegurarSesionValida(){
 
     await mappingSb.auth.signOut().catch(()=>{});
     mappingUser=null;
-    irLoginMapping('Supabase rechazó la sesión. Inicia sesión nuevamente.');
-    throw new Error('Supabase rechazó la sesión. Inicia sesión nuevamente.');
+    irLoginMapping('No fue posible validar tu sesión. Inicia sesión nuevamente.');
+    throw new Error('No fue posible validar tu sesión. Inicia sesión nuevamente.');
   }
 
   mappingUser=usr.data.user;
@@ -14369,7 +14369,7 @@ async function sincronizarUno(r){
   }catch(e){
     throw crearErrorSync(
       'SUPABASE_PUNTO',
-      `Falló el envío del punto ${punto} a Supabase: ${e?.message||e}`,
+      `Falló el envío del punto ${punto}: ${e?.message||e}`,
       {
         sync_code:e?.code||'SUPABASE_UPSERT_EXCEPTION',
         status:e?.status||null,
@@ -14385,7 +14385,7 @@ async function sincronizarUno(r){
       'SUPABASE_PUNTO',
       duplicado
         ? `No fue posible reconciliar el IDCAMPO duplicado ${punto}.`
-        : `Supabase rechazó el punto ${punto}: ${error.message}`,
+        : `No se pudo guardar el punto ${punto}: ${error.message}`,
       {
         sync_code:duplicado?'DUPLICADO_NO_RECONCILIADO':(error.code||'SUPABASE_UPSERT_ERROR'),
         status:error.status||null,
@@ -14397,7 +14397,7 @@ async function sincronizarUno(r){
   if(!data?.id){
     throw crearErrorSync(
       'SUPABASE_PUNTO',
-      `Supabase respondió sin ID para el punto ${punto}.`,
+      `El servidor no confirmó el identificador del punto ${punto}.`,
       {
         sync_code:'SIN_ID_SUPABASE',
         sync_detail:textoSeguroSync(data,1000)
@@ -14775,8 +14775,8 @@ async function sincronizarPendientes(){
       fail++;
       console.error('Error sincronizando punto',r.IDCAMPO||r.offline_id,e);
       if(esError401(e) || String(e?.message||'').toLowerCase().includes('sesión')){
-        alert('La sesión de Supabase no es válida o venció. Vuelve a iniciar sesión y luego presiona Enviar datos nuevamente.\n\nTus puntos y fotografías siguen guardados localmente.');
-        irLoginMapping('La sesión de Supabase no es válida o venció.');
+        alert('Tu sesión no es válida o venció. Vuelve a iniciar sesión y presiona Enviar datos nuevamente.\n\nTus puntos y fotografías siguen guardados localmente.');
+        irLoginMapping('Tu sesión no es válida o venció.');
         break;
       }
     }
@@ -15373,7 +15373,7 @@ async function cargarCorreccionesTecnico({silencioso=true}={}){
 
     if(!silencioso){
       alert(
-        'No fue posible actualizar las correcciones desde Supabase.\n\n'+
+        'No fue posible actualizar las correcciones desde el servidor.\n\n'+
         'Se muestran las últimas solicitudes guardadas en este dispositivo.'
       );
     }
@@ -16386,7 +16386,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
 
       <div class="hint" id="stHint">
-        Las fotos confirmadas en Drive/Supabase se eliminan automáticamente de IndexedDB.
+        Las fotos respaldadas en línea se eliminan automáticamente del almacenamiento local cuando corresponde.
       </div>
 
       <div class="storageActions">
@@ -17349,6 +17349,16 @@ window.addEventListener('pageshow',()=>setTimeout(pdr130OfrecerRecuperacion,1500
 
 </script>
 </body></html>
+
+
+
+
+
+
+
+
+
+
 
 
 
