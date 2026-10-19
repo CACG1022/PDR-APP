@@ -2276,6 +2276,16 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
 }
 @media (prefers-reduced-motion: reduce){#btnMenuPrincipal.menuVisible{animation:none!important}}
 
+/* V136 - Estado compacto de sincronización automática: sin ventana flotante grande */
+/* V137: semáforo de sincronización automática; no invade formularios */
+.pdrAutoSyncToast{position:fixed;left:11px;bottom:76px;z-index:2200;width:14px;height:14px;max-width:none;padding:0;border-radius:50%;display:none;background:#f59e0b;border:2px solid rgba(255,255,255,.94);box-shadow:0 0 0 2px rgba(0,0,0,.28),0 0 9px rgba(245,158,11,.55);pointer-events:none;overflow:visible}
+.pdrAutoSyncToast.visible{display:block}
+.pdrAutoSyncToast.running,.pdrAutoSyncToast.wait{background:#f59e0b;box-shadow:0 0 0 2px rgba(0,0,0,.28),0 0 10px rgba(245,158,11,.7)}
+.pdrAutoSyncToast.success{background:#22c55e;box-shadow:0 0 0 2px rgba(0,0,0,.28),0 0 10px rgba(34,197,94,.65)}
+.pdrAutoSyncToast.error{background:#ef4444;box-shadow:0 0 0 2px rgba(0,0,0,.28),0 0 10px rgba(239,68,68,.7)}
+.pdrAutoSyncToast b,.pdrAutoSyncToast span{display:none!important}
+body.formularioAbierto .pdrAutoSyncToast,#formOverlay.open~.pdrAutoSyncToast{display:none!important}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -5369,11 +5379,17 @@ async function cargarFoto(id,input){
   const f=input.files?.[0];
   if(!f)return;
   pdrCapturasEnProceso++;
+  const versionCaptura=pdrCapturaFormularioVersion;
   pdr130Log("capture", "procesar_foto_inicio",id);
   try{
 
-  // Se conserva el archivo ORIGINAL intacto para IndexedDB / ZIP.
-  let fotoFinal;try{fotoFinal=await pdrEtiquetarEvidencia(f);}catch(e){alert('No se pudo etiquetar la foto: '+e.message);input.value='';return;}
+  // V138: se conserva la foto procesada con la resolución elegida para IndexedDB / ZIP.
+  // En modo automático se mantiene el comportamiento anterior.
+  let fotoFinal;try{
+    fotoFinal=await pdrEtiquetarEvidencia(f);
+    fotoFinal=await pdrFotoAplicarResolucionCaptura(fotoFinal);
+  }catch(e){alert('No se pudo procesar la foto: '+e.message);input.value='';return;}
+  if(versionCaptura!==pdrCapturaFormularioVersion || !pdrFormularioCapturaActivo())return;
   photos[id]={blob:fotoFinal,nombre_original:fotoFinal.name||''};
   try{await pdr130PersistirFoto(id,fotoFinal);pdr130Log('capture','foto_persistida_local',id);}
   catch(e){console.warn('Respaldo de foto:',e);pdr130Log('storage','respaldo_foto_fallido',id);}
@@ -8181,7 +8197,61 @@ async function mostrarPreviewFotoLocal(tipo,blob,titulo='Foto local de este disp
 
 
 
+// V138: parámetros por proyecto. null = comportamiento original V137.
 const FOTO_ENVIO_MAX_LADO=1600;
+const PDR_FOTO_CFG_TTL=60000;
+let pdrFotoConfigCache={proyecto:'',valor:{maxLado:null,calidad:0.78},leido:0};
+function pdrFotoConfigFallback(proyecto){
+  try{
+    const obj=JSON.parse(localStorage.getItem('pdr_foto_resolucion_'+proyecto)||'null');
+    return pdrFotoConfigNormalizar(obj);
+  }catch(_){return {maxLado:null,calidad:0.78};}
+}
+function pdrFotoConfigNormalizar(data){
+  const raw=Number(data?.foto_max_lado??data?.maxLado??0);
+  const maxLado=[1280,1600,1920,2560,3264,4032].includes(raw)?raw:null;
+  const q=Number(data?.foto_calidad??data?.calidad??0.78);
+  return {maxLado,calidad:Number.isFinite(q)?Math.max(0.6,Math.min(0.95,q)):0.78};
+}
+async function pdrFotoConfigObtener(){
+  const proyecto=String(proyectoActivo?.proyecto_id||'');
+  if(!proyecto)return {maxLado:null,calidad:0.78};
+  if(pdrFotoConfigCache.proyecto===proyecto && Date.now()-pdrFotoConfigCache.leido<PDR_FOTO_CFG_TTL)
+    return pdrFotoConfigCache.valor;
+  let cfg=pdrFotoConfigFallback(proyecto);
+  // Si no hay red, usar última configuración descargada sin bloquear la captura.
+  if(navigator.onLine && typeof mappingSb!=='undefined' && mappingSb){
+    try{
+      const {data,error}=await mappingSb.from('mapping_sync_config')
+        .select('foto_max_lado,foto_calidad').eq('proyecto_id',proyecto).maybeSingle();
+      if(error)throw error;
+      cfg=pdrFotoConfigNormalizar(data);
+      localStorage.setItem('pdr_foto_resolucion_'+proyecto,JSON.stringify(cfg));
+    }catch(e){console.warn('[PDR FOTO V138] Configuración no disponible, se usa última configuración conocida:',e?.message||e);}
+  }
+  pdrFotoConfigCache={proyecto,valor:cfg,leido:Date.now()};
+  return cfg;
+}
+async function pdrFotoAplicarResolucionCaptura(file){
+  const cfg=await pdrFotoConfigObtener();
+  if(!cfg.maxLado || !(file instanceof Blob) || !String(file.type||'').startsWith('image/'))return file;
+  const img=await cargarImagenParaOptimizar(file);
+  try{
+    const sw=Number(img.width||img.naturalWidth||0),sh=Number(img.height||img.naturalHeight||0);
+    if(!sw||!sh)throw Error('Dimensiones inválidas de fotografía');
+    // Nunca ampliar una foto de menor resolución.
+    const factor=Math.min(1,cfg.maxLado/Math.max(sw,sh));
+    const w=Math.max(1,Math.round(sw*factor)),h=Math.max(1,Math.round(sh*factor));
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)throw Error('No se pudo crear canvas para fotografía');
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+    const blob=await canvasABlobJPEG(canvas,cfg.calidad);
+    return new File([blob],String(file.name||'PDR_FOTO.jpg').replace(/\.[^.]+$/,'')+'.jpg',{
+      type:'image/jpeg',lastModified:file.lastModified||Date.now()
+    });
+  }finally{try{img.close?.()}catch(_){}}
+}
 const FOTO_ENVIO_CALIDAD_INICIAL=0.78;
 const FOTO_ENVIO_CALIDAD_MINIMA=0.58;
 const FOTO_ENVIO_OBJETIVO_BYTES=900*1024;
@@ -8219,6 +8289,8 @@ async function cargarImagenParaOptimizar(blob){
 }
 
 async function optimizarFotoParaEnvio(blob){
+  const cfg=await pdrFotoConfigObtener();
+  const maxLado=cfg.maxLado||FOTO_ENVIO_MAX_LADO;
   if(!(blob instanceof Blob) || !String(blob.type||'').startsWith('image/')){
     return {
       blob,
@@ -8234,7 +8306,7 @@ async function optimizarFotoParaEnvio(blob){
   const originalBytes=Number(blob.size||0);
 
   // Fotos pequeñas ya son suficientemente livianas.
-  if(originalBytes>0 && originalBytes<=FOTO_ENVIO_OBJETIVO_BYTES){
+  if(!cfg.maxLado && originalBytes>0 && originalBytes<=FOTO_ENVIO_OBJETIVO_BYTES){
     return {
       blob,
       optimizada:false,
@@ -8255,7 +8327,7 @@ async function optimizarFotoParaEnvio(blob){
 
     if(!(sw>0) || !(sh>0))throw new Error('Dimensiones de imagen inválidas.');
 
-    const factor=Math.min(1,FOTO_ENVIO_MAX_LADO/Math.max(sw,sh));
+    const factor=Math.min(1,maxLado/Math.max(sw,sh));
     const w=Math.max(1,Math.round(sw*factor));
     const h=Math.max(1,Math.round(sh*factor));
 
@@ -8270,10 +8342,11 @@ async function optimizarFotoParaEnvio(blob){
     ctx.fillRect(0,0,w,h);
     ctx.drawImage(imagen,0,0,w,h);
 
-    let calidad=FOTO_ENVIO_CALIDAD_INICIAL;
+    let calidad=cfg.maxLado?cfg.calidad:FOTO_ENVIO_CALIDAD_INICIAL;
     let salida=await canvasABlobJPEG(canvas,calidad);
 
     while(
+      !cfg.maxLado &&
       salida.size>FOTO_ENVIO_OBJETIVO_BYTES &&
       calidad>FOTO_ENVIO_CALIDAD_MINIMA
     ){
@@ -8282,7 +8355,7 @@ async function optimizarFotoParaEnvio(blob){
     }
 
     // Nunca reemplazar por una versión más pesada.
-    if(salida.size>=originalBytes){
+    if(!cfg.maxLado && salida.size>=originalBytes){
       return {
         blob,
         optimizada:false,
@@ -13523,6 +13596,9 @@ guardarPunto=async function(){
   photos={};
   pintarRegistros();
   cerrarFormulario();
+  // V136: activar la orden del Master desde el guardado REAL (sobrescribe guardarPunto original).
+  // El envío se programa después de liberar el bloqueo del formulario.
+  if(typeof pdrSyncDespuesDeGuardar==='function')pdrSyncDespuesDeGuardar(String(proyectoActivo?.proyecto_id||''));
   if(syncEnCurso)actualizarProgresoSync('Nuevo punto guardado localmente. Quedará para el próximo envío.');
   }finally{pdrGuardadoFotoEnCurso=false;}
 }
@@ -14655,6 +14731,7 @@ function ocultarPanelSync(){
 function actualizarProgresoSync(detalle=''){
   const total=syncResumen.total,procesados=syncResumen.procesados;
   const pct=total?Math.round((procesados/total)*100):0;
+  if(typeof pdrAutoSyncProgreso==='function')pdrAutoSyncProgreso();
   const p=document.getElementById('syncProgressPanel'),m=document.getElementById('syncMiniButton');
   if(pdrSyncSilencioso){if(p)p.style.display='none';if(m)m.style.display='none'}
   else if(syncOcultoManual){if(p)p.style.display='none';if(m)m.style.display='flex'}
@@ -14677,6 +14754,7 @@ function finalizarPanelSync(){
 
   renderErroresSync();
   actualizarProgresoSync();
+  if(pdrSyncSilencioso && typeof pdrAutoSyncEstado==='function')pdrAutoSyncEstado(syncResumen.error?`⚠ ${syncResumen.error} error(es) · revisa Enviar datos`:`✓ ${syncResumen.ok} punto(s) enviado(s)` ,syncResumen.error?'error':'success',syncResumen.error?10000:5000);
   if(pdrSyncSilencioso){if(p)p.style.display='none';const mini=document.getElementById('syncMiniButton');if(mini)mini.style.display='none';pdrSyncSilencioso=false;}
 }
 function iniciarSincronizacionSegundoPlano(){
@@ -14727,6 +14805,13 @@ async function sincronizarPendientesBackground({silencioso=false}={}){
   actualizarProgresoSync('Puedes ocultar esta ventana y seguir levantando puntos.');
 
   for(const r of pendientes){
+    // V137: nunca iniciar una transferencia de otro punto mientras el técnico
+    // captura fotos o diligencia un formulario. El envío actual puede terminar.
+    // En modo manual se mantiene la misma protección para estabilidad de fotos.
+    while(pdrFormularioCapturaActivo()){
+      if(pdrSyncSilencioso)pdrAutoSyncEstado('Sincronización pausada durante captura','wait');
+      await new Promise(resolve=>setTimeout(resolve,400));
+    }
     const etiqueta=r.IDCAMPO||r.offline_id||'punto';
     const bytesEstimados=bytesPorPunto.get(r.offline_id||r.id)||0;
     const inicioPunto=performance.now();
@@ -14890,6 +14975,10 @@ async function cargarPuntosSupabase(mostrar=true){
     return;
   }
 
+  // V137: esta consulta pudo empezar ANTES de abrir el formulario.
+  // No reconstruir registros mientras exista captura o edición en pantalla.
+  if(pdrFormularioCapturaActivo())return registrosProyectoActual();
+
   const remotos=(data||[]).map(remotoALocal);
 
   // Descargar referencias de fotos de todos los puntos del proyecto.
@@ -14937,6 +15026,8 @@ async function cargarPuntosSupabase(mostrar=true){
   );
 
   const procesadosLocales=new Set();
+
+  if(pdrFormularioCapturaActivo())return registrosProyectoActual();
 
   registros=registros.filter(
     r=>String(r.proyecto_id||'')!==String(proyectoActivo.proyecto_id)
@@ -15959,6 +16050,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
+<div id="pdrAutoSyncToast" class="pdrAutoSyncToast" role="status" aria-label="Sincronización automática" title="Estado de sincronización"></div>
+
 <button id="syncMiniButton" class="syncMiniButton" type="button" onclick="mostrarPanelSync()" style="display:none">
   <span>☁️</span>
   <b id="syncMiniPct">0%</b>
@@ -16839,6 +16932,7 @@ async function capturarFotoIA(){
 
 async function guardarCapturaIAEnFormulario(id,file,detections,audit){
   file=await pdrEtiquetarEvidencia(file);
+  file=await pdrFotoAplicarResolucionCaptura(file);
   photos[id]={
     blob:file,
     nombre_original:file.name||'',
@@ -16882,6 +16976,24 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 <script>
 // ===== V118 · SYNC REMOTO / PROGRAMADO =====
 let pdrSyncControlBusy=false,pdrSyncUltimoIntervalo=0,pdrSyncIntervaloMin=0,pdrSyncUltimaConfiguracion=0,pdrSyncEnviarAlGuardar=false,pdrSyncConfigProyecto='';
+// V136: indicador sólo para la sincronización automática, sin bloquear el mapa.
+let pdrAutoSyncHideTimer=null;
+function pdrAutoSyncEstado(texto,tipo='wait',ocultarMs=0){
+ const el=document.getElementById('pdrAutoSyncToast');if(!el)return;
+ if(pdrAutoSyncHideTimer){clearTimeout(pdrAutoSyncHideTimer);pdrAutoSyncHideTimer=null;}
+ const estado=tipo==='success'?'success':tipo==='error'?'error':'running';
+ el.className='pdrAutoSyncToast visible '+estado;
+ const nombres={success:'Envío completado',error:'Error de sincronización',running:'Enviando o pendiente'};
+ el.setAttribute('aria-label',nombres[estado]);el.title=nombres[estado];
+ // Ocultar solo después del éxito. Mantener visible el error hasta nuevo intento.
+ if(estado==='success')pdrAutoSyncHideTimer=setTimeout(()=>el.classList.remove('visible'),5000);
+}
+
+function pdrAutoSyncProgreso(){
+ if(!pdrSyncSilencioso||!syncEnCurso)return;
+ pdrAutoSyncEstado(`Enviando ${syncResumen.procesados}/${syncResumen.total} · ${Math.round(syncResumen.total?syncResumen.procesados*100/syncResumen.total:0)}%`,'running');
+}
+
 function pdrSyncPending(){return registrosProyectoActual().filter(r=>r.sync_status!=='enviado'||r.sync_error)}
 function pdrSyncPendingFotos(){return pdrSyncPending().reduce((n,r)=>n+Object.keys(r.fotos||{}).length,0)}
 async function pdrSyncReportar(estado='esperando',mensaje=''){
@@ -16946,21 +17058,26 @@ let pdrSyncGuardadoPendiente=false;
 let pdrSyncGuardadoTimer=null;
 function pdrSyncDespuesDeGuardar(proyectoId){
  if(!proyectoId)return;
+ pdrAutoSyncEstado(navigator.onLine?'Punto guardado · comprobando envío':'Guardado local · sin Internet','wait',navigator.onLine?0:6500);
  pdrSyncGuardadoPendiente=true;
  if(pdrSyncGuardadoTimer)clearTimeout(pdrSyncGuardadoTimer);
  pdrSyncGuardadoTimer=setTimeout(async()=>{
   pdrSyncGuardadoTimer=null;
-  if(String(proyectoActivo?.proyecto_id||'')!==proyectoId||!navigator.onLine||!mappingUser?.id)return;
+  if(String(proyectoActivo?.proyecto_id||'')!==proyectoId||!mappingUser?.id)return;
+  if(!navigator.onLine){pdrAutoSyncEstado('Guardado local · sin Internet','wait',6500);return;}
   try{
    // Consultar el ajuste vigente; si falla, no enviar automáticamente.
    const {data,error}=await mappingSb.from('mapping_sync_config').select('enviar_al_guardar').eq('proyecto_id',proyectoId).maybeSingle();
-   if(error||data?.enviar_al_guardar!==true){pdrSyncGuardadoPendiente=false;return;}
+   if(error){pdrAutoSyncEstado('No se pudo consultar envío automático','error',8500);console.warn('Config enviar_al_guardar:',error);pdrSyncGuardadoPendiente=false;return;}
+   if(data?.enviar_al_guardar!==true){pdrSyncGuardadoPendiente=false;document.getElementById('pdrAutoSyncToast')?.classList.remove('visible');return;}
    if(syncEnCurso||pdrSyncControlBusy||pdrFormularioCapturaActivo()){
     pdrSyncGuardadoTimer=setTimeout(()=>pdrSyncDespuesDeGuardar(proyectoId),2500);return;
    }
    pdrSyncGuardadoPendiente=false;
-   await pdrSyncEjecutarAutomatico(null);
-  }catch(e){console.warn('Envío al guardar:',e);}
+   pdrAutoSyncEstado('Iniciando envío automático','running');
+   const ok=await pdrSyncEjecutarAutomatico(null);
+   if(!ok)pdrAutoSyncEstado('Envío aplazado · puedes enviar manualmente','error',8500);
+  }catch(e){console.warn('Envío al guardar:',e);pdrAutoSyncEstado('Error de envío automático · datos guardados','error',10000);}
  },900);
 }
 setInterval(()=>{pdrSyncControlTick().catch(console.warn)},30000);
@@ -17375,6 +17492,17 @@ window.addEventListener('pageshow',()=>setTimeout(pdr130OfrecerRecuperacion,1500
 
 </script>
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
