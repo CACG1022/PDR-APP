@@ -3723,6 +3723,19 @@ header{
  <button type="button" class="btn gray small" onclick="pdrLimpiarLogo('crear')">Quitar logo personalizado</button>
  <button type="button" class="btn gray small" onclick="pdrResetEtiqueta('crear')">Restablecer diseño PDR</button>
  <div class="hint">El logo y el diseño se guardan en la configuración del proyecto; quedan disponibles para trabajo sin conexión una vez sincronizado.</div></div>
+  <div class="hint" style="margin-top:10px">
+   <b>📷 Resolución y calidad de fotografías</b>
+   <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:7px">
+    <div><label>Resolución · lado mayor máximo</label><select id="pdrProyectoFotoResolucionCrear">
+      <option value="">Actual (automático V137 · máx. 1600 px al enviar)</option>
+      <option value="1280">1280 px · liviana</option><option value="1600">1600 px · equilibrada</option>
+      <option value="1920">1920 px · Full HD aprox.</option><option value="2560">2560 px · alta</option>
+      <option value="3264">3264 px · muy alta</option><option value="4032">4032 px · máxima disponible</option>
+    </select></div>
+    <div><label>Calidad JPEG</label><select id="pdrProyectoFotoCalidadCrear"><option value="0.70">70 % · menor tamaño</option><option value="0.78">78 % · equilibrada</option><option value="0.85">85 % · alta</option><option value="0.92">92 % · muy alta</option></select></div>
+   </div>
+   <small>La resolución seleccionada limita el lado mayor, sin estirar imágenes pequeñas. Se aplica al procesar las nuevas capturas (normales e IA) y al enviar fotos pendientes. La opción «Actual» conserva el comportamiento original. No se modifica la cámara física ni fotos ya guardadas en el dispositivo.</small>
+  </div>
             <div class="projectPhotoConfigGrid" id="pFotoConfigBox"></div>
             <div class="projectPhotoSummary" id="pFotoConfigResumen">Configurando fotografías...</div>
           </div>
@@ -3861,6 +3874,19 @@ header{
  <button type="button" class="btn gray small" onclick="pdrLimpiarLogo('existente')">Quitar logo personalizado</button>
  <button type="button" class="btn gray small" onclick="pdrResetEtiqueta('existente')">Restablecer diseño PDR</button>
  <div class="hint">El logo y el diseño se guardan en la configuración del proyecto; quedan disponibles para trabajo sin conexión una vez sincronizado.</div></div>
+  <div class="hint" style="margin-top:10px">
+   <b>📷 Resolución y calidad de fotografías</b>
+   <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:7px">
+    <div><label>Resolución · lado mayor máximo</label><select id="pdrProyectoFotoResolucionExistente">
+      <option value="">Actual (automático V137 · máx. 1600 px al enviar)</option>
+      <option value="1280">1280 px · liviana</option><option value="1600">1600 px · equilibrada</option>
+      <option value="1920">1920 px · Full HD aprox.</option><option value="2560">2560 px · alta</option>
+      <option value="3264">3264 px · muy alta</option><option value="4032">4032 px · máxima disponible</option>
+    </select></div>
+    <div><label>Calidad JPEG</label><select id="pdrProyectoFotoCalidadExistente"><option value="0.70">70 % · menor tamaño</option><option value="0.78">78 % · equilibrada</option><option value="0.85">85 % · alta</option><option value="0.92">92 % · muy alta</option></select></div>
+   </div>
+   <small>La resolución seleccionada limita el lado mayor, sin estirar imágenes pequeñas. Se aplica al procesar las nuevas capturas (normales e IA) y al enviar fotos pendientes. La opción «Actual» conserva el comportamiento original. No se modifica la cámara física ni fotos ya guardadas en el dispositivo.</small>
+  </div>
             <div class="projectPhotoConfigGrid" id="fotoConfigExistenteBox"></div>
             <div class="projectPhotoSummary" id="fotoConfigExistenteResumen">Selecciona un proyecto.</div>
           </div>
@@ -6908,6 +6934,7 @@ function cargarConfigFotosProyectoExistente(){
     return;
   }
 
+  void pdrCargarFotoCalidadProyecto(proyecto.id);
   const chEtiquetar=document.getElementById("fotoEtiquetarExistente");
   if(chEtiquetar)chEtiquetar.checked=proyecto?.fotos_config?.etiquetar_fotos===true;
   pdrTagApply("existente",proyecto?.fotos_config?.etiqueta_diseno);
@@ -7163,6 +7190,42 @@ async function eliminarCartografiaProyecto(){
   }
 }
 
+
+// V105 · Resolución fotográfica pertenece a Proyectos → Fotografías.
+function pdrLeerFotoCalidadProyecto(modo){
+ const pref=modo==='crear'?'Crear':'Existente';
+ const resolucionStr=String(document.getElementById('pdrProyectoFotoResolucion'+pref)?.value||'');
+ const foto_max_lado=resolucionStr?Number(resolucionStr):null;
+ const foto_calidad=Number(document.getElementById('pdrProyectoFotoCalidad'+pref)?.value||'0.78');
+ if(foto_max_lado!==null && ![1280,1600,1920,2560,3264,4032].includes(foto_max_lado))throw new Error('Resolución fotográfica inválida.');
+ if(![0.70,0.78,0.85,0.92].some(n=>Math.abs(n-foto_calidad)<0.0001))throw new Error('Calidad fotográfica inválida.');
+ return {foto_max_lado,foto_calidad};
+}
+async function pdrGuardarFotoCalidadProyecto(proyectoId,modo){
+ const valores=pdrLeerFotoCalidadProyecto(modo);
+ const {data:actual,error:lecturaError}=await sb.from('mapping_sync_config')
+   .select('intervalo_minutos,enviar_al_guardar').eq('proyecto_id',proyectoId).maybeSingle();
+ if(lecturaError)throw lecturaError;
+ const registro={proyecto_id:proyectoId,...valores,actualizado_por:user.id};
+ if(!actual){registro.intervalo_minutos=0;registro.enviar_al_guardar=false;}
+ const {error}=await sb.from('mapping_sync_config').upsert(registro,{onConflict:'proyecto_id'});
+ if(error)throw error;
+}
+async function pdrCargarFotoCalidadProyecto(proyectoId){
+ const r=document.getElementById('pdrProyectoFotoResolucionExistente');
+ const c=document.getElementById('pdrProyectoFotoCalidadExistente');
+ if(!r||!c)return;
+ r.value='';c.value='0.78';
+ if(!proyectoId)return;
+ const {data,error}=await sb.from('mapping_sync_config')
+   .select('foto_max_lado,foto_calidad').eq('proyecto_id',proyectoId).maybeSingle();
+ if(error){console.warn('No se pudo cargar resolución fotográfica:',error);return;}
+ // Evita cargar valores de un proyecto anterior si el selector cambió entretanto.
+ if(String(document.getElementById('fotoProyectoExistente')?.value||'')!==String(proyectoId))return;
+ r.value=String(data?.foto_max_lado??'');
+ c.value=String(data?.foto_calidad??0.78);
+}
+
 async function guardarConfigFotosProyectoExistente(){
   const proyectoId=document.getElementById('fotoProyectoExistente')?.value||'';
   if(!proyectoId)return alert('Selecciona el proyecto que deseas actualizar.');
@@ -7183,6 +7246,13 @@ async function guardarConfigFotosProyectoExistente(){
 
   if(error){
     return alert('No fue posible actualizar la configuración de fotos: '+error.message);
+  }
+
+  try{
+    await pdrGuardarFotoCalidadProyecto(proyectoId,'existente');
+  }catch(e){
+    alert('Las fotografías habilitadas se guardaron, pero NO la resolución/calidad. Reintenta: '+(e?.message||e));
+    return;
   }
 
   await cargarProyectos();
@@ -7324,6 +7394,12 @@ async function crearProyecto(){
       'No se pudo cargar el archivo de polígonos en Supabase. '+
       'El proyecto fue revertido.\n\n'+(e?.message||e)
     );
+  }
+
+  try{
+    await pdrGuardarFotoCalidadProyecto(proyecto.id,'crear');
+  }catch(e){
+    alert('Proyecto y polígonos creados, pero no se pudo guardar la resolución fotográfica. Ajusta la resolución desde Proyectos → Fotografías: '+(e?.message||e));
   }
 
   pCodigo.value='';
@@ -14243,7 +14319,8 @@ async function pdrMasterOfflineExport(){
    <div><label>Proyecto</label><select id="pdrSyncMasterProyecto" onchange="pdrSyncMasterCambioProyecto()"></select></div>
    <div><label>Enviar automáticamente</label><select id="pdrSyncMasterIntervalo"><option value="0">Desactivado · solo manual/remoto</option><option value="5">Cada 5 minutos</option><option value="15">Cada 15 minutos</option><option value="30">Cada 30 minutos</option><option value="60">Cada 60 minutos</option></select></div>
   </div>
-  <div class="miniActions" style="margin:12px 0"><button class="btn blue" onclick="pdrSyncMasterGuardarIntervalo()">Guardar intervalo</button><button class="btn" onclick="pdrSyncMasterSolicitarTodos()">Solicitar envío a todos</button><button class="btn gray" onclick="pdrSyncMasterCargar()">Actualizar estados</button></div>
+  <div class="hint" style="margin-top:10px"><label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px"><input type="checkbox" id="pdrSyncMasterAlGuardar" style="width:18px;height:18px;flex:0 0 auto"> <b>Enviar automáticamente al guardar un punto en Mapping</b></label><small>Cuando el técnico pulse «Guardar punto», Mapping guardará localmente el registro e iniciará su envío sin abrir ventanas ni mostrar progreso. Funciona solo con Mapping abierto, autenticado y con Internet.</small></div>
+  <div class="miniActions" style="margin:12px 0"><button class="btn blue" onclick="pdrSyncMasterGuardarIntervalo()">Guardar configuración</button><button class="btn" onclick="pdrSyncMasterSolicitarTodos()">Solicitar envío a todos</button><button class="btn gray" onclick="pdrSyncMasterCargar()">Actualizar estados</button></div>
   <p id="pdrSyncMasterAviso" class="hint">Selecciona un proyecto.</p>
   <div class="tableWrap"><table class="table"><thead><tr><th>Técnico</th><th>Estado último reporte</th><th>Pendientes</th><th>Fotos</th><th>Último contacto</th><th>Acción</th></tr></thead><tbody id="pdrSyncMasterCuerpo"></tbody></table></div>
   <small style="color:var(--muted)">Los pendientes corresponden al último reporte recibido del dispositivo; no representan acceso directo al almacenamiento del celular.</small>
@@ -14262,17 +14339,19 @@ function abrirControlSyncMaster(){
 async function pdrSyncMasterCambioProyecto(){
  const id=document.getElementById('pdrSyncMasterProyecto').value;
  if(!id)return pdrSyncMasterMsg('No hay proyectos disponibles.');
- const {data,error}=await sb.from('mapping_sync_config').select('intervalo_minutos').eq('proyecto_id',id).maybeSingle();
+ const {data,error}=await sb.from('mapping_sync_config').select('intervalo_minutos,enviar_al_guardar').eq('proyecto_id',id).maybeSingle();
  if(error)return pdrSyncMasterMsg('Ejecuta primero el SQL de sincronización: '+error.message);
  document.getElementById('pdrSyncMasterIntervalo').value=String(data?.intervalo_minutos??0);
+ document.getElementById('pdrSyncMasterAlGuardar').checked=data?.enviar_al_guardar===true;
  await pdrSyncMasterCargar();
 }
 async function pdrSyncMasterGuardarIntervalo(){
  const id=document.getElementById('pdrSyncMasterProyecto').value;
  if(!exigirProyectoPermitidoMaster(id,'configurar el envío automático'))return;
  const n=Number(document.getElementById('pdrSyncMasterIntervalo').value);
- const {error}=await sb.from('mapping_sync_config').upsert({proyecto_id:id,intervalo_minutos:n,actualizado_por:user.id},{onConflict:'proyecto_id'});
- pdrSyncMasterMsg(error?'No se pudo guardar: '+error.message:`Intervalo guardado: ${n?`cada ${n} minutos`:'desactivado'}.`);
+ const inmediato=document.getElementById('pdrSyncMasterAlGuardar').checked;
+ const {error}=await sb.from('mapping_sync_config').upsert({proyecto_id:id,intervalo_minutos:n,enviar_al_guardar:inmediato,actualizado_por:user.id},{onConflict:'proyecto_id'});
+ pdrSyncMasterMsg(error?'No se pudo guardar: '+error.message:`Sincronización guardada: intervalo ${n?`cada ${n} minutos`:'desactivado'} · Enviar al guardar ${inmediato?'activado':'desactivado'}.`);
 }
 async function pdrSyncMasterSolicitar(tecnicoId){
  const id=document.getElementById('pdrSyncMasterProyecto').value;
