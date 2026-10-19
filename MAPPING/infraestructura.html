@@ -17491,53 +17491,153 @@ window.addEventListener('pageshow',()=>setTimeout(pdr130OfrecerRecuperacion,1500
 // V131: capturar el cierre del WebView, sin avisar durante la misma sesión.
 
 </script>
+
+<script>
+/* PDR V139: Recepción segura de cambios del Master.
+   Solo se actualiza configuración; nunca reconstruir fotografías o puntos con el formulario abierto.
+   Supabase Realtime requiere las tablas en supabase_realtime (ver SQL adjunto).
+*/
+(function(){
+'use strict';
+let canal=null, canalProyecto='', refreshTimer=null, refreshEnCurso=false;
+let cambiosPendientes=false, asignacionesPendientes=false, ultimaConsulta=0, ultimoIntentoSub=0;
+let procesandoCambio=false, ultimaAsignacion=0;
+const FALLOVER_MS=60000;
+function proyectoActual(){return String(proyectoActivo?.proyecto_id||'');}
+function disponible(){return !!(navigator.onLine && typeof mappingSb!=='undefined' && mappingSb && mappingUser?.id);}
+function formularioOcupado(){
+  return !!(typeof pdrFormularioCapturaActivo==='function' && pdrFormularioCapturaActivo()) ||
+    !!document.getElementById('formOverlay')?.classList.contains('open') ||
+    !!document.getElementById('aiCameraOverlay')?.classList.contains('open') ||
+    !!(typeof pdrCapturasEnProceso!=='undefined'&&pdrCapturasEnProceso>0);
+}
+function diferir(){return formularioOcupado() || !!(typeof pdrGuardadoFotoEnCurso!=='undefined'&&pdrGuardadoFotoEnCurso);}
+function guardarCache(){
+  try{localStorage.setItem('mapping_proyecto_activo_v1',JSON.stringify(proyectoActivo));}catch(_e){}
+}
+async function refrescarProyectoConfiguracion(){
+ const id=proyectoActual();if(!id || !disponible())return;
+ const [pro,con]=await Promise.all([
+   mappingSb.from('mapping_proyectos').select('*').eq('id',id).maybeSingle(),
+   mappingSb.from('mapping_sync_config').select('intervalo_minutos,enviar_al_guardar,foto_max_lado,foto_calidad').eq('proyecto_id',id).maybeSingle()
+ ]);
+ if(pro.error)throw pro.error;
+ if(con.error)throw con.error;
+ if(id!==proyectoActual() || diferir()){cambiosPendientes=true;return;}
+ if(!pro.data)return;
+ const previo=proyectoActivo;
+ const antesFotos=JSON.stringify(previo?.fotos_config||null);
+ const antesCampos=JSON.stringify(previo?.campos_config||null);
+ const antesCartografia=String(previo?.cartografia_path||'')+'|'+String(previo?.cartografia_updated_at||'');
+ proyectoActivo={...previo,...pro.data,proyecto_id:id,asignacion_id:previo.asignacion_id,empresa:previo.empresa};
+ guardarCache();
+ const cfg=con.data||{};
+ if(typeof pdrSyncIntervaloMin!=='undefined')pdrSyncIntervaloMin=Number(cfg.intervalo_minutos||0);
+ if(typeof pdrSyncEnviarAlGuardar!=='undefined')pdrSyncEnviarAlGuardar=cfg.enviar_al_guardar===true;
+ if(typeof pdrSyncConfigProyecto!=='undefined')pdrSyncConfigProyecto=id;
+ if(typeof pdrSyncUltimaConfiguracion!=='undefined')pdrSyncUltimaConfiguracion=Date.now();
+ if(typeof pdrFotoConfigNormalizar==='function'){
+   const fotoCfg=pdrFotoConfigNormalizar(cfg);
+   if(typeof pdrFotoConfigCache!=='undefined')pdrFotoConfigCache={proyecto:id,valor:fotoCfg,leido:Date.now()};
+   try{localStorage.setItem('pdr_foto_resolucion_'+id,JSON.stringify(fotoCfg));}catch(_e){}
+ }
+ if(antesCampos!==JSON.stringify(pro.data.campos_config||null)){
+   if(typeof pdrAplicarCamposProyecto==='function')pdrAplicarCamposProyecto();
+ }
+ if(antesFotos!==JSON.stringify(pro.data.fotos_config||null)){
+   // renderFotos reinicia photos, por eso SOLO se aplica a los próximos formularios.
+   // No tocar los archivos que el técnico ya capturó.
+   if(typeof actualizarIndicadorTipoProyecto==='function')actualizarIndicadorTipoProyecto();
+ }
+ const ahoraCartografia=String(pro.data.cartografia_path||'')+'|'+String(pro.data.cartografia_updated_at||'');
+ if(antesCartografia!==ahoraCartografia && typeof prepararCartografiaProyectoSeleccionado==='function'){
+   prepararCartografiaProyectoSeleccionado();
+   if(typeof programarCartografiaProyectoSegundoPlano==='function')programarCartografiaProyectoSegundoPlano(900);
+ }
+ if(typeof actualizarBotonCartografiaProyecto==='function')actualizarBotonCartografiaProyecto();
+ if(typeof actualizarEstadoSync==='function')actualizarEstadoSync();
+}
+async function refrescarAsignaciones(){
+ if(!disponible() || diferir()) {asignacionesPendientes=true;return;}
+ // Cargar las asignaciones solo cuando corresponda; evitar recargar puntos o mover el mapa
+ // periódicamente con el técnico trabajando.
+ const {data,error}=await mappingSb.from('mapping_proyecto_tecnicos')
+    .select('id,proyecto_id,estado_asignacion').eq('tecnico_id',mappingUser.id);
+ if(error)throw error;
+ const activa=(data||[]).find(x=>String(x.proyecto_id)===proyectoActual()&&['asignado','en_proceso'].includes(String(x.estado_asignacion||'').toLowerCase()));
+ if(proyectoActual() && !activa){
+   // Un bloqueo/retirada de asignación sí requiere actualizar acceso.
+   if(typeof cargarProyectosAsignados==='function')await cargarProyectosAsignados();
+   return;
+ }
+ if(proyectoActual() && typeof cargarPoligonosAsignadosTecnico==='function'){
+   await cargarPoligonosAsignadosTecnico();
+ }
+}
+async function procesar(){
+ if(procesandoCambio||!disponible()||diferir()||document.hidden)return;
+ if(!cambiosPendientes&&!asignacionesPendientes)return;
+ procesandoCambio=true;
+ const c=cambiosPendientes,a=asignacionesPendientes;
+ cambiosPendientes=false;asignacionesPendientes=false;
+ try{
+   if(c)await refrescarProyectoConfiguracion();
+   if(a)await refrescarAsignaciones();
+   ultimaConsulta=Date.now();
+ }catch(e){
+   if(c)cambiosPendientes=true;if(a)asignacionesPendientes=true;
+   console.warn('[PDR V139] Actualización de configuración pendiente:',e?.message||e);
+ }finally{procesandoCambio=false;}
+}
+function programar(asignaciones=false){
+ cambiosPendientes=true;
+ if(asignaciones)asignacionesPendientes=true;
+ if(refreshTimer)clearTimeout(refreshTimer);
+ refreshTimer=setTimeout(()=>{refreshTimer=null;procesar().catch(console.warn);},450);
+}
+function desconectar(){
+ if(canal){try{mappingSb?.removeChannel(canal);}catch(_e){}canal=null;}
+ canalProyecto='';
+}
+function suscribir(){
+ if(!disponible()||!proyectoActual()){desconectar();return;}
+ const id=proyectoActual(),usuario=String(mappingUser.id);
+ if(canal && canalProyecto===id)return;
+ desconectar();canalProyecto=id;ultimoIntentoSub=Date.now();
+ canal=mappingSb.channel('pdr-master-v139-'+usuario.slice(0,8)+'-'+id.slice(0,8))
+   .on('postgres_changes',{event:'*',schema:'public',table:'mapping_proyectos',filter:'id=eq.'+id},()=>programar(false))
+   .on('postgres_changes',{event:'*',schema:'public',table:'mapping_sync_config',filter:'proyecto_id=eq.'+id},()=>programar(false))
+   .on('postgres_changes',{event:'*',schema:'public',table:'mapping_proyecto_tecnicos',filter:'tecnico_id=eq.'+usuario},()=>programar(true))
+   .on('postgres_changes',{event:'*',schema:'public',table:'mapping_tecnico_poligonos',filter:'tecnico_id=eq.'+usuario},()=>programar(true))
+   .on('postgres_changes',{event:'*',schema:'public',table:'mapping_propietarios'},()=>{
+      if(!diferir()&&typeof pdrActualizarCatalogoPropietarios==='function')pdrActualizarCatalogoPropietarios().catch(console.warn);
+      else cambiosPendientes=true;
+   })
+   .subscribe(status=>{
+     if(status==='SUBSCRIBED')programar(true);
+     else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+       console.warn('[PDR V139] Canal de configuración sin conexión; se utilizará consulta periódica');
+     }
+   });
+}
+// Reconexión, cambio de proyecto, fallos de Realtime y versiones antiguas.
+setInterval(()=>{
+ if(!disponible())return;
+ const id=proyectoActual();
+ if(!id){if(canal)desconectar();return;}
+ if(id!==canalProyecto)suscribir();
+ if(Date.now()-ultimaConsulta>=FALLOVER_MS)programar(false);
+ if(!diferir()&&(cambiosPendientes||asignacionesPendientes))procesar().catch(console.warn);
+},3500);
+window.addEventListener('online',()=>{desconectar();setTimeout(()=>{suscribir();programar(true);},500);});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){suscribir();programar(false);}});
+// Al cerrar el formulario o terminar guardado se aplica la configuración acumulada.
+document.addEventListener('click',()=>{if(cambiosPendientes&&!diferir())setTimeout(()=>procesar().catch(console.warn),250);});
+setTimeout(()=>{suscribir();programar(true);},3500);
+})();
+</script>
+
 </body></html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
