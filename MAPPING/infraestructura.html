@@ -6979,7 +6979,7 @@ function guardarPunto(){
     setNumeroConexiones(_cxFilasPrevias,false);
     _cxPrevio.forEach((v,i)=>{const el=document.getElementById('CX'+(i+1));if(el)el.value=v;});
   }
-  const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pdr130LimpiarBorrador();pdr130Log('form','guardar_local_confirmado');pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();}
+  const ahora=new Date();const r={id:editingId||crypto.randomUUID(),geometry:{type:'Point',coordinates:[Number(LONGITUDE.value),Number(LATITUDE.value)]},TIPO:val('TIPO'),POLIGONO:val('POLIGONO'),CONSECUTIV:Number(val('CONSECUTIV')),IDCAMPO:val('IDCAMPO'),CIUDAD:val('CIUDAD'),BARRIO:val('BARRIO'),TECNICO:val('TECNICO').trim(),PROYECTO:val('PROYECTO'),TIPO_PROYECTO:tipoProyectoActivo(),LATITUDE:Number(val('LATITUDE')),LONGITUDE:Number(val('LONGITUDE')),DIRECCION:normalizarDireccionColombia(val('DIRECCION')),COSTADO:(esClienteViabilidad()?'':(tipoProyectoActivo()==='MAPPING'?'DERECHO':val('COSTADO'))),PROPIETARI:val('PROPIETARI'),ALTURA:num('ALTURA'),'TIPO POSTE':val('TIPO_POSTE'),MATERIAL:val('MATERIAL'),ROTURA:num('ROTURA'),ESTADO:val('ESTADO'),TENSION:val('TENSION'),RIENDA:val('RIENDA'),ELECTRICOS:val('ELECTRICOS')||val('ELECTRICOS_GEN'),CABLES:num('CABLES'),RESERVAS:num('RESERVAS'),EMPALMES:num('EMPALMES'),NAPS:num('NAPS'),BAJANTES:num('BAJANTES'),FUENTES:num('FUENTES'),AMPLIFI:num('AMPLIFI'),PACVI:val('PACVI'),FINDERED:val('FINDERED'),TIPOCAMARA:val('TIPOCAMARA'),'CONF DUCTO':normalSemi(val('CONF_DUCTO')),'DUCTO ELEC':normalSemi(val('DUCTO_ELEC')),'DUCT TELCO':normalSemi(val('DUCT_TELCO')),'DUCT LIBRE':normalSemi(val('DUCT_LIBRE')),'DUCT UTIL':normalSemi(val('DUCT_UTIL')),'SUBIDA A P':val('SUBIDA_A_P'),'ELEM RED':'',PROEMPALME:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROEMPALME'):'NO',PRONAP:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PRONAP'):'0',EXISTENCIA:null,'CANT RESER':(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?num('CANT_RESER'):0,HERRAJES_RETENCION:esPosteViabilidad()?num('HERRAJES_RETENCION'):0,HERRAJES_SUSPENSION:esPosteViabilidad()?num('HERRAJES_SUSPENSION'):0,PROY_BAJANTE:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad())?val('PROY_BAJANTE'):'NO',DISTANCIA_INTERNA:(tipoProyectoActivo()==='VIABILIDAD'&&!esClienteViabilidad()&&val('ES_ACCESO_CLIENTE')==='SI')?num('DISTANCIA_INTERNA'):0,CXOTROPOL:tipoProyectoActivo()==='VIABILIDAD'?'NO':val('CXOTROPOL'),OBSERVACIO:val('OBSERVACIO'),FECHA:ahora.toLocaleDateString('es-CO'),HORA:ahora.toLocaleTimeString('es-CO'),MAPPING:0,IDGLOBAL:`${val('PROYECTO')}${val('TECNICO').trim()}${val('IDCAMPO')}`,fotos:{...photos}};for(let i=1;i<=4;i++){r[`CX${i}`]=num(`CX${i}`)||0;r[`TELCX${i}`]=Number(val(`TELCX${i}`)||0);r[`DISTODO${i}`]=num(`DISTODO${i}`);r[`CX${i}POL`]=tipoProyectoActivo()==='VIABILIDAD'?'N/A':(val(`CX${i}POL`)||'N/A');r[`CX${i}CONSE`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`CX${i}CONSE`);r[`DISTODO${i+4}`]=tipoProyectoActivo()==='VIABILIDAD'?0:num(`DISTODO${i+4}`)}if(editingId){const k=registros.findIndex(x=>x.id===editingId);if(k>=0)registros[k]=r}else registros.push(r);persist();pdr130LimpiarBorrador();pdr130Log('form','guardar_local_confirmado');pintarRegistros();if(techDashOverlay?.classList?.contains('open'))renderDashboardTecnico();cerrarFormulario();pdrSyncDespuesDeGuardar(String(proyectoActivo?.proyecto_id||''));}
 function normalSemi(s){if(!s)return '';return s.replace(/;+$/,'')+';'}function persist(){localStorage.setItem('mapping_sitesurvey_registros_v1',JSON.stringify(registros));counterTop.textContent=`${registros.length} puntos`;}
 let markerLayer=null;
 
@@ -13764,11 +13764,9 @@ async function enviarFotoMappingN8N(r,tipo,b64){
     nombre_archivo:nombreArchivo,
     foto_base64:b64,
 
-    // Compatibilidad con la estructura que ya procesa el webhook OYM.
-    foto1_nombre_archivo:nombreArchivo,
-    foto1_panoramica_base64:b64,
-    foto2_nombre_archivo:null,
-    foto2_empalme_fusion_base64:null,
+    // V134: una sola copia de la imagen. El webhook activo de Mapping
+    // utiliza foto_base64 y nombre_archivo; se evita duplicar el JPG
+    // dentro del JSON transmitido a n8n.
 
     metadata:{
       modulo:'MAPPING',
@@ -14439,6 +14437,7 @@ async function sincronizarUno(r){
 
 let syncEnCurso=false;
 let syncOcultoManual=false;
+let pdrSyncSilencioso=false; // Envíos programados/remotos/al guardar: sin panel ni mini indicador
 let syncResumen={total:0,procesados:0,ok:0,error:0};
 let syncInicioMs=0;
 let syncTimerId=null;
@@ -14639,6 +14638,7 @@ function detenerCronometroSync(){
   actualizarMetricasSync();
 }
 function mostrarPanelSync(){
+  if(pdrSyncSilencioso)return;
   const p=document.getElementById('syncProgressPanel');
   const m=document.getElementById('syncMiniButton');
   syncOcultoManual=false;
@@ -14656,7 +14656,8 @@ function actualizarProgresoSync(detalle=''){
   const total=syncResumen.total,procesados=syncResumen.procesados;
   const pct=total?Math.round((procesados/total)*100):0;
   const p=document.getElementById('syncProgressPanel'),m=document.getElementById('syncMiniButton');
-  if(syncOcultoManual){if(p)p.style.display='none';if(m)m.style.display='flex'}
+  if(pdrSyncSilencioso){if(p)p.style.display='none';if(m)m.style.display='none'}
+  else if(syncOcultoManual){if(p)p.style.display='none';if(m)m.style.display='flex'}
   else{if(p)p.style.display='block';if(m)m.style.display='none'}
   const bar=document.getElementById('syncProgressBar');if(bar)bar.style.width=pct+'%';
   const pe=document.getElementById('syncProgressPct');if(pe)pe.textContent=pct+'%';
@@ -14676,8 +14677,10 @@ function finalizarPanelSync(){
 
   renderErroresSync();
   actualizarProgresoSync();
+  if(pdrSyncSilencioso){if(p)p.style.display='none';const mini=document.getElementById('syncMiniButton');if(mini)mini.style.display='none';pdrSyncSilencioso=false;}
 }
 function iniciarSincronizacionSegundoPlano(){
+  pdrSyncSilencioso=false;
   if(!exigirPoligonoParaTrabajar('enviar datos'))return;
   if(syncEnCurso){mostrarPanelSync();return}
 
@@ -14691,7 +14694,7 @@ function iniciarSincronizacionSegundoPlano(){
     finalizarPanelSync();
   });
 }
-async function sincronizarPendientesBackground(){
+async function sincronizarPendientesBackground({silencioso=false}={}){
   if(syncEnCurso)return;
   if(!exigirPoligonoParaTrabajar('enviar datos'))return;
   if(!proyectoActivo){alert('Selecciona un proyecto.');return}
@@ -14700,10 +14703,10 @@ async function sincronizarPendientesBackground(){
   const pendientes=registrosProyectoActual().filter(r=>r.sync_status!=='enviado'||r.sync_error);
   if(!pendientes.length){
     syncResumen={total:0,procesados:0,ok:0,error:0};syncInicioMs=Date.now();syncBytesTransmitidos=0;syncBytesTotalesEstimados=0;
-    mostrarPanelSync();actualizarProgresoSync('No hay datos pendientes.');finalizarPanelSync();return;
+    if(!silencioso){mostrarPanelSync();actualizarProgresoSync('No hay datos pendientes.');finalizarPanelSync();}return;
   }
 
-  syncEnCurso=true;syncOcultoManual=false;
+  syncEnCurso=true;pdrSyncSilencioso=!!silencioso;syncOcultoManual=false;
   syncResumen={total:pendientes.length,procesados:0,ok:0,error:0};
   syncErroresDetallados=[];
   renderErroresSync();
@@ -16878,7 +16881,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 
 <script>
 // ===== V118 · SYNC REMOTO / PROGRAMADO =====
-let pdrSyncControlBusy=false,pdrSyncUltimoIntervalo=0,pdrSyncIntervaloMin=0,pdrSyncUltimaConfiguracion=0;
+let pdrSyncControlBusy=false,pdrSyncUltimoIntervalo=0,pdrSyncIntervaloMin=0,pdrSyncUltimaConfiguracion=0,pdrSyncEnviarAlGuardar=false,pdrSyncConfigProyecto='';
 function pdrSyncPending(){return registrosProyectoActual().filter(r=>r.sync_status!=='enviado'||r.sync_error)}
 function pdrSyncPendingFotos(){return pdrSyncPending().reduce((n,r)=>n+Object.keys(r.fotos||{}).length,0)}
 async function pdrSyncReportar(estado='esperando',mensaje=''){
@@ -16900,7 +16903,7 @@ async function pdrSyncEjecutarAutomatico(comandoId=null){
    if(u.error)throw u.error;
   }
   await pdrSyncReportar('enviando','Sincronización iniciada');
-  await sincronizarPendientesBackground();
+  await sincronizarPendientesBackground({silencioso:true});
   const error=syncResumen.error>0;
   const estado=error?'con_errores':'completado';
   await pdrSyncReportar(estado,`${syncResumen.ok} enviados, ${syncResumen.error} errores`);
@@ -16921,9 +16924,9 @@ async function pdrSyncControlTick(){
  pdrSyncControlBusy=true;
  try{
   const now=Date.now(),id=proyectoActivo.proyecto_id;
-  if(now-pdrSyncUltimaConfiguracion>60000){
-   const {data,error}=await mappingSb.from('mapping_sync_config').select('intervalo_minutos').eq('proyecto_id',id).maybeSingle();
-   if(!error)pdrSyncIntervaloMin=Number(data?.intervalo_minutos||0);
+  if(pdrSyncConfigProyecto!==String(id)||now-pdrSyncUltimaConfiguracion>60000){
+   const {data,error}=await mappingSb.from('mapping_sync_config').select('intervalo_minutos,enviar_al_guardar').eq('proyecto_id',id).maybeSingle();
+   if(!error){pdrSyncIntervaloMin=Number(data?.intervalo_minutos||0);pdrSyncEnviarAlGuardar=data?.enviar_al_guardar===true;pdrSyncConfigProyecto=String(id);}
    pdrSyncUltimaConfiguracion=now;
   }
   await pdrSyncReportar('esperando');
@@ -16936,6 +16939,29 @@ async function pdrSyncControlTick(){
   await pdrSyncEjecutarAutomatico(comando?.id||null);
  }catch(e){console.warn('Control de sincronización:',e)}
  finally{pdrSyncControlBusy=false;}
+}
+// V135: envío tras Guardar punto, controlado exclusivamente por el Master.
+// Guarda primero localmente; las transferencias nunca bloquean el formulario.
+let pdrSyncGuardadoPendiente=false;
+let pdrSyncGuardadoTimer=null;
+function pdrSyncDespuesDeGuardar(proyectoId){
+ if(!proyectoId)return;
+ pdrSyncGuardadoPendiente=true;
+ if(pdrSyncGuardadoTimer)clearTimeout(pdrSyncGuardadoTimer);
+ pdrSyncGuardadoTimer=setTimeout(async()=>{
+  pdrSyncGuardadoTimer=null;
+  if(String(proyectoActivo?.proyecto_id||'')!==proyectoId||!navigator.onLine||!mappingUser?.id)return;
+  try{
+   // Consultar el ajuste vigente; si falla, no enviar automáticamente.
+   const {data,error}=await mappingSb.from('mapping_sync_config').select('enviar_al_guardar').eq('proyecto_id',proyectoId).maybeSingle();
+   if(error||data?.enviar_al_guardar!==true){pdrSyncGuardadoPendiente=false;return;}
+   if(syncEnCurso||pdrSyncControlBusy||pdrFormularioCapturaActivo()){
+    pdrSyncGuardadoTimer=setTimeout(()=>pdrSyncDespuesDeGuardar(proyectoId),2500);return;
+   }
+   pdrSyncGuardadoPendiente=false;
+   await pdrSyncEjecutarAutomatico(null);
+  }catch(e){console.warn('Envío al guardar:',e);}
+ },900);
 }
 setInterval(()=>{pdrSyncControlTick().catch(console.warn)},30000);
 window.addEventListener('online',()=>setTimeout(()=>pdrSyncControlTick().catch(console.warn),1500));
@@ -17349,6 +17375,17 @@ window.addEventListener('pageshow',()=>setTimeout(pdr130OfrecerRecuperacion,1500
 
 </script>
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
