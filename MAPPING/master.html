@@ -2196,6 +2196,24 @@ aside.mapFiltersSidebar{padding:12px}
 .pdrTemplateLibrary input,.pdrTemplateLibrary select{font-size:12px}
 .pdrTemplateStatus{color:#8fdef4;font-size:10px;min-height:16px}
 @media(max-width:650px){.pdrTemplateInputs{grid-template-columns:1fr}}
+
+/* PDR V107 — Centro de gestión comercial */
+.pdrBizOverlay{position:fixed;inset:0;background:#020a16e8;z-index:99000;display:none;overflow:auto;padding:14px;color:#e8f2ff}
+.pdrBizOverlay.open{display:block}
+.pdrBizShell{max-width:1510px;margin:0 auto;background:#091a2c;border:1px solid #36516e;border-radius:18px;min-height:90vh;box-shadow:0 25px 80px #0009;overflow:hidden}
+.pdrBizTop{padding:17px 22px;background:linear-gradient(115deg,#102b43,#0c2034);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid #35516e}
+.pdrBizTop h2{font-size:23px;margin:0;color:#f8fafc}.pdrBizMuted{color:#9ab1c8;font-size:12px}
+.pdrBizTabs{display:flex;gap:7px;padding:13px 20px;flex-wrap:wrap;border-bottom:1px solid #2a4560}
+.pdrBizTab,.pdrBizBtn{border:1px solid #41617d;background:#142e45;color:#e7f0ff;padding:10px 14px;border-radius:9px;cursor:pointer;font-weight:700;font-size:12px}
+.pdrBizTab.active,.pdrBizBtn.primary{background:#f56002;border-color:#f56002;color:#fff}
+.pdrBizContent{padding:20px}.pdrBizPane{display:none}.pdrBizPane.active{display:block}
+.pdrBizGrid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:13px;margin:12px 0 20px}
+.pdrBizCard{background:#122a41;border:1px solid #2c4b65;padding:17px;border-radius:13px;min-width:0}.pdrBizCard b{display:block;font-size:24px;color:white;margin-top:7px}.pdrBizCard small{color:#a4b8cb}
+.pdrBizTools{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:0 0 16px}.pdrBizTools label,.pdrBizForm label{display:flex;flex-direction:column;gap:5px;color:#aabbce;font-size:12px;font-weight:700}
+.pdrBizOverlay input,.pdrBizOverlay select,.pdrBizOverlay textarea{background:#081b2c;border:1px solid #385774;border-radius:8px;padding:10px;color:#fff;min-width:0;max-width:100%;font-size:13px}
+.pdrBizOverlay select option{background:#0a1c2e}.pdrBizTableWrap{overflow-x:auto;border:1px solid #2a4560;border-radius:12px;margin-bottom:15px}.pdrBizTable{width:100%;border-collapse:collapse;font-size:12px}.pdrBizTable th{color:#a5bfd4;text-align:left;background:#12304a;padding:12px;white-space:nowrap}.pdrBizTable td{padding:11px 12px;border-top:1px solid #253e54;vertical-align:middle}.pdrBizTable tr:hover td{background:#132d44}.pdrBizTrack{height:9px;background:#2d4359;border-radius:12px;overflow:hidden;min-width:95px}.pdrBizFill{height:100%;background:#f56002;border-radius:12px}.pdrBizSectionTitle{margin:23px 0 12px;font-size:17px;color:#f8fafc}
+.pdrBizCompany{background:#10283d;border:1px solid #31516b;border-radius:12px;margin:12px 0;overflow:hidden}.pdrBizCompanyHead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:15px;background:#142f47}.pdrBizCompanyHead h3{margin:0;color:white}.pdrBizForm{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;padding:15px;border:1px solid #31516b;border-radius:12px;background:#10273a;margin-bottom:16px}.pdrBizForm .full{grid-column:1/-1}.pdrBizStatus{font-size:12px;margin:8px 0 13px;color:#9bc8ee}.pdrBizEmpty{padding:18px;color:#aabbce}.pdrBizToolbarButtons{display:flex;gap:8px;flex-wrap:wrap}.pdrBizOverlay button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:860px){.pdrBizGrid{grid-template-columns:repeat(2,minmax(120px,1fr))}.pdrBizForm{grid-template-columns:1fr 1fr}}@media(max-width:520px){.pdrBizGrid,.pdrBizForm{grid-template-columns:1fr}.pdrBizContent{padding:11px}.pdrBizTop{padding:12px}}
 </style>
 <style>
 /* ===== ENTREGABLES V45 - integrado correctamente al header ===== */
@@ -3201,7 +3219,23 @@ header{
 .pdrVisualItem.mini_mapa img{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
 @media(max-width:650px){.pdrMiniProviderGrid{grid-template-columns:1fr}}
 </style>
-</head>
+<style>
+.pdrV117Cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:15px}
+.pdrV117Card{background:#101923;border:1px solid #33485d;border-radius:15px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:0 4px 20px #0002}
+.pdrV117CardTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pdrV117CardTop h3{font-size:19px;color:#effaff;margin:6px 0 0;font-weight:800}
+.pdrV117Period{text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:#80e0f6}
+.pdrV117Chip{background:#2a2549;color:#ddd1ff;border-radius:18px;padding:5px 9px;white-space:nowrap;font-size:11px}
+.pdrV117Desc{font-size:12px;line-height:1.5;color:#a8bfcc;min-height:35px;margin:0}
+.pdrV117Price{font-size:27px;font-weight:800;color:#f8fcff;white-space:nowrap}
+.pdrV117Price small{font-size:12px;font-weight:500;color:#a7bcc9}
+.pdrV117CardButtons{display:flex;flex-wrap:wrap;gap:6px}
+.pdrV117CardButtons .pdrBizBtn{flex:1 1 90px;font-size:11px;padding:8px 7px}
+.pdrV117Card details{border-top:1px solid #304155;padding-top:10px;color:#b8cad7;font-size:12px}
+.pdrV117Card summary{cursor:pointer}
+.pdrV117Card li{padding:3px 0}
+#pdrV117Advanced:not([open]){background:#122a3e}
+</style></head>
 <body>
 
 <div class="masterFxStage" id="masterFxStage" aria-hidden="true">
@@ -3224,6 +3258,8 @@ header{
     </div>
   </div>
   <div class="topHeaderActions">
+    <button class="topActionBtn adminOnly managementBtn" onclick="pdrBizOpen('dashboard')" title="Control integral por empresas y proyectos"><span class="hdrIcon">▤</span><span>Gestión general</span></button>
+    <button class="topActionBtn adminOnly managementBtn" onclick="pdrBizOpen('planes')" title="Catálogo de precios y planes"><span class="hdrIcon">$</span><span>Planes y precios</span></button>
     <button class="topActionBtn adminOnly managementBtn hdrEmpresas" onclick="abrirGestionEmpresas()"><span class="hdrIcon">▦</span><span>Empresas</span></button>
     <button class="topActionBtn adminOnly managementBtn hdrUsuarios" onclick="abrirGestionUsuarios()"><span class="hdrIcon">◉</span><span>Usuarios</span></button>
     <button class="topActionBtn managementBtn hdrProyectos" onclick="abrirAdministrarProyectos()"><span class="hdrIcon">▱</span><span>Proyectos</span></button>
@@ -4140,6 +4176,7 @@ header{
       </div>
       <div class="correctionHeadActions">
         <button class="btn blue small" type="button" onclick="cargarCorreccionesMasterGlobal(false).then(renderCentroCorreccionesMaster)">⟳ Actualizar</button>
+        <button class="btn small" type="button" onclick="actualizarResponsablesCorreccionesMaster()" title="Transferir las correcciones abiertas a los técnicos asignados actualmente">⇄ Actualizar responsables</button>
         <button class="close" onclick="correccionesMasterModal.classList.remove('open')">Cerrar</button>
       </div>
     </div>
@@ -4239,7 +4276,7 @@ header{
       <textarea id="corrCrearDescripcion" style="min-height:120px" placeholder="Describe claramente qué debe revisar o corregir el técnico."></textarea>
 
       <div class="correctionCreateHint">
-        La solicitud queda asociada directamente al elemento y al técnico que lo levantó.
+        La solicitud se envía al técnico actualmente asignado al polígono. El creador original del elemento se conserva en el historial.
       </div>
 
       <button class="btn correctionCreateBtn" type="button" onclick="guardarSolicitudCorreccionMaster()">⚠ Enviar solicitud al técnico</button>
@@ -7557,6 +7594,8 @@ async function asignarProyecto(){
     }
   }
 
+  try{await transferirCorreccionesAbiertasProyectoMaster(proyectoId)}
+  catch(e){alert('La asignación se guardó, pero no se trasladaron todas las correcciones abiertas: '+(e?.message||e));}
   await cargarAsignaciones();
   actualizarKpis();
   await cargarPoligonosAsignacion();
@@ -7667,6 +7706,8 @@ async function guardarPoligonosAsignacion(){
     }
   }
 
+  try{await transferirCorreccionesAbiertasProyectoMaster(a.proyecto_id)}
+  catch(e){alert('Los polígonos se guardaron, pero las correcciones abiertas no se reasignaron: '+(e?.message||e));}
   poligonosAsignacionModal.classList.remove('open');
   await cargarAsignaciones();
   await cargarPoligonosAsignacion();
@@ -7718,7 +7759,7 @@ function abrirReasignar(id){
   reasignarModal.classList.add('open');
 }
 function cerrarReasignar(){reasignarModal.classList.remove('open')}
-async function confirmarReasignacion(){const id=reasigId.value,a=asignaciones.find(x=>String(x.asignacion_id)===String(id)),nuevoId=reasigTecnico.value;if(!a||!nuevoId)return alert('Selecciona nuevo técnico.');if(!exigirProyectoPermitidoMaster(a.proyecto_id,'reasignar este proyecto'))return;if(nuevoId===a.tecnico_id)return alert('Ese técnico ya tiene esta asignación.');const nuevo=usuarios.find(u=>String(u.id)===String(nuevoId));if(!nuevo)return alert('El técnico seleccionado no pertenece a una empresa permitida.');const proyecto=proyectos.find(p=>String(p.id)===String(a.proyecto_id));if(proyecto && String(nuevo.empresa_id||'')!==String(proyecto.empresa_id||''))return alert('El técnico debe pertenecer a la misma empresa del proyecto.');const choque=asignaciones.find(x=>x.proyecto_id===a.proyecto_id&&x.tecnico_id===nuevoId);if(choque)return alert('El técnico seleccionado ya está asignado a este proyecto.');if(!confirm(`¿Reasignar ${a.proyecto_nombre} de ${a.tecnico_nombre||a.tecnico_email} a ${nuevo?.nombre||nuevo?.email}?`))return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:'reasignado',evento:`Reasignado de ${a.tecnico_nombre||a.tecnico_email||'N/A'} a ${nuevo?.nombre||nuevo?.email}`,tecnico_anterior_id:a.tecnico_id,tecnico_anterior_email:a.tecnico_email,tecnico_nuevo_id:nuevoId,tecnico_nuevo_email:nuevo?.email,observacion:reasigObs.value.trim(),usuario_master:user.email};const {error}=await sb.from('mapping_proyecto_tecnicos').update({tecnico_id:nuevoId,tecnico_email:nuevo?.email,tecnico_nombre:nuevo?.nombre||nuevo?.email,estado_asignacion:'asignado',fecha_asignacion:new Date().toISOString(),fecha_finalizacion:null,historial:[...hist,evento]}).eq('id',id);if(error)return alert('Error reasignando: '+error.message);const {error:polyMoveError}=await sb.from('mapping_tecnico_poligonos').update({tecnico_id:nuevoId}).eq('asignacion_id',id);if(polyMoveError)return alert('La asignación cambió, pero no se pudieron transferir sus polígonos: '+polyMoveError.message);cerrarReasignar();await cargarAsignaciones();alert('Proyecto reasignado correctamente, conservando los polígonos asignados.')}
+async function confirmarReasignacion(){const id=reasigId.value,a=asignaciones.find(x=>String(x.asignacion_id)===String(id)),nuevoId=reasigTecnico.value;if(!a||!nuevoId)return alert('Selecciona nuevo técnico.');if(!exigirProyectoPermitidoMaster(a.proyecto_id,'reasignar este proyecto'))return;if(nuevoId===a.tecnico_id)return alert('Ese técnico ya tiene esta asignación.');const nuevo=usuarios.find(u=>String(u.id)===String(nuevoId));if(!nuevo)return alert('El técnico seleccionado no pertenece a una empresa permitida.');const proyecto=proyectos.find(p=>String(p.id)===String(a.proyecto_id));if(proyecto && String(nuevo.empresa_id||'')!==String(proyecto.empresa_id||''))return alert('El técnico debe pertenecer a la misma empresa del proyecto.');const choque=asignaciones.find(x=>x.proyecto_id===a.proyecto_id&&x.tecnico_id===nuevoId);if(choque)return alert('El técnico seleccionado ya está asignado a este proyecto.');if(!confirm(`¿Reasignar ${a.proyecto_nombre} de ${a.tecnico_nombre||a.tecnico_email} a ${nuevo?.nombre||nuevo?.email}?`))return;const hist=Array.isArray(a.historial)?a.historial:[];const evento={fecha:new Date().toISOString(),accion:'reasignado',evento:`Reasignado de ${a.tecnico_nombre||a.tecnico_email||'N/A'} a ${nuevo?.nombre||nuevo?.email}`,tecnico_anterior_id:a.tecnico_id,tecnico_anterior_email:a.tecnico_email,tecnico_nuevo_id:nuevoId,tecnico_nuevo_email:nuevo?.email,observacion:reasigObs.value.trim(),usuario_master:user.email};const {error}=await sb.from('mapping_proyecto_tecnicos').update({tecnico_id:nuevoId,tecnico_email:nuevo?.email,tecnico_nombre:nuevo?.nombre||nuevo?.email,estado_asignacion:'asignado',fecha_asignacion:new Date().toISOString(),fecha_finalizacion:null,historial:[...hist,evento]}).eq('id',id);if(error)return alert('Error reasignando: '+error.message);const {error:polyMoveError}=await sb.from('mapping_tecnico_poligonos').update({tecnico_id:nuevoId}).eq('asignacion_id',id);if(polyMoveError)return alert('La asignación cambió, pero no se pudieron transferir sus polígonos: '+polyMoveError.message);try{await transferirCorreccionesAbiertasProyectoMaster(a.proyecto_id)}catch(e){alert('La reasignación se completó, pero falló el traslado de correcciones: '+(e?.message||e));}cerrarReasignar();await cargarAsignaciones();alert('Proyecto reasignado, conservando sus polígonos.')}
 function abrirHistorial(id){const a=asignaciones.find(x=>x.asignacion_id===id);if(!a)return;historialInfo.innerHTML=`<b>Empresa:</b> ${esc(a.empresa_nombre||'')}<br><b>Proyecto:</b> ${esc(a.codigo)} · ${esc(a.proyecto_nombre)}<br><b>Técnico actual:</b> ${esc(a.tecnico_nombre||a.tecnico_email||'')}<br><b>Estado:</b> ${estadoBadge(a.estado_asignacion)}`;const hist=Array.isArray(a.historial)?a.historial:[];const base=[{fecha:a.fecha_asignacion,accion:'asignación',evento:'Asignación registrada',tecnico:a.tecnico_nombre||a.tecnico_email}];const eventos=[...base,...hist].sort((x,y)=>new Date(x.fecha||0)-new Date(y.fecha||0));historialLista.innerHTML=eventos.length?eventos.map(h=>`<div class="historyItem"><small>${formatoFecha(h.fecha)}</small><b>${esc(h.accion||'Evento')}</b><div>${esc(h.evento||'')}</div>${h.tecnico?`<div><b>Técnico:</b> ${esc(h.tecnico)}</div>`:''}${h.observacion?`<div><b>Observación:</b> ${esc(h.observacion)}</div>`:''}${h.usuario_master?`<div><b>Master:</b> ${esc(h.usuario_master)}</div>`:''}</div>`).join(''):'<div class="hint">Sin historial.</div>';historialModal.classList.add('open')}
 async function eliminarAsignacion(id){
   if(!confirm('¿Quitar esta asignación? Los polígonos quedarán libres para otros técnicos. El proyecto y sus puntos NO se eliminarán.'))return;
@@ -12890,30 +12931,94 @@ async function verElementoCorreccionMaster(puntoId,proyectoId){
   }
 }
 
-function abrirSolicitudCorreccionMaster(puntoId){
+
+/* V106 · Las correcciones se asignan al responsable VIGENTE del polígono.
+   El creador del poste permanece intacto para conservar la auditoría. */
+function clavePoligonoCorreccion(v){
+  return String(v??'').trim().toUpperCase().replace(/\s+/g,'');
+}
+async function responsableActualCorreccionMaster(p){
+  if(!p?.proyecto_id)throw new Error('El punto no tiene proyecto.');
+  const clave=clavePoligonoCorreccion(p.poligono);
+  if(!clave)throw new Error('El punto no tiene un polígono identificado.');
+  const {data:polys,error:ep}=await sb.from('mapping_poligonos')
+    .select('id,codigo,nombre').eq('proyecto_id',p.proyecto_id).eq('activo',true);
+  if(ep)throw ep;
+  const poly=(polys||[]).find(x=>
+    clavePoligonoCorreccion(x.codigo)===clave || clavePoligonoCorreccion(x.nombre)===clave || String(x.id)===String(p.poligono)
+  );
+  if(!poly)throw new Error(`No se encontró el polígono actual «${p.poligono}» en el catálogo del proyecto.`);
+  const {data:rows,error:ea}=await sb.from('mapping_tecnico_poligonos')
+    .select('tecnico_id,asignacion_id').eq('proyecto_id',p.proyecto_id).eq('poligono_id',poly.id);
+  if(ea)throw ea;
+  const ids=[...new Set((rows||[]).map(x=>String(x.tecnico_id||'')).filter(Boolean))];
+  if(ids.length!==1)throw new Error(ids.length?'El polígono tiene varias asignaciones activas.':'Este polígono no está asignado actualmente a un técnico.');
+  const id=ids[0];
+  const a=asignaciones.find(x=>String(x.proyecto_id)===String(p.proyecto_id)&&String(x.tecnico_id)===id);
+  const u=usuarios.find(x=>String(x.id)===id);
+  return {tecnico_id:id,tecnico_nombre:a?.tecnico_nombre||u?.nombre||u?.email||null,tecnico_email:a?.tecnico_email||u?.email||null};
+}
+async function actualizarResponsablesCorreccionesMaster(){
+  const sel=document.getElementById('corrMasterProyectoFiltro');
+  const proyectosIds=sel?.value?[sel.value]:[...new Set(proyectos.map(x=>String(x.id)))];
+  if(!confirm('¿Comprobar y actualizar los responsables de las correcciones abiertas en '+proyectosIds.length+' proyecto(s)?'))return;
+  let total=0,errores=[];
+  for(const id of proyectosIds){
+    try{total+=await transferirCorreccionesAbiertasProyectoMaster(id)}
+    catch(e){errores.push((proyectos.find(x=>String(x.id)===id)?.nombre||id)+': '+(e?.message||e))}
+  }
+  await cargarCorreccionesMasterGlobal(true);
+  renderCentroCorreccionesMaster();
+  alert(`${total} corrección(es) abiertas transferidas al responsable actual.`+(errores.length?'\n\nErrores:\n'+errores.join('\n'):''));
+}
+async function transferirCorreccionesAbiertasProyectoMaster(proyectoId){
+  // Tras reasignaciones, transferir pendientes, reabiertas y en revisión.
+  // Las cerradas quedan como histórico. Nunca modificar el autor del poste.
+  const {data:correcciones,error:ec}=await sb.from('mapping_correcciones')
+    .select('id,punto_id,tecnico_id,estado').eq('proyecto_id',proyectoId).in('estado',['pendiente','reabierta','corregida']);
+  if(ec)throw ec;
+  if(!correcciones?.length)return 0;
+  const {data:puntosProyecto,error:ep}=await sb.from('mapping_puntos')
+    .select('id,proyecto_id,poligono').eq('proyecto_id',proyectoId);
+  if(ep)throw ep;
+  const mapa=new Map((puntosProyecto||[]).map(p=>[String(p.id),p]));
+  const cache=new Map();let total=0;
+  for(const c of correcciones){
+    const p=mapa.get(String(c.punto_id));
+    if(!p)continue;
+    const key=clavePoligonoCorreccion(p.poligono);
+    if(!cache.has(key)){
+      try{cache.set(key,await responsableActualCorreccionMaster(p))}
+      catch(e){console.warn('Corrección sin responsable actual:',key,e);cache.set(key,null)}
+    }
+    const r=cache.get(key);
+    if(!r||String(c.tecnico_id)===String(r.tecnico_id))continue;
+    const {error}=await sb.from('mapping_correcciones').update(r).eq('id',c.id);
+    if(error)throw new Error('No se pudo reasignar la corrección '+c.id+': '+error.message);
+    total++;
+  }
+  if(total)await cargarCorreccionesMasterGlobal(true);
+  return total;
+}
+
+async function abrirSolicitudCorreccionMaster(puntoId){
   const p=puntos.find(x=>String(x.id)===String(puntoId))
     || dashboardPuntos.find(x=>String(x.id)===String(puntoId));
-
   if(!p)return alert('No se encontró el elemento seleccionado.');
-
-  if(!p.tecnico_id){
-    return alert(
-      'Este elemento no tiene tecnico_id asociado. No es posible enviar una corrección hasta identificar al técnico responsable.'
-    );
-  }
-
+  let responsable;
+  try{responsable=await responsableActualCorreccionMaster(p)}
+  catch(e){return alert('No se puede solicitar la corrección: '+(e?.message||e));}
   correccionPuntoActivoMaster=p;
   corrCrearPuntoId.value=p.id;
   corrCrearCategoria.value='DATOS';
   corrCrearPrioridad.value='normal';
   corrCrearCampo.value='';
   corrCrearDescripcion.value='';
-
   corrCrearPuntoInfo.innerHTML=
     `<b>${esc(p.idcampo||'Elemento')}</b> · ${esc(p.tipo||'')}<br>`+
-    `<b>Técnico:</b> ${esc(p.tecnico_nombre||p.tecnico_email||p.tecnico_id)}<br>`+
+    `<b>Responsable actual:</b> ${esc(responsable.tecnico_nombre||responsable.tecnico_email||responsable.tecnico_id)}<br>`+
+    `<b>Registrado originalmente por:</b> ${esc(p.tecnico_nombre||p.tecnico_email||'No disponible')}<br>`+
     `<b>Proyecto:</b> ${esc((proyectos.find(x=>String(x.id)===String(p.proyecto_id))?.codigo)||p.proyecto_id||'')}`;
-
   crearCorreccionModal.classList.add('open');
   setTimeout(()=>corrCrearDescripcion.focus(),80);
 }
@@ -12925,13 +13030,17 @@ async function guardarSolicitudCorreccionMaster(){
   const descripcion=String(corrCrearDescripcion.value||'').trim();
   if(!descripcion)return alert('Describe qué debe corregir el técnico.');
 
+  // Revalidar justo antes de insertar: la asignación puede cambiar mientras está abierto el modal.
+  let responsable;
+  try{responsable=await responsableActualCorreccionMaster(p)}
+  catch(e){return alert('No se puede enviar: '+(e?.message||e));}
   const payload={
     proyecto_id:p.proyecto_id,
     punto_id:p.id,
     idcampo:p.idcampo||null,
-    tecnico_id:p.tecnico_id,
-    tecnico_email:p.tecnico_email||null,
-    tecnico_nombre:p.tecnico_nombre||p.tecnico_email||null,
+    tecnico_id:responsable.tecnico_id,
+    tecnico_email:responsable.tecnico_email,
+    tecnico_nombre:responsable.tecnico_nombre, 
 
     solicitado_por:user.id,
     solicitado_por_email:user.email||null,
@@ -14985,7 +15094,717 @@ async function pdrDescargarZipV93(){
   </div>
  </div>
 </div>
-</body>
+
+<style>
+.pdrFeaturePanel{border:1px solid #3b5c77;border-radius:12px;padding:14px;background:#0b1c2d}.pdrFeatureHeading{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.pdrFeatureHeading strong{color:#e9f3ff}.pdrFeaturePanel .pdrBizTools input{background:#081929;border:1px solid #35516b;color:white;border-radius:9px;padding:10px;min-width:210px}.pdrFeatureGroup{margin:8px 0;border:1px solid #29465f;background:#10283d;border-radius:9px;overflow:hidden}.pdrFeatureGroup summary{cursor:pointer;padding:12px;font-weight:700;color:#dbeafe;display:flex;justify-content:space-between}.pdrFeatureGroup summary span{font-size:12px;color:#79c9ff}.pdrFeatureOptions{display:grid;grid-template-columns:repeat(2,minmax(210px,1fr));gap:8px;padding:10px}.pdrFeatureOptions label{display:flex;align-items:flex-start;gap:9px;color:#dbeafe;font-size:12px;line-height:1.45;cursor:pointer}.pdrFeatureOptions input{width:17px;height:17px;flex-shrink:0;accent-color:#f56002}.pdrFeaturePreview{background:#10283d;border:1px solid #3a5b74;border-radius:11px;padding:14px;color:#e5f3ff}.pdrFeaturePreview p{font-size:13px;margin:8px 0}.pdrFeaturePreview small{font-size:12px;color:#b8d1e3;line-height:1.5}@media(max-width:680px){.pdrFeatureOptions{grid-template-columns:1fr}}
+</style>
+
+<div id="pdrBizOverlay" class="pdrBizOverlay" aria-hidden="true">
+ <div class="pdrBizShell">
+  <div class="pdrBizTop"><div><h2>Centro de gestión · PDR NETWORKS</h2><div class="pdrBizMuted">Seguimiento por empresa, cumplimiento operativo y configuración comercial. Solo administradores.</div></div><div class="pdrBizToolbarButtons"><button class="pdrBizBtn" onclick="pdrBizRefresh()">↻ Actualizar</button><button class="pdrBizBtn" onclick="pdrBizClose()">✕ Cerrar</button></div></div>
+  <div class="pdrBizTabs"><button class="pdrBizTab active" data-biz-tab="dashboard" onclick="pdrBizTab('dashboard')">▥ Avance general</button><button class="pdrBizTab" data-biz-tab="planes" onclick="pdrBizTab('planes')">◈ Combos / planes</button><button class="pdrBizTab" data-biz-tab="funciones" onclick="pdrBizTab('funciones')">▤ Mis ítems</button><button class="pdrBizTab" data-biz-tab="cotizador" onclick="pdrBizTab('cotizador');pdrCotInit()">▤ Nueva cotización</button><button class="pdrBizTab" data-biz-tab="asignacion" onclick="pdrBizTab('asignacion')">▤ Condiciones por proyecto</button></div>
+  <div class="pdrBizContent"><div id="pdrBizStatus" class="pdrBizStatus" role="status"></div>
+   <section class="pdrBizPane active" id="pdrBizPane-dashboard">
+     <div class="pdrBizTools"><label>Empresa<select id="pdrBizEmpresaFiltro" onchange="pdrBizRenderDashboard()"><option value="">Todas las empresas</option></select></label><label>Buscar proyecto<input id="pdrBizBuscar" placeholder="Código o nombre" oninput="pdrBizRenderDashboard()"></label><button class="pdrBizBtn" onclick="pdrBizExportCsv()">Exportar seguimiento CSV</button></div>
+     <div id="pdrBizKpis" class="pdrBizGrid"></div><div id="pdrBizEmpresasPanel"></div>
+     <div class="pdrBizMuted">Avance = puntos registrados ÷ meta de puntos definida para el proyecto. No se estima avance cuando la meta no está configurada. Las cifras se consultan en Supabase al actualizar.</div>
+   </section>
+   <section class="pdrBizPane" id="pdrBizPane-planes">
+     <div class="pdrBizTools" style="justify-content:space-between;align-items:center"><div><h3 class="pdrBizSectionTitle" style="margin:0">Combos y planes disponibles</h3><small class="pdrBizMuted">Precios editables · Abre un combo para consultar sus ítems incluidos.</small></div><button type="button" class="pdrBizBtn primary" onclick="pdrV117OpenEditor()">+ Crear combo</button></div>
+     <div id="pdrV117Cards" class="pdrV117Cards"></div>
+     <details id="pdrV117Advanced" style="margin:18px 0;border:1px solid #29445c;border-radius:12px;padding:14px"><summary style="cursor:pointer;font-weight:750;color:#d4edff">Editor de combo · abrir para crear o modificar</summary>
+
+     <h3 class="pdrBizSectionTitle">Constructor de planes · Funciones + Servicios</h3>
+     <form id="pdrBizPlanForm" class="pdrBizForm" onsubmit="pdrBizSavePlan(event)"><input type="hidden" id="pdrBizPlanId"><label>Nombre del plan<input id="pdrBizPlanNombre" required maxlength="100" placeholder="Ej. Profesional"></label><label>Cobro<select id="pdrBizPlanPeriodo"><option value="mensual">Mensual</option><option value="unico">Único / por proyecto</option><option value="anual">Anual</option></select></label><label>Cargo base del plan (COP, adicional a funcionalidades)<input id="pdrBizPlanPrecio" type="number" min="0" step="1" value="0" required></label><label>Precio final negociado del combo (COP)<input id="pdrBizPlanPrecioManual" type="number" min="0" step="1" placeholder="Vacío = suma automática de ítems"><small style="display:block;opacity:.75;margin-top:3px">Opcional. Si estableces un valor, será el precio comercial del combo, aunque la suma de ítems sea diferente. Vacía el campo para volver al cálculo automático.</small></label><label class="full">Descripción comercial<textarea id="pdrBizPlanDescripcion" rows="2" placeholder="Beneficios, alcance y soporte..."></textarea></label>
+      <label>Máximo usuarios del plan<input id="pdrBizPlanUsuarios" type="number" min="1" step="1" value="5" required></label><label>Máximo proyectos simultáneos<input id="pdrBizPlanProyectos" type="number" min="1" step="1" placeholder="Vacío = sin límite contractual"></label><label>Máximo registros / mes<input id="pdrBizPlanRegistros" type="number" min="1" step="1" placeholder="Vacío = sin límite contractual"></label><label>Almacenamiento incluido (GB)<input id="pdrBizPlanStorage" type="number" min="0" step="0.1" placeholder="Vacío = no especificado"></label><label>Soporte<select id="pdrBizPlanSoporte"><option value="estandar">Estándar</option><option value="prioritario">Prioritario</option><option value="dedicado">Dedicado</option></select></label><label>Usuarios adicionales COP / mes<input id="pdrBizPlanExtraUsuario" type="number" min="0" step="1" value="0"></label>
+      <div class="full pdrFeaturePanel"><div class="pdrFeatureHeading"><strong>Agregar ítems al combo en segundos</strong><span class="pdrBizMuted">Selecciona el ítem y su cantidad. El precio se toma del catálogo.</span></div><div class="pdrBizTools"><label>Ítem<select id="pdrQuickComboItem"></select></label><label>Cantidad<input type="number" id="pdrQuickComboQty" min="0.0001" step="any" value="1" style="max-width:130px"></label><button type="button" class="pdrBizBtn primary" onclick="pdrQuickComboAdd()">+ Añadir al combo</button></div><small class="pdrBizMuted">Las funcionalidades se incluyen con cantidad 1; para cargos medidos por cantidad utiliza los ítems de servicios.</small></div><div class="full pdrFeaturePanel"><div class="pdrFeatureHeading"><div><strong>Funcionalidades incluidas en el plan</strong><div class="pdrBizMuted">Selecciona únicamente los servicios contratados. Algunos módulos son opcionales o prototipos.</div></div><strong id="pdrBizFeatureCount">0 seleccionadas</strong></div><div class="pdrBizTools"><input id="pdrBizFeatureSearch" type="search" placeholder="Buscar funcionalidad..." oninput="pdrBizRenderFeaturePicker()" aria-label="Buscar funcionalidad"><button class="pdrBizBtn" type="button" onclick="pdrBizSelectFeatures(true)">Seleccionar todas</button><button class="pdrBizBtn" type="button" onclick="pdrBizSelectFeatures(false)">Quitar todas</button></div><div id="pdrBizFeaturePicker"></div><div id="pdrBizPlanBreakdown" class="pdrFeaturePreview" style="margin-top:12px"></div></div><div class="full pdrFeaturePanel"><div class="pdrFeatureHeading"><div><strong>Servicios por unidad incluidos en el plan</strong><div class="pdrBizMuted">Agrega postes, cámaras, km, Homepass o cualquier tarifa creada. La cantidad se multiplica por el valor unitario del tarifario. Se factura con la periodicidad del plan.</div></div></div><div class="pdrBizTools"><label>Servicio<select id="pdrPlanTarifaSelect"></select></label><label>Cantidad incluida<input id="pdrPlanTarifaCantidad" type="number" min="0.0001" step="any" value="1" style="max-width:140px"></label><button type="button" class="pdrBizBtn primary" onclick="pdrPlanAddService()">+ Agregar servicio</button></div><div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Servicio</th><th>Unidad</th><th>Cantidad</th><th>Precio unitario</th><th>Importe</th><th>Acción</th></tr></thead><tbody id="pdrPlanServiceRows"></tbody></table></div><small class="pdrBizMuted">Las cantidades y precios se guardan como fotografía comercial del plan. Si después cambias el tarifario, un plan guardado conserva su importe hasta que lo edites.</small></div><div class="full pdrBizToolbarButtons"><button class="pdrBizBtn primary" type="submit">Guardar plan</button><button class="pdrBizBtn" type="button" onclick="pdrBizResetPlan()">Nuevo / limpiar</button></div></form>
+     </details>
+     <div style="display:none" class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Plan</th><th>Modalidad</th><th>Precio total</th><th>Usuarios</th><th>Funcionalidades</th><th>Descripción</th><th>Acción</th></tr></thead><tbody id="pdrBizPlanesRows"></tbody></table></div>
+   </section>
+   <section class="pdrBizPane" id="pdrBizPane-funciones"><div class="pdrFeaturePanel" style="margin:0 0 16px"><div class="pdrFeatureHeading"><strong>+ Crear ítem reutilizable</strong><span class="pdrBizMuted">Guarda el precio una sola vez; úsalo en combos y cotizaciones.</span></div>
+ <form id="pdrQuickItemForm" class="pdrBizForm" onsubmit="pdrQuickSaveItem(event)">
+ <label>Tipo de ítem<select id="pdrQuickType" onchange="pdrQuickToggle()"><option value="servicio">Servicio por unidad (poste, km, Homepass…)</option><option value="funcion">Funcionalidad de software</option></select></label>
+ <label>Nombre<input id="pdrQuickName" maxlength="160" required placeholder="Ej. Censo de postes"></label>
+ <label id="pdrQuickUnitWrap">Unidad<select id="pdrQuickUnit"><option value="poste">Poste</option><option value="homepass">Homepass</option><option value="km">Kilómetro</option><option value="m">Metro</option><option value="camara">Cámara</option><option value="elemento">Elemento</option><option value="usuario">Usuario</option><option value="foto">Foto</option><option value="hora">Hora</option><option value="proyecto">Proyecto</option><option value="unidad">Unidad</option></select></label>
+ <label>Precio de venta (COP)<input id="pdrQuickPrice" type="number" step="0.01" min="0" value="0" required></label>
+ <label id="pdrQuickPeriodWrap" style="display:none">Precio corresponde a<select id="pdrQuickPeriod"><option value="mensual">Mensual</option><option value="anual">Anual</option><option value="unico">Único</option></select></label>
+ <label class="full">Descripción<input id="pdrQuickDescription" maxlength="600" placeholder="Alcance comercial del ítem"></label>
+ <div class="full pdrBizToolbarButtons"><button type="submit" class="pdrBizBtn primary">Guardar ítem</button><button type="button" class="pdrBizBtn" onclick="pdrQuickItemForm.reset();pdrQuickToggle()">Limpiar</button></div></form>
+ <div class="pdrBizMuted">Los ítems de software también pueden tener precios mensuales, anuales y únicos diferentes usando «Editar» en el catálogo avanzado.</div>
+ </div>
+     <div class="pdrFeaturePanel" style="margin:0 0 14px"><div class="pdrFeatureHeading"><strong>Agregar ítems a un combo existente</strong><small class="pdrBizMuted">Selecciona el combo y usa «+ Combo» en cualquier ítem de las tablas.</small></div><div class="pdrBizTools"><label>Combo de destino<select id="pdrV117TargetCombo"></select></label><label>Cantidad<input id="pdrV117TargetQty" type="number" min="0.0001" step="any" value="1" style="width:110px"></label><button class="pdrBizBtn" type="button" onclick="pdrBizTab('planes');pdrV117OpenEditor()">+ Combo nuevo</button></div></div>
+     <h3 class="pdrBizSectionTitle">Lista de precios</h3><div class="pdrBizTools"><input type="search" id="pdrV117ItemFilter" placeholder="Buscar ítem por nombre, unidad o categoría" oninput="pdrV117RenderItems()"></div>
+     <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Ítem</th><th>Tipo / unidad</th><th>Precio de catálogo</th><th>Acciones</th></tr></thead><tbody id="pdrV117ItemRows"></tbody></table></div>
+     <details style="margin-top:18px;border:1px solid #29445c;border-radius:12px;padding:14px"><summary style="cursor:pointer;font-weight:700">Edición avanzada de funcionalidades y precios</summary>
+     <div class="pdrBizToolbarButtons" style="margin-bottom:14px"><button type="button" class="pdrBizBtn primary" onclick="pdrBizTab('funciones')">Funcionalidades y servicios de software</button><button type="button" class="pdrBizBtn" onclick="pdrBizTab('tarifas')">Tarifas por unidad (poste, km, Homepass)</button></div><h3 class="pdrBizSectionTitle">Catálogo editable de funcionalidades y servicios</h3>
+     <p class="pdrBizMuted">Asigna precios de venta y costos internos a cualquiera de las funcionalidades existentes. También puedes crear funcionalidades o servicios propios, sin cambiar el código. Usa «Eliminar» para quitar las que no necesitas; las incluidas en planes existentes se desactivan primero para protegerlos.</p>
+     <form id="pdrBizFuncForm" class="pdrBizForm" onsubmit="pdrBizSaveFeature(event)">
+       <input type="hidden" id="pdrBizFuncId"><label>Funcionalidad o servicio<input id="pdrBizFuncNombre" maxlength="160" required placeholder="Ej. Integración API personalizada"></label>
+       <label>Categoría<select id="pdrBizFuncCategoria" onchange="pdrBizToggleNewCategory()"></select></label>
+       <label class="full" id="pdrBizFuncCategoriaNuevaWrap" style="display:none">Nueva categoría<input id="pdrBizFuncCategoriaNueva" maxlength="90" placeholder="Ej. Servicios profesionales"></label>
+       <label class="full">Descripción del alcance<textarea id="pdrBizFuncDescripcion" rows="2" maxlength="1000"></textarea></label>
+       <label>Venta mensual COP<input id="pdrBizFuncMensual" type="number" min="0" step="1" value="0" required></label>
+       <label>Venta anual COP<input id="pdrBizFuncAnual" type="number" min="0" step="1" value="0" required></label>
+       <label>Venta única COP<input id="pdrBizFuncUnico" type="number" min="0" step="1" value="0" required></label>
+       <label>Costo interno mensual COP<input id="pdrBizFuncCostoMensual" type="number" min="0" step="1" value="0" required></label>
+       <label>Costo interno anual COP<input id="pdrBizFuncCostoAnual" type="number" min="0" step="1" value="0" required></label>
+       <label>Costo interno único COP<input id="pdrBizFuncCostoUnico" type="number" min="0" step="1" value="0" required></label>
+       <label><input id="pdrBizFuncActivo" type="checkbox" checked> Disponible para nuevos planes</label>
+       <div class="full pdrBizToolbarButtons"><button type="submit" class="pdrBizBtn primary">Guardar funcionalidad / precio</button><button type="button" class="pdrBizBtn" onclick="pdrBizResetFeature()">Crear otra / limpiar</button></div>
+     </form>
+     <div class="pdrBizTools"><input type="search" id="pdrBizFuncSearch" placeholder="Filtrar por nombre o categoría" oninput="pdrBizRenderFeaturePrices()"><button type="button" class="pdrBizBtn" onclick="pdrBizSelectVisibleFeatures(true)">Seleccionar visibles</button><button type="button" class="pdrBizBtn" onclick="pdrBizSelectVisibleFeatures(false)">Deseleccionar visibles</button><button type="button" class="pdrBizBtn" onclick="pdrBizClearFeatureSelection()">Limpiar selección</button><button type="button" id="pdrBizDeleteSelectedBtn" class="pdrBizBtn" style="border-color:#ef7777;color:#ffaaaa" onclick="pdrBizDeleteSelectedFeatures()" disabled>Eliminar seleccionadas (0)</button><span class="pdrBizMuted" id="pdrBizSelectedHint">Selecciona las funcionalidades que deseas retirar.</span></div>
+     <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th><input type="checkbox" id="pdrBizSelectAllVisible" title="Seleccionar todas las funcionalidades visibles" onchange="pdrBizSelectVisibleFeatures(this.checked)" aria-label="Seleccionar todas las funcionalidades visibles"></th><th>Funcionalidad / categoría</th><th>Mensual</th><th>Anual</th><th>Único</th><th>Costo mensual</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="pdrBizFuncRows"></tbody></table></div>
+     </details>
+   </section>
+   <section class="pdrBizPane" id="pdrBizPane-tarifas">
+     <div class="pdrBizToolbarButtons" style="margin-bottom:14px"><button type="button" class="pdrBizBtn" onclick="pdrBizTab('funciones')">Funcionalidades y servicios de software</button><button type="button" class="pdrBizBtn primary" onclick="pdrBizTab('tarifas')">Tarifas por unidad (poste, km, Homepass)</button></div><h3 class="pdrBizSectionTitle">Tarifario de servicios y unidades</h3>
+     <form id="pdrBizTarifaForm" class="pdrBizForm" onsubmit="pdrBizSaveTarifa(event)"><input type="hidden" id="pdrBizTarifaId"><label>Servicio<input id="pdrBizTarifaNombre" required placeholder="Ej. Censo de poste"></label><label>Unidad<select id="pdrBizTarifaUnidad"><option value="punto">Punto</option><option value="poste">Poste</option><option value="camara">Cámara</option><option value="km">Kilómetro</option><option value="m">Metro</option><option value="homepass">Homepass</option><option value="elemento">Elemento</option><option value="usuario">Usuario</option><option value="foto">Foto</option><option value="proyecto">Proyecto</option><option value="mes">Mes</option><option value="hora">Hora</option><option value="unidad">Unidad</option></select></label><label>Precio unitario COP<input id="pdrBizTarifaPrecio" type="number" min="0" step="1" value="0" required></label><label class="full">Descripción<textarea id="pdrBizTarifaDescripcion" rows="2"></textarea></label><div class="full pdrBizToolbarButtons"><button class="pdrBizBtn primary" type="submit">Guardar tarifa</button><button class="pdrBizBtn" type="button" onclick="pdrBizResetTarifa()">Nuevo / limpiar</button></div></form>
+     <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Servicio</th><th>Unidad</th><th>Precio</th><th>Descripción</th><th>Acción</th></tr></thead><tbody id="pdrBizTarifasRows"></tbody></table></div>
+   </section>
+
+   <section class="pdrBizPane" id="pdrBizPane-cotizador">
+     <h3 class="pdrBizSectionTitle">Cotizador comercial · PDR NETWORKS</h3>
+     <p class="pdrBizMuted">Combina levantamientos por elemento, distancia, Homepass, servicios y planes recurrentes. El precio puede ajustarse en cada propuesta sin modificar el tarifario.</p>
+     <form id="pdrCotForm" onsubmit="event.preventDefault();pdrCotSave()">
+       <input type="hidden" id="pdrCotId">
+       <div class="pdrBizForm">
+         <label>Nombre del cliente potencial / empresa<input id="pdrCotCliente" maxlength="180" required placeholder="Ej. Operador XYZ"></label>
+         <label>Vincular a proyecto existente (opcional, solo si ya está contratado)<select id="pdrCotProyecto"><option value="">Sin proyecto — cotización nueva</option></select></label>
+         <label>Título de la propuesta<input id="pdrCotNombre" maxlength="180" required placeholder="Ej. Censo infraestructura Villavicencio"></label>
+         <label>Estado<select id="pdrCotEstado"><option value="borrador">Borrador</option><option value="enviada">Enviada</option><option value="aprobada">Aprobada</option><option value="rechazada">Rechazada</option></select></label>
+         <label>Validez hasta<input id="pdrCotVence" type="date"></label>
+         <label>Descuento general (%)<input id="pdrCotDescuento" type="number" min="0" max="100" step="0.01" value="0" oninput="pdrCotRender()"></label>
+         <label>IVA (%) — editable<input id="pdrCotIva" type="number" min="0" max="100" step="0.01" value="0" oninput="pdrCotRender()"></label>
+         <label class="full">Alcance y condiciones<textarea id="pdrCotNotas" rows="2" maxlength="3000" placeholder="Cobertura, entregables, exclusiones, forma de pago..."></textarea></label>
+       </div>
+       <div class="pdrFeaturePanel" style="margin:12px 0">
+         <div class="pdrFeatureHeading"><strong>Agregar concepto a la propuesta</strong><span class="pdrBizMuted">Precios COP · Editables</span></div>
+         <div class="pdrBizForm">
+           <label>Origen<select id="pdrCotFuente" onchange="pdrCotSources()"><option value="tarifa">Tarifario por unidades</option><option value="funcion">Funcionalidad / servicio</option><option value="plan">Plan de suscripción</option><option value="personalizado">Concepto personalizado</option></select></label>
+           <label>Concepto<select id="pdrCotCatalogo" onchange="pdrCotPick()"></select></label>
+           <label class="full">Descripción<input id="pdrCotConcepto" maxlength="250" placeholder="Ej. Levantamiento de postes en zona urbana"></label>
+           <label>Unidad<select id="pdrCotUnidad"><option value="poste">Poste</option><option value="camara">Cámara</option><option value="homepass">Homepass</option><option value="km">Kilómetro</option><option value="m">Metro</option><option value="elemento">Elemento</option><option value="punto">Punto</option><option value="usuario">Usuario</option><option value="foto">Fotografía</option><option value="hora">Hora</option><option value="proyecto">Proyecto</option><option value="servicio">Servicio</option><option value="mes">Mes</option><option value="unidad">Unidad</option></select></label>
+           <label>Cantidad<input id="pdrCotCantidad" type="number" min="0.0001" step="any" value="1"></label>
+           <label>Precio por unidad COP<input id="pdrCotPrecio" type="number" min="0" step="0.01" value="0"></label>
+           <label>Tipo de cobro<select id="pdrCotPeriodicidad"><option value="unico">Único / por ejecución</option><option value="mensual">Mensual recurrente</option><option value="anual">Anual recurrente</option></select></label>
+           <div class="full pdrBizToolbarButtons"><button class="pdrBizBtn primary" type="button" onclick="pdrCotAdd()">+ Agregar a cotización</button></div>
+         </div>
+       </div>
+       <div class="pdrFeaturePanel" style="margin:16px 0" id="pdrCotEntregablesPanel">
+         <div class="pdrFeatureHeading"><strong>📦 Entregables incluidos en la cotización</strong><span class="pdrBizMuted">Selecciona los entregables y detalla qué incluye cada uno. No afectan el precio.</span></div>
+         <div class="pdrBizForm" style="margin-top:10px">
+           <div class="full" id="pdrCotEntregablesLista"></div>
+         </div>
+       </div>
+       <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Concepto</th><th>Unidad</th><th>Cantidad</th><th>Unitario</th><th>Cobro</th><th>Subtotal</th><th>Acción</th></tr></thead><tbody id="pdrCotLineas"><tr><td colspan="7">Agrega conceptos a la propuesta</td></tr></tbody></table></div>
+       <div id="pdrCotResumen" class="pdrFeaturePreview" style="margin:14px 0"></div>
+       <div class="pdrBizToolbarButtons" style="margin:12px 0"><button type="submit" class="pdrBizBtn primary">Guardar cotización</button><button type="button" class="pdrBizBtn" onclick="pdrCotPrint()">Vista para imprimir / PDF</button><button type="button" class="pdrBizBtn" onclick="pdrCotNew()">Nueva cotización</button><button type="button" class="pdrBizBtn" onclick="pdrCotLoadSaved()">Actualizar historial</button></div>
+     </form>
+     <h3 class="pdrBizSectionTitle">Historial de cotizaciones</h3>
+     <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Cliente</th><th>Propuesta</th><th>Estado</th><th>Único</th><th>Mensual</th><th>Anual</th><th>Actualizada</th><th>Acción</th></tr></thead><tbody id="pdrCotHistorial"><tr><td colspan="8">Abre la sección para consultar cotizaciones guardadas.</td></tr></tbody></table></div>
+   </section>
+   <section class="pdrBizPane" id="pdrBizPane-asignacion">
+     <h3 class="pdrBizSectionTitle">Condiciones comerciales y metas por proyecto</h3>
+     <div class="pdrBizTools"><label>Proyecto<select id="pdrBizProyectoSelect" onchange="pdrBizLoadAssignmentForm()"></select></label></div>
+     <form id="pdrBizAsignacionForm" class="pdrBizForm" onsubmit="pdrBizSaveAsignacion(event)"><label>Plan contratado<select id="pdrBizAsignacionPlan" onchange="pdrBizRenderAssignmentPlanPreview()"></select></label><div class="full" id="pdrBizPlanPreview" style="display:none"></div><label>Meta total de puntos<input id="pdrBizMeta" type="number" min="1" step="1" placeholder="Ej. 1000"></label><label>Precio acordado COP (opcional)<input id="pdrBizPrecioAcordado" type="number" min="0" step="1" placeholder="Usar precio total del plan"></label><label>Estado comercial<select id="pdrBizEstado"><option value="propuesta">Propuesta</option><option value="contratado">Contratado</option><option value="en_ejecucion">En ejecución</option><option value="suspendido">Suspendido</option><option value="finalizado">Finalizado</option></select></label><label>Fecha compromiso<input id="pdrBizFechaFin" type="date"></label><label>Descuento (%)<input id="pdrBizDescuento" type="number" min="0" max="100" step="0.01" value="0"></label><label class="full">Observaciones contractuales<textarea id="pdrBizNotas" rows="3"></textarea></label><div class="full pdrBizToolbarButtons"><button type="submit" class="pdrBizBtn primary">Guardar condiciones del proyecto</button></div></form>
+     <div class="pdrBizMuted">Las tarifas del catálogo son referenciales; el precio acordado se guarda individualmente por proyecto. Este módulo no genera facturas ni realiza cobros automáticos.</div>
+   </section>
+  </div>
+ </div>
+</div>
+<script>
+
+const pdrBizFeatureCatalog={"Mapping · Captura e inventario":[["map_postes","Censo de postes"],["map_camaras","Censo de cámaras"],["map_atributos","Atributos técnicos por elemento"],["map_propietarios","Propietarios de infraestructura"],["map_altura","Altura, material y estado"],["map_tension","Tensión, redes y cruces telemáticos"],["map_odometro","Distancia con odómetro"],["map_form","Formularios configurables por proyecto"],["map_poligonos","Delimitación mediante polígonos"],["map_asignacion","Asignación y reasignación de polígonos"],["map_puntos","Ubicación geográfica de puntos"],["map_busqueda","Búsqueda y filtros cartográficos"],["map_fotos","Captura fotográfica de campo"],["map_fotos_obligatorias","Fotografías obligatorias configurables"],["map_resolucion","Resolución y calidad fotográfica por proyecto"],["map_geoetiqueta","Geoetiquetado con fecha, coordenadas y ubicación"],["map_editor_etiqueta","Editor de etiquetas fotográficas"],["map_offline","Captura offline y sincronización posterior"],["map_offline_mapas","Mapas offline y paquetes PDRMAP"],["map_sync","Sincronización de registros y fotografías"],["map_envio_auto","Envío automático al guardar o programado"],["map_realtime","Actualización de configuración en tiempo real"],["map_correcciones","Correcciones de campo asignadas al responsable vigente"],["map_indicador_sync","Indicador visual de sincronización"]],"Master · Administración y seguimiento":[["master_empresas","Gestión de empresas"],["master_proyectos","Creación y administración de proyectos"],["master_usuarios","Usuarios, roles y accesos"],["master_tecnicos","Gestión de técnicos"],["master_zonas","Asignaciones geográficas por técnico"],["master_mapa","Monitoreo cartográfico de levantamientos"],["master_validacion","Validación y revisión de registros"],["master_correcciones","Centro de correcciones y observaciones"],["master_reasignar_corr","Reasignación de correcciones pendientes"],["master_fotos","Galería y revisión fotográfica"],["master_descarga_zip","Descarga ZIP de fotografías por proyecto"],["master_export","Exportación de cartera de datos a Excel/CSV"],["master_kpis","Indicadores de avance por proyecto y empresa"],["master_comercial","Planes, precios y condiciones comerciales"],["master_auditoria","Seguimiento de actividad y estados"]],"Recorredor de fibra óptica":[["rec_ruta","Registro de recorridos GPS"],["rec_areas","Carga de tramos KMZ, KML y GeoJSON"],["rec_asignaciones","Asignación y reasignación de tramos"],["rec_hallazgos","Registro de hallazgos georreferenciados"],["rec_fotos","Fotos y evidencias de hallazgos"],["rec_prioridad","Clasificación por criticidad"],["rec_correcciones","Seguimiento y solución de hallazgos"],["rec_avance","Porcentaje de avance y supervisión"],["rec_historial","Histórico de recorridos"],["rec_mapa","Visualización cartográfica de recorridos"]],"Enrutamiento e inventario de FO":[["fo_rutas","Enrutamiento de fibra óptica"],["fo_empalmes","Inventario de empalmes y muflas"],["fo_hilos","Registro de cable, hilo y capilaridad"],["fo_nodos","Gestión de nodos y sangrías"],["fo_unifilar","Diagramas unifilares"],["fo_historial","Histórico de rutas y modificaciones"],["fo_pdf","Actas PDF con evidencias"],["fo_inventario","Inventario de ODF, racks, equipos y puertos"],["fo_puertos","Estados y disponibilidad de puertos"],["fo_conexiones","Trazabilidad de conexiones y clientes"]],"Operación y mantenimiento":[["om_instalaciones","Gestión de instalaciones"],["om_factibilidades","Gestión de factibilidades"],["om_traslados","Seguimiento de traslados"],["om_retiros","Gestión de retiros de equipos"],["om_permisos","Seguimiento de permisos y radicaciones"],["om_correos","Plantillas de correo y agendamiento"],["om_materiales","Inventario y movimientos de materiales"],["om_actas","Actas y formatos de consumo"],["om_reservas","Reservas, bodegas y referencias SAP"],["om_gastos","Gestión de gastos y caja"],["om_facturas","Soportes y fotografías de gastos"]],"Analítica y entregables":[["bi_mtti","Dashboard MTTI de instalaciones"],["bi_mttv","Dashboard MTTV de factibilidades"],["bi_mttr","Dashboard MTTR de correctivos"],["bi_ciudad","Comparativos por ciudad y período"],["bi_calor","Mapas de calor y georreferenciación"],["bi_drill","Indicadores interactivos y detalle de registros"],["bi_export","Exportaciones Excel y CSV"],["bi_fotos","Entregable fotográfico organizado"],["bi_reportes","Reportes de avance y seguimiento"],["bi_calidad","Validación de errores y duplicados"]],"Funciones complementarias":[["extra_android","Aplicación Android (APK/AAB)"],["extra_qr","Etiquetas e impresión QR"],["extra_roles","Control de permisos y acceso por perfil"],["extra_api","Integraciones y automatizaciones n8n"],["extra_guide","Guía de red por proximidad y voz (concepto/prototipo)"],["extra_3d","Site Survey isométrico 3D (prototipo)"]]};
+const pdrBizSelectedFeatures=new Set();
+document.addEventListener('input',e=>{if(['pdrBizPlanPrecio','pdrBizPlanPrecioManual'].includes(e.target?.id))pdrBizRenderPlanBreakdown();});
+document.addEventListener('change',e=>{if(e.target?.id==='pdrBizPlanPeriodo')pdrBizRenderFeaturePicker();});
+/* PDR V107: Gestión general y comercial. Todos los cambios requieren sesión admin y RLS de Supabase. */
+const pdrBizState={tab:'dashboard',planes:[],tarifas:[],asignaciones:[],funciones:[],counts:{},correcciones:{},loaded:false};
+const pdrBizEl=id=>document.getElementById(id);
+const pdrBizSafe=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const pdrBizMoney=v=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v)||0);
+const pdrBizN=v=>new Intl.NumberFormat('es-CO').format(Number(v)||0);
+function pdrBizStatus(t){if(pdrBizEl('pdrBizStatus'))pdrBizEl('pdrBizStatus').textContent=t||'';}
+function pdrBizGuard(){if(!esAdminMaster()){alert('Acceso exclusivo para usuarios administradores.');return false;}return true;}
+async function pdrBizOpen(tab='dashboard'){
+ if(!pdrBizGuard())return;
+ pdrBizEl('pdrBizOverlay').classList.add('open');pdrBizEl('pdrBizOverlay').setAttribute('aria-hidden','false');
+ pdrBizTab(tab);await pdrBizRefresh();
+}
+function pdrBizClose(){pdrBizEl('pdrBizOverlay').classList.remove('open');pdrBizEl('pdrBizOverlay').setAttribute('aria-hidden','true');}
+function pdrBizTab(tab){if(!pdrBizGuard())return;pdrBizState.tab=tab;if(tab==='planes')pdrPlanRenderServices();
+ document.querySelectorAll('.pdrBizTab').forEach(x=>x.classList.toggle('active',x.dataset.bizTab===(tab==='tarifas'?'funciones':tab))); 
+ document.querySelectorAll('.pdrBizPane').forEach(x=>x.classList.toggle('active',x.id==='pdrBizPane-'+tab));
+}
+async function pdrBizAllRows(table,columns='*',filter=null){let arr=[];let offset=0;while(true){let q=sb.from(table).select(columns).range(offset,offset+999);if(filter)q=filter(q);const {data,error}=await q;if(error)throw error;arr.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000;}return arr;}
+async function pdrBizRefresh(){
+ if(!pdrBizGuard())return;
+ pdrBizStatus('Consultando empresas, proyectos y catálogo comercial...');
+ try{
+  await Promise.all([cargarEmpresas(),cargarProyectos()]);
+  const [planes,tarifas,asignaciones,funciones]=await Promise.all([
+   pdrBizAllRows('pdr_com_planes'),pdrBizAllRows('pdr_com_tarifas'),pdrBizAllRows('pdr_com_proyectos'),pdrBizAllRows('pdr_com_funcionalidades')]);
+  pdrBizState.planes=planes;pdrBizState.tarifas=tarifas;pdrBizState.asignaciones=asignaciones;pdrBizState.funciones=funciones;
+  pdrBizRenderPlanes();pdrBizRenderTarifas();pdrPlanRenderServices();pdrBizFillSelects();pdrBizFillFeatureCategories();pdrBizRenderFeaturePrices();pdrBizRenderFeaturePicker();pdrQuickComboSources();
+  await pdrBizRefreshMetrics();
+  pdrBizState.loaded=true;pdrBizStatus('Actualizado: '+new Date().toLocaleString('es-CO'));
+ }catch(e){console.error('Gestión general:',e);pdrBizStatus('No se pudo completar la carga: '+(e.message||e)+'. Revisa el SQL y los permisos RLS.');}
+}
+async function pdrBizRefreshMetrics(){
+ const ids=proyectos.map(p=>p.id);
+ const counts={},corr={};ids.forEach(id=>{counts[id]=0;corr[id]=0;});
+ // HEAD count evita descargar datos personales y todas las fotografías de la cartografía.
+ for(let i=0;i<ids.length;i+=12){const batch=ids.slice(i,i+12);
+  await Promise.all(batch.map(async id=>{
+   const r=await sb.from('mapping_puntos').select('id',{head:true,count:'exact'}).eq('proyecto_id',id);
+   if(r.error)throw r.error;counts[id]=r.count||0;
+  }));
+ }
+ // Correcciones abiertas leídas con paginación para evitar el límite predeterminado de 1000 filas.
+ try {const abiertas=await pdrBizAllRows('mapping_correcciones','proyecto_id,estado');
+  abiertas.forEach(c=>{if(c.proyecto_id in corr && !['cerrada','cerrado','resuelta','resuelto','finalizada','finalizado','aprobada','aprobado'].includes(String(c.estado||'').toLowerCase()))corr[c.proyecto_id]++;});
+ }catch(e){console.warn('KPI correcciones:',e);}
+ pdrBizState.counts=counts;pdrBizState.correcciones=corr;pdrBizRenderDashboard();
+}
+function pdrBizAssignment(id){return pdrBizState.asignaciones.find(a=>String(a.proyecto_id)===String(id));}
+function pdrBizPct(p){const meta=Number(pdrBizAssignment(p.id)?.meta_puntos);return meta>0?Math.min(100,100*(pdrBizState.counts[p.id]||0)/meta):null;}
+function pdrBizFiltered(){const eid=pdrBizEl('pdrBizEmpresaFiltro')?.value||'',needle=(pdrBizEl('pdrBizBuscar')?.value||'').trim().toLowerCase();return proyectos.filter(p=>(!eid||String(p.empresa_id)===eid)&&(!needle||(String(p.nombre||'')+' '+String(p.codigo||'')).toLowerCase().includes(needle)));}
+function pdrBizRenderDashboard(){
+ const list=pdrBizFiltered();const count=list.reduce((a,p)=>a+(pdrBizState.counts[p.id]||0),0);
+ const withGoal=list.filter(p=>Number(pdrBizAssignment(p.id)?.meta_puntos)>0);
+ const target=withGoal.reduce((a,p)=>a+Number(pdrBizAssignment(p.id).meta_puntos),0);
+ const done=withGoal.reduce((a,p)=>a+Math.min(pdrBizState.counts[p.id]||0,Number(pdrBizAssignment(p.id).meta_puntos)),0);
+ const open=list.reduce((a,p)=>a+(pdrBizState.correcciones[p.id]||0),0);
+ const assigned=list.filter(p=>pdrBizAssignment(p.id)?.plan_id).length;
+ pdrBizEl('pdrBizKpis').innerHTML=[['Empresas',new Set(list.map(p=>p.empresa_id).filter(Boolean)).size],['Proyectos',list.length],['Puntos levantados',pdrBizN(count)],['Avance con meta',target?Math.round(done/target*100)+'%':'Sin meta'],['Meta total configurada',pdrBizN(target)],['Proyectos con meta',withGoal.length+' / '+list.length],['Correcciones abiertas',pdrBizN(open)],['Proyectos con plan',assigned+' / '+list.length]].map(k=>`<div class="pdrBizCard"><small>${k[0]}</small><b>${k[1]}</b></div>`).join('');
+ const groups=new Map();list.forEach(p=>{let id=p.empresa_id||'__sin_empresa';if(!groups.has(id))groups.set(id,[]);groups.get(id).push(p);});
+ pdrBizEl('pdrBizEmpresasPanel').innerHTML=[...groups].map(([id,ps])=>{
+ const e=empresas.find(e=>String(e.id)===String(id));const metas=ps.filter(p=>Number(pdrBizAssignment(p.id)?.meta_puntos)>0);
+ const totalMeta=metas.reduce((a,p)=>a+Number(pdrBizAssignment(p.id).meta_puntos),0);
+ const totalDone=metas.reduce((a,p)=>a+Math.min(pdrBizState.counts[p.id]||0,Number(pdrBizAssignment(p.id).meta_puntos)),0);
+ const aggregate=totalMeta?Math.round(totalDone/totalMeta*100):null;
+ return `<div class="pdrBizCompany"><div class="pdrBizCompanyHead"><h3>${pdrBizSafe(e?.nombre||'Sin empresa asignada')} <span class="pdrBizMuted">(${ps.length} proyectos)</span></h3><div style="min-width:190px"><b>${aggregate===null?'Sin meta':aggregate+'%'} de avance agregado</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${aggregate||0}%"></div></div></div></div>
+ <div class="pdrBizTableWrap" style="border:0;margin:0"><table class="pdrBizTable"><thead><tr><th>Proyecto</th><th>Estado / plan</th><th>Levantados / meta</th><th>Avance</th><th>Correcciones abiertas</th><th>Fecha compromiso</th><th>Gestión</th></tr></thead><tbody>${ps.map(p=>{
+  const a=pdrBizAssignment(p.id),plan=pdrBizState.planes.find(x=>x.id===a?.plan_id),pct=pdrBizPct(p),meta=Number(a?.meta_puntos)||0;
+  return `<tr><td><b>${pdrBizSafe(p.nombre||p.codigo)}</b><div class="pdrBizMuted">${pdrBizSafe(p.codigo||'')}</div></td><td>${pdrBizSafe(a?.estado||'Sin estado')}<div class="pdrBizMuted">${pdrBizSafe(plan?.nombre||'Sin plan')}</div></td><td>${pdrBizN(pdrBizState.counts[p.id]||0)} / ${meta?pdrBizN(meta):'Sin meta'}</td><td><b>${pct===null?'Sin meta':pct.toFixed(1)+'%'}</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${pct||0}%"></div></div></td><td>${pdrBizN(pdrBizState.correcciones[p.id]||0)}</td><td>${pdrBizSafe(a?.fecha_compromiso||'—')}</td><td><button class="pdrBizBtn" data-pdr-project="${pdrBizSafe(p.id)}">Configurar</button></td></tr>`;}).join('')}</tbody></table></div></div>`;
+ }).join('')||'<div class="pdrBizEmpty">No hay proyectos en el filtro.</div>';
+ pdrBizEl('pdrBizEmpresasPanel').querySelectorAll('[data-pdr-project]').forEach(b=>b.addEventListener('click',()=>{pdrBizEl('pdrBizProyectoSelect').value=b.dataset.pdrProject;pdrBizLoadAssignmentForm();pdrBizTab('asignacion');}));
+}
+function pdrBizFillSelects(){
+ const empresa=pdrBizEl('pdrBizEmpresaFiltro'),prev=empresa.value;
+ empresa.innerHTML='<option value="">Todas las empresas</option>'+empresas.map(e=>`<option value="${pdrBizSafe(e.id)}">${pdrBizSafe(e.nombre)}</option>`).join('');if([...empresa.options].some(o=>o.value===prev))empresa.value=prev;
+ const select=pdrBizEl('pdrBizProyectoSelect'),prevP=select.value;
+ select.innerHTML='<option value="">Seleccionar proyecto</option>'+proyectos.map(p=>`<option value="${pdrBizSafe(p.id)}">${pdrBizSafe(p.codigo||'')} · ${pdrBizSafe(p.nombre||'')}</option>`).join('');if([...select.options].some(o=>o.value===prevP))select.value=prevP;
+ const plan=pdrBizEl('pdrBizAsignacionPlan'),prevPlan=plan.value;
+ plan.innerHTML='<option value="">Sin plan</option>'+pdrBizState.planes.filter(x=>x.activo!==false).map(x=>`<option value="${pdrBizSafe(x.id)}">${pdrBizSafe(x.nombre)} · ${pdrBizMoney(x.precio_total??x.precio_base)}</option>`).join('');if([...plan.options].some(o=>o.value===prevPlan))plan.value=prevPlan;
+ pdrBizLoadAssignmentForm();
+}
+function pdrBizLoadAssignmentForm(){const id=pdrBizEl('pdrBizProyectoSelect').value,a=pdrBizAssignment(id);
+ pdrBizEl('pdrBizAsignacionPlan').value=a?.plan_id||'';pdrBizEl('pdrBizMeta').value=a?.meta_puntos??'';pdrBizEl('pdrBizPrecioAcordado').value=a?.precio_acordado??'';
+ pdrBizEl('pdrBizEstado').value=a?.estado||'propuesta';pdrBizEl('pdrBizFechaFin').value=a?.fecha_compromiso||'';pdrBizEl('pdrBizDescuento').value=a?.descuento_pct??0;pdrBizEl('pdrBizNotas').value=a?.notas||'';pdrBizRenderAssignmentPlanPreview();
+}
+async function pdrBizSaveAsignacion(ev){ev.preventDefault();if(!pdrBizGuard())return;
+ const id=pdrBizEl('pdrBizProyectoSelect').value;if(!id)return alert('Selecciona un proyecto.');
+ const p=proyectos.find(p=>String(p.id)===String(id));if(!p)return alert('Proyecto no encontrado.');
+ const m=pdrBizEl('pdrBizMeta').value.trim();const price=pdrBizEl('pdrBizPrecioAcordado').value.trim();
+ const row={proyecto_id:id,plan_id:pdrBizEl('pdrBizAsignacionPlan').value||null,meta_puntos:m?Number(m):null,precio_acordado:price?Number(price):null,estado:pdrBizEl('pdrBizEstado').value,fecha_compromiso:pdrBizEl('pdrBizFechaFin').value||null,descuento_pct:Number(pdrBizEl('pdrBizDescuento').value)||0,notas:pdrBizEl('pdrBizNotas').value,updated_at:new Date().toISOString()};
+ const {error}=await sb.from('pdr_com_proyectos').upsert(row,{onConflict:'proyecto_id'});if(error)return alert('Error guardando: '+error.message);
+ await pdrBizRefresh();pdrBizStatus('Condiciones guardadas para '+(p.nombre||p.codigo));
+}
+function pdrBizFeatureNames(ids){const all=Object.values(pdrBizFeatureCatalog).flat();return (Array.isArray(ids)?ids:[]).map(id=>pdrBizState.funciones.find(f=>f.id===id)?.nombre||all.find(f=>f[0]===id)?.[1]||id);}
+function pdrBizFeatureItems(){
+ const items=pdrBizState.funciones.filter(f=>f.activo!==false || pdrBizSelectedFeatures.has(f.id));
+ const groups={};for(const f of items){(groups[f.categoria||'Servicios adicionales']??=[]).push(f);}
+ return Object.entries(groups);
+}
+function pdrBizFeaturePrice(f,periodo){return Math.max(0,Number(f?.['precio_'+periodo]||0));}
+function pdrBizFeatureCost(f,periodo){return Math.max(0,Number(f?.['costo_'+periodo]||0));}
+/* V114 · Servicios incorporados en los planes comerciales. */
+let pdrPlanServices=[];
+function pdrPlanRefreshServiceOptions(){
+ const el=document.getElementById('pdrPlanTarifaSelect');if(!el)return;
+ const old=el.value;el.innerHTML='<option value="">Selecciona una tarifa</option>'+pdrBizState.tarifas.filter(t=>t.activo!==false).map(t=>`<option value="${pdrBizSafe(t.id)}">${pdrBizSafe(t.nombre)} · ${pdrBizMoney(t.precio_unitario)} / ${pdrBizSafe(t.unidad)}</option>`).join('');el.value=old;
+}
+function pdrPlanRenderServices(){
+ pdrPlanRefreshServiceOptions();const root=document.getElementById('pdrPlanServiceRows');if(!root)return;
+ root.innerHTML=pdrPlanServices.length?pdrPlanServices.map((x,i)=>`<tr><td>${pdrBizSafe(x.nombre)}</td><td>${pdrBizSafe(x.unidad)}</td><td>${Number(x.cantidad).toLocaleString('es-CO')}</td><td>${pdrBizMoney(x.precio_unitario)}</td><td>${pdrBizMoney(Number(x.cantidad)*Number(x.precio_unitario))}</td><td><button type="button" class="pdrBizBtn" data-remove-plan-service="${i}">Quitar</button></td></tr>`).join(''):'<tr><td colspan="6">Sin servicios incluidos; puedes crear un plan solo con funcionalidades.</td></tr>';
+ root.querySelectorAll('[data-remove-plan-service]').forEach(b=>b.addEventListener('click',()=>{pdrPlanServices.splice(Number(b.dataset.removePlanService),1);pdrPlanRenderServices();pdrBizRenderPlanBreakdown();}));
+}
+function pdrPlanAddService(){
+ const select=document.getElementById('pdrPlanTarifaSelect'),qty=Number(document.getElementById('pdrPlanTarifaCantidad').value);const tar=pdrBizState.tarifas.find(x=>String(x.id)===select.value);
+ if(!tar)return alert('Selecciona un servicio del tarifario.');if(!Number.isFinite(qty)||qty<=0)return alert('La cantidad debe ser mayor que cero.');
+ pdrPlanServices.push({id:tar.id,nombre:tar.nombre,unidad:tar.unidad,cantidad:qty,precio_unitario:Number(tar.precio_unitario)||0});pdrPlanRenderServices();pdrBizRenderPlanBreakdown();
+}
+function pdrBizCalculatePlan(){
+ const periodo=pdrBizEl('pdrBizPlanPeriodo').value, base=Math.max(0,Number(pdrBizEl('pdrBizPlanPrecio').value)||0);
+ const rows=[...pdrBizSelectedFeatures].map(id=>{
+  const f=pdrBizState.funciones.find(f=>f.id===id);
+  return {id,nombre:f?.nombre||id,venta:f?pdrBizFeaturePrice(f,periodo):0,costo:f?pdrBizFeatureCost(f,periodo):0};
+ });
+ const funcional=rows.reduce((a,r)=>a+r.venta,0), costo=rows.reduce((a,r)=>a+r.costo,0);
+ const servicios=pdrPlanServices.reduce((sum,r)=>sum+Number(r.cantidad)*Number(r.precio_unitario),0);
+ const automatico=base+funcional+servicios;
+ const raw=pdrBizEl('pdrBizPlanPrecioManual')?.value?.trim()??'';
+ const manual=raw===''?null:Math.max(0,Number(raw)||0);
+ const total=manual===null?automatico:manual;
+ return {periodo,base,rows,funcional,servicios,costo,automatico,manual,total,utilidad:total-costo};
+}
+function pdrBizRenderPlanBreakdown(){
+ const dest=pdrBizEl('pdrBizPlanBreakdown');if(!dest)return;
+ const x=pdrBizCalculatePlan();let txt=`<strong>Resumen del plan · ${pdrBizSafe(x.periodo)}</strong>`;
+ txt+=`<p>Cargo base: <b>${pdrBizMoney(x.base)}</b> · Funcionalidades (${x.rows.length}): <b>${pdrBizMoney(x.funcional)}</b> · Servicios (${pdrPlanServices.length}): <b>${pdrBizMoney(x.servicios)}</b></p>`;
+ txt+=`<p>Suma de ítems y cargo base: <b>${pdrBizMoney(x.automatico)}</b> · Precio final ${x.manual===null?'automático':'personalizado'}: <b style="color:#86efac;font-size:18px">${pdrBizMoney(x.total)}</b> · Costos internos declarados: ${pdrBizMoney(x.costo)}</p>`;
+ txt+=`<p>Margen estimado sobre costos de funcionalidades: <b>${x.total>0?((x.utilidad/x.total)*100).toFixed(1)+'%':'—'}</b> <small>(no incluye otros costos operativos ni impuestos)</small></p>`;
+ if(x.rows.length)txt+=`<details><summary>Ver desglose por funcionalidad</summary><div style="max-height:200px;overflow:auto">${x.rows.map(r=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #37546c"><span>${pdrBizSafe(r.nombre)}</span><b>${pdrBizMoney(r.venta)}</b></div>`).join('')}</div></details>`;
+ dest.innerHTML=txt;
+}
+function pdrBizRenderFeaturePicker(){
+ const search=(pdrBizEl('pdrBizFeatureSearch')?.value||'').trim().toLocaleLowerCase('es');
+ const root=pdrBizEl('pdrBizFeaturePicker');if(!root)return;
+ const periodo=pdrBizEl('pdrBizPlanPeriodo').value;
+ root.innerHTML=pdrBizFeatureItems().map(([category,items])=>{
+  const filtered=items.filter(f=>!search||(f.nombre+' '+category).toLocaleLowerCase('es').includes(search));if(!filtered.length)return '';
+  return `<details class="pdrFeatureGroup" ${search?'open':''}><summary>${pdrBizSafe(category)} <span>${items.filter(f=>pdrBizSelectedFeatures.has(f.id)).length}/${items.length}</span></summary><div class="pdrFeatureOptions">${filtered.map(f=>`<label><input type="checkbox" data-pdr-feature="${pdrBizSafe(f.id)}" ${pdrBizSelectedFeatures.has(f.id)?'checked':''}><span>${pdrBizSafe(f.nombre)}<small style="display:block;color:#8bd9ff">${pdrBizMoney(pdrBizFeaturePrice(f,periodo))} / ${pdrBizSafe(periodo)}${f.activo===false?' · Inactiva':''}</small></span></label>`).join('')}</div></details>`;
+ }).join('')||'<p class="pdrBizMuted">Sin funcionalidades. Revisa el catálogo de precios.</p>';
+ root.querySelectorAll('input[data-pdr-feature]').forEach(i=>i.addEventListener('change',()=>{
+  if(i.checked)pdrBizSelectedFeatures.add(i.dataset.pdrFeature);else pdrBizSelectedFeatures.delete(i.dataset.pdrFeature);
+  pdrBizRenderFeaturePicker();
+ }));
+ pdrBizEl('pdrBizFeatureCount').textContent=pdrBizSelectedFeatures.size+' seleccionadas';pdrBizRenderPlanBreakdown();
+}
+function pdrBizSelectFeatures(all){for(const f of pdrBizState.funciones.filter(f=>f.activo!==false)){if(all)pdrBizSelectedFeatures.add(f.id);else pdrBizSelectedFeatures.delete(f.id);}if(!all)pdrBizSelectedFeatures.clear();pdrBizRenderFeaturePicker();}
+function pdrBizFillFeatureCategories(){
+ const select=pdrBizEl('pdrBizFuncCategoria');if(!select)return;
+ const current=select.value;
+ const cats=[...new Set([...Object.keys(pdrBizFeatureCatalog),...pdrBizState.funciones.map(f=>f.categoria).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'es'));
+ select.innerHTML=cats.map(c=>`<option value="${pdrBizSafe(c)}">${pdrBizSafe(c)}</option>`).join('')+'<option value="__nueva__">+ Crear nueva categoría</option>';
+ if(cats.includes(current)||current==='__nueva__')select.value=current;pdrBizToggleNewCategory();
+}
+function pdrBizToggleNewCategory(){pdrBizEl('pdrBizFuncCategoriaNuevaWrap').style.display=pdrBizEl('pdrBizFuncCategoria').value==='__nueva__'?'':'none';}
+const pdrBizFeatureBulkSelection = new Set();
+function pdrBizVisibleFeatureRows(){
+ const q=(pdrBizEl('pdrBizFuncSearch')?.value||'').toLocaleLowerCase('es');
+ return pdrBizState.funciones.filter(f=>(String(f.nombre||'')+' '+String(f.categoria||'')).toLocaleLowerCase('es').includes(q)).sort((a,b)=>String(a.categoria||'').localeCompare(String(b.categoria||''),'es')||String(a.nombre||'').localeCompare(String(b.nombre||''),'es'));
+}
+function pdrBizUpdateBulkControls(){
+ const visible=pdrBizVisibleFeatureRows();const total=pdrBizFeatureBulkSelection.size;
+ const btn=pdrBizEl('pdrBizDeleteSelectedBtn');if(btn){btn.disabled=total===0;btn.textContent='Eliminar seleccionadas ('+total+')';}
+ const hint=pdrBizEl('pdrBizSelectedHint');if(hint)hint.textContent=total+' seleccionada(s) · '+visible.length+' visible(s) con el filtro actual';
+ const all=pdrBizEl('pdrBizSelectAllVisible');if(all){const num=visible.filter(f=>pdrBizFeatureBulkSelection.has(String(f.id))).length;all.checked=visible.length>0&&num===visible.length;all.indeterminate=num>0&&num<visible.length;}
+}
+function pdrBizSelectVisibleFeatures(yes){
+ for(const f of pdrBizVisibleFeatureRows()){if(yes)pdrBizFeatureBulkSelection.add(String(f.id));else pdrBizFeatureBulkSelection.delete(String(f.id));}
+ pdrBizRenderFeaturePrices();
+}
+function pdrBizClearFeatureSelection(){pdrBizFeatureBulkSelection.clear();pdrBizRenderFeaturePrices();}
+function pdrBizRenderFeaturePrices(){
+ const root=pdrBizEl('pdrBizFuncRows');if(!root)return;
+ root.innerHTML=pdrBizVisibleFeatureRows().map(f=>`<tr><td><input type="checkbox" data-pdr-bulk-id="${pdrBizSafe(f.id)}" ${pdrBizFeatureBulkSelection.has(String(f.id))?'checked':''} aria-label="Seleccionar ${pdrBizSafe(f.nombre)}"></td><td><b>${pdrBizSafe(f.nombre)}</b><div class="pdrBizMuted">${pdrBizSafe(f.categoria)}${f.es_personalizada?' · Personalizada':''}</div></td><td>${pdrBizMoney(f.precio_mensual)}</td><td>${pdrBizMoney(f.precio_anual)}</td><td>${pdrBizMoney(f.precio_unico)}</td><td>${pdrBizMoney(f.costo_mensual)}</td><td>${f.activo===false?'Inactiva':'Activa'}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="pdrBizBtn" type="button" data-pdr-func="${pdrBizSafe(f.id)}">Editar</button><button class="pdrBizBtn" type="button" data-pdr-func-del="${pdrBizSafe(f.id)}" style="border-color:#ef7777;color:#ffaaaa">Eliminar</button></div></td></tr>`).join('')||'<tr><td colspan="8">Sin funcionalidades</td></tr>';
+ root.querySelectorAll('[data-pdr-func]').forEach(b=>b.addEventListener('click',()=>pdrBizEditFeature(b.dataset.pdrFunc)));
+ root.querySelectorAll('[data-pdr-bulk-id]').forEach(box=>box.addEventListener('change',()=>{
+  if(box.checked)pdrBizFeatureBulkSelection.add(box.dataset.pdrBulkId);else pdrBizFeatureBulkSelection.delete(box.dataset.pdrBulkId);
+  pdrBizUpdateBulkControls();
+ }));
+ pdrBizUpdateBulkControls();
+}
+async function pdrBizDeleteSelectedFeatures(){
+ if(!pdrBizGuard())return;
+ const selected=pdrBizState.funciones.filter(f=>pdrBizFeatureBulkSelection.has(String(f.id)));
+ if(!selected.length){pdrBizClearFeatureSelection();return;}
+ const linkedFor=f=>pdrBizState.planes.filter(p=>Array.isArray(p.funcionalidades)&&p.funcionalidades.map(String).includes(String(f.id)));
+ const remove=selected.filter(f=>linkedFor(f).length===0);
+ const deactivate=selected.filter(f=>linkedFor(f).length>0&&f.activo!==false);
+ const already=selected.filter(f=>linkedFor(f).length>0&&f.activo===false);
+ const explanation='Se seleccionaron '+selected.length+' funcionalidades.\n\n'+remove.length+' se eliminarán definitivamente (sin planes asociados).\n'+deactivate.length+' se desactivarán (asociadas a planes existentes).\n'+already.length+' ya están inactivas y asociadas a planes: no se modificarán.\n\nLos planes existentes conservarán sus funcionalidades.\n\n¿Continuar?';
+ if(!confirm(explanation))return;
+ const btn=pdrBizEl('pdrBizDeleteSelectedBtn');if(btn){btn.disabled=true;btn.textContent='Procesando…';}
+ let removed=0,disabled=0;const failed=[];
+ try{
+  for(const f of [...remove,...deactivate]){
+   const shouldDeactivate=deactivate.includes(f);
+   pdrBizStatus('Procesando '+(removed+disabled+failed.length+1)+' de '+(remove.length+deactivate.length)+': '+f.nombre);
+   try{
+    const query=sb.from('pdr_com_funcionalidades');
+    const response=shouldDeactivate?await query.update({activo:false,updated_at:new Date().toISOString()}).eq('id',f.id).select('id'):await query.delete().eq('id',f.id).select('id');
+    if(response.error)throw response.error;
+    if(!Array.isArray(response.data)||!response.data.some(r=>String(r.id)===String(f.id)))throw new Error('Sin filas modificadas (verifica las políticas RLS).');
+    if(shouldDeactivate){disabled++;f.activo=false;}else{removed++;pdrBizSelectedFeatures.delete(f.id);}
+    pdrBizFeatureBulkSelection.delete(String(f.id));
+   }catch(err){failed.push(f.nombre+': '+(err?.message||String(err)));}
+  }
+  try{await pdrBizRefresh();}catch(err){failed.push('Actualizar catálogo: '+(err?.message||String(err)));}
+  pdrBizTab('funciones');
+  const result='Operación terminada.\nEliminadas: '+removed+'\nDesactivadas: '+disabled+'\nYa inactivas y vinculadas a planes: '+already.length+'\nErrores: '+failed.length+(failed.length?'\n\n'+failed.slice(0,12).join('\n'):'');
+  pdrBizStatus(result.replaceAll('\n',' · '));alert(result);
+ }finally{pdrBizUpdateBulkControls();}
+}
+// Delegación: funciona incluso cuando la tabla se reconstruye después de una búsqueda o actualización.
+document.addEventListener('click',function(event){
+ const button=event.target?.closest?.('#pdrBizFuncRows [data-pdr-func-del]');
+ if(!button)return;
+ event.preventDefault();event.stopPropagation();
+ pdrBizDeleteFeature(button.dataset.pdrFuncDel,button).catch(error=>{
+  console.error('[PDR] Eliminar funcionalidad:',error);
+  const msg='Error inesperado al eliminar la funcionalidad: '+(error?.message||String(error));
+  pdrBizStatus(msg);alert(msg);
+ });
+});
+async function pdrBizDeleteFeature(id,button){
+ if(!pdrBizGuard())return;
+ const f=pdrBizState.funciones.find(x=>String(x.id)===String(id));
+ if(!f){alert('No se encontró esta funcionalidad. Actualiza el catálogo.');return;}
+ const linked=pdrBizState.planes.filter(p=>Array.isArray(p.funcionalidades)&&p.funcionalidades.includes(id));
+ const isLinked=linked.length>0;
+ const names=linked.slice(0,5).map(p=>p.nombre).join(', ')+(linked.length>5?'…':'');
+ if(isLinked && f.activo===false){
+  alert('Esta funcionalidad ya está desactivada y sigue asociada a '+linked.length+' plan(es): '+names+'. Edita esos planes, quítala de sus funcionalidades y guarda antes de eliminarla definitivamente.');
+  return;
+ }
+ const prompt=isLinked
+  ? '"'+f.nombre+'" pertenece a '+linked.length+' plan(es): '+names+'.\n\nPara conservar esos contratos, se DESACTIVARÁ en el catálogo de nuevas ventas. ¿Continuar?'
+  : '¿ELIMINAR DEFINITIVAMENTE "'+f.nombre+'" del catálogo?\n\nNo se puede deshacer. No se modificarán otros planes.';
+ if(!confirm(prompt))return;
+ const original=button?.textContent;
+ if(button){button.disabled=true;button.textContent='Procesando…';}
+ pdrBizStatus(isLinked?'Desactivando '+f.nombre+'…':'Eliminando '+f.nombre+'…');
+ try{
+  // select() exige comprobar las filas realmente afectadas; sin esta verificación RLS puede fallar en silencio.
+  const q=sb.from('pdr_com_funcionalidades');
+  const result=isLinked
+   ? await q.update({activo:false,updated_at:new Date().toISOString()}).eq('id',id).select('id,activo')
+   : await q.delete().eq('id',id).select('id');
+  if(result.error)throw result.error;
+  if(!Array.isArray(result.data)||!result.data.some(row=>String(row.id)===String(id))){
+   throw new Error('Supabase no modificó ningún registro. Comprueba que tu cuenta tenga permisos de administrador y que la política RLS permita UPDATE/DELETE en public.pdr_com_funcionalidades.');
+  }
+  pdrBizSelectedFeatures.delete(id);pdrBizFeatureBulkSelection.delete(String(id));
+  if(pdrBizEl('pdrBizFuncId')?.value===id)pdrBizResetFeature();
+  // Refrescamos los datos comerciales; si la actualización completa falla, se mantiene el aviso de éxito.
+  try{await pdrBizRefresh();}catch(refreshError){console.warn('[PDR] Actualizar catálogo:',refreshError);}
+  pdrBizTab('funciones');
+  const mensaje=isLinked?'Funcionalidad desactivada correctamente: '+f.nombre:'Funcionalidad eliminada correctamente: '+f.nombre;
+  pdrBizStatus(mensaje);
+  alert(mensaje);
+ }catch(error){
+  console.error('[PDR] No se pudo eliminar/desactivar:',error);
+  const msg='No se pudo '+(isLinked?'desactivar':'eliminar')+' "'+f.nombre+'".\n\n'+(error?.message||String(error));
+  pdrBizStatus(msg);alert(msg);
+ }finally{
+  if(button?.isConnected){button.disabled=false;button.textContent=original||'Eliminar';}
+ }
+}
+function pdrBizEditFeature(id){const f=pdrBizState.funciones.find(x=>x.id===id);if(!f)return;
+ const m={pdrBizFuncId:f.id,pdrBizFuncNombre:f.nombre,pdrBizFuncDescripcion:f.descripcion||'',pdrBizFuncMensual:f.precio_mensual,pdrBizFuncAnual:f.precio_anual,pdrBizFuncUnico:f.precio_unico,pdrBizFuncCostoMensual:f.costo_mensual,pdrBizFuncCostoAnual:f.costo_anual,pdrBizFuncCostoUnico:f.costo_unico};
+ for(const [k,v] of Object.entries(m))pdrBizEl(k).value=v??0;
+ pdrBizFillFeatureCategories();let select=pdrBizEl('pdrBizFuncCategoria');if([...select.options].some(o=>o.value===f.categoria))select.value=f.categoria;else{select.value='__nueva__';pdrBizEl('pdrBizFuncCategoriaNueva').value=f.categoria;}pdrBizToggleNewCategory();pdrBizEl('pdrBizFuncActivo').checked=f.activo!==false;pdrBizEl('pdrBizFuncForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pdrBizResetFeature(){pdrBizEl('pdrBizFuncForm').reset();pdrBizEl('pdrBizFuncId').value='';pdrBizFillFeatureCategories();}
+async function pdrBizSaveFeature(ev){ev.preventDefault();if(!pdrBizGuard())return;
+ const oldId=pdrBizEl('pdrBizFuncId').value;
+ const categoria=pdrBizEl('pdrBizFuncCategoria').value==='__nueva__'?pdrBizEl('pdrBizFuncCategoriaNueva').value.trim():pdrBizEl('pdrBizFuncCategoria').value;
+ if(!categoria)return alert('Define una categoría.');
+ const money=id=>{const n=Number(pdrBizEl(id).value);return Number.isFinite(n)&&n>=0?n:NaN;};
+ const row={id:oldId||('custom_'+crypto.randomUUID().replace(/-/g,'')),nombre:pdrBizEl('pdrBizFuncNombre').value.trim(),categoria,descripcion:pdrBizEl('pdrBizFuncDescripcion').value.trim(),precio_mensual:money('pdrBizFuncMensual'),precio_anual:money('pdrBizFuncAnual'),precio_unico:money('pdrBizFuncUnico'),costo_mensual:money('pdrBizFuncCostoMensual'),costo_anual:money('pdrBizFuncCostoAnual'),costo_unico:money('pdrBizFuncCostoUnico'),activo:pdrBizEl('pdrBizFuncActivo').checked,es_personalizada:oldId?pdrBizState.funciones.find(x=>x.id===oldId)?.es_personalizada===true:true,updated_at:new Date().toISOString()};
+ if(!row.nombre||Object.values(row).some(v=>typeof v==='number'&&!Number.isFinite(v)))return alert('Revisa el nombre y los valores numéricos.');
+ const {error}=await sb.from('pdr_com_funcionalidades').upsert(row);if(error)return alert('No se guardó la funcionalidad: '+error.message);
+ pdrBizResetFeature();await pdrBizRefresh();pdrBizTab('funciones');
+}
+function pdrBizPlanLimits(x){return [((x.max_usuarios??'—')+' usuarios'),((x.max_proyectos??'Sin límite')+' proyectos'),((x.max_registros_mes??'Sin límite')+' registros/mes'),((x.almacenamiento_gb??'No definido')+' GB'),('Soporte '+(x.soporte||'estandar'))].join(' · ');}
+function pdrBizRenderAssignmentPlanPreview(){const dest=pdrBizEl('pdrBizPlanPreview');if(!dest)return;const p=pdrBizState.planes.find(x=>String(x.id)===pdrBizEl('pdrBizAsignacionPlan').value);if(!p){dest.style.display='none';dest.innerHTML='';return;}const names=pdrBizFeatureNames(p.funcionalidades);dest.style.display='block';dest.className='full pdrFeaturePreview';dest.innerHTML=`<strong>Alcance del plan: ${pdrBizSafe(p.nombre)}</strong><p>Precio configurado: <b>${pdrBizMoney(p.precio_total??p.precio_base)}</b> / ${pdrBizSafe(p.periodo)}</p><p>${pdrBizSafe(pdrBizPlanLimits(p))}</p><small>${names.length} funcionalidades: ${pdrBizSafe(names.join(' · ')||'Ninguna')} · ${(p.servicios_incluidos||[]).length} servicios: ${pdrBizSafe((p.servicios_incluidos||[]).map(s=>s.nombre+' ('+s.cantidad+' '+s.unidad+')').join(' · ')||'Ninguno')}</small>`;}
+function pdrBizRenderPlanes(){pdrBizEl('pdrBizPlanesRows').innerHTML=pdrBizState.planes.map(x=>`<tr><td><b>${pdrBizSafe(x.nombre)}</b></td><td>${pdrBizSafe(x.periodo)}</td><td>${pdrBizMoney(x.precio_total??x.precio_base)}</td><td>${pdrBizSafe(x.max_usuarios??'—')}</td><td><b>${Array.isArray(x.funcionalidades)?x.funcionalidades.length:0} funciones · ${Array.isArray(x.servicios_incluidos)?x.servicios_incluidos.length:0} servicios</b><div class="pdrBizMuted">${pdrBizSafe(pdrBizFeatureNames(x.funcionalidades).slice(0,3).join(', '))}</div></td><td>${pdrBizSafe(x.descripcion||'')}</td><td><button class="pdrBizBtn" data-biz-plan="${pdrBizSafe(x.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="7">Sin planes creados</td></tr>';
+ pdrBizEl('pdrBizPlanesRows').querySelectorAll('[data-biz-plan]').forEach(b=>b.addEventListener('click',()=>pdrBizEditPlan(b.dataset.bizPlan)));
+}
+function pdrBizEditPlan(id){const x=pdrBizState.planes.find(x=>String(x.id)===id);if(!x)return;pdrBizEl('pdrBizPlanId').value=x.id;pdrBizEl('pdrBizPlanNombre').value=x.nombre;pdrBizEl('pdrBizPlanPrecio').value=x.precio_base;pdrBizEl('pdrBizPlanPrecioManual').value=x.precio_manual??'';pdrBizEl('pdrBizPlanPeriodo').value=x.periodo;pdrBizEl('pdrBizPlanDescripcion').value=x.descripcion||'';
+ for(const [key,value] of Object.entries({pdrBizPlanUsuarios:x.max_usuarios??5,pdrBizPlanProyectos:x.max_proyectos??'',pdrBizPlanRegistros:x.max_registros_mes??'',pdrBizPlanStorage:x.almacenamiento_gb??'',pdrBizPlanSoporte:x.soporte||'estandar',pdrBizPlanExtraUsuario:x.precio_usuario_extra??0})){pdrBizEl(key).value=value;}
+ pdrPlanServices=Array.isArray(x.servicios_incluidos)?structuredClone(x.servicios_incluidos):[];pdrPlanRenderServices();pdrBizSelectedFeatures.clear();for(const key of Array.isArray(x.funcionalidades)?x.funcionalidades:[])pdrBizSelectedFeatures.add(key);pdrBizEl('pdrBizFeatureSearch').value='';pdrBizRenderFeaturePicker();pdrBizEl('pdrBizPlanForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pdrBizResetPlan(){pdrBizEl('pdrBizPlanForm').reset();pdrBizEl('pdrBizPlanId').value='';pdrBizEl('pdrBizPlanPrecioManual').value='';pdrBizSelectedFeatures.clear();pdrPlanServices=[];pdrPlanRenderServices();pdrBizEl('pdrBizFeatureSearch').value='';pdrBizRenderFeaturePicker();}
+async function pdrBizSavePlan(ev){ev.preventDefault();if(!pdrBizGuard())return;
+ const id=pdrBizEl('pdrBizPlanId').value;
+ const opt=id=>pdrBizEl(id).value.trim()?Number(pdrBizEl(id).value):null;
+ const features=[...pdrBizSelectedFeatures];if(!features.length&&!pdrPlanServices.length&&!confirm('El plan no tiene funcionalidades ni servicios seleccionados. ¿Guardarlo así?'))return;
+ const calc=pdrBizCalculatePlan();
+ const row={nombre:pdrBizEl('pdrBizPlanNombre').value.trim(),periodo:pdrBizEl('pdrBizPlanPeriodo').value,precio_base:calc.base,precio_total:calc.total,precio_manual:calc.manual,detalle_precios:calc.rows,servicios_incluidos:pdrPlanServices,descripcion:pdrBizEl('pdrBizPlanDescripcion').value,max_usuarios:Number(pdrBizEl('pdrBizPlanUsuarios').value),max_proyectos:opt('pdrBizPlanProyectos'),max_registros_mes:opt('pdrBizPlanRegistros'),almacenamiento_gb:opt('pdrBizPlanStorage'),soporte:pdrBizEl('pdrBizPlanSoporte').value,precio_usuario_extra:Number(pdrBizEl('pdrBizPlanExtraUsuario').value||0),funcionalidades:features,updated_at:new Date().toISOString()};if(id)row.id=id;
+ const {error}=await sb.from('pdr_com_planes').upsert(row);if(error)return alert('Error guardando el plan: '+error.message+'\nVerifica que ejecutaste el SQL V108.');
+ pdrBizResetPlan();await pdrBizRefresh();pdrBizTab('planes');
+}
+function pdrBizRenderTarifas(){pdrBizEl('pdrBizTarifasRows').innerHTML=pdrBizState.tarifas.map(x=>`<tr><td><b>${pdrBizSafe(x.nombre)}</b></td><td>${pdrBizSafe(x.unidad)}</td><td>${pdrBizMoney(x.precio_unitario)}</td><td>${pdrBizSafe(x.descripcion||'')}</td><td><button class="pdrBizBtn" data-biz-tarifa="${pdrBizSafe(x.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="5">Sin tarifas creadas</td></tr>';
+ pdrBizEl('pdrBizTarifasRows').querySelectorAll('[data-biz-tarifa]').forEach(b=>b.addEventListener('click',()=>pdrBizEditTarifa(b.dataset.bizTarifa)));
+}
+function pdrBizEditTarifa(id){const x=pdrBizState.tarifas.find(x=>String(x.id)===id);if(!x)return;pdrBizEl('pdrBizTarifaId').value=x.id;pdrBizEl('pdrBizTarifaNombre').value=x.nombre;pdrBizEl('pdrBizTarifaPrecio').value=x.precio_unitario;pdrBizEl('pdrBizTarifaUnidad').value=x.unidad;pdrBizEl('pdrBizTarifaDescripcion').value=x.descripcion||'';}
+function pdrBizResetTarifa(){pdrBizEl('pdrBizTarifaForm').reset();pdrBizEl('pdrBizTarifaId').value='';}
+async function pdrBizSaveTarifa(ev){ev.preventDefault();if(!pdrBizGuard())return;
+ const id=pdrBizEl('pdrBizTarifaId').value;const row={nombre:pdrBizEl('pdrBizTarifaNombre').value.trim(),unidad:pdrBizEl('pdrBizTarifaUnidad').value,precio_unitario:Number(pdrBizEl('pdrBizTarifaPrecio').value),descripcion:pdrBizEl('pdrBizTarifaDescripcion').value,updated_at:new Date().toISOString()};if(id)row.id=id;
+ const {error}=await sb.from('pdr_com_tarifas').upsert(row);if(error)return alert(error.message);
+ pdrBizResetTarifa();await pdrBizRefresh();pdrBizTab('tarifas');
+}
+function pdrBizExportCsv(){if(!pdrBizGuard())return;const rows=[['Empresa','Proyecto','Código','Puntos','Meta','Avance %','Plan','Estado','Precio acordado COP','Correcciones abiertas','Fecha compromiso']];
+ pdrBizFiltered().forEach(p=>{const a=pdrBizAssignment(p.id),e=empresas.find(e=>String(e.id)===String(p.empresa_id)),plan=pdrBizState.planes.find(x=>x.id===a?.plan_id);rows.push([e?.nombre||'',p.nombre||'',p.codigo||'',pdrBizState.counts[p.id]||0,a?.meta_puntos||'',pdrBizPct(p)?.toFixed(2)||'',plan?.nombre||'',a?.estado||'',a?.precio_acordado??'',pdrBizState.correcciones[p.id]||0,a?.fecha_compromiso||'']);});
+ const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='PDR_seguimiento_general_'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+
+</script>
+<script>
+/* V113: cotizador mixto; conservamos el Master y tarifarios previos. */
+let pdrCotItems=[];let pdrCotSaved=[];
+const pdrCotE=id=>document.getElementById(id);
+const pdrCotVal=id=>(pdrCotE(id)?.value||'').trim();
+const pdrCotNum=id=>Number(pdrCotVal(id)||0);
+const pdrCotEsc=v=>typeof pdrBizSafe==='function'?pdrBizSafe(v):String(v??'').replace(/</g,'&lt;');
+const pdrCotMoney=v=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:2}).format(Number(v)||0);
+/* V116: entregables estructurados y observaciones individuales. */
+const pdrCotEntregablesDef=[
+ {id:'excel',nombre:'Cartera en Excel',hint:'Campos, columnas adicionales, formato y alcance de la base de datos'},
+ {id:'fotografico',nombre:'Registro fotográfico',hint:'Tipos de fotografías, nomenclatura, geoetiquetado y formato de entrega'},
+ {id:'autocad',nombre:'Plano en AutoCAD',hint:'Formato DWG/DXF, capas, escala, simbología y contenido'},
+ {id:'kmz',nombre:'KMZ',hint:'Puntos, trazados, atributos, estilos y organización de carpetas'}
+];
+function pdrCotEntregablesRender(data=[]){
+ const root=pdrCotE('pdrCotEntregablesLista');if(!root)return;
+ const values=new Map((Array.isArray(data)?data:[]).map(x=>[String(x.id||''),x]));
+ root.innerHTML=pdrCotEntregablesDef.map(d=>{
+   const v=values.get(d.id)||{},checked=v.incluido===true;
+   return `<div style="padding:11px 12px;border:1px solid #d7e2ed;border-radius:10px;margin-bottom:9px">
+     <label style="display:flex;align-items:center;gap:9px;font-weight:650;cursor:pointer"><input type="checkbox" data-cot-delivery-check="${d.id}" ${checked?'checked':''} style="width:17px;height:17px">${pdrCotEsc(d.nombre)}</label>
+     <div data-cot-delivery-detail="${d.id}" style="margin-top:8px;${checked?'':'display:none'}">
+       <label style="display:block">Observaciones / elementos adicionales incluidos<textarea data-cot-delivery-notes="${d.id}" rows="2" maxlength="2000" placeholder="${pdrCotEsc(d.hint)}" style="width:100%;min-height:65px;box-sizing:border-box">${pdrCotEsc(v.observaciones||'')}</textarea></label>
+     </div></div>`;
+ }).join('');
+ root.querySelectorAll('[data-cot-delivery-check]').forEach(c=>c.addEventListener('change',()=>{
+   const box=root.querySelector(`[data-cot-delivery-detail="${c.dataset.cotDeliveryCheck}"]`);
+   if(box)box.style.display=c.checked?'':'none';
+ }));
+}
+function pdrCotEntregablesGet(){
+ const root=pdrCotE('pdrCotEntregablesLista');if(!root)return [];
+ return pdrCotEntregablesDef.filter(d=>root.querySelector(`[data-cot-delivery-check="${d.id}"]`)?.checked)
+ .map(d=>({id:d.id,nombre:d.nombre,incluido:true,observaciones:root.querySelector(`[data-cot-delivery-notes="${d.id}"]`)?.value.trim()||''}));
+}
+function pdrCotEntregablesPrint(){
+ const selected=pdrCotEntregablesGet();if(!selected.length)return '';
+ return `<h3>Entregables incluidos</h3><ul>${selected.map(x=>`<li><b>${pdrCotEsc(x.nombre)}</b>${x.observaciones?`<div style="margin-top:4px;white-space:pre-wrap">${pdrCotEsc(x.observaciones)}</div>`:''}</li>`).join('')}</ul>`;
+}
+
+function pdrCotSources(){
+ const type=pdrCotVal('pdrCotFuente');const sel=pdrCotE('pdrCotCatalogo');
+ const rows=type==='tarifa'?pdrBizState.tarifas:type==='plan'?pdrBizState.planes:type==='funcion'?pdrBizState.funciones:[];
+ sel.disabled=type==='personalizado';
+ sel.innerHTML='<option value="">'+(type==='personalizado'?'Ingresar manualmente':'Seleccione concepto')+'</option>'+rows.filter(x=>x.activo!==false).map(x=>`<option value="${pdrCotEsc(x.id)}">${pdrCotEsc(x.nombre)}</option>`).join('');
+ if(type==='personalizado'){pdrCotE('pdrCotConcepto').value='';pdrCotE('pdrCotPrecio').value=0;}
+}
+function pdrCotPick(){
+ const type=pdrCotVal('pdrCotFuente'),id=pdrCotVal('pdrCotCatalogo');
+ const x=(type==='tarifa'?pdrBizState.tarifas:type==='plan'?pdrBizState.planes:pdrBizState.funciones).find(v=>String(v.id)===id);
+ if(!x)return;
+ pdrCotE('pdrCotConcepto').value=x.nombre||'';
+ if(type==='tarifa'){
+   const unit=x.unidad||'unidad';const target=pdrCotE('pdrCotUnidad');if([...target.options].some(o=>o.value===unit))target.value=unit;else target.value='unidad';
+   pdrCotE('pdrCotPrecio').value=x.precio_unitario||0;pdrCotE('pdrCotPeriodicidad').value='unico';
+ }else if(type==='plan'){
+   pdrCotE('pdrCotUnidad').value='mes';pdrCotE('pdrCotPeriodicidad').value=x.periodo||'mensual';
+   pdrCotE('pdrCotPrecio').value=x.precio_total??x.precio_base??0;
+ }else{
+   const period=pdrCotVal('pdrCotPeriodicidad');
+   pdrCotE('pdrCotUnidad').value='servicio';pdrCotE('pdrCotPrecio').value=x[period==='mensual'?'precio_mensual':period==='anual'?'precio_anual':'precio_unico']||0;
+ }
+}
+function pdrCotAdd(){
+ if(!pdrBizGuard())return;
+ const name=pdrCotVal('pdrCotConcepto'),qty=pdrCotNum('pdrCotCantidad'),price=pdrCotNum('pdrCotPrecio');
+ if(!name)return alert('Escribe o selecciona el concepto.');
+ if(!Number.isFinite(qty)||qty<=0)return alert('La cantidad debe ser mayor que cero.');
+ if(!Number.isFinite(price)||price<0)return alert('El precio debe ser cero o positivo.');
+ pdrCotItems.push({id:Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),fuente:pdrCotVal('pdrCotFuente'),ref_id:pdrCotVal('pdrCotCatalogo')||null,nombre:name,unidad:pdrCotVal('pdrCotUnidad'),cantidad:qty,precio_unitario:price,periodicidad:pdrCotVal('pdrCotPeriodicidad')});
+ pdrCotRender();
+}
+function pdrCotRemove(id){pdrCotItems=pdrCotItems.filter(x=>x.id!==id);pdrCotRender();}
+function pdrCotTotals(){
+ const subt={unico:0,mensual:0,anual:0};pdrCotItems.forEach(x=>{if(subt[x.periodicidad]!==undefined)subt[x.periodicidad]+=Number(x.cantidad)*Number(x.precio_unitario);});
+ const discount=Math.min(100,Math.max(0,pdrCotNum('pdrCotDescuento')))/100;
+ const iva=Math.min(100,Math.max(0,pdrCotNum('pdrCotIva')))/100;
+ const apply=n=>Math.round(n*(1-discount)*(1+iva)*100)/100;
+ return {subt,unico:apply(subt.unico),mensual:apply(subt.mensual),anual:apply(subt.anual),discount,iva};
+}
+function pdrCotRender(){
+ const rows=pdrCotE('pdrCotLineas');if(!rows)return;
+ rows.innerHTML=pdrCotItems.length?pdrCotItems.map(x=>`<tr><td>${pdrCotEsc(x.nombre)}</td><td>${pdrCotEsc(x.unidad)}</td><td><input type="number" min="0.0001" step="any" value="${Number(x.cantidad)}" style="width:92px" data-cot-qty="${pdrCotEsc(x.id)}" title="Cantidad"></td><td><input type="number" min="0" step="0.01" value="${Number(x.precio_unitario)}" style="width:120px" data-cot-price="${pdrCotEsc(x.id)}" title="Precio editable solo en esta cotización"></td><td>${pdrCotEsc(x.periodicidad)}</td><td>${pdrCotMoney(x.cantidad*x.precio_unitario)}</td><td><button class="pdrBizBtn" type="button" data-cot-remove="${pdrCotEsc(x.id)}">Quitar</button></td></tr>`).join(''):'<tr><td colspan="7">Agrega conceptos a la propuesta</td></tr>';
+ rows.querySelectorAll('[data-cot-remove]').forEach(b=>b.addEventListener('click',()=>pdrCotRemove(b.dataset.cotRemove)));
+ rows.querySelectorAll('[data-cot-qty],[data-cot-price]').forEach(input=>input.addEventListener('change',()=>{const item=pdrCotItems.find(x=>x.id===(input.dataset.cotQty||input.dataset.cotPrice));if(!item)return;const value=Number(input.value);if(!Number.isFinite(value)||(input.dataset.cotQty?value<=0:value<0)){alert('Ingresa una cantidad positiva o un precio no negativo.');pdrCotRender();return;}if(input.dataset.cotQty)item.cantidad=value;else item.precio_unitario=value;pdrCotRender();}));
+ const t=pdrCotTotals();pdrCotE('pdrCotResumen').innerHTML=`<b>Resumen</b> · Descuento ${(t.discount*100).toFixed(2)} % · IVA ${(t.iva*100).toFixed(2)} %<div class="pdrBizGrid" style="margin-top:10px"><div><small>Cargo único</small><h3>${pdrCotMoney(t.unico)}</h3></div><div><small>Suscripción mensual</small><h3>${pdrCotMoney(t.mensual)}</h3></div><div><small>Suscripción anual</small><h3>${pdrCotMoney(t.anual)}</h3></div></div><small>Los valores mensuales y anuales son recurrentes y no se suman al cargo único. IVA configurable según el tratamiento tributario que corresponda.</small>`;
+}
+async function pdrCotInit(){
+ if(!pdrBizGuard())return;
+ const sel=pdrCotE('pdrCotProyecto');const current=sel.value;
+ sel.innerHTML='<option value="">Sin proyecto — cotización nueva</option>'+(Array.isArray(window.proyectos)?window.proyectos:typeof proyectos!=='undefined'&&Array.isArray(proyectos)?proyectos:[]).map(x=>`<option value="${pdrCotEsc(x.id)}">${pdrCotEsc(x.nombre||x.codigo||x.id)}</option>`).join('');sel.value=current;
+ pdrCotSources();pdrCotRender();pdrCotEntregablesRender();await pdrCotLoadSaved();
+}
+async function pdrCotSave(){
+ if(!pdrBizGuard())return;
+ if(!pdrCotVal('pdrCotCliente')||!pdrCotVal('pdrCotNombre'))return alert('Completa cliente y título de la propuesta.');
+ if(!pdrCotItems.length)return alert('Agrega por lo menos un concepto.');
+ const t=pdrCotTotals();
+ const obj={cliente:pdrCotVal('pdrCotCliente'),nombre:pdrCotVal('pdrCotNombre'),proyecto_id:pdrCotVal('pdrCotProyecto')||null,estado:pdrCotVal('pdrCotEstado'),valida_hasta:pdrCotVal('pdrCotVence')||null,descuento_pct:pdrCotNum('pdrCotDescuento'),iva_pct:pdrCotNum('pdrCotIva'),notas:pdrCotVal('pdrCotNotas'),entregables:pdrCotEntregablesGet(),items:pdrCotItems,total_unico:t.unico,total_mensual:t.mensual,total_anual:t.anual,updated_at:new Date().toISOString()};
+ if(pdrCotVal('pdrCotId'))obj.id=pdrCotVal('pdrCotId');
+ const {data,error}=await sb.from('pdr_com_cotizaciones').upsert(obj).select('id').single();
+ if(error){alert('No se pudo guardar la cotización: '+error.message+'\nVerifica que ejecutaste los SQL V113 y V116 y que tu rol sea admin.');return;}
+ pdrCotE('pdrCotId').value=data.id;alert('Cotización guardada correctamente.');await pdrCotLoadSaved();
+}
+async function pdrCotLoadSaved(){
+ if(!pdrBizGuard())return;
+ const {data,error}=await sb.from('pdr_com_cotizaciones').select('*').order('updated_at',{ascending:false}).limit(300);
+ if(error){pdrCotE('pdrCotHistorial').innerHTML=`<tr><td colspan="8">No se pudo consultar: ${pdrCotEsc(error.message)}. Ejecuta SQL V113.</td></tr>`;return;}
+ pdrCotSaved=data||[];
+ pdrCotE('pdrCotHistorial').innerHTML=pdrCotSaved.map(x=>`<tr><td>${pdrCotEsc(x.cliente)}</td><td>${pdrCotEsc(x.nombre)}</td><td>${pdrCotEsc(x.estado)}</td><td>${pdrCotMoney(x.total_unico)}</td><td>${pdrCotMoney(x.total_mensual)}</td><td>${pdrCotMoney(x.total_anual)}</td><td>${pdrCotEsc((x.updated_at||'').slice(0,10))}</td><td><button type="button" class="pdrBizBtn" data-cot-edit="${pdrCotEsc(x.id)}">Abrir</button></td></tr>`).join('')||'<tr><td colspan="8">Sin cotizaciones guardadas</td></tr>';
+ pdrCotE('pdrCotHistorial').querySelectorAll('[data-cot-edit]').forEach(b=>b.addEventListener('click',()=>pdrCotEdit(b.dataset.cotEdit)));
+}
+function pdrCotEdit(id){const x=pdrCotSaved.find(x=>String(x.id)===id);if(!x)return;
+ const map={pdrCotId:x.id,pdrCotCliente:x.cliente,pdrCotNombre:x.nombre,pdrCotProyecto:x.proyecto_id||'',pdrCotEstado:x.estado,pdrCotVence:x.valida_hasta||'',pdrCotDescuento:x.descuento_pct,pdrCotIva:x.iva_pct,pdrCotNotas:x.notas||''};
+ Object.entries(map).forEach(([k,v])=>{if(pdrCotE(k))pdrCotE(k).value=v??'';});pdrCotItems=Array.isArray(x.items)?structuredClone(x.items):[];pdrCotEntregablesRender(x.entregables);pdrCotRender();pdrCotE('pdrCotForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pdrCotNew(){pdrCotE('pdrCotForm').reset();pdrCotE('pdrCotId').value='';pdrCotItems=[];pdrCotSources();pdrCotEntregablesRender();pdrCotRender();}
+function pdrCotPrint(){if(!pdrBizGuard())return;
+ if(!pdrCotItems.length)return alert('Agrega al menos un concepto para imprimir.');
+ const t=pdrCotTotals();const title=pdrCotEsc(pdrCotVal('pdrCotNombre'));const client=pdrCotEsc(pdrCotVal('pdrCotCliente'));const notes=pdrCotEsc(pdrCotVal('pdrCotNotas')).replace(/\n/g,'<br>');
+ const tr=pdrCotItems.map(x=>`<tr><td>${pdrCotEsc(x.nombre)}</td><td>${pdrCotEsc(x.unidad)}</td><td>${x.cantidad}</td><td>${pdrCotMoney(x.precio_unitario)}</td><td>${pdrCotEsc(x.periodicidad)}</td><td>${pdrCotMoney(x.cantidad*x.precio_unitario)}</td></tr>`).join('');
+ const page=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Cotización PDR NETWORKS</title><style>body{font:13px Arial;color:#142438;padding:30px}h1{color:#0c5776}table{border-collapse:collapse;width:100%}td,th{padding:9px;border:1px solid #cbd5e1;text-align:left}th{background:#e2e8f0}.summary{margin-top:20px;border-top:3px solid #0c5776;padding-top:12px;line-height:2}@media print{body{padding:4px}}</style></head><body><h1>PDR NETWORKS · Cotización</h1><h2>${title}</h2><p><b>Cliente:</b> ${client}　<b>Fecha:</b> ${new Date().toLocaleDateString('es-CO')}　<b>Válida hasta:</b> ${pdrCotEsc(pdrCotVal('pdrCotVence')||'Por definir')}</p><table><thead><tr><th>Concepto</th><th>Unidad</th><th>Cant.</th><th>Unitario</th><th>Cobro</th><th>Importe</th></tr></thead><tbody>${tr}</tbody></table><div class="summary"><b>Pago único:</b> ${pdrCotMoney(t.unico)}<br><b>Mensualidad:</b> ${pdrCotMoney(t.mensual)}<br><b>Anualidad:</b> ${pdrCotMoney(t.anual)}<br>Descuento: ${(t.discount*100).toFixed(2)} % · IVA: ${(t.iva*100).toFixed(2)} %</div>${pdrCotEntregablesPrint()}<h3>Alcance y condiciones</h3><p>${notes||'Por definir'}</p><footer>Datos que ahorran tiempo. Decisiones que ahorran costos.</footer></body></html>`;
+ const w=window.open('','_blank');if(!w){alert('Habilita las ventanas emergentes para imprimir o guardar como PDF.');return;}w.document.open();w.document.write(page);w.document.close();w.focus();setTimeout(()=>w.print(),300);
+}
+</script>
+<script>
+/* V115: catálogo rápido y combos reutilizables; usa exclusivamente tablas V107-V114. */
+function pdrQuickToggle(){const isFeature=document.getElementById('pdrQuickType')?.value==='funcion';document.getElementById('pdrQuickUnitWrap').style.display=isFeature?'none':'';document.getElementById('pdrQuickPeriodWrap').style.display=isFeature?'':'none';}
+async function pdrQuickSaveItem(ev){
+ ev.preventDefault();if(!pdrBizGuard())return;
+ const isFeature=document.getElementById('pdrQuickType').value==='funcion';
+ const nombre=document.getElementById('pdrQuickName').value.trim();const precio=Number(document.getElementById('pdrQuickPrice').value);
+ const descripcion=document.getElementById('pdrQuickDescription').value.trim();
+ if(!nombre||!Number.isFinite(precio)||precio<0)return alert('Revisa el nombre y el precio del ítem.');
+ const button=ev.target.querySelector('[type=submit]');button.disabled=true;
+ try{
+  let result;
+  if(isFeature){const period=document.getElementById('pdrQuickPeriod').value;
+   const row={id:'custom_'+crypto.randomUUID().replace(/-/g,''),nombre,categoria:'Servicios personalizados',descripcion,precio_mensual:period==='mensual'?precio:0,precio_anual:period==='anual'?precio:0,precio_unico:period==='unico'?precio:0,costo_mensual:0,costo_anual:0,costo_unico:0,activo:true,es_personalizada:true,updated_at:new Date().toISOString()};
+   result=await sb.from('pdr_com_funcionalidades').insert(row);
+  }else{const row={nombre,unidad:document.getElementById('pdrQuickUnit').value,precio_unitario:precio,descripcion,updated_at:new Date().toISOString()};result=await sb.from('pdr_com_tarifas').insert(row);}
+  if(result.error)throw result.error;
+  ev.target.reset();pdrQuickToggle();await pdrBizRefresh();pdrBizTab('funciones');alert('Ítem guardado en el catálogo. Ya puedes reutilizarlo en combos y cotizaciones.');
+ }catch(err){alert('No se pudo guardar el ítem: '+(err.message||err));}finally{button.disabled=false;}
+}
+function pdrQuickComboSources(){
+ const sel=document.getElementById('pdrQuickComboItem');if(!sel)return;const old=sel.value;
+ const list=[...(pdrBizState.tarifas||[]).map(x=>({kind:'t',row:x})),...(pdrBizState.funciones||[]).filter(x=>x.activo!==false).map(x=>({kind:'f',row:x}))];
+ sel.innerHTML='<option value="">Selecciona un ítem del catálogo</option>'+list.map(x=>`<option value="${x.kind}:${pdrBizSafe(x.row.id)}">${x.kind==='t'?'Servicio':'Función'} · ${pdrBizSafe(x.row.nombre)}${x.kind==='t'?' / '+pdrBizSafe(x.row.unidad):''}</option>`).join('');if([...sel.options].some(o=>o.value===old))sel.value=old;
+}
+function pdrQuickComboAdd(){
+ const v=document.getElementById('pdrQuickComboItem')?.value||'',qty=Number(document.getElementById('pdrQuickComboQty')?.value||1);
+ if(!v)return alert('Selecciona un ítem.');if(!Number.isFinite(qty)||qty<=0)return alert('La cantidad debe ser positiva.');
+ const kind=v.slice(0,1),id=v.slice(2);
+ if(kind==='f'){
+  if(qty!==1)return alert('Para una funcionalidad de software la cantidad es 1. Si deseas cobrar por usuarios o licencias adicionales, crea un ítem de servicio por usuario.');
+  pdrBizSelectedFeatures.add(id);pdrBizRenderFeaturePicker();
+ }else{
+  const tar=pdrBizState.tarifas.find(x=>String(x.id)===id);if(!tar)return alert('El servicio ya no existe. Actualiza el catálogo.');
+  pdrPlanServices.push({id:tar.id,nombre:tar.nombre,unidad:tar.unidad,cantidad:qty,precio_unitario:Number(tar.precio_unitario)||0});pdrPlanRenderServices();pdrBizRenderPlanBreakdown();
+ }
+ document.getElementById('pdrQuickComboQty').value='1';
+}
+
+/* V117: Gestión de ítems -> combos en tarjetas -> cotizaciones */
+function pdrV117OpenEditor(id){
+ const details=document.getElementById('pdrV117Advanced');
+ if(!details)return;
+ if(id)pdrBizEditPlan(id);else pdrBizResetPlan();
+ details.open=true;details.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pdrV117RenderCards(){
+ const root=document.getElementById('pdrV117Cards');if(!root)return;
+ const plans=pdrBizState.planes||[];
+ root.innerHTML=plans.map(p=>{
+ const features=(Array.isArray(p.funcionalidades)?p.funcionalidades:[]).map(id=>pdrBizState.funciones.find(f=>String(f.id)===String(id))?.nombre||id);
+ const services=(Array.isArray(p.servicios_incluidos)?p.servicios_incluidos:[]).map(x=>`${x.nombre||'Servicio'} · ${x.cantidad||1} ${x.unidad||''}`);
+ const all=[...features,...services];
+ return `<article class="pdrV117Card"><div class="pdrV117CardTop"><div><div class="pdrV117Period">${pdrBizSafe(p.periodo||'unico')}</div><h3>${pdrBizSafe(p.nombre)}</h3></div><span class="pdrV117Chip">${pdrBizSafe(p.max_usuarios??'—')} usuarios</span></div><p class="pdrV117Desc">${pdrBizSafe(p.descripcion||'Combo personalizado de servicios y funcionalidades')}</p><div class="pdrV117Price">${pdrBizMoney(p.precio_total??p.precio_base)} <small>/${p.periodo==='mensual'?'mes':p.periodo==='anual'?'año':'único'}</small></div><div style="font-size:11px;opacity:.75;margin:-6px 0 8px">${p.precio_manual==null?'Precio calculado automáticamente':'Precio personalizado del combo'}</div><div class="pdrV117CardButtons"><button class="pdrBizBtn primary" type="button" data-v117-edit-price="${pdrBizSafe(p.id)}">Editar precio</button><button class="pdrBizBtn" type="button" data-v117-edit-combo="${pdrBizSafe(p.id)}">Editar combo</button><button class="pdrBizBtn" type="button" data-v117-quote-combo="${pdrBizSafe(p.id)}">Cotizar</button></div><details><summary>Ver ítems incluidos (${all.length})</summary><ul>${all.map(n=>`<li>${pdrBizSafe(n)}</li>`).join('')||'<li>Sin ítems incluidos</li>'}</ul></details></article>`;
+ }).join('')||'<div class="pdrFeaturePanel" style="grid-column:1/-1">Todavía no tienes combos. Crea uno desde «+ Crear combo» o agrega un ítem desde «Mis ítems».</div>';
+ root.querySelectorAll('[data-v117-edit-price]').forEach(b=>b.addEventListener('click',()=>pdrV117UpdatePrice(b.dataset.v117EditPrice)));
+ root.querySelectorAll('[data-v117-edit-combo]').forEach(b=>b.addEventListener('click',()=>pdrV117OpenEditor(b.dataset.v117EditCombo)));
+ root.querySelectorAll('[data-v117-quote-combo]').forEach(b=>b.addEventListener('click',()=>pdrV117QuoteCombo(b.dataset.v117QuoteCombo)));
+ pdrV117FillComboSelect();
+}
+function pdrV117FillComboSelect(){const el=document.getElementById('pdrV117TargetCombo');if(!el)return;const old=el.value;el.innerHTML='<option value="">Selecciona un combo</option>'+(pdrBizState.planes||[]).map(p=>`<option value="${pdrBizSafe(p.id)}">${pdrBizSafe(p.nombre)}</option>`).join('');if([...el.options].some(o=>o.value===old))el.value=old;}
+async function pdrV117UpdatePrice(id){
+ if(!pdrBizGuard())return;const p=pdrBizState.planes.find(x=>String(x.id)===String(id));if(!p)return;
+ const old=Number(p.precio_total??p.precio_base)||0;
+ const v=prompt('Nuevo precio total de «'+p.nombre+'» (COP). No modifica los precios individuales del catálogo:',String(old));if(v===null)return;
+ const amount=Number(String(v).replace(/\s/g,'').replace(/,/g,'.'));
+ if(!Number.isFinite(amount)||amount<0)return alert('Introduce un precio válido y no negativo.');
+ const {data,error}=await sb.from('pdr_com_planes').update({precio_total:amount,precio_manual:amount,updated_at:new Date().toISOString()}).eq('id',id).select('id');
+ if(error)return alert('No se pudo guardar el precio: '+error.message);
+ if(!data?.length)return alert('Supabase no confirmó la actualización. Revisa los permisos RLS.');
+ p.precio_total=amount;p.precio_manual=amount;pdrBizRenderPlanes();pdrV117RenderCards();pdrBizStatus('Precio actualizado para «'+p.nombre+'».');
+}
+async function pdrV117AddItemToCombo(kind,id){
+ if(!pdrBizGuard())return;
+ const comboId=document.getElementById('pdrV117TargetCombo')?.value;
+ if(!comboId)return alert('Selecciona primero un combo en la sección «Agregar ítems a un combo existente».');
+ const p=pdrBizState.planes.find(x=>String(x.id)===String(comboId));if(!p)return alert('Combo no encontrado.');
+ const quantity=Number(document.getElementById('pdrV117TargetQty')?.value||1);
+ if(!Number.isFinite(quantity)||quantity<=0)return alert('La cantidad debe ser mayor que cero.');
+ if(kind==='f'&&quantity!==1)return alert('Las funcionalidades de software se agregan con cantidad 1. Para cobro por usuario, crea un servicio con unidad «usuario».');
+ const funcs=[...(p.funcionalidades||[])],services=[...(p.servicios_incluidos||[])];let delta=0;
+ if(kind==='f'){
+  const f=pdrBizState.funciones.find(x=>String(x.id)===String(id));if(!f)return alert('Funcionalidad no encontrada.');
+  if(funcs.some(x=>String(x)===String(id)))return alert('Esta funcionalidad ya pertenece al combo.');
+  funcs.push(f.id);delta=pdrBizFeaturePrice(f,p.periodo);
+ }else{
+  const x=pdrBizState.tarifas.find(x=>String(x.id)===String(id));if(!x)return alert('Ítem no encontrado.');
+  services.push({id:x.id,nombre:x.nombre,unidad:x.unidad,cantidad:quantity,precio_unitario:Number(x.precio_unitario)||0});delta=quantity*(Number(x.precio_unitario)||0);
+ }
+ if(!confirm('¿Agregar este ítem al combo «'+p.nombre+'»?'))return;
+ const row={funcionalidades:funcs,servicios_incluidos:services,precio_total:p.precio_manual==null?Number(p.precio_total??p.precio_base??0)+delta:Number(p.precio_manual),updated_at:new Date().toISOString()};
+ const {data,error}=await sb.from('pdr_com_planes').update(row).eq('id',comboId).select('id');
+ if(error)return alert('Error al agregar al combo: '+error.message);
+ if(!data?.length)return alert('Supabase no confirmó el guardado. Revisa permisos de actualización.');
+ Object.assign(p,row);pdrBizRenderPlanes();pdrV117RenderCards();pdrBizStatus('Ítem agregado a «'+p.nombre+'».'+(p.precio_manual==null?' Se actualizó el total automático.':' Se conservó el precio final personalizado.'));
+}
+function pdrV117QuoteCombo(id){
+ pdrBizTab('cotizador');pdrCotInit().then(()=>{
+ const s=document.getElementById('pdrCotFuente');s.value='plan';pdrCotSources();
+ document.getElementById('pdrCotCatalogo').value=id;pdrCotPick();
+ document.getElementById('pdrCotCantidad').value='1';
+ document.getElementById('pdrCotPrecio').focus();
+ }).catch(e=>alert('No se pudo cargar el cotizador: '+e.message));
+}
+function pdrV117BindItemActions(){
+ const f=document.getElementById('pdrBizFuncRows'),t=document.getElementById('pdrBizTarifasRows');
+ if(f){f.querySelectorAll('tr').forEach(tr=>{const b=tr.querySelector('[data-pdr-func]');if(!b||tr.querySelector('[data-v117-f]'))return;
+ const btn=document.createElement('button');btn.type='button';btn.className='pdrBizBtn';btn.textContent='+ Combo';btn.dataset.v117F=b.dataset.pdrFunc;btn.addEventListener('click',()=>pdrV117AddItemToCombo('f',btn.dataset.v117F));b.parentElement.appendChild(btn);});}
+ if(t){t.querySelectorAll('tr').forEach(tr=>{const b=tr.querySelector('[data-biz-tarifa]');if(!b||tr.querySelector('[data-v117-t]'))return;
+ const btn=document.createElement('button');btn.type='button';btn.className='pdrBizBtn';btn.textContent='+ Combo';btn.dataset.v117T=b.dataset.bizTarifa;btn.addEventListener('click',()=>pdrV117AddItemToCombo('t',btn.dataset.v117T));b.parentElement.appendChild(btn);});}
+}
+(function(){
+ const originalRefreshPlanes=pdrBizRenderPlanes;pdrBizRenderPlanes=function(){originalRefreshPlanes();pdrV117RenderCards();};
+ const originalFuncs=pdrBizRenderFeaturePrices;pdrBizRenderFeaturePrices=function(){originalFuncs();pdrV117BindItemActions();};
+ const originalTarifas=pdrBizRenderTarifas;pdrBizRenderTarifas=function(){originalTarifas();pdrV117BindItemActions();};
+ const origTab=pdrBizTab;pdrBizTab=function(tab){origTab(tab);if(tab==='planes')pdrV117RenderCards();if(tab==='funciones'||tab==='tarifas')pdrV117FillComboSelect();};
+})();
+
+function pdrV117RenderItems(){
+ const root=document.getElementById('pdrV117ItemRows');if(!root)return;
+ const q=(document.getElementById('pdrV117ItemFilter')?.value||'').trim().toLocaleLowerCase('es');
+ const values=[
+  ...(pdrBizState.tarifas||[]).map(x=>({kind:'t',id:x.id,name:x.nombre,unit:x.unidad||'unidad',type:'Servicio',price:Number(x.precio_unitario)||0})),
+  ...(pdrBizState.funciones||[]).filter(x=>x.activo!==false).map(x=>({kind:'f',id:x.id,name:x.nombre,unit:x.categoria||'Software',type:'Funcionalidad',price:Number(x.precio_mensual)||Number(x.precio_unico)||Number(x.precio_anual)||0}))
+ ].filter(x=>(x.name+' '+x.unit+' '+x.type).toLocaleLowerCase('es').includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+ root.innerHTML=values.map(x=>`<tr><td><b>${pdrBizSafe(x.name)}</b></td><td>${pdrBizSafe(x.type)} · ${pdrBizSafe(x.unit)}</td><td>${pdrBizMoney(x.price)}${x.kind==='f'?'<small class="pdrBizMuted"> · precio de referencia</small>':''}</td><td><button class="pdrBizBtn primary" type="button" data-v117-add="${x.kind}:${pdrBizSafe(x.id)}">+ Combo</button><button class="pdrBizBtn" type="button" data-v117-item-edit="${x.kind}:${pdrBizSafe(x.id)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="4">No se encontraron ítems.</td></tr>';
+ root.querySelectorAll('[data-v117-add]').forEach(b=>b.addEventListener('click',()=>{const [kind,id]=b.dataset.v117Add.split(':');pdrV117AddItemToCombo(kind,id);}));
+ root.querySelectorAll('[data-v117-item-edit]').forEach(b=>b.addEventListener('click',()=>{
+  const [kind,id]=b.dataset.v117ItemEdit.split(':');
+  if(kind==='t'){pdrBizTab('tarifas');pdrBizEditTarifa(id);document.getElementById('pdrBizTarifaForm')?.scrollIntoView({behavior:'smooth'});}
+  else{const details=document.querySelector('#pdrBizPane-funciones > details');if(details)details.open=true;pdrBizEditFeature(id);document.getElementById('pdrBizFuncForm')?.scrollIntoView({behavior:'smooth'});}
+ }));
+}
+(function(){const a=pdrV117RenderCards;pdrV117RenderCards=function(){a();pdrV117RenderItems();};})();
+</script></body>
 </html>
 
 
