@@ -2286,6 +2286,15 @@ body.lightTheme .mapCorrectionAlertText small{color:#92400e}
 .pdrAutoSyncToast b,.pdrAutoSyncToast span{display:none!important}
 body.formularioAbierto .pdrAutoSyncToast,#formOverlay.open~.pdrAutoSyncToast{display:none!important}
 
+
+/* V141 · Cierre real del panel; no detiene el envío en curso. */
+.syncProgressRight{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.syncCloseButton{display:grid;place-items:center;width:30px;height:30px;border:1px solid #45627e;border-radius:9px;background:#203248;color:#fff;font-size:17px;font-weight:900;cursor:pointer}
+.syncCloseButton:active{background:#35516d}
+.syncProgressActions{display:flex;align-items:center;gap:5px}
+.syncProgressActions button{border:0;border-radius:8px;padding:6px 10px;background:#24384e;color:#fff;font-size:10px;font-weight:800;cursor:pointer}
+#syncProgressFinishBtn{background:#0f766e}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 </head>
@@ -14513,6 +14522,7 @@ async function sincronizarUno(r){
 
 let syncEnCurso=false;
 let syncOcultoManual=false;
+let syncCerradoManual=false; // Cerrar solo la interfaz, nunca cancelar transferencias
 let pdrSyncSilencioso=false; // Envíos programados/remotos/al guardar: sin panel ni mini indicador
 let syncResumen={total:0,procesados:0,ok:0,error:0};
 let syncInicioMs=0;
@@ -14715,6 +14725,7 @@ function detenerCronometroSync(){
 }
 function mostrarPanelSync(){
   if(pdrSyncSilencioso)return;
+  syncCerradoManual=false;
   const p=document.getElementById('syncProgressPanel');
   const m=document.getElementById('syncMiniButton');
   syncOcultoManual=false;
@@ -14728,12 +14739,21 @@ function ocultarPanelSync(){
   if(p)p.style.display='none';
   if(m&&(syncEnCurso||syncResumen.total>0))m.style.display='flex';
 }
+function cerrarInterfazSync(){
+  // No modifica syncEnCurso, la cola, los registros ni los errores.
+  syncCerradoManual=true;
+  syncOcultoManual=false;
+  const panel=document.getElementById('syncProgressPanel');
+  const mini=document.getElementById('syncMiniButton');
+  if(panel)panel.style.display='none';
+  if(mini)mini.style.display='none';
+}
 function actualizarProgresoSync(detalle=''){
   const total=syncResumen.total,procesados=syncResumen.procesados;
   const pct=total?Math.round((procesados/total)*100):0;
   if(typeof pdrAutoSyncProgreso==='function')pdrAutoSyncProgreso();
   const p=document.getElementById('syncProgressPanel'),m=document.getElementById('syncMiniButton');
-  if(pdrSyncSilencioso){if(p)p.style.display='none';if(m)m.style.display='none'}
+  if(pdrSyncSilencioso||syncCerradoManual){if(p)p.style.display='none';if(m)m.style.display='none'}
   else if(syncOcultoManual){if(p)p.style.display='none';if(m)m.style.display='flex'}
   else{if(p)p.style.display='block';if(m)m.style.display='none'}
   const bar=document.getElementById('syncProgressBar');if(bar)bar.style.width=pct+'%';
@@ -14784,7 +14804,7 @@ async function sincronizarPendientesBackground({silencioso=false}={}){
     if(!silencioso){mostrarPanelSync();actualizarProgresoSync('No hay datos pendientes.');finalizarPanelSync();}return;
   }
 
-  syncEnCurso=true;pdrSyncSilencioso=!!silencioso;syncOcultoManual=false;
+  syncEnCurso=true;pdrSyncSilencioso=!!silencioso;syncOcultoManual=false;syncCerradoManual=false;
   syncResumen={total:pendientes.length,procesados:0,ok:0,error:0};
   syncErroresDetallados=[];
   renderErroresSync();
@@ -16022,7 +16042,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="syncProgressTitle">☁️ Enviando datos en segundo plano</div>
       <div id="syncProgressText" class="syncProgressText">Preparando...</div>
     </div>
-    <div id="syncProgressPct" class="syncProgressPct">0%</div>
+    <div class="syncProgressRight">
+      <div id="syncProgressPct" class="syncProgressPct">0%</div>
+      <button id="syncProgressCloseBtn" class="syncCloseButton" type="button" onclick="cerrarInterfazSync()" title="Cerrar ventana sin detener el envío" aria-label="Cerrar ventana de sincronización">✕</button>
+    </div>
   </div>
 
   <div class="syncMetrics">
@@ -16035,7 +16058,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   <div class="syncProgressBottom">
     <span id="syncProgressDetail">Puedes seguir agregando puntos mientras se sincroniza.</span>
-    <button id="syncProgressHideBtn" type="button" onclick="ocultarPanelSync()">Ocultar</button>
+    <div class="syncProgressActions">
+      <button id="syncProgressHideBtn" type="button" onclick="ocultarPanelSync()">Ocultar</button>
+      <button id="syncProgressFinishBtn" type="button" onclick="cerrarInterfazSync()">Cerrar</button>
+    </div>
   </div>
 
   <div id="syncErrorBox" class="syncErrorBox">
@@ -17573,6 +17599,8 @@ async function refrescarAsignaciones(){
  if(proyectoActual() && typeof cargarPoligonosAsignadosTecnico==='function'){
    await cargarPoligonosAsignadosTecnico();
  }
+ // V140: refrescar la bandeja cuando cambia una asignación.
+ if(typeof programarRefrescoCorreccionesTecnico==='function')programarRefrescoCorreccionesTecnico(350);
 }
 async function procesar(){
  if(procesandoCambio||!disponible()||diferir()||document.hidden)return;
@@ -17630,7 +17658,7 @@ setInterval(()=>{
  if(!diferir()&&(cambiosPendientes||asignacionesPendientes))procesar().catch(console.warn);
 },3500);
 window.addEventListener('online',()=>{desconectar();setTimeout(()=>{suscribir();programar(true);},500);});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){suscribir();programar(false);}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){suscribir();programar(true);if(typeof programarRefrescoCorreccionesTecnico==='function')programarRefrescoCorreccionesTecnico(450);}});
 // Al cerrar el formulario o terminar guardado se aplica la configuración acumulada.
 document.addEventListener('click',()=>{if(cambiosPendientes&&!diferir())setTimeout(()=>procesar().catch(console.warn),250);});
 setTimeout(()=>{suscribir();programar(true);},3500);
@@ -17638,6 +17666,15 @@ setTimeout(()=>{suscribir();programar(true);},3500);
 </script>
 
 </body></html>
+
+
+
+
+
+
+
+
+
 
 
 
