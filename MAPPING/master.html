@@ -3379,6 +3379,11 @@ header{
       </div>
       <div id="pdrBuscarConsecutivoEstado" style="font-size:11px;color:#b5deea;margin-top:7px" aria-live="polite">Busca dentro del proyecto seleccionado.</div>
     </div>
+    <label for="fTecnicoLevantamiento">Técnico que levantó el elemento</label>
+    <select id="fTecnicoLevantamiento" onchange="pintarMapa()">
+      <option value="">Todos los técnicos</option>
+    </select>
+    <div id="fTecnicoLevantamientoInfo" class="hint" style="font-size:11px;margin-top:3px">Filtra por autor original, no por la asignación actual del polígono.</div>
     <label>Tipo de elemento</label>
     <select id="fTipo" onchange="actualizarVisibilidadFiltrosMaster();pintarMapa()">
       <option value="">Todos los tipos</option>
@@ -3831,6 +3836,8 @@ header{
 
             <div class="polygonStorageActions">
               <button class="btn blue" type="button" onclick="actualizarGeoJSONProyectoExistente()">☁ Subir / reemplazar</button>
+              <button class="btn gray" type="button" onclick="descargarPoligonoActualMaster()">⬇ Descargar archivo actual</button>
+              <button class="btn blue" type="button" onclick="pdrEditorAbrir()">✏️ Editar vértices en mapa</button>
               <button class="btn danger" type="button" onclick="eliminarArchivoPoligonosProyecto()">🗑 Eliminar archivo</button>
             </div>
 
@@ -5974,8 +5981,25 @@ async function leerArchivoPoligonosLocal(archivo){
   };
 }
 
+// V122: una ruta estable por proyecto; el contador de versión vive en PostgreSQL.
 function rutaStoragePoligonos(proyectoId,nombreArchivo){
-  return `${proyectoId}/${Date.now()}_${nombreArchivoPoligonosSeguro(nombreArchivo)}`;
+  return `${proyectoId}/poligonos.geojson`;
+}
+
+// Retira archivos de polígonos antiguos que permanecieron tras versiones anteriores.
+// Solo actúa dentro de la carpeta del proyecto y nunca elimina el archivo activo.
+async function pdrLimpiarVersionesAntiguasPoligonos(proyectoId,pathActivo){
+  const {data,error}=await sb.storage.from(POLIGONOS_BUCKET)
+    .list(String(proyectoId),{limit:1000});
+  if(error)throw error;
+  const anteriores=(data||[])
+    .filter(x=>x && x.name && /\.(?:geojson|json|kml|kmz)$/i.test(x.name))
+    .map(x=>`${proyectoId}/${x.name}`)
+    .filter(p=>p!==pathActivo);
+  if(!anteriores.length)return 0;
+  const {error:removeError}=await sb.storage.from(POLIGONOS_BUCKET).remove(anteriores);
+  if(removeError)throw removeError;
+  return anteriores.length;
 }
 
 function urlPublicaStoragePoligonos(path){
@@ -6055,73 +6079,93 @@ function actualizarEstadoPoligonosStorageMaster(){
     `</div>`;
 }
 
+async function descargarPoligonoActualMaster(){
+  const proyecto=proyectoPoligonosSeleccionado();
+  if(!proyecto)return alert('Selecciona el proyecto cuyo polígono deseas descargar.');
+  const url=proyecto.poligonos_url||proyecto.poligonos_drive_url||'';
+  if(!url)return alert('Este proyecto no tiene un archivo de polígonos activo.');
+  const path=pathPoligonosDesdeUrl(url);
+  const nombre=nombrePoligonosDesdeProyecto(proyecto)||('poligonos_'+(proyecto.codigo||proyecto.id)+'.geojson');
+  try{
+    let blob;
+    if(path){
+      const {data,error}=await sb.storage.from(POLIGONOS_BUCKET).download(path);
+      if(error)throw error;
+      blob=data;
+    }else{
+      const response=await fetch(url,{cache:'no-store'});
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      blob=await response.blob();
+    }
+    const local=URL.createObjectURL(blob);
+    const enlace=document.createElement('a');
+    enlace.href=local;enlace.download=nombre;document.body.appendChild(enlace);enlace.click();enlace.remove();
+    setTimeout(()=>URL.revokeObjectURL(local),15000);
+  }catch(e){
+    console.error('Descarga de polígonos:',e);
+    alert('No fue posible descargar el archivo: '+(e?.message||e)+'\nVerifica los permisos de Storage y la URL del archivo.');
+  }
+}
+
 async function subirArchivoPoligonosStorage(proyecto,archivo,analisis=null){
   if(!proyecto?.id)throw new Error('Proyecto no válido.');
   if(!archivo)throw new Error('Selecciona el archivo de polígonos.');
 
   const a=analisis||await leerArchivoPoligonosLocal(archivo);
   const path=rutaStoragePoligonos(proyecto.id,archivo.name);
+  const anteriorUrl=proyecto.poligonos_url||proyecto.poligonos_drive_url||'';
+  const version=(Number(proyecto.poligonos_version)||0)+1;
 
-  const {error:upError}=await sb.storage
-    .from(POLIGONOS_BUCKET)
-    .upload(path,archivo,{
-      cacheControl:'3600',
-      upsert:false,
-      contentType:archivo.type||undefined
-    });
-
+  // Siempre convertimos el contenido a GeoJSON, incluso si se importó KML/KMZ.
+  // Así no quedan archivos de formatos distintos en sucesivas actualizaciones.
+  const geojson=a.geojson;
+  if(!geojson)throw new Error('No fue posible convertir el archivo a GeoJSON.');
+  const nuevoArchivo=new Blob([JSON.stringify(geojson)],{type:'application/geo+json'});
+  const {error:upError}=await sb.storage.from(POLIGONOS_BUCKET).upload(path,nuevoArchivo,{
+    cacheControl:'0',
+    upsert:true,
+    contentType:'application/geo+json'
+  });
   if(upError)throw upError;
 
   const publicUrl=urlPublicaStoragePoligonos(path);
-
-  if(!publicUrl){
-    await sb.storage.from(POLIGONOS_BUCKET).remove([path]).catch(()=>{});
-    throw new Error('No fue posible obtener la URL pública del archivo cargado.');
-  }
-
-  const anteriorUrl=proyecto.poligonos_url||proyecto.poligonos_drive_url||'';
-  const anteriorPath=pathPoligonosDesdeUrl(anteriorUrl);
-  const version=(Number(proyecto.poligonos_version)||0)+1;
+  if(!publicUrl)throw new Error('El archivo se guardó, pero no se pudo obtener su URL pública.');
 
   try{
-    // Primero registramos/actualizamos el catálogo. La función conserva IDs
-    // de códigos existentes y por tanto preserva sus asignaciones.
+    // Mantener IDs y asignaciones vigentes por código de polígono.
     await registrarCatalogoPoligonos(proyecto.id,a.poligonos);
-
-    const {error:updateError}=await sb
-      .from('mapping_proyectos')
+    const {data:actualizados,error:updateError}=await sb.from('mapping_proyectos')
       .update({
         poligonos_url:publicUrl,
         poligonos_drive_url:publicUrl,
         poligonos_version:version,
         poligonos_actualizados_at:new Date().toISOString()
       })
-      .eq('id',proyecto.id);
-
+      .eq('id',proyecto.id)
+      .select('id,poligonos_version');
     if(updateError)throw updateError;
-
+    if(!actualizados?.length)throw new Error('Supabase no confirmó la actualización del proyecto. Verifica RLS.');
   }catch(e){
-    await sb.storage.from(POLIGONOS_BUCKET).remove([path]).catch(()=>{});
-    throw e;
+    // No borrar aquí la ruta estable: contiene el archivo activo del proyecto.
+    // Un fallo posterior a la subida debe avisarse y permitir reintento.
+    throw new Error('El GeoJSON se sobrescribió, pero no se confirmó la actualización de su versión: '+(e?.message||e));
   }
 
-  // Solo eliminamos el archivo anterior después de que la BD ya apunta al nuevo.
-  if(anteriorPath && anteriorPath!==path){
-    const {error:removeOld}=await sb.storage
-      .from(POLIGONOS_BUCKET)
-      .remove([anteriorPath]);
-
-    if(removeOld){
-      console.warn('No se pudo borrar el archivo anterior de polígonos:',removeOld);
+  // Solo después de actualizar la referencia se retiran archivos antiguos.
+  // Si Storage deniega el borrado, el guardado sigue siendo válido y se avisa.
+  let limpiezaAdvertencia='';
+  try{
+    const pathAnterior=pathPoligonosDesdeUrl(anteriorUrl);
+    if(pathAnterior && pathAnterior!==path && pathAnterior.startsWith(`${proyecto.id}/`)){
+      // list() también lo localiza; no se borra dos veces.
     }
+    await pdrLimpiarVersionesAntiguasPoligonos(proyecto.id,path);
+  }catch(e){
+    limpiezaAdvertencia='No se pudieron limpiar los archivos anteriores: '+(e?.message||e);
+    console.warn('[PDR V122]',limpiezaAdvertencia);
   }
 
-  return {
-    analisis:a,
-    path,
-    publicUrl,
-    version
-  };
+  return {analisis:a,path,publicUrl,version,limpiezaAdvertencia};
 }
 
 async function eliminarArchivoPoligonosProyecto(proyectoId=null){
@@ -8247,6 +8291,25 @@ function llenarFiltroMaster(id,valores,texto='Todos'){
 }
 
 
+function actualizarFiltroTecnicoLevantamientoMaster(){
+  const el=document.getElementById('fTecnicoLevantamiento');
+  if(!el)return;
+  const anterior=el.value;
+  const encontrados=new Map();
+  puntos.forEach(p=>{
+    const id=String(p?.tecnico_id||'').trim();
+    if(!id)return;
+    const u=usuarios.find(x=>String(x.id)===id);
+    encontrados.set(id, u?.nombre||u?.email||id);
+  });
+  const lista=[...encontrados].sort((a,b)=>a[1].localeCompare(b[1],'es',{numeric:true}));
+  el.replaceChildren(new Option('Todos los técnicos',''));
+  lista.forEach(([id,nombre])=>el.add(new Option(nombre,id)));
+  if(encontrados.has(anterior))el.value=anterior;
+  const info=document.getElementById('fTecnicoLevantamientoInfo');
+  if(info)info.textContent=`${lista.length} técnico(s) con levantamientos en este proyecto · autor del registro`;
+}
+
 function actualizarFiltroPoligonoMaster(){
   const el=document.getElementById('fPoligono');
   if(!el)return;
@@ -8267,6 +8330,7 @@ function actualizarFiltroPoligonoMaster(){
 
 function actualizarFiltrosAvanzadosMaster(){
   actualizarFiltroPoligonoMaster();
+  actualizarFiltroTecnicoLevantamientoMaster();
 
   const postes=puntos.filter(p=>normalizarFiltroMaster(p.tipo)==='POSTE');
   const canal=puntos.filter(p=>normalizarFiltroMaster(p.tipo)==='CANALIZADO');
@@ -8336,6 +8400,8 @@ function coincideFiltroMaster(p,id,dbKey,qgisKey=''){
 
 function puntoCumpleFiltrosMaster(p){
   const tipo=normalizarFiltroMaster(document.getElementById('fTipo')?.value);
+  const autor=String(document.getElementById('fTecnicoLevantamiento')?.value||'');
+  if(autor && String(p?.tecnico_id||'')!==autor)return false;
   const poligono=normalizarFiltroMaster(document.getElementById('fPoligono')?.value);
   const t=normalizarFiltroMaster(p?.tipo);
   const pol=normalizarFiltroMaster(p?.poligono);
@@ -15804,9 +15870,166 @@ function pdrV117RenderItems(){
  }));
 }
 (function(){const a=pdrV117RenderCards;pdrV117RenderCards=function(){a();pdrV117RenderItems();};})();
-</script></body>
+</script>
+<style>
+#pdrPolyEditorOverlay{display:none;position:fixed;inset:0;z-index:2147483000;background:rgba(3,9,18,.93);padding:15px;box-sizing:border-box}
+#pdrPolyEditorOverlay.pdrOpen{display:flex;flex-direction:column;gap:9px}
+#pdrPolyEditorTop{display:flex;flex-wrap:wrap;align-items:center;gap:9px;color:#f8fafc}
+#pdrPolyEditorTop select,#pdrPolyEditorTop button{padding:9px;border-radius:7px;border:1px solid #53677d;background:#15263a;color:#fff;cursor:pointer}
+#pdrPolyEditorTop button:hover{background:#21476b}
+#pdrPolyEditorTop button.pdrSave{background:#087d93;border-color:#087d93}
+#pdrPolyEditorMap{flex:1;min-height:280px;width:100%;border:1px solid #345069;border-radius:9px;z-index:1}
+#pdrPolyEditorInfo{color:#c8e0eb;font:12px/1.5 Arial,sans-serif}
+#pdrPolyEditorTop .pdrFlex{flex:1}
+.pdrVertexHandle{background:#19d7ec;border:2px solid #072432;border-radius:100%;width:13px;height:13px}
+.pdrMidHandle{background:#f5ca58;border:1px solid #593d00;border-radius:100%;width:10px;height:10px}
+</style>
+<div id="pdrPolyEditorOverlay" class="adminOnly" role="dialog" aria-label="Editor de vértices de polígonos" aria-modal="true">
+  <div id="pdrPolyEditorTop">
+    <strong>✏️ Editor de polígonos</strong>
+    <span id="pdrPolyEditorProject" style="color:#b5c8d8"></span>
+    <label for="pdrPolyEditorFeature" style="font-size:12px;color:#d7e8f2">Polígono:</label>
+    <select id="pdrPolyEditorFeature" onchange="pdrEditorSeleccionar()" title="Selecciona un polígono para editar sus vértices"></select>
+    <span id="pdrPolyEditorCounter" style="font-size:12px;color:#b9d7e2"></span>
+    <button type="button" onclick="pdrEditorDeshacer()">↶ Deshacer</button>
+    <button type="button" onclick="pdrEditorRecentrar()">⌖ Centrar</button>
+    <span class="pdrFlex"></span>
+    <button type="button" onclick="pdrEditorDescargar()">⬇ GeoJSON</button>
+    <button class="pdrSave" type="button" id="pdrPolyEditorSave" onclick="pdrEditorGuardar()">💾 Guardar y publicar</button>
+    <button type="button" onclick="pdrEditorCerrar()">✕ Cerrar</button>
+  </div>
+  <div id="pdrPolyEditorMap"></div>
+  <div id="pdrPolyEditorInfo">Selecciona un polígono del desplegable o haz clic directamente en su área. Arrastra los círculos azules para mover vértices. Pulsa un círculo amarillo para agregar un vértice. Clic derecho sobre un vértice azul para eliminarlo. Los cambios se guardan al pulsar «Guardar y publicar».</div>
+</div>
+<script>
+// V120: editor de geometría sobre la misma base cartográfica del Master.
+const pdrPolyEditor={map:null,geo:null,feature:-1,layer:null,handles:[],undo:[],saving:false,projectId:null,originalVersion:0};
+function pdrEditorInfo(msg){const e=document.getElementById('pdrPolyEditorInfo');if(e)e.textContent=msg;}
+function pdrEditorClone(v){return JSON.parse(JSON.stringify(v));}
+function pdrEditorFeatureValida(f){return f?.geometry&&['Polygon','MultiPolygon'].includes(f.geometry.type);}
+function pdrEditorRings(f){if(!pdrEditorFeatureValida(f))return [];return f.geometry.type==='Polygon'?f.geometry.coordinates.map((r,ri)=>({ring:r,path:[ri]})):f.geometry.coordinates.flatMap((poly,pi)=>poly.map((r,ri)=>({ring:r,path:[pi,ri]})));}
+function pdrEditorPunto(r,i){const q=r[i];return [Number(q[1]),Number(q[0])];}
+function pdrEditorRingCerrado(r){if(!r.length)return;const first=r[0];r[r.length-1]=pdrEditorClone(first);}
+function pdrEditorHistorico(){pdrPolyEditor.undo.push(pdrEditorClone(pdrPolyEditor.geo));if(pdrPolyEditor.undo.length>30)pdrPolyEditor.undo.shift();}
+async function pdrEditorAbrir(){
+ if(!exigirAdminMaster('editar polígonos'))return;
+ const p=proyectoPoligonosSeleccionado();if(!p)return alert('Selecciona un proyecto.');
+ const url=p.poligonos_url||p.poligonos_drive_url;if(!url)return alert('Este proyecto todavía no tiene polígonos cargados.');
+ const overlay=document.getElementById('pdrPolyEditorOverlay');overlay.classList.add('pdrOpen');
+ document.getElementById('pdrPolyEditorProject').textContent=p.codigo||p.nombre||'';
+ pdrEditorInfo('Descargando el archivo vigente...');
+ try{
+   let blob;const path=pathPoligonosDesdeUrl(url);
+   if(path){const {data,error}=await sb.storage.from(POLIGONOS_BUCKET).download(path);if(error)throw error;blob=data;}
+   else {const resp=await fetch(url,{cache:'no-store'});if(!resp.ok)throw new Error('HTTP '+resp.status);blob=await resp.blob();}
+   const nombre=nombrePoligonosDesdeProyecto(p)||'poligonos.geojson';
+   const archivo=new File([blob],nombre,{type:blob.type||'application/octet-stream'});
+   const a=await leerArchivoPoligonosLocal(archivo);
+   pdrPolyEditor.geo=pdrEditorClone(a.geojson);pdrPolyEditor.projectId=p.id;pdrPolyEditor.originalVersion=Number(p.poligonos_version)||0;pdrPolyEditor.undo=[];
+   const sel=document.getElementById('pdrPolyEditorFeature');sel.innerHTML='';
+   pdrPolyEditor.geo.features.forEach((f,i)=>{if(!pdrEditorFeatureValida(f))return;const opt=document.createElement('option');opt.value=i;opt.textContent=nombreFeaturePoligono(f,i);sel.appendChild(opt);});
+   if(!sel.options.length)throw new Error('No hay polígonos editables.');
+   pdrPolyEditor.feature=Number(sel.value);
+   pdrEditorContador();
+   if(!pdrPolyEditor.map){
+      pdrPolyEditor.map=L.map('pdrPolyEditorMap',{preferCanvas:true}).setView([4.65,-74.1],11);
+      L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google'}).addTo(pdrPolyEditor.map);
+   }
+   setTimeout(()=>{pdrPolyEditor.map.invalidateSize();pdrEditorDibujar(true);},50);
+ }catch(err){console.error('Editor polígonos',err);pdrEditorInfo('Error: '+(err.message||err));alert('No se pudo abrir el editor: '+(err.message||err));overlay.classList.remove('pdrOpen');}
+}
+function pdrEditorContador(){
+ const sel=document.getElementById('pdrPolyEditorFeature'),el=document.getElementById('pdrPolyEditorCounter');
+ if(!el||!sel)return;
+ const i=Array.from(sel.options).findIndex(o=>Number(o.value)===pdrPolyEditor.feature);
+ el.textContent=sel.options.length?`${i+1} de ${sel.options.length} · clic sobre cualquier polígono para editarlo`:'';
+}
+function pdrEditorActivarFeature(index,fit=true){
+ const ed=pdrPolyEditor;
+ if(!ed.geo||!pdrEditorFeatureValida(ed.geo.features[index]))return;
+ ed.feature=index;
+ const sel=document.getElementById('pdrPolyEditorFeature');
+ if(sel)sel.value=String(index);
+ pdrEditorContador();pdrEditorDibujar(fit);
+}
+function pdrEditorSeleccionar(){
+ const sel=document.getElementById('pdrPolyEditorFeature');
+ if(!sel||!sel.value)return;
+ pdrEditorActivarFeature(Number(sel.value),true);
+}
+function pdrEditorDibujar(fit){
+ const ed=pdrPolyEditor,m=ed.map;if(!m||!ed.geo)return;
+ if(ed.layer){m.removeLayer(ed.layer);ed.layer=null;}
+ ed.handles.forEach(h=>m.removeLayer(h));ed.handles=[];
+ const layers=[];
+ ed.layer=L.featureGroup().addTo(m);
+ ed.geo.features.forEach((f,index)=>{
+   if(!pdrEditorFeatureValida(f))return;
+   const active=index===ed.feature;
+   const layer=L.geoJSON(f,{
+     style:()=>({color:active?'#ffe35b':'#17cbd7',weight:active?4:2,fillColor:active?'#ffe35b':'#0bd7e8',fillOpacity:active?.19:.10}),
+     onEachFeature:(_f,polygonLayer)=>{
+       polygonLayer.on('click',ev=>{
+         if(ev.originalEvent)L.DomEvent.stopPropagation(ev.originalEvent);
+         if(index!==pdrPolyEditor.feature)pdrEditorActivarFeature(index,false);
+       });
+       polygonLayer.bindTooltip((active?'Editando: ':'Seleccionar: ')+nombreFeaturePoligono(f,index),{sticky:true});
+     }
+   }).addTo(ed.layer);
+   layers[index]=layer;
+ });
+ if(fit){
+   const selected=layers[ed.feature];
+   const b=selected?.getBounds?.();
+   if(b?.isValid())m.fitBounds(b.pad(.35),{maxZoom:19});
+   else {const all=ed.layer.getBounds();if(all.isValid())m.fitBounds(all.pad(.13));}
+ }
+ const f=ed.geo.features[ed.feature];if(!pdrEditorFeatureValida(f))return;
+ pdrEditorRings(f).forEach(({ring,path})=>{
+   if(ring.length<4)return;
+   for(let i=0;i<ring.length-1;i++){
+     const v=L.marker(pdrEditorPunto(ring,i),{draggable:true,icon:L.divIcon({className:'pdrVertexHandle',iconSize:[13,13],iconAnchor:[6,6]}),zIndexOffset:1000}).addTo(m);
+     v.bindTooltip('Arrastrar · clic derecho para quitar');
+     v.on('dragstart',()=>pdrEditorHistorico());
+     v.on('dragend',ev=>{const ll=ev.target.getLatLng();ring[i]=[ll.lng,ll.lat];if(i===0)pdrEditorRingCerrado(ring);pdrEditorDibujar(false);});
+     v.on('contextmenu',()=>{if(ring.length<=4)return alert('Un anillo debe conservar al menos 3 vértices.');pdrEditorHistorico();ring.splice(i,1);pdrEditorRingCerrado(ring);pdrEditorDibujar(false);});
+     ed.handles.push(v);
+     const a=ring[i],b=ring[i+1];const mid=L.marker([(a[1]+b[1])/2,(a[0]+b[0])/2],{icon:L.divIcon({className:'pdrMidHandle',iconSize:[10,10],iconAnchor:[5,5]}),zIndexOffset:900}).addTo(m);
+     mid.bindTooltip('Agregar vértice');mid.on('click',()=>{pdrEditorHistorico();ring.splice(i+1,0,[(a[0]+b[0])/2,(a[1]+b[1])/2]);pdrEditorRingCerrado(ring);pdrEditorDibujar(false);});ed.handles.push(mid);
+   }
+ });
+ pdrEditorContador();
+ pdrEditorInfo('Polígono activo: '+nombreFeaturePoligono(f,ed.feature)+' · Selecciona otro desde la lista o haz clic sobre su área en el mapa. Arrastra vértices azules; clic en amarillos para insertar; clic derecho en azul para eliminar. Se guardarán TODOS los polígonos del archivo.');
+}
+function pdrEditorDeshacer(){const state=pdrPolyEditor.undo.pop();if(!state)return;pdrPolyEditor.geo=state;pdrEditorDibujar(false);}
+function pdrEditorRecentrar(){pdrEditorDibujar(true);}
+function pdrEditorCerrar(){if(pdrPolyEditor.saving)return alert('Espera a que finalice el guardado.');document.getElementById('pdrPolyEditorOverlay').classList.remove('pdrOpen');}
+function pdrEditorDescargar(){if(!pdrPolyEditor.geo)return;const b=new Blob([JSON.stringify(pdrPolyEditor.geo,null,2)],{type:'application/geo+json'}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download='poligonos_editados.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),15000);}
+async function pdrEditorGuardar(){
+ const ed=pdrPolyEditor;if(ed.saving||!ed.geo||!ed.projectId)return;
+ if(!exigirAdminMaster('guardar polígonos'))return;
+ try{analizarGeoJSONPoligonos(ed.geo);}catch(e){return alert('No se puede guardar: '+e.message);}
+ if(!confirm('¿Guardar el GeoJSON editado y publicarlo al proyecto? Mapping recibirá la nueva versión cuando esté conectado.'))return;
+ ed.saving=true;const btn=document.getElementById('pdrPolyEditorSave');btn.disabled=true;pdrEditorInfo('Validando versión y publicando geometría...');
+ try{
+   const {data:current,error:err}=await sb.from('mapping_proyectos').select('id,poligonos_version,poligonos_url,poligonos_drive_url').eq('id',ed.projectId).single();if(err)throw err;
+   if((Number(current.poligonos_version)||0)!==ed.originalVersion)throw new Error('El polígono cambió desde que abriste el editor. Cierra y vuelve a abrir para evitar sobrescribir cambios ajenos.');
+   const proyecto={...proyectos.find(p=>String(p.id)===String(ed.projectId)),...current};
+   const blob=new Blob([JSON.stringify(ed.geo)],{type:'application/geo+json'});
+   const file=new File([blob],`poligonos_editados_${Date.now()}.geojson`,{type:'application/geo+json'});
+   const a=await leerArchivoPoligonosLocal(file);const result=await subirArchivoPoligonosStorage(proyecto,file,a);
+   ed.originalVersion=result.version;ed.undo=[];
+   await cargarProyectos();llenarSelects();const sel=document.getElementById('geoProyectoExistente');if(sel)sel.value=ed.projectId;
+   actualizarEstadoPoligonosStorageMaster();await cargarPoligonosAsignacion();
+   if(String(document.getElementById('fProyecto')?.value||'')===String(ed.projectId))await cargarProyectoMapa();
+   pdrEditorInfo(`✓ Guardado. Versión ${result.version}. Los técnicos conectados recibirán la actualización mediante Mapping V142.`);
+   alert('Polígonos editados y publicados correctamente. Versión '+result.version+(result.limpiezaAdvertencia?'\n⚠ '+result.limpiezaAdvertencia:''));
+ }catch(e){console.error('Error guardando editor polígonos:',e);pdrEditorInfo('❌ '+(e?.message||e));alert('No se pudo guardar: '+(e?.message||e));}
+ finally{ed.saving=false;btn.disabled=false;}
+}
+</script>
+</body>
 </html>
-
 
 
 
