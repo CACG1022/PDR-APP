@@ -3945,7 +3945,7 @@ header{
   <h3>🧩 CAMPOS DEL FORMULARIO · CONFIGURACIÓN COMPLETA</h3>
   <p style="font-size:12px;color:#aac3d6">Selecciona el proyecto y configura visibilidad, obligatoriedad y solo lectura por campo, incluyendo Identificación, Conexiones e Inventario / proyección. Puedes elegir visibilidad, obligatoriedad y solo lectura. TIPO y CX1 mantienen validaciones esenciales; los campos calculados automáticamente siempre se generan internamente.</p>
   <label>Proyecto (nombre completo)</label>
-  <select id="pdrCamposProyecto" onchange="pdrCamposVistaTemporal=null;pdrMasterCargarCampos();pdrCamposPlantillaListar()"><option value="">Seleccionar proyecto...</option></select>
+  <select id="pdrCamposProyecto" onchange="pdrCamposVistaTemporal=null;pdrMasterCargarCampos();pdrCamposPlantillaListar();if(document.getElementById('pdrPropAlcance')?.value==='proyecto'){document.getElementById('pdrPropProyecto').value=this.value;pdrPropCargarEstadoProyecto();}"><option value="">Seleccionar proyecto...</option></select>
   <div style="border:1px solid #246481;background:#0d2535;border-radius:12px;padding:12px;margin-top:12px">
     <h3 style="margin:0 0 7px">📚 Plantillas de configuración de campos</h3>
     <p style="font-size:11px;color:#aac3d6;margin:5px 0 10px">Guarda las opciones actuales con un nombre para reutilizarlas en otros proyectos de la misma empresa. Aplicar una plantilla solo modifica el editor; pulsa «Guardar campos del proyecto» para confirmar los cambios en ese proyecto.</p>
@@ -3976,7 +3976,18 @@ header{
   <button type="button" class="btn blue" onclick="pdrMasterGuardarCampos()" style="margin-top:10px">💾 Guardar campos del proyecto</button>
   <div id="pdrCamposEstado" class="hint">Selecciona un proyecto. Por defecto se muestran todos los campos.</div>
   <hr style="border:0;border-top:1px solid #29415d;margin:18px 0">
-  <h3>🏢 Catálogo global de propietarios</h3>
+  <h3>🏢 Propietarios disponibles para los técnicos</h3>
+  <p class="hint">Elige dónde aplicar los cambios. Cada proyecto puede tener su propia selección o heredar el catálogo global.</p>
+  <div style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,2fr);gap:10px;align-items:end;margin-bottom:9px">
+    <label>Aplicar cambios a
+      <select id="pdrPropAlcance" onchange="pdrPropCambioAlcance()"><option value="proyecto">Solo el proyecto seleccionado</option><option value="global">Todos los proyectos (catálogo global)</option></select>
+    </label>
+    <label>Proyecto seleccionado
+      <select id="pdrPropProyecto" onchange="pdrPropCargarEstadoProyecto()"><option value="">Seleccionar proyecto...</option></select>
+    </label>
+  </div>
+  <div id="pdrPropAlcanceEstado" class="hint" style="padding:8px;border:1px solid #29415d;border-radius:7px;margin-bottom:8px">Selecciona el proyecto y el alcance de los cambios.</div>
+  <button type="button" id="pdrPropHeredarBtn" class="btn gray small" onclick="pdrPropRestablecerHerencia()" style="margin-bottom:10px">↶ Restaurar catálogo global en este proyecto</button>
   <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end"><label>Nuevo propietario<input id="pdrNuevoPropietario" maxlength="90" placeholder="Nombre del propietario"></label><button type="button" class="btn blue" onclick="pdrMasterAgregarPropietario()">+ Agregar</button></div>
   <div style="margin-top:8px"><button type="button" class="btn gray" onclick="pdrMasterCargarPropietarios()">↻ Actualizar catálogo</button></div>
   <div id="pdrPropietariosLista" style="margin-top:10px;max-height:350px;overflow:auto"></div>
@@ -6126,14 +6137,15 @@ async function subirArchivoPoligonosStorage(proyecto,archivo,analisis=null){
     upsert:true,
     contentType:'application/geo+json'
   });
-  if(upError)throw upError;
+  if(upError)throw new Error('Supabase Storage (subida/sobrescritura en mapping-poligonos): '+(upError.message||upError));
 
   const publicUrl=urlPublicaStoragePoligonos(path);
   if(!publicUrl)throw new Error('El archivo se guardó, pero no se pudo obtener su URL pública.');
 
   try{
     // Mantener IDs y asignaciones vigentes por código de polígono.
-    await registrarCatalogoPoligonos(proyecto.id,a.poligonos);
+    try { await registrarCatalogoPoligonos(proyecto.id,a.poligonos); }
+    catch(e){throw new Error('Catálogo mapping_poligonos (INSERT/UPDATE): '+(e?.message||e));}
     const {data:actualizados,error:updateError}=await sb.from('mapping_proyectos')
       .update({
         poligonos_url:publicUrl,
@@ -6143,7 +6155,7 @@ async function subirArchivoPoligonosStorage(proyecto,archivo,analisis=null){
       })
       .eq('id',proyecto.id)
       .select('id,poligonos_version');
-    if(updateError)throw updateError;
+    if(updateError)throw new Error('Tabla mapping_proyectos (UPDATE): '+(updateError.message||updateError));
     if(!actualizados?.length)throw new Error('Supabase no confirmó la actualización del proyecto. Verifica RLS.');
   }catch(e){
     // No borrar aquí la ruta estable: contiene el archivo activo del proyecto.
@@ -7877,6 +7889,21 @@ function codigoPoligonoFeatureMaster(feature,index=0){
   return normalizarCodigoPoligono(`POLIGONO${index+1}`);
 }
 
+// V124: la ruta en Storage es fija. Esta URL incluye el contador de versión
+// para evitar que el CDN o la caché del navegador muestren geometrías antiguas.
+function pdrUrlPoligonosVersionadaMaster(url,version){
+  const original=String(url||'').trim();
+  if(!original)return original;
+  try{
+    const u=new URL(original,location.href);
+    u.searchParams.set('pdr_poly_v',String(Number(version)||0));
+    // El mismo número de versión equivale al mismo archivo lógico.
+    return u.href;
+  }catch(_){
+    return original+(original.includes('?')?'&':'?')+'pdr_poly_v='+encodeURIComponent(String(Number(version)||0));
+  }
+}
+
 async function cargarGeoJSONProyectoMaster(proyecto){
   if(polygonMasterLayer){
     try{map.removeLayer(polygonMasterLayer)}catch(_){}
@@ -7888,7 +7915,7 @@ async function cargarGeoJSONProyectoMaster(proyecto){
 
   try{
     const [a,catalogo]=await Promise.all([
-      descargarGeoJSONPublico(url),
+      descargarGeoJSONPublico(pdrUrlPoligonosVersionadaMaster(url,proyecto.poligonos_version)),
       obtenerPoligonosProyecto(proyecto.id)
     ]);
 
@@ -14713,26 +14740,124 @@ async function pdrCamposPlantillaEliminar(){
  if(error)return alert('No se pudo eliminar: '+error.message);
  await pdrCamposPlantillaListar();pdrCamposPlantillaMensaje('Plantilla eliminada.');
 }
+// ===== V125 · PROPIETARIOS: ALCANCE GLOBAL / POR PROYECTO =====
+let pdrPropCatalogo=[],pdrPropConfiguracion=null,pdrPropProyectoCargado='',pdrPropPeticion=0;
+const pdrPropEsc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function pdrPropProyectoId(){return document.getElementById('pdrPropProyecto')?.value||document.getElementById('pdrCamposProyecto')?.value||'';}
+function pdrPropEsGlobal(){return document.getElementById('pdrPropAlcance')?.value==='global';}
+function pdrPropLlenarProyectos(){
+ const sel=document.getElementById('pdrPropProyecto');if(!sel)return;
+ const actual=sel.value||document.getElementById('pdrCamposProyecto')?.value||'';
+ const lista=(typeof proyectos!=='undefined'&&Array.isArray(proyectos)?proyectos:[]).filter(p=>typeof puedeVerProyectoMaster!=='function'||puedeVerProyectoMaster(p));
+ sel.replaceChildren(new Option('Seleccionar proyecto...',''),...lista.map(p=>new Option(String(p.codigo||p.nombre||p.id)+' · '+String(p.nombre||''),String(p.id))));
+ if(lista.some(p=>String(p.id)===String(actual)))sel.value=actual;
+}
+function pdrPropCambioAlcance(){
+ const esGlobal=pdrPropEsGlobal(),sel=document.getElementById('pdrPropProyecto'),bot=document.getElementById('pdrPropHeredarBtn');
+ if(sel)sel.disabled=esGlobal;
+ if(bot)bot.style.display=esGlobal?'none':'';
+ pdrPropPintar();
+}
+async function pdrPropCargarEstadoProyecto(){
+ const id=pdrPropProyectoId(),firma=++pdrPropPeticion;
+ pdrPropProyectoCargado='';pdrPropConfiguracion=null;
+ if(!id){pdrPropPintar();return;}
+ const {data,error}=await sb.from('mapping_proyectos').select('propietarios_config').eq('id',id).maybeSingle();
+ if(firma!==pdrPropPeticion)return;
+ if(error){document.getElementById('pdrPropAlcanceEstado').textContent='No se pudo leer la configuración del proyecto: '+error.message;return;}
+ pdrPropProyectoCargado=id;
+ pdrPropConfiguracion=Array.isArray(data?.propietarios_config)?data.propietarios_config.map(x=>String(x).trim().toUpperCase()):null;
+ pdrPropPintar();
+}
 async function pdrMasterCargarPropietarios(){
  const box=document.getElementById('pdrPropietariosLista');if(!box)return;
+ pdrPropLlenarProyectos();
  const {data,error}=await sb.from('mapping_propietarios').select('id,nombre,activo').order('nombre');
  if(error){box.textContent='Error: '+error.message+' (verifica SQL V83)';return;}
- box.innerHTML=(data||[]).map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #29415d;padding:8px 0"><span>${String(p.nombre).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><button type="button" class="btn ${p.activo?'gray':'blue'} small" onclick="pdrMasterEstadoPropietario('${p.id}',${!p.activo})">${p.activo?'Desactivar':'Activar'}</button></div>`).join('')||'<p>Catálogo vacío.</p>';
+ pdrPropCatalogo=data||[];
+ if(pdrPropProyectoId()!==pdrPropProyectoCargado)await pdrPropCargarEstadoProyecto();
+ else pdrPropPintar();
+}
+function pdrPropPintar(){
+ const box=document.getElementById('pdrPropietariosLista'),estado=document.getElementById('pdrPropAlcanceEstado');if(!box)return;
+ const global=pdrPropEsGlobal(),pid=pdrPropProyectoId();
+ if(!global&&!pid){box.innerHTML='';if(estado)estado.textContent='Selecciona un proyecto para modificar sus propietarios.';return;}
+ if(!global&&pdrPropProyectoCargado!==pid){box.innerHTML='';if(estado)estado.textContent='Cargando configuración del proyecto...';return;}
+ const vigente=global?null:(pdrPropConfiguracion??pdrPropCatalogo.filter(p=>p.activo).map(p=>String(p.nombre).toUpperCase()));
+ if(estado)estado.textContent=global?'GLOBAL · Los cambios se aplican a todos los proyectos que hereden el catálogo global. También se aplica a las listas personalizadas, conservando sus demás propietarios.':pdrPropConfiguracion===null?'PROYECTO · Actualmente hereda el catálogo global. El primer cambio creará una selección independiente.':'PROYECTO · Lista independiente. Los cambios realizados aquí no afectarán otros proyectos.';
+ box.innerHTML=pdrPropCatalogo.map(p=>{
+  const activo=global?!!p.activo:vigente.includes(String(p.nombre).trim().toUpperCase());
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #29415d;padding:8px 0"><span>${pdrPropEsc(p.nombre)}</span><button type="button" class="btn ${activo?'gray':'blue'} small" onclick="pdrMasterEstadoPropietario('${p.id}',${!activo})">${activo?'Desactivar':'Activar'}</button></div>`;
+ }).join('')||'<p>Catálogo vacío.</p>';
+}
+async function pdrPropGuardarListaProyecto(lista){
+ const pid=pdrPropProyectoId();if(!pid)throw new Error('Selecciona el proyecto.');
+ const normal=[...new Set(lista.map(x=>String(x||'').trim().toUpperCase()).filter(Boolean))].sort();
+ const {data,error}=await sb.from('mapping_proyectos').update({propietarios_config:normal}).eq('id',pid).select('id').maybeSingle();
+ if(error)throw error;
+ if(!data)throw new Error('Supabase no confirmó la actualización: revisa los permisos RLS de mapping_proyectos.');
+ pdrPropConfiguracion=normal;pdrPropProyectoCargado=pid;pdrPropPintar();
+}
+async function pdrPropPropagarGlobal(nombre,activo){
+ // Modificar solo el propietario solicitado en las listas particulares; sin resetear otras selecciones.
+ const {data,error}=await sb.from('mapping_proyectos').select('id,propietarios_config');
+ if(error)throw new Error('Cambio global aplicado al catálogo, pero no fue posible consultar todos los proyectos: '+error.message);
+ const objetivo=String(nombre).trim().toUpperCase(),fallos=[];
+ for(const p of data||[]){
+   if(!Array.isArray(p.propietarios_config))continue; // Hereda cambios del catálogo global.
+   const anterior=p.propietarios_config.map(x=>String(x).trim().toUpperCase());
+   const siguiente=activo?[...new Set([...anterior,objetivo])]:anterior.filter(x=>x!==objetivo);
+   if(JSON.stringify(anterior)===JSON.stringify(siguiente))continue;
+   const {data:ok,error:e}=await sb.from('mapping_proyectos').update({propietarios_config:siguiente}).eq('id',p.id).select('id').maybeSingle();
+   if(e||!ok)fallos.push(String(p.id).slice(0,8)+': '+(e?.message||'sin permisos'));
+ }
+ if(fallos.length)throw new Error('El catálogo global se actualizó, pero '+fallos.length+' proyecto(s) no pudieron sincronizarse: '+fallos.slice(0,3).join('; '));
 }
 async function pdrMasterAgregarPropietario(){
  if(typeof exigirAdminMaster==='function'&&!exigirAdminMaster('agregar propietarios'))return;
- const input=document.getElementById('pdrNuevoPropietario');const nombre=String(input?.value||'').trim().replace(/\s+/g,' ').toUpperCase();if(!nombre)return alert('Escribe el propietario.');
- const {error}=await sb.from('mapping_propietarios').insert({nombre,activo:true});
- if(error)return alert('No se pudo agregar: '+error.message);
- input.value='';await pdrMasterCargarPropietarios();
+ const input=document.getElementById('pdrNuevoPropietario'),nombre=String(input?.value||'').trim().replace(/\s+/g,' ').toUpperCase();if(!nombre)return alert('Escribe el propietario.');
+ if(!pdrPropEsGlobal()&&!pdrPropProyectoId())return alert('Selecciona un proyecto.');
+ try{
+  const existente=pdrPropCatalogo.find(x=>String(x.nombre).trim().toUpperCase()===nombre);
+  if(!existente){
+   // Solo activar globalmente si se eligió alcance global.
+   const {error}=await sb.from('mapping_propietarios').insert({nombre,activo:pdrPropEsGlobal()});if(error)throw error;
+  }else if(pdrPropEsGlobal()&&!existente.activo){
+   const {error}=await sb.from('mapping_propietarios').update({activo:true}).eq('id',existente.id);if(error)throw error;
+  }
+  if(pdrPropEsGlobal())await pdrPropPropagarGlobal(nombre,true);
+  if(!pdrPropEsGlobal()){
+   const vigente=pdrPropConfiguracion??pdrPropCatalogo.filter(p=>p.activo).map(p=>p.nombre);
+   await pdrPropGuardarListaProyecto([...vigente,nombre]);
+  }
+  input.value='';await pdrMasterCargarPropietarios();
+ }catch(e){alert('No se pudo agregar el propietario: '+e.message);}
 }
 async function pdrMasterEstadoPropietario(id,activo){
  if(typeof exigirAdminMaster==='function'&&!exigirAdminMaster('modificar propietarios'))return;
- const {error}=await sb.from('mapping_propietarios').update({activo}).eq('id',id);
- if(error)return alert('No se pudo actualizar: '+error.message);
- await pdrMasterCargarPropietarios();
+ const p=pdrPropCatalogo.find(x=>String(x.id)===String(id));if(!p)return;
+ try{
+  if(pdrPropEsGlobal()){
+   const {error}=await sb.from('mapping_propietarios').update({activo}).eq('id',id);if(error)throw error;
+   await pdrPropPropagarGlobal(p.nombre,activo);
+   await pdrMasterCargarPropietarios();
+  }else{
+   if(!pdrPropProyectoId())return alert('Selecciona un proyecto.');
+   const base=pdrPropConfiguracion??pdrPropCatalogo.filter(x=>x.activo).map(x=>x.nombre);
+   const nombre=String(p.nombre).trim().toUpperCase();
+   await pdrPropGuardarListaProyecto(activo?[...base,nombre]:base.filter(x=>String(x).toUpperCase()!==nombre));
+  }
+ }catch(e){alert('No se pudo actualizar el propietario: '+e.message);}
 }
-(function(){let previo='';setInterval(()=>{const lista=typeof proyectos!=='undefined'&&Array.isArray(proyectos)?proyectos:[];const firma=lista.map(x=>x.id).join('|');if(firma!==previo){previo=firma;pdrAdminCamposProyectoSelect();if(document.getElementById('projectTab_campos')?.classList.contains('active'))pdrMasterCargarCampos();}},2500);document.addEventListener('DOMContentLoaded',()=>{pdrAdminCamposProyectoSelect();pdrMasterCargarPropietarios();});})();
+async function pdrPropRestablecerHerencia(){
+ if(typeof exigirAdminMaster==='function'&&!exigirAdminMaster('modificar propietarios'))return;
+ const id=pdrPropProyectoId();if(!id)return alert('Selecciona un proyecto.');
+ if(!confirm('¿Restaurar la lista global para este proyecto? Perderás su selección independiente, pero no se modificarán registros existentes.'))return;
+ const {data,error}=await sb.from('mapping_proyectos').update({propietarios_config:null}).eq('id',id).select('id').maybeSingle();
+ if(error||!data)return alert('No se pudo restaurar: '+(error?.message||'Sin permiso de actualización.'));
+ pdrPropConfiguracion=null;pdrPropPintar();
+}
+(function(){let previo='';setInterval(()=>{const lista=typeof proyectos!=='undefined'&&Array.isArray(proyectos)?proyectos:[];const firma=lista.map(x=>x.id).join('|');if(firma!==previo){previo=firma;pdrAdminCamposProyectoSelect();pdrPropLlenarProyectos();if(document.getElementById('projectTab_campos')?.classList.contains('active'))pdrMasterCargarCampos();}},2500);document.addEventListener('DOMContentLoaded',()=>{pdrAdminCamposProyectoSelect();pdrPropCambioAlcance();pdrMasterCargarPropietarios();});})();
 </script>
 <script>
 // ===== V90 · CARTERA UNIVERSAL (PLANTILLA ORIGINAL PRESERVADA) =====
@@ -16021,8 +16146,12 @@ async function pdrEditorGuardar(){
    ed.originalVersion=result.version;ed.undo=[];
    await cargarProyectos();llenarSelects();const sel=document.getElementById('geoProyectoExistente');if(sel)sel.value=ed.projectId;
    actualizarEstadoPoligonosStorageMaster();await cargarPoligonosAsignacion();
-   if(String(document.getElementById('fProyecto')?.value||'')===String(ed.projectId))await cargarProyectoMapa();
-   pdrEditorInfo(`✓ Guardado. Versión ${result.version}. Los técnicos conectados recibirán la actualización mediante Mapping V142.`);
+   // La vista principal es independiente del editor: quitar la capa en memoria
+   // y reconstruirla desde el archivo recién publicado del proyecto vigente.
+   if(String(document.getElementById('fProyecto')?.value||'')===String(ed.projectId)){
+     await cargarProyectoMapa();
+   }
+   pdrEditorInfo(`✓ Guardado. Versión ${result.version}. Los técnicos conectados recibirán la actualización mediante Mapping V143.`);
    alert('Polígonos editados y publicados correctamente. Versión '+result.version+(result.limpiezaAdvertencia?'\n⚠ '+result.limpiezaAdvertencia:''));
  }catch(e){console.error('Error guardando editor polígonos:',e);pdrEditorInfo('❌ '+(e?.message||e));alert('No se pudo guardar: '+(e?.message||e));}
  finally{ed.saving=false;btn.disabled=false;}
@@ -16030,6 +16159,7 @@ async function pdrEditorGuardar(){
 </script>
 </body>
 </html>
+
 
 
 
