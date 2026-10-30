@@ -17555,6 +17555,7 @@ async function refrescarProyectoConfiguracion(){
  const antesFotos=JSON.stringify(previo?.fotos_config||null);
  const antesCampos=JSON.stringify(previo?.campos_config||null);
  const antesCartografia=String(previo?.cartografia_path||'')+'|'+String(previo?.cartografia_updated_at||'');
+ const antesPoligono=String(previo?.poligonos_version||0)+'|'+String(previo?.poligonos_url||previo?.poligonos_drive_url||'');
  proyectoActivo={...previo,...pro.data,proyecto_id:id,asignacion_id:previo.asignacion_id,empresa:previo.empresa};
  guardarCache();
  const cfg=con.data||{};
@@ -17579,6 +17580,20 @@ async function refrescarProyectoConfiguracion(){
  if(antesCartografia!==ahoraCartografia && typeof prepararCartografiaProyectoSeleccionado==='function'){
    prepararCartografiaProyectoSeleccionado();
    if(typeof programarCartografiaProyectoSegundoPlano==='function')programarCartografiaProyectoSegundoPlano(900);
+ }
+ const despuesPoligono=String(pro.data.poligonos_version||0)+'|'+String(pro.data.poligonos_url||pro.data.poligonos_drive_url||'');
+ if(antesPoligono!==despuesPoligono){
+   // Se detectó un archivo/version nueva desde Master. La descarga de la geometría
+   // y el repintado se hacen con el formulario cerrado y nunca alteran fotos/registros.
+   if(typeof cargarPoligonosAsignadosTecnico==='function'){
+     try{
+       await cargarPoligonosAsignadosTecnico();
+       console.info('[PDR V142] Polígono actualizado en el mapa:',pro.data.poligonos_version);
+     }catch(e){
+       cambiosPendientes=true;
+       console.warn('[PDR V142] Reintento pendiente para el polígono:',e?.message||e);
+     }
+   }
  }
  if(typeof actualizarBotonCartografiaProyecto==='function')actualizarBotonCartografiaProyecto();
  if(typeof actualizarEstadoSync==='function')actualizarEstadoSync();
@@ -17654,7 +17669,7 @@ setInterval(()=>{
  const id=proyectoActual();
  if(!id){if(canal)desconectar();return;}
  if(id!==canalProyecto)suscribir();
- if(Date.now()-ultimaConsulta>=FALLOVER_MS)programar(false);
+ if(Date.now()-ultimaConsulta>=FALLOVER_MS)programar(true);
  if(!diferir()&&(cambiosPendientes||asignacionesPendientes))procesar().catch(console.warn);
 },3500);
 window.addEventListener('online',()=>{desconectar();setTimeout(()=>{suscribir();programar(true);},500);});
