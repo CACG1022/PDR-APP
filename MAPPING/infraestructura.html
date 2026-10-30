@@ -17185,15 +17185,29 @@ function pdrAplicarCatalogoPropietarios(nombres){
  el.replaceChildren(new Option('Seleccione...',''),...lista.map(v=>new Option(v,v)));
  el.value=seleccion||'';
 }
+// V144: caché aislada por proyecto; evita mostrar propietarios de otro proyecto sin conexión.
 async function pdrActualizarCatalogoPropietarios(){
+ const id=String(proyectoActivo?.proyecto_id||'');
+ if(!id)return;
+ const cacheKey=PDR_PROPIETARIOS_CACHE+'_proyecto_'+id;
  try{
-  const cache=JSON.parse(localStorage.getItem(PDR_PROPIETARIOS_CACHE)||'null');
+  const cache=JSON.parse(localStorage.getItem(cacheKey)||'null');
   if(Array.isArray(cache))pdrAplicarCatalogoPropietarios(cache);
- }catch(_){}
+ }catch(_){ }
  if(!navigator.onLine||typeof mappingSb==='undefined'||!mappingUser)return;
- const {data,error}=await mappingSb.from('mapping_propietarios').select('nombre').eq('activo',true).order('nombre');
- if(error){console.warn('Catálogo de propietarios:',error.message);return;}
- const lista=(data||[]).map(x=>x.nombre);localStorage.setItem(PDR_PROPIETARIOS_CACHE,JSON.stringify(lista));pdrAplicarCatalogoPropietarios(lista);
+ const {data:pro,error:proError}=await mappingSb.from('mapping_proyectos').select('propietarios_config').eq('id',id).maybeSingle();
+ if(proError){console.warn('Propietarios del proyecto:',proError.message);return;}
+ let lista;
+ if(Array.isArray(pro?.propietarios_config)){
+   lista=pro.propietarios_config;
+ }else{
+   const {data,error}=await mappingSb.from('mapping_propietarios').select('nombre').eq('activo',true).order('nombre');
+   if(error){console.warn('Catálogo global de propietarios:',error.message);return;}
+   lista=(data||[]).map(x=>x.nombre);
+ }
+ if(id!==String(proyectoActivo?.proyecto_id||''))return;
+ localStorage.setItem(cacheKey,JSON.stringify(lista));
+ pdrAplicarCatalogoPropietarios(lista);
 }
 async function pdrActualizarCamposProyecto(){
  if(!navigator.onLine||typeof mappingSb==='undefined'||!mappingUser||!proyectoActivo?.proyecto_id)return;
@@ -17596,6 +17610,7 @@ async function refrescarProyectoConfiguracion(){
      }
    }
  }
+ if(typeof pdrActualizarCatalogoPropietarios==='function')await pdrActualizarCatalogoPropietarios();
  if(typeof actualizarBotonCartografiaProyecto==='function')actualizarBotonCartografiaProyecto();
  if(typeof actualizarEstadoSync==='function')actualizarEstadoSync();
 }
@@ -17682,6 +17697,17 @@ setTimeout(()=>{suscribir();programar(true);},3500);
 </script>
 
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
