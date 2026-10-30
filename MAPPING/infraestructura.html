@@ -9512,7 +9512,8 @@ async function descargarGeoJSONProyecto(){
 
   if(navigator.onLine){
     try{
-      const obj=await descargarArchivoPoligonosMapping(url);
+      const urlVersionada=url+(url.includes('?')?'&':'?')+'pdr_version='+encodeURIComponent(version);
+      const obj=await descargarArchivoPoligonosMapping(urlVersionada);
       await guardarCachePoligonos(proyectoId,version,obj);
       return obj;
     }catch(e){
@@ -17681,6 +17682,8 @@ setTimeout(()=>{suscribir();programar(true);},3500);
 </script>
 
 </body></html>
+
+
 
 
 
