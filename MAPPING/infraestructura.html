@@ -18306,5 +18306,115 @@ window.addEventListener('online',()=>{if(isHome())fetchConsecutives()});
  updateVisibility();
 })();
 </script>
+<!-- V153: Homepass -- campos simplificados y sincronización observable -->
+<style>
+#hpOverlay [data-hp-wrap="CANTPISXTO"],#hpOverlay [data-hp-wrap="HOMPASSPIS"],#hpOverlay [data-hp-wrap="CANTCONDO"],#hpOverlay [data-hp-wrap="CANOPERADO"],#hpOverlay [data-hp-wrap="TIPREDES"]{display:none!important}
+#hpSyncSummary{position:fixed;z-index:48050;bottom:77px;left:10px;max-width:min(410px,calc(100vw - 85px));padding:9px 12px;background:#0b2034;border:1px solid #38bdf8;border-radius:11px;color:#fff;font-size:11px;display:none;box-shadow:0 8px 24px #0006;cursor:pointer}
+</style>
+<div id="hpSyncSummary" role="status" onclick="hpV153ManualSync()" title="Pulsa para enviar nuevamente"></div>
+<script>
+(function(){
+ 'use strict';
+ // No borrar las columnas ni los datos existentes: únicamente ocultar controles de Homepass.
+ const root=document.getElementById('hpOverlay');
+ for(const n of ['CANTPISXTO','HOMPASSPIS','CANTCONDO','CANOPERADO','TIPREDES']){
+  const el=[...root.querySelectorAll('[data-hp-wrap]')].find(e=>e.dataset.hpWrap===n);
+  if(el){el.style.setProperty('display','none','important');el.classList.add('hpV152Hidden')}
+ }
+ let inFlight=null,manual=false,runId=0;
+ const el=id=>document.getElementById(id);
+ function status(msg,bad=false){const b=el('hpSyncSummary');if(!b)return;b.textContent=msg;b.style.display='block';b.style.borderColor=bad?'#f87171':'#38bdf8';}
+ function panel(total){
+  if(!manual)return;
+  const p=el('syncProgressPanel');if(p){p.style.display='block';p.classList.remove('ok','error')}
+  const mini=el('syncMiniButton');if(mini)mini.style.display='none';
+  const e=el('syncErrorBox');if(e)e.style.display='none';
+  setProgress(0,total,0,0,'Iniciando envío de predios y fotografías...');
+ }
+ function setProgress(done,total,ok,errors,detail){
+  if(!manual)return;
+  const pct=total?Math.round(done*100/total):100;
+  if(el('syncProgressBar'))el('syncProgressBar').style.width=pct+'%';
+  if(el('syncProgressPct'))el('syncProgressPct').textContent=pct+'%';
+  if(el('syncProgressText'))el('syncProgressText').textContent=done+' de '+total+' predio(s) · '+ok+' enviados · '+errors+' error(es)';
+  if(el('syncProgressDetail'))el('syncProgressDetail').textContent=detail;
+ }
+ function showErrors(fails){
+  const p=el('syncProgressPanel');if(p)p.classList.toggle('error',fails.length>0);
+  const e=el('syncErrorBox');if(!e||!manual)return;
+  e.style.display=fails.length?'block':'none';
+  // El panel original contiene su propia estructura; insertar un resumen claramente separado.
+  let details=el('hpV153ErrorDetails');if(!details){details=document.createElement('div');details.id='hpV153ErrorDetails';details.style.cssText='white-space:pre-wrap;max-height:150px;overflow:auto;padding:8px;font-size:11px;color:#fecaca';e.prepend(details)}
+  details.textContent=fails.map(x=>x.id+': '+x.error).join('\n');
+ }
+ async function send(manualRequest=false){
+  if(!hpType())return;
+  if(inFlight){if(manualRequest){manual=true;el('syncProgressPanel').style.display='block'}return inFlight}
+  manual=!!manualRequest;
+  const job=(async()=>{
+   const pid=hpProject();const all=hpRowsProject().filter(r=>r.sync_status!=='enviado');
+   if(!navigator.onLine){status('Homepass: sin conexión. '+all.length+' predios quedan pendientes.',true);if(manual)alert('Sin conexión a internet. Los predios siguen almacenados localmente.');return}
+   if(!mappingUser?.id||!mappingSb){status('Homepass: inicia sesión para enviar.',true);return}
+   panel(all.length);let done=0,ok=0,fail=[];
+   if(!all.length){setProgress(0,0,0,0,'No hay predios pendientes de envío.');status('Homepass: todos los predios locales están sincronizados.');return}
+   for(const r of all){
+    // Si cambia de proyecto durante el envío, continuar guardando solo el proyecto original.
+    try{
+     const payload={};
+     for(const c of HP_FIELDS){
+      if(HP_PHOTOS.includes(c.nombre))continue;
+      payload[c.nombre]=(c.nombre==='SERIALCONT'&&r[c.nombre]!=null&&String(r[c.nombre]).trim()!==''?String(r[c.nombre]).padStart(6,'0'):(r[c.nombre]??null));
+     }
+     Object.assign(payload,{proyecto_id:r.proyecto_id,offline_id:r.offline_id,tecnico_id:r.tecnico_id||mappingUser.id,fecha_captura_app:r.fecha_captura_app});
+     const result=await mappingSb.from('censo_homepass').upsert(payload,{onConflict:'offline_id'}).select('id').single();
+     if(result.error)throw new Error('Registro: '+result.error.message);
+     // Primero conservar el predio en la tabla. Si una foto falla, se reintenta sin perder el predio.
+     const photoFailures=[];
+     for(const name of HP_PHOTOS){
+      try{
+       const blob=await hpPhotoGet(r.offline_id+'|'+name);if(!blob)continue;
+       const ext=(blob.type||'image/jpeg').includes('png')?'png':'jpg';
+       const path=mappingUser.id+'/'+r.proyecto_id+'/'+r.offline_id+'/'+name+'.'+ext;
+       const upload=await mappingSb.storage.from('censo-homepass-fotos').upload(path,blob,{upsert:true,contentType:blob.type||'image/jpeg'});
+       if(upload.error)throw upload.error;
+       const update=await mappingSb.from('censo_homepass').update({[name]:path}).eq('offline_id',r.offline_id).eq('proyecto_id',r.proyecto_id);
+       if(update.error)throw update.error;
+      }catch(err){photoFailures.push(name+': '+String(err.message||err))}
+     }
+     if(photoFailures.length)throw new Error('Predio guardado en Supabase, fotografías pendientes: '+photoFailures.join(' | '));
+     r.sync_status='enviado';r.sync_error=null;ok++;
+    }catch(err){
+     r.sync_status='error';r.sync_error=String(err.message||err);fail.push({id:r['ID-ENERGIZ']||r.offline_id,error:r.sync_error});
+     console.error('Homepass: fallo sincronizando',r.offline_id,err);
+    }
+    done++;try{hpPersist()}catch(e){console.error('No se pudo persistir estado de sync Homepass',e)}
+    setProgress(done,all.length,ok,fail.length,'Procesando predio '+done+' de '+all.length);
+    status('Homepass: '+done+'/'+all.length+' procesados · '+fail.length+' error(es)',fail.length>0);
+   }
+   showErrors(fail);
+   if(el('syncProgressPanel')&&manual)el('syncProgressPanel').classList.toggle('ok',!fail.length);
+   if(fail.length){status('Homepass: '+fail.length+' pendiente(s) con error. Pulsa para reintentar.',true);setProgress(done,all.length,ok,fail.length,'Los errores están detallados debajo. Los predios no se perdieron.');}
+   else{status('Homepass: '+ok+' predio(s) enviados correctamente.');setProgress(done,all.length,ok,0,'Envío terminado. En el Master pulsa Actualizar mapa.');}
+   if(el('hpRecordsOverlay')?.style.display==='block')hpRenderRegistros();
+  })();
+  inFlight=job;
+  try{await job}finally{inFlight=null;manual=false}
+ }
+ // Sustituye ambas rutas (botón Enviar datos y autoguardado), sin tocar la sincronización de Infraestructura.
+ window.hpSync=()=>send(false);
+ window.hpV153ManualSync=()=>send(true);
+ const previous=window.iniciarSincronizacionSegundoPlano;
+ window.iniciarSincronizacionSegundoPlano=function(...args){return hpType()?send(true):previous.apply(this,args)};
+ const prevSave=window.hpGuardar;
+ window.hpGuardar=function(...args){const r=prevSave.apply(this,args);if(hpType()&&hpRowsProject().some(x=>x.sync_status!=='enviado'))status('Homepass: guardado local. Enviando a Supabase...');return r};
+ // Los errores que antes solo aparecían en consola quedan visibles en el menú de registros.
+ const previousRender=window.hpRenderRegistros;
+ window.hpRenderRegistros=function(...args){const result=previousRender.apply(this,args);const list=el('hpRecordsList');if(list){for(const item of list.querySelectorAll('.hpRecord')){}const failed=hpRowsProject().filter(r=>r.sync_status==='error');if(failed.length){const warn=document.createElement('div');warn.className='hint';warn.style.borderColor='#ef4444';warn.textContent=failed.length+' registro(s) no sincronizados: '+failed.map(x=>(x['ID-ENERGIZ']||x.offline_id)+' — '+x.sync_error).join(' / ');list.prepend(warn)}}return result};
+ // Reintento al recuperar internet; no mostrar barra flotante en envíos automáticos.
+ window.addEventListener('online',()=>{if(hpType())send(false).catch(console.error)});
+ setTimeout(()=>{if(hpType()){const pending=hpRowsProject().filter(r=>r.sync_status!=='enviado');if(pending.length)status('Homepass: '+pending.length+' registro(s) pendientes. Pulsa para enviar.');}},2000);
+})();
+</script>
 </body></html>
+
 
