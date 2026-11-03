@@ -18415,6 +18415,56 @@ window.addEventListener('online',()=>{if(isHome())fetchConsecutives()});
  setTimeout(()=>{if(hpType()){const pending=hpRowsProject().filter(r=>r.sync_status!=='enviado');if(pending.length)status('Homepass: '+pending.length+' registro(s) pendientes. Pulsa para enviar.');}},2000);
 })();
 </script>
+<!-- PDR V154: volver al ultimo predio y mostrar ID-ENERGIZ sobre casita -->
+<style>
+.hpV154Marker{background:transparent!important;border:0!important;overflow:visible!important}
+.hpV154House{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:90px;transform:translate(-50%,-10%);pointer-events:none}
+.hpV154House .hpV154Icon{font-size:25px;line-height:27px;filter:drop-shadow(0 1px 3px #000)}
+.hpV154House .hpV154Id{background:rgba(7,17,31,.95);border:1px solid #67e8f9;color:#fff;border-radius:6px;padding:2px 5px;font-size:12px;font-weight:900;line-height:1.2;white-space:nowrap;text-shadow:0 1px 2px #000;box-shadow:0 2px 8px #0008}
+</style>
+<script>
+(function(){
+'use strict';
+const hEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const label=r=>String(r['ID-ENERGIZ']||('MZ'+String(r.MZ??'')+' P'+String(r.LOTEO??''))).trim();
+function hpV154Ultimo(){
+ if(typeof hpType!=='function'||!hpType()||!map)return;
+ const rows=hpRowsProject().filter(r=>Number.isFinite(Number(r.LATITUDE))&&Number.isFinite(Number(r.LONGITUDE))&&Math.abs(Number(r.LATITUDE))<=90&&Math.abs(Number(r.LONGITUDE))<=180);
+ if(!rows.length)return;
+ rows.sort((a,b)=>Date.parse(b.fecha_captura_app||b.created_at||0)-Date.parse(a.fecha_captura_app||a.created_at||0));
+ const r=rows[0];map.setView([Number(r.LATITUDE),Number(r.LONGITUDE)],Math.max(18,map.getZoom()),{animate:false});
+}
+window.hpRenderMarkers=function(){
+ if(typeof map==='undefined'||!map)return;
+ if(window.hpLayer){try{map.removeLayer(window.hpLayer)}catch(_){}}
+ window.hpLayer=null;
+ if(typeof hpType!=='function'||!hpType())return;
+ window.hpLayer=L.layerGroup().addTo(map);
+ hpRowsProject().forEach(r=>{
+  const lat=Number(r.LATITUDE),lng=Number(r.LONGITUDE);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)return;
+  const id=label(r)||'Predio';
+  const icon=L.divIcon({className:'hpV154Marker',html:'<span class="hpV154House"><span class="hpV154Icon">🏠</span><span class="hpV154Id">'+hEsc(id)+'</span></span>',iconSize:[1,1],iconAnchor:[0,0]});
+  const m=L.marker([lat,lng],{icon}).addTo(window.hpLayer);
+  const content=document.createElement('div');
+  const heading=document.createElement('b');heading.textContent='🏠 '+id;content.appendChild(heading);
+  const detail=document.createElement('div');detail.textContent=[r.DIRECCION,r.TIPOPREDIO].filter(Boolean).join(' · ');content.appendChild(detail);
+  const btn=document.createElement('button');btn.textContent='Editar predio';btn.className='btn blue';btn.style.marginTop='7px';btn.addEventListener('click',()=>hpEditar(r.offline_id));content.appendChild(btn);
+  m.bindPopup(content);
+ });
+};
+const selectPrev=window.seleccionarProyecto;
+window.seleccionarProyecto=async function(...args){
+ const result=await selectPrev.apply(this,args);
+ const pid=typeof hpProject==='function'?hpProject():null;
+ if(typeof hpType==='function'&&hpType()){hpRenderMarkers();setTimeout(()=>{if(hpType()&&hpProject()===pid)hpV154Ultimo()},300)}
+ return result;
+};
+// Cubre la restauración del proyecto al iniciar sesión y el cambio en el panel de proyectos.
+window.addEventListener('load',()=>setTimeout(()=>{if(hpType()){hpRenderMarkers();hpV154Ultimo()}},1700));
+})();
+</script>
 </body></html>
+
 
 
