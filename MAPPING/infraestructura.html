@@ -18255,6 +18255,56 @@ window.addEventListener('online',()=>{if(isHome())fetchConsecutives()});
  update();
 })();
 </script>
+<!-- V152: configuración de municipio/departamento y simplificación del formulario Homepass -->
+<style id="hpV152Css">
+ #hpOverlay .hpV152Hidden{display:none!important}
+ #hpOverlay .hpV152Territorial{border:1px solid #176a83;border-radius:11px;background:#0b2335;padding:12px;margin:8px 0 13px}
+ #hpOverlay .hpV152Territorial h3{margin:0 0 9px;font-size:13px;color:#67e8f9}
+ #hpOverlay .hpV152Readonly{background:#102e39!important;color:#a7f3d0!important;font-weight:800;border-color:#1698a9!important}
+</style>
+<script>
+(function(){
+ 'use strict';
+ const root=document.getElementById('hpOverlay');if(!root)return;
+ const wrap=n=>[...root.querySelectorAll('[data-hp-wrap]')].find(e=>e.dataset.hpWrap===n);
+ const control=n=>[...root.querySelectorAll('[data-hp-name]')].find(e=>e.dataset.hpName===n);
+ const hidden=['EXISTE DIR','DIRALTERNA','ESTRATO','Comp2','Comp','ID-','HPXUNIDAD2','NODO','OFICINA','VALACCESO','DESCOBRAC','MENSAJE','DIRECCIONI','VESERIAL','CANTPISOS'];
+ for(const n of hidden)wrap(n)?.classList.add('hpV152Hidden');
+ const group=document.createElement('div');group.className='hpV152Territorial';group.innerHTML='<h3>📍 Ubicación del proyecto</h3><div class="hpGrid"></div>';
+ const grid=group.querySelector('.hpGrid');for(const n of ['DEPARTAMEN','MUNICIPIO']){const el=wrap(n);if(el){grid.appendChild(el);const inp=control(n);if(inp){inp.readOnly=true;inp.classList.add('hpV152Readonly');inp.title='Configurado desde el Master para este proyecto';}}}
+ const body=root.querySelector('.hpBody');const firstField=body?.querySelector('fieldset.hpGroup');if(firstField)body.insertBefore(group,firstField);
+ function updateTerritory(){
+  if(typeof hpType!=='function'||!hpType())return;
+  const p=typeof proyectoActivo==='object'?proyectoActivo:null;
+  // Solo mostrar los valores configurados por el Master, nunca valores libres heredados del formulario QField.
+  const department=String(p?.homepass_departamento||'').trim(),municipality=String(p?.homepass_municipio||'').trim();
+  if(control('DEPARTAMEN'))control('DEPARTAMEN').value=department;
+  if(control('MUNICIPIO'))control('MUNICIPIO').value=municipality;
+  const msg=document.getElementById('hpV152GeoWarn');
+  if(msg)msg.textContent=(!department||!municipality)?'⚠️ El Master debe configurar Departamento y Municipio en Editar proyecto antes de registrar nuevos predios.':'';
+ }
+ const warn=document.createElement('small');warn.id='hpV152GeoWarn';warn.style.cssText='display:block;color:#fbbf24;font-size:11px;margin:5px 0';group.appendChild(warn);
+ function updateVisibility(){
+  if(typeof hpType!=='function'||!hpType())return;
+  const tipo=String(control('TIPOPREDIO')?.value||'').trim().toUpperCase();
+  wrap('CANTCASAS')?.classList.toggle('hpV152Hidden',!['CONJUNTO DE CASAS','CONDOMINIO'].includes(tipo));
+ }
+ const oldNew=window.hpNuevo;
+ window.hpNuevo=function(...args){const v=oldNew.apply(this,args);updateTerritory();updateVisibility();return v};
+ const oldEdit=window.hpEditar;
+ window.hpEditar=async function(...args){const v=await oldEdit.apply(this,args);updateTerritory();updateVisibility();return v};
+ const oldSave=window.hpGuardar;
+ window.hpGuardar=function(...args){
+  updateTerritory();updateVisibility();
+  if(!control('DEPARTAMEN')?.value.trim()||!control('MUNICIPIO')?.value.trim()){
+    hpMsg('El Master debe configurar Departamento y Municipio del proyecto antes de guardar un predio.');group.scrollIntoView({block:'start',behavior:'smooth'});return;
+  }
+  return oldSave.apply(this,args);
+ };
+ root.addEventListener('change',ev=>{if(ev.target?.dataset?.hpName==='TIPOPREDIO')updateVisibility()});
+ root.addEventListener('input',ev=>{if(ev.target?.dataset?.hpName==='TIPOPREDIO')updateVisibility()});
+ updateVisibility();
+})();
+</script>
 </body></html>
-
 
