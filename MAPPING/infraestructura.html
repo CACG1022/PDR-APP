@@ -450,8 +450,8 @@ body.lightTheme .table{color:#0f172a!important}
 body.lightTheme .table th{background:#e2e8f0!important;color:#0f172a!important}
 body.lightTheme .table td{border-color:#cbd5e1!important}
 
-/* 2 opciones en la barra inferior */
-nav{grid-template-columns:repeat(5,1fr)!important}
+/* Accesos principales en la barra inferior: proyectos, mapa, registros, filtro, tema, perfil */
+nav{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 
 /* Perfil */
 .profileModal{width:min(560px,96vw)}
@@ -681,7 +681,7 @@ body.lightTheme .filterTipoOption{
 body.lightTheme .filterTipoOption small{color:#475569!important}
 @media(max-width:520px){
   .filterTipoGrid{grid-template-columns:1fr}
-  nav button{font-size:9px!important}
+  nav button{font-size:9px!important;padding:4px 1px!important} nav .ico{font-size:17px!important}
   nav .ico{font-size:18px!important}
 }
 
@@ -2334,6 +2334,7 @@ body.formularioAbierto .pdrAutoSyncToast,#formOverlay.open~.pdrAutoSyncToast{dis
 <button class="resumeFormFab" id="resumeFormFab" onclick="reanudarFormulario()" title="Volver al formulario" style="display:none">📝 Volver al formulario</button>
 <div class="centerInfo" id="centerInfo">Mira central: --</div>
 <nav>
+  <button onclick="abrirPanelProyectos()" title="Seleccionar proyecto asignado"><span class="ico">📁</span>Mis proyectos</button>
   <button onclick="abrirSelectorMapaBase()"><span class="ico">🗺️</span>Mapa</button>
   <button onclick="abrirRegistros()"><span class="ico">▥</span>Registros</button>
   <button id="btnFiltroTipo" onclick="abrirFiltroTipo()"><span class="ico">🔎</span>Filtro</button>
@@ -2377,7 +2378,6 @@ body.formularioAbierto .pdrAutoSyncToast,#formOverlay.open~.pdrAutoSyncToast{dis
 </div>
 
 <div class="sideMenu" id="sideMenu">
-  <button onclick="abrirPanelProyectos();toggleSideMenu(false)">👷 Mis proyectos</button>
   <button onclick="iniciarSincronizacionSegundoPlano();toggleSideMenu(false)">➤ Enviar datos</button><div style="font-size:10px;color:#94a3b8;padding:5px 8px 2px">Fotografías y registros del proyecto</div>
   <button onclick="reenviarTodo();toggleSideMenu(false)">⟳ Reenviar todo</button>
   <button onclick="actualizarDesdeSupabaseCompleto();toggleSideMenu(false)">☁ Actualizar registros</button>
@@ -18070,3 +18070,4 @@ window.seleccionarProyecto=async function(...args){hpAvCerrar();hpAvRemote=[];re
 </script>
 
 </body></html>
+
