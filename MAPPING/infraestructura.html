@@ -19051,31 +19051,91 @@ photoKeys.forEach(ensureCard);
 .hp161Card button{margin:6px 5px 0 0}.hp161Count{background:#dc2626;padding:2px 7px;border-radius:999px;color:#fff}
 </style>
 <div id="hp161Overlay"><div class="hp161Box"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2>⚠ Correcciones de predios</h2><button class="close" onclick="hp161Close()">Cerrar</button></div><p id="hp161State" style="font-size:12px;color:#9fb0c4"></p><button class="btn blue" onclick="hp161Refresh()">⟳ Actualizar correcciones</button><div id="hp161List"></div></div></div>
-<script id="pdrHp161Tech">
+<script id="pdrHp162Tech">
 (function(){
 'use strict';
 const el=id=>document.getElementById(id),escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let list=[],lastProject='',busy=false;
+let list=[],lastProject='',busy=false, channel=null, channelKey='', timer=null, refreshAgain=false, previousPending=null, notificationReady=false;
 const home=()=>typeof hpType==='function'&&hpType();
 const project=()=>typeof hpProject==='function'?hpProject():'';
-function render(){const container=el('hp161List');if(!container)return;container.replaceChildren();const open=list.filter(c=>['pendiente','reabierta'].includes(c.estado));const btn=el('btnCorreccionesTecnico');if(btn&&home()){btn.innerHTML='⚠ Correcciones Homepass <span class="correctionMenuBadge">'+open.length+'</span>'}el('hp161State').textContent=open.length+' pendiente(s) · '+list.length+' solicitudes en el proyecto';if(!list.length){container.textContent='No tienes correcciones asignadas.';return}for(const c of list){const row=hpRowsProject().find(r=>String(r.supabase_id||r.id||'')===String(c.predio_id));const card=document.createElement('div');card.className='hp161Card';card.innerHTML='<b>'+escape(c.estado.toUpperCase())+' · '+escape(row?.['ID-ENERGIZ']||c.identificador||'Predio')+'</b><br>'+escape(c.campo_objetivo||'Revisión general')+'<br>'+escape(c.descripcion)+(c.respuesta_tecnico?'<br><br>Respuesta: '+escape(c.respuesta_tecnico):'');if(['pendiente','reabierta'].includes(c.estado)){const edit=document.createElement('button');edit.className='btn blue';edit.textContent='✎ Editar predio';edit.onclick=()=>hp161Edit(c);const done=document.createElement('button');done.className='btn warn';done.textContent='✓ Enviar corrección al Master';done.onclick=()=>hp161Done(c);card.append(edit,done)}container.append(card)}}
+function openCorrections(){return list.filter(c=>['pendiente','reabierta'].includes(String(c.estado||'').toLowerCase()));}
+function updateAlert(){
+ if(!home())return;
+ const pending=openCorrections(), n=pending.length;
+ const menu=el('menuCorrectionNotifyBadge'),box=el('mapCorrectionAlert');
+ const title=el('mapCorrectionAlertTitle'),sub=el('mapCorrectionAlertSubtitle'),num=el('mapCorrectionAlertCount');
+ const badge=el('correctionMenuBadge'),btn=el('btnCorreccionesTecnico');
+ if(badge){badge.textContent=String(n);badge.classList.toggle('zero',!n)}
+ if(btn){btn.classList.toggle('hasPendingCorrections',n>0);btn.innerHTML='⚠ Correcciones <span id="correctionMenuBadge" class="correctionMenuBadge'+(!n?' zero':'')+'">'+n+'</span>'}
+ if(menu){menu.textContent=String(n);menu.style.display=n?'flex':'none'}
+ if(box)box.style.display=n?'flex':'none';
+ if(num)num.textContent=String(n);
+ if(title)title.textContent=n===1?'Tienes 1 corrección pendiente':`Tienes ${n} correcciones pendientes`;
+ if(sub)sub.textContent=pending.some(c=>c.estado==='reabierta')?'Hay solicitudes reabiertas · toca para revisar':'Toca para revisar las solicitudes del MASTER';
+ if(notificationReady && previousPending!==null && n>previousPending && typeof navigator.vibrate==='function')try{navigator.vibrate([120,70,120])}catch(_){}
+ previousPending=n;notificationReady=true;
+}
+function render(){
+ const container=el('hp161List');if(!container)return;
+ const open=openCorrections();updateAlert();
+ el('hp161State').textContent=open.length+' pendiente(s) · '+list.length+' solicitudes en el proyecto';
+ container.replaceChildren();
+ if(!list.length){container.textContent='No tienes correcciones asignadas.';return}
+ for(const c of [...list].sort((a,b)=>({reabierta:0,pendiente:1,corregida:2,cerrada:3}[a.estado]??9)-({reabierta:0,pendiente:1,corregida:2,cerrada:3}[b.estado]??9)||new Date(b.fecha_solicitud||0)-new Date(a.fecha_solicitud||0))){
+   const row=hpRowsProject().find(r=>String(r.supabase_id||r.id||'')===String(c.predio_id));
+   const card=document.createElement('div');card.className='correctionTechCard '+escape(c.estado);
+   card.innerHTML='<div class="correctionTechMeta"><span class="badge">'+escape(c.estado.toUpperCase())+'</span><span class="corrCategory">CENSO HOMEPASS</span></div>'+ 
+     '<h3>'+escape(row?.['ID-ENERGIZ']||c.identificador||'Predio')+'</h3>'+ 
+     '<small>'+escape(c.fecha_solicitud?new Date(c.fecha_solicitud).toLocaleString('es-CO'):'')+' · Solicitud del MASTER</small>'+ 
+     (c.campo_objetivo?'<div class="correctionTechDescription"><b>Campo a revisar:</b> '+escape(c.campo_objetivo)+'</div>':'')+
+     '<div class="correctionTechDescription">'+escape(c.descripcion)+'</div>'+ 
+     (c.respuesta_tecnico?'<div class="correctionTechResponse"><b>Tu respuesta:</b> '+escape(c.respuesta_tecnico)+'</div>':'');
+   const footer=document.createElement('div');footer.className='correctionTechFooter';
+   const locate=document.createElement('button');locate.className='btn blue';locate.textContent='📍 Ver mapa';locate.onclick=async()=>{try{const r=await getPredio(c);hp161Close();const lat=Number(r.LATITUDE),lng=Number(r.LONGITUDE);if(Number.isFinite(lat)&&Number.isFinite(lng)&&typeof map!=='undefined')map.setView([lat,lng],Math.max(map.getZoom(),19));else throw Error('Ubicación no disponible')}catch(e){alert(e.message)}};footer.append(locate);
+   if(['pendiente','reabierta'].includes(c.estado)){
+     const edit=document.createElement('button');edit.className='btn blue';edit.textContent='✏️ Corregir predio';edit.onclick=()=>hp161Edit(c);
+     const done=document.createElement('button');done.className='btn';done.textContent='✓ Marcar corregida';done.onclick=()=>hp161Done(c);
+     footer.append(edit,done);
+   }
+   card.append(footer);container.append(card);
+ }
+}
+function scheduleRefresh(delay=200){if(timer)clearTimeout(timer);timer=setTimeout(()=>{timer=null;hp161Refresh()},delay)}
+function unsubscribe(){if(channel){try{mappingSb.removeChannel(channel)}catch(_){ }channel=null}channelKey=''}
+function subscribe(){
+ if(!home()||!navigator.onLine||!mappingUser?.id){unsubscribe();return}
+ const key=mappingUser.id+'_'+project();if(channel&&key===channelKey)return;
+ unsubscribe();channelKey=key;
+ channel=mappingSb.channel('hp-corr-'+key)
+ .on('postgres_changes',{event:'*',schema:'public',table:'censo_homepass_correcciones',filter:'tecnico_id=eq.'+mappingUser.id},payload=>{
+   const row=payload.new||payload.old||{};
+   if(String(row.proyecto_id)!==project())return;
+   scheduleRefresh(120);
+ })
+ .subscribe(status=>{if(status==='SUBSCRIBED')scheduleRefresh(180);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')scheduleRefresh(2500)});
+}
+const originalBadge=window.actualizarBadgeCorreccionesTecnico;
+if(typeof originalBadge==='function')window.actualizarBadgeCorreccionesTecnico=function(...args){if(home())return updateAlert();return originalBadge.apply(this,args)};
+
 window.hp161Close=()=>el('hp161Overlay').classList.remove('open');
 window.hp161Open=async function(){if(!home())return;el('hp161Overlay').classList.add('open');await hp161Refresh()};
-window.hp161Refresh=async function(){if(!home()||!mappingUser?.id||!navigator.onLine){if(!navigator.onLine){render();el('hp161State').textContent='Sin conexión: se muestran las últimas correcciones descargadas'}else render();return}if(busy)return;busy=true;const pid=project();try{const {data,error}=await mappingSb.from('censo_homepass_correcciones').select('*').eq('proyecto_id',pid).eq('tecnico_id',mappingUser.id).order('fecha_solicitud',{ascending:false});if(error)throw error;if(pid!==project())return;list=data||[];lastProject=pid;try{localStorage.setItem('hp161_correcciones_'+mappingUser.id+'_'+pid,JSON.stringify(list))}catch(_){}render()}catch(e){el('hp161State').textContent='Error consultando correcciones: '+(e.message||e)}finally{busy=false}};
+window.hp161Refresh=async function(){if(!home()||!mappingUser?.id||!navigator.onLine){if(!navigator.onLine){render();el('hp161State').textContent='Sin conexión: se muestran las últimas correcciones descargadas'}else render();return}if(busy){refreshAgain=true;return}busy=true;const pid=project();try{const {data,error}=await mappingSb.from('censo_homepass_correcciones').select('*').eq('proyecto_id',pid).eq('tecnico_id',mappingUser.id).order('fecha_solicitud',{ascending:false});if(error)throw error;if(pid!==project())return;list=data||[];lastProject=pid;try{localStorage.setItem('hp161_correcciones_'+mappingUser.id+'_'+pid,JSON.stringify(list))}catch(_){}render()}catch(e){el('hp161State').textContent='Error consultando correcciones: '+(e.message||e)}finally{busy=false;if(refreshAgain){refreshAgain=false;scheduleRefresh(150)}}};
 async function getPredio(c){let row=hpRowsProject().find(r=>String(r.supabase_id||r.id||'')===String(c.predio_id));if(row)return row;if(!navigator.onLine)throw Error('El predio no está disponible localmente. Conéctate para descargarlo.');const {data,error}=await mappingSb.from('censo_homepass').select('*').eq('id',c.predio_id).eq('proyecto_id',project()).eq('tecnico_id',mappingUser.id).single();if(error)throw error;const exists=hpRowsProject().find(x=>x.offline_id===data.offline_id);if(exists)return exists;row={...data,supabase_id:data.id,sync_status:'enviado'};delete row.id;hpRows.push(row);hpPersist();hpRenderMarkers();return row}
 async function hp161Edit(c){try{const r=await getPredio(c);hp161Close();await hpEditar(r.offline_id);setTimeout(()=>{const box=el('hpMsg');if(box)box.textContent='⚠ CORRECCIÓN SOLICITADA: '+c.descripcion+(c.campo_objetivo?' · Campo: '+c.campo_objetivo:'')},50)}catch(e){alert('No se pudo abrir el predio: '+(e.message||e))}}
 async function hp161Done(c){try{const r=await getPredio(c);if(r.sync_status!=='enviado')return alert('Primero guarda y sincroniza los cambios del predio con Supabase.');const answer=prompt('Explica qué corregiste. El Master revisará la solicitud:',c.respuesta_tecnico||'');if(answer===null)return;if(answer.trim().length<3)return alert('Escribe una respuesta de al menos 3 caracteres.');const {error}=await mappingSb.rpc('hp_marcar_correccion_corregida',{p_id:c.id,p_respuesta:answer.trim()});if(error)throw error;await hp161Refresh();alert('Corrección enviada al Master para revisión.')}catch(e){alert('No se pudo enviar la corrección: '+(e.message||e))}}
 // Usa el botón existente de Correcciones, sin modificar la lógica de Infraestructura.
 const baseOpen=window.abrirCorreccionesTecnico;
 if(typeof baseOpen==='function')window.abrirCorreccionesTecnico=function(...args){return home()?hp161Open():baseOpen.apply(this,args)};
-function enter(){if(!home()){list=[];render();return}const pid=project();if(pid!==lastProject){lastProject=pid;try{list=JSON.parse(localStorage.getItem('hp161_correcciones_'+mappingUser?.id+'_'+pid)||'[]')}catch(_){list=[]}render()}if(navigator.onLine)hp161Refresh()}
+function enter(){if(!home()){unsubscribe();list=[];previousPending=null;render();return}const pid=project();if(pid!==lastProject){lastProject=pid;try{list=JSON.parse(localStorage.getItem('hp161_correcciones_'+mappingUser?.id+'_'+pid)||'[]')}catch(_){list=[]}render()}render();subscribe();if(navigator.onLine)hp161Refresh()}
 // No perder notificaciones al cambiar de proyecto; son actualizaciones en primer plano.
 const oldSelect=window.seleccionarProyecto;
 if(typeof oldSelect==='function')window.seleccionarProyecto=function(...args){const res=oldSelect.apply(this,args);Promise.resolve(res).then(()=>setTimeout(enter,600));return res};
-setInterval(()=>{if(home()&&mappingUser?.id&&navigator.onLine&&document.visibilityState==='visible')hp161Refresh();else if(!home()&&lastProject){lastProject='';list=[];render()}},45000);
-window.addEventListener('online',()=>{if(home())hp161Refresh()});
+setInterval(()=>{if(home()&&mappingUser?.id&&navigator.onLine&&document.visibilityState==='visible'){subscribe();hp161Refresh()}else if(!home()&&lastProject){lastProject='';unsubscribe();list=[];render()}},20000);
+window.addEventListener('online',()=>{if(home()){subscribe();hp161Refresh()}});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&home()){subscribe();hp161Refresh()}});
 setTimeout(enter,1800);
 })();
 </script>
 </body></html>
+
+
 
