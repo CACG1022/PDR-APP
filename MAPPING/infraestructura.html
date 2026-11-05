@@ -2384,7 +2384,7 @@ body.formularioAbierto .pdrAutoSyncToast,#formOverlay.open~.pdrAutoSyncToast{dis
   <button class="correctionMenuBtn" id="btnCorreccionesTecnico" onclick="abrirCorreccionesTecnico();toggleSideMenu(false)">
     ⚠ Correcciones <span class="correctionMenuBadge" id="correctionMenuBadge">0</span>
   </button>
-  <button onclick="abrirBuscarConsecutivo();toggleSideMenu(false)">🔎 Buscar por consecutivo</button>
+  <button id="hpV155MenuBuscar" onclick="abrirBuscarConsecutivo();toggleSideMenu(false)">🔎 Buscar por consecutivo</button>
   <button id="btnCartografiaProyecto" onclick="toggleCartografiaProyecto();toggleSideMenu(false)" disabled>🗺️ Cartografía: no disponible</button>
   <button id="btnOfflineProject" onclick="abrirPrepararProyectoOffline();toggleSideMenu(false)">📦 Preparar proyecto offline</button>
   <button id="btnDistanciasMapa" onclick="toggleDistanciasMapa();toggleSideMenu(false)">📏 Ocultar distancias</button>
@@ -17877,6 +17877,7 @@ function mzTechDraw(){
  if(mzTechLayer){map.removeLayer(mzTechLayer);mzTechLayer=null}
  if(!hpType())return;
  mzTechLayer=L.geoJSON(mzTechManzanas.map(r=>({type:'Feature',geometry:r.geometria,properties:r})),{
+  interactive:false,
   style:f=>({color:f.properties.color||mzTechColor(f.properties.grupo),fillColor:f.properties.color||mzTechColor(f.properties.grupo),fillOpacity:.27,weight:3}),
   onEachFeature:(f,layer)=>{const r=f.properties;layer.bindTooltip('MZ '+r.mz,{sticky:true});layer.bindPopup('<b>MZ '+r.mz+'</b><br>Grupo '+String(r.grupo).replace(/[<>]/g,''));}
  }).addTo(map);
@@ -18171,8 +18172,8 @@ function preparedForSave(){
  const old=hpRows.find(r=>r.offline_id===hpEditing);
  if(old&&Number(old.CONSECUTIV)>0)hpSet('CONSECUTIV',old.CONSECUTIV);
  else hpSet('CONSECUTIV',nextConsec(hpEditing));
- hpSet('DIRECCION',address());
- if(!hpGet('DIRECCION')){hpMsg('Completa la vía principal y los datos de dirección antes de guardar el predio.');dirField?.scrollIntoView({block:'center',behavior:'smooth'});return false}
+ hpSet('DIRECCION',['CANCHA','ZONA VERDE','LOTE'].includes(String(hpGet('TIPOPREDIO')||'').trim().toUpperCase())?'':address());
+ if(!['CANCHA','ZONA VERDE','LOTE'].includes(String(hpGet('TIPOPREDIO')||'').trim().toUpperCase())&&!hpGet('DIRECCION')){hpMsg('Completa la vía principal y los datos de dirección antes de guardar el predio.');dirField?.scrollIntoView({block:'center',behavior:'smooth'});return false}
  return true;
 }
 // The original Homepass functions are wrapped rather than replaced to preserve photo, offline and sync workflows.
@@ -18362,7 +18363,8 @@ window.addEventListener('online',()=>{if(isHome())fetchConsecutives()});
     try{
      const payload={};
      for(const c of HP_FIELDS){
-      if(HP_PHOTOS.includes(c.nombre))continue;
+      // Conservar fotos ya enviadas al editar desde otro dispositivo.
+      // Los campos de foto son rutas privadas, nunca contenido binario.
       payload[c.nombre]=(c.nombre==='SERIALCONT'&&r[c.nombre]!=null&&String(r[c.nombre]).trim()!==''?String(r[c.nombre]).padStart(6,'0'):(r[c.nombre]??null));
      }
      Object.assign(payload,{proyecto_id:r.proyecto_id,offline_id:r.offline_id,tecnico_id:r.tecnico_id||mappingUser.id,fecha_captura_app:r.fecha_captura_app});
@@ -18464,7 +18466,581 @@ window.seleccionarProyecto=async function(...args){
 window.addEventListener('load',()=>setTimeout(()=>{if(hpType()){hpRenderMarkers();hpV154Ultimo()}},1700));
 })();
 </script>
+<!-- V155: Selección, edición, movimiento y búsqueda alfanumérica Homepass -->
+<style id="hpV155Style">
+.hpV155Marker{background:transparent!important;border:0!important;overflow:visible!important;cursor:pointer!important}
+.hpV155House{width:116px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;user-select:none}
+.hpV155House .hpV155Icon{font-size:26px;line-height:29px;filter:drop-shadow(0 1px 3px #000)}
+.hpV155House .hpV155Id{max-width:116px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(6,17,31,.95);border:1px solid #67e8f9;color:#fff;border-radius:6px;padding:2px 5px;font-size:11px;font-weight:900;box-shadow:0 2px 7px #0008}
+#hpV155MovePanel{display:none;position:fixed;left:10px;right:10px;bottom:76px;z-index:30000;max-width:460px;margin:auto;background:#0b2034;color:#fff;border:2px solid #22d3ee;border-radius:14px;padding:12px;box-shadow:0 8px 30px #000b;font-size:12px}
+#hpV155MovePanel strong{display:block;font-size:14px;margin-bottom:5px}
+#hpV155MovePanel .hpV155Actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#hpV155MovePanel .hpV155Actions button{flex:1;min-width:100px;padding:9px 7px;border:0;border-radius:9px;color:white;background:#0e7490;font-weight:800}
+#hpV155MovePanel .hpV155Actions button:last-child{background:#64748b}
+.hpV155SearchCard{display:block;width:100%;padding:11px;text-align:left;border-radius:10px;background:#102236;color:#fff;border:1px solid #34536b;margin:6px 0;cursor:pointer}
+.hpV155SearchCard b{display:block;font-size:13px}.hpV155SearchCard small{display:block;color:#b5c7dc;margin-top:4px}
+</style>
+<div id="hpV155MovePanel" aria-live="polite">
+  <strong id="hpV155MoveTitle">Mover predio</strong>
+  <div>Arrastra la casita azul en el mapa o ubica la mira sobre la nueva posición. El predio debe permanecer en su manzana original.</div>
+  <div id="hpV155MovePosition" style="margin-top:7px;color:#67e8f9"></div>
+  <div class="hpV155Actions">
+    <button type="button" onclick="hpV155MoveCenter()">Usar mira central</button>
+    <button type="button" onclick="hpV155MoveSave()" style="background:#059669">Guardar ubicación</button>
+    <button type="button" onclick="hpV155MoveCancel()">Cancelar</button>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+const identity=r=>String(r['ID-ENERGIZ']||('MZ'+(r.MZ??'')+' P'+(r.LOTEO??''))).trim();
+const key=s=>String(s??'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+let selected=null, moveMarker=null, moveProject=null, searchRemote=[];
+function home(){return typeof hpType==='function'&&hpType()}
+function project(){return hpProject()}
+function localRow(id){return hpRowsProject().find(r=>String(r.offline_id)===String(id))}
+function validPosition(r){const a=Number(r.LATITUDE),b=Number(r.LONGITUDE);return Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a)<=90&&Math.abs(b)<=180}
+function ensurePane(){if(!map.getPane('hpV155Pane')){map.createPane('hpV155Pane');map.getPane('hpV155Pane').style.zIndex='680';map.getPane('hpV155Pane').style.pointerEvents='auto'}}
+function popupButton(text,fn,color){const b=document.createElement('button');b.type='button';b.textContent=text;b.className='btn';b.style.cssText='padding:7px;margin:4px 4px 0 0;width:auto;background:'+color;b.addEventListener('click',fn);return b}
+function localize(id){const r=localRow(id);if(!r||!validPosition(r))return;map.closePopup();map.setView([Number(r.LATITUDE),Number(r.LONGITUDE)],Math.max(19,map.getZoom()),{animate:true});if(typeof searchHighlightLayer!=='undefined'&&searchHighlightLayer){map.removeLayer(searchHighlightLayer);searchHighlightLayer=null}searchHighlightLayer=L.circleMarker([Number(r.LATITUDE),Number(r.LONGITUDE)],{radius:19,color:'#ff2bd6',weight:4,fillOpacity:.08,interactive:false}).addTo(map);setTimeout(()=>{try{map.removeLayer(searchHighlightLayer)}catch(_){}searchHighlightLayer=null},5500)}
+// Restore a technician-owned remote record if it is not in the current device's local cache.
+async function hydrateRemote(row){
+ if(!row||String(row.proyecto_id)!==project()||String(row.tecnico_id)!==String(mappingUser?.id))throw new Error('El predio no corresponde a tu asignación.');
+ if(!row.offline_id)throw new Error('El predio no tiene identificador offline editable.');
+ let existing=localRow(row.offline_id);if(existing)return existing;
+ const copy={...row,sync_status:'enviado',sync_error:null};delete copy.id;
+ hpRows.push(copy);hpPersist();hpRenderMarkers();return copy;
+}
+async function getRow(id){let r=localRow(id);if(r)return r;if(!navigator.onLine)throw new Error('Este predio solo está en Supabase. Debes conectarte para descargarlo.');const {data,error}=await mappingSb.from('censo_homepass').select('*').eq('proyecto_id',project()).eq('tecnico_id',mappingUser.id).eq('offline_id',id).maybeSingle();if(error)throw error;if(!data)throw new Error('No se encontró el predio en tus registros.');return hydrateRemote(data)}
+async function edit(id){try{await getRow(id);map.closePopup();await hpEditar(id)}catch(e){alert('No se pudo editar: '+String(e.message||e))}}
+function updatePosition(){const p=moveMarker?.getLatLng();$('hpV155MovePosition').textContent=p?'Ubicación seleccionada: '+p.lat.toFixed(7)+', '+p.lng.toFixed(7):''}
+async function move(id){try{
+ const r=await getRow(id);if(!validPosition(r))throw new Error('El predio no tiene coordenadas válidas.');
+ hpV155MoveCancel();selected=r.offline_id;moveProject=project();map.closePopup();ensurePane();
+ const icon=L.divIcon({className:'hpV155Marker',html:'<div style="font-size:32px;text-align:center;filter:drop-shadow(0 0 4px white)">🏠</div>',iconSize:[46,46],iconAnchor:[23,28]});
+ moveMarker=L.marker([Number(r.LATITUDE),Number(r.LONGITUDE)],{draggable:true,icon,pane:'hpV155Pane',zIndexOffset:5000}).addTo(map);
+ moveMarker.on('dragend',updatePosition);
+ map.setView(moveMarker.getLatLng(),Math.max(19,map.getZoom()),{animate:true});
+ $('hpV155MoveTitle').textContent='Mover '+identity(r);$('hpV155MovePanel').style.display='block';updatePosition();
+ }catch(e){alert('No se puede mover: '+String(e.message||e))}}
+window.hpV155MoveCancel=function(){if(moveMarker){try{map.removeLayer(moveMarker)}catch(_){}}moveMarker=null;selected=null;moveProject=null;$('hpV155MovePanel').style.display='none'};
+window.hpV155MoveCenter=function(){if(!moveMarker)return;moveMarker.setLatLng(map.getCenter());updatePosition()};
+window.hpV155MoveSave=async function(){
+ if(!selected||!moveMarker||!home()||moveProject!==project())return alert('La asignación del proyecto cambió. Cancela el movimiento.');
+ const r=localRow(selected),pos=moveMarker.getLatLng();if(!r)return alert('El registro ya no está disponible.');
+ const manzana=(typeof mzTechFind==='function')?mzTechFind(pos.lat,pos.lng):null;
+ if(!manzana)return alert('La ubicación debe estar dentro de una de tus manzanas asignadas.');
+ if(Number(manzana.mz)!==Number(r.MZ))return alert('Este predio tiene el identificador '+identity(r)+' y solo puede moverse dentro de MZ '+r.MZ+'. Para cambiar de manzana se necesitaría una reasignación controlada.');
+ const originalLat=r.LATITUDE,originalLng=r.LONGITUDE,originalStatus=r.sync_status;
+ r.LATITUDE=Number(pos.lat.toFixed(8));r.LONGITUDE=Number(pos.lng.toFixed(8));r.sync_status='pendiente';r.sync_error=null;
+ try{hpPersist()}catch(e){r.LATITUDE=originalLat;r.LONGITUDE=originalLng;r.sync_status=originalStatus;alert('No se pudo guardar el movimiento local: '+e.message);return}
+ const movedId=selected;hpV155MoveCancel();hpRenderMarkers();localize(movedId);
+ if(navigator.onLine){try{await hpSync()}catch(e){console.warn('Movimiento pendiente de sincronizar',e)}}
+ alert('Ubicación actualizada. ID conservado: '+identity(r)+'. '+(r.sync_status==='enviado'?'Sincronizado.':'Pendiente de sincronización.'));
+};
+// True clickable hitbox (V154 used a 1×1 pixel icon). Houses above passive manzana polygons.
+window.hpRenderMarkers=function(){
+ if(typeof map==='undefined'||!map)return;
+ if(window.hpLayer){try{map.removeLayer(window.hpLayer)}catch(_){}}
+ window.hpLayer=null;if(!home())return;ensurePane();window.hpLayer=L.layerGroup().addTo(map);
+ hpRowsProject().forEach(r=>{if(!validPosition(r))return;
+  const id=identity(r)||'Predio',tipo=String(r.TIPOPREDIO||'').trim().toUpperCase();
+  const simbolos={
+   'CASA':['🏠','#22c55e'],'EDIFICIO':['🏢','#38bdf8'],'CONJUNTO':['🏘️','#8b5cf6'],
+   'CONJUNTO DE CASAS':['🏘️','#a78bfa'],'CONDOMINIO':['🏡','#0d9488'],
+   'CANCHA':['⚽','#f97316'],'ZONA VERDE':['🌳','#16a34a'],'LOTE':['🟫','#b45309'],
+   'PREDIO BALDIO':['🌱','#84cc16'],'POTRERO':['🌾','#a3a33a'],
+   'HOSPITAL':['🏥','#ef4444'],'CLINICA':['🏥','#f43f5e'],'HOTEL':['🏨','#c084fc'],
+   'COLEGIO':['🏫','#eab308'],'UNIVERSIDAD':['🎓','#0ea5e9'],'IGLESIA':['⛪','#a78bfa'],
+   'BOMBEROS':['🚒','#ef4444'],'BODEGA':['🏭','#64748b'],
+   'CENTRO COMERCIAL':['🏬','#06b6d4']
+  };
+  const [emoji,color]=simbolos[tipo]||['📍','#38bdf8'];
+  const icon=L.divIcon({className:'hpV155Marker',html:'<div class="hpV155House" title="'+esc(tipo)+'"><span class="hpV155Icon" style="background:'+color+'24;border:2px solid '+color+';border-radius:12px;padding:2px 7px;line-height:31px">'+emoji+'</span><span class="hpV155Id" style="border-color:'+color+'">'+esc(id)+'</span></div>',iconSize:[116,64],iconAnchor:[58,23]});
+  const m=L.marker([Number(r.LATITUDE),Number(r.LONGITUDE)],{icon,pane:'hpV155Pane',interactive:true,riseOnHover:true}).addTo(window.hpLayer);
+  const box=document.createElement('div'),title=document.createElement('b');title.textContent=emoji+' '+id;box.appendChild(title);
+  const d=document.createElement('div');d.textContent=[r.DIRECCION,r.TIPOPREDIO].filter(Boolean).join(' · ');box.appendChild(d);
+  box.appendChild(popupButton('✎ Editar',()=>edit(r.offline_id),'#0284c7'));
+  box.appendChild(popupButton('📍 Mover',()=>move(r.offline_id),'#7c3aed'));
+  m.bindPopup(box,{maxWidth:280,autoPan:true});
+ });
+};
+window.hpV155Editar=edit;window.hpV155Mover=move;
+// Search by full ID, spaced ID, or the manzana alone; leave legacy numeric search for Mapping.
+const originalOpen=window.abrirBuscarConsecutivo,originalSearch=window.buscarConsecutivoMapa;
+function updateSearchUI(){
+ const on=home(),modal=$('searchConsecutivoOverlay');if(!modal)return;
+ const btn=$('hpV155MenuBuscar');if(btn)btn.textContent=on?'🔎 Buscar predio':'🔎 Buscar por consecutivo';
+ const heading=modal.querySelector('.modalHead h2'),hint=modal.querySelector('.body .hint'),inp=$('searchConsecutivoInput');
+ if(heading)heading.textContent=on?'🔎 Buscar predio':'🔎 Buscar elemento';
+ if(hint)hint.innerHTML=on?'Busca por <b>ID-ENERGIZ</b> (por ejemplo, MZ113 P1), por número de manzana o por dirección.':'Digita el <b>CONSECUTIV</b> del elemento. Si existe en más de un polígono, podrás elegir cuál deseas ubicar.';
+ if(inp){inp.type=on?'text':'number';inp.inputMode=on?'text':'numeric';inp.placeholder=on?'Ej. MZ113 P1':'Ej. 125';}
+}
+window.abrirBuscarConsecutivo=function(...args){updateSearchUI();searchRemote=[];return originalOpen.apply(this,args)};
+function renderResults(list,query){const el=$('searchConsecutivoResults'),msg=$('searchConsecutivoMsg');el.replaceChildren();msg.style.display='block';msg.textContent=list.length?list.length+' predio(s) encontrados. Selecciona uno para ubicarlo.':'No se encontraron predios para «'+query+'».';
+ list.slice(0,70).forEach(r=>{const btn=document.createElement('button');btn.className='hpV155SearchCard';btn.type='button';const b=document.createElement('b');b.textContent='🏠 '+identity(r);const small=document.createElement('small');small.textContent=[r.DIRECCION,'MZ '+r.MZ,r.TIPOPREDIO].filter(Boolean).join(' · ');btn.append(b,small);btn.addEventListener('click',async()=>{
+  try{const row=await getRow(r.offline_id);cerrarBuscarConsecutivo();map.setView([Number(row.LATITUDE),Number(row.LONGITUDE)],Math.max(19,map.getZoom()),{animate:true});hpRenderMarkers();localize(row.offline_id)}catch(e){alert('No fue posible abrir el predio: '+String(e.message||e))}
+ });el.appendChild(btn)});
+}
+window.buscarConsecutivoMapa=async function(...args){if(!home())return originalSearch.apply(this,args);
+ const search=String($('searchConsecutivoInput')?.value||'').trim();if(!search){renderResults([],search);return}
+ const pid=project(),q=key(search);
+ let list=hpRowsProject().filter(r=>key(identity(r)).includes(q)||key(r.MZ)===q||key(r.DIRECCION).includes(q));
+ if(navigator.onLine&&mappingSb&&mappingUser?.id){
+  try{
+   // Restrict remote search to technician and project. Use bounded result set.
+   const select='offline_id,proyecto_id,tecnico_id,"ID-ENERGIZ",MZ,LOTEO,DIRECCION,TIPOPREDIO,LATITUDE,LONGITUDE,fecha_captura_app';
+   const safeTerm=search.replace(/[%_,.()]/g,'').trim();
+   const [idRes,dirRes]=await Promise.all([
+    mappingSb.from('censo_homepass').select(select).eq('proyecto_id',pid).eq('tecnico_id',mappingUser.id).ilike('ID-ENERGIZ','%'+safeTerm.split(/\s+/).join('%')+'%').limit(100),
+    mappingSb.from('censo_homepass').select(select).eq('proyecto_id',pid).eq('tecnico_id',mappingUser.id).ilike('DIRECCION','%'+safeTerm+'%').limit(100)
+   ]);
+   if(idRes.error)throw idRes.error;
+   if(pid!==project())return;
+   const found=[...(idRes.data||[]),...(!dirRes.error?dirRes.data||[]:[])].filter(r=>key(identity(r)).includes(q)||key(r.MZ)===q||key(r.DIRECCION).includes(q));
+   const existing=new Set(list.map(r=>r.offline_id));for(const r of found)if(!existing.has(r.offline_id)){list.push(r);existing.add(r.offline_id)};
+  }catch(e){console.warn('Buscador Homepass: consulta remota no disponible',e)}
+ }
+ list.sort((a,b)=>Number(a.MZ)-Number(b.MZ)||Number(a.LOTEO)-Number(b.LOTEO));renderResults(list,search);
+};
+const originalSelect=window.seleccionarProyecto;
+window.seleccionarProyecto=async function(...args){hpV155MoveCancel();const result=await originalSelect.apply(this,args);updateSearchUI();if(home())hpRenderMarkers();return result};
+// Correct the edit action in the record list too, not only in the map popup.
+const prevRecords=window.hpRenderRegistros;
+window.hpRenderRegistros=function(...args){const out=prevRecords.apply(this,args);const list=$('hpRecordsList');if(!list||!home())return out;
+ [...list.querySelectorAll('.hpRecord')].forEach((item,i)=>{const r=hpRowsProject()[i];if(!r)return;const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px;margin-top:8px;';actions.appendChild(popupButton('📍 Mover',()=>{hpCerrarRegistros();move(r.offline_id)},'#7c3aed'));item.appendChild(actions)});return out;
+};
+setTimeout(()=>{updateSearchUI();if(home())hpRenderMarkers()},800);
+})();
+</script>
+
+<!-- V156: recuperación automática de predios Homepass desde Supabase en cualquier dispositivo -->
+<style id="hpV156Styles">
+#hpV156Status{position:fixed;left:10px;bottom:74px;z-index:2495;max-width:min(380px,calc(100vw - 95px));font-size:11px;font-weight:700;padding:8px 11px;background:#082f49;color:#d9faff;border:1px solid #0ea5e9;border-radius:10px;box-shadow:0 3px 18px #0007;display:none;pointer-events:none}
+#hpV156Status.error{background:#450a0a;border-color:#ef4444;color:#fecaca}
+</style>
+<div id="hpV156Status" role="status" aria-live="polite"></div>
+<script>
+(function(){
+'use strict';
+const statusEl=document.getElementById('hpV156Status');
+let requestNo=0, inflight=null, lastSuccessProject='', lastSuccessAt=0;
+const currentPid=()=>String(typeof hpProject==='function'?hpProject():'');
+const currentUser=()=>String(mappingUser?.id||'');
+const home=()=>typeof hpType==='function'&&hpType();
+function inform(message,error=false){
+ if(!home()){statusEl.style.display='none';return}
+ statusEl.textContent=message;statusEl.classList.toggle('error',error);statusEl.style.display='block';
+ // Se mantiene el aviso de errores hasta el siguiente intento para que el técnico pueda leerlo.
+}
+function mapRefresh(){
+ if(!home())return;
+ if(typeof hpRenderMarkers==='function')hpRenderMarkers();
+ if(typeof hpRenderRegistros==='function'&&document.getElementById('hpRecordsOverlay')?.style.display==='block')hpRenderRegistros();
+ if(typeof actualizarCentro==='function')try{actualizarCentro()}catch(_){}
+}
+function mergeFromServer(rows,pid,uid){
+ const byId=new Map();
+ hpRows.forEach((r,i)=>{if(String(r.proyecto_id)===pid&&String(r.tecnico_id)===uid&&r.offline_id)byId.set(String(r.offline_id),i)});
+ let added=0,updated=0,retained=0;
+ for(const remote of rows){
+  if(String(remote.proyecto_id)!==pid||String(remote.tecnico_id)!==uid||!remote.offline_id)continue;
+  const index=byId.get(String(remote.offline_id));
+  if(index===undefined){
+   // Mantener offline_id original para que editar/mover haga UPDATE y no INSERT.
+   const item={...remote,sync_status:'enviado',sync_error:null};delete item.id;
+   hpRows.push(item);byId.set(String(remote.offline_id),hpRows.length-1);added++;
+  }else{
+   const local=hpRows[index];
+   if(local.sync_status==='pendiente'||local.sync_status==='error'){
+    // Nunca sobreescribir cambios/fotos pendientes del celular anterior.
+    // Solo completar rutas de fotos faltantes.
+    for(const name of HP_PHOTOS)if(!local[name]&&remote[name])local[name]=remote[name];
+    retained++;
+   }else if(String(hpEditing)===String(local.offline_id)&&document.getElementById('hpOverlay')?.classList.contains('open')){
+    retained++;
+   }else{
+    hpRows[index]={...remote,sync_status:'enviado',sync_error:null};delete hpRows[index].id;
+    updated++;
+   }
+  }
+ }
+ try{hpPersist()}catch(e){console.warn('Homepass: almacenamiento local lleno; los predios quedan disponibles en esta sesión:',e)}
+ return {added,updated,retained};
+}
+async function loadRemote(force=false){
+ if(!home()||!navigator.onLine||!mappingSb||!currentUser()||!currentPid())return;
+ const pid=currentPid(),uid=currentUser();
+ if(!force&&lastSuccessProject===pid+'|'+uid&&Date.now()-lastSuccessAt<10000)return;
+ if(inflight&&inflight.pid===pid&&inflight.uid===uid)return inflight.promise;
+ const token=++requestNo;
+ const promise=(async()=>{
+  inform('☁ Descargando predios del proyecto desde Supabase…');
+  try{
+   let all=[];
+   const limit=500;
+   for(let start=0;start<100000;start+=limit){
+    const {data,error}=await mappingSb.from('censo_homepass').select('*')
+      .eq('proyecto_id',pid).eq('tecnico_id',uid)
+      .order('created_at',{ascending:true}).range(start,start+limit-1);
+    if(error)throw error;
+    // Evita importar datos de otro proyecto si el técnico cambió durante la descarga.
+    if(token!==requestNo||!home()||currentPid()!==pid||currentUser()!==uid)return;
+    const part=data||[];all.push(...part);
+    if(part.length<limit)break;
+    inform('☁ Descargando registros Homepass: '+all.length+'…');
+   }
+   if(token!==requestNo||!home()||currentPid()!==pid||currentUser()!==uid)return;
+   const result=mergeFromServer(all,pid,uid);
+   lastSuccessProject=pid+'|'+uid;lastSuccessAt=Date.now();
+   mapRefresh();
+   // La ubicación inicial se determina después de recuperar el último registro del servidor.
+   if(result.added){
+    const valid=hpRowsProject().filter(r=>Number.isFinite(Number(r.LATITUDE))&&Number.isFinite(Number(r.LONGITUDE))&&Math.abs(Number(r.LATITUDE))<=90&&Math.abs(Number(r.LONGITUDE))<=180);
+    valid.sort((a,b)=>Date.parse(b.fecha_captura_app||b.created_at||0)-Date.parse(a.fecha_captura_app||a.created_at||0));
+    if(valid.length&&typeof map!=='undefined'&&map)map.setView([Number(valid[0].LATITUDE),Number(valid[0].LONGITUDE)],Math.max(18,map.getZoom()),{animate:false});
+   }
+   inform('✓ Homepass: '+all.length+' predio(s) en Supabase · '+result.added+' descargado(s) · '+hpRowsProject().filter(x=>x.sync_status!=='enviado').length+' pendiente(s)');
+   console.info('Homepass V156, registros descargados:',result);
+  }catch(e){
+   if(token===requestNo&&home()&&currentPid()===pid){
+    inform('No fue posible descargar los predios de Supabase: '+String(e.message||e),true);
+    console.error('Homepass V156: error de descarga',e);
+   }
+  }
+ })();
+ inflight={pid,uid,promise};
+ try{return await promise}finally{if(inflight?.promise===promise)inflight=null}
+}
+window.hpV156CargarPredios=()=>loadRemote(true);
+// Evitar que los registros de una segunda cuenta aparezcan al usar el mismo celular.
+const oldRows=window.hpRowsProject;
+window.hpRowsProject=function(...args){
+ const rows=oldRows.apply(this,args),uid=currentUser();
+ return uid?rows.filter(r=>String(r.tecnico_id||'')===uid):[];
+};
+// Conservar referencias a fotografías ya sincronizadas cuando se edita un predio descargado.
+const oldRead=window.hpReadForm;
+window.hpReadForm=function(...args){
+ const form=oldRead.apply(this,args);
+ const existing=hpRows.find(r=>String(r.offline_id)===String(hpEditing)&&String(r.tecnico_id)===currentUser());
+ if(existing)for(const name of HP_PHOTOS)if(existing[name])form[name]=existing[name];
+ return form;
+};
+const oldEdit=window.hpEditar;
+window.hpEditar=async function(...args){
+ const out=await oldEdit.apply(this,args);
+ const record=hpRowsProject().find(r=>String(r.offline_id)===String(args[0]));
+ if(record)for(const name of HP_PHOTOS){
+  if(!record[name])continue;
+  const state=document.querySelector('[data-hp-photo-state="'+name+'"]');
+  if(state&&state.textContent==='Sin fotografía')state.textContent='✓ Fotografía sincronizada en la nube (puedes reemplazarla)';
+ }
+ return out;
+};
+const oldSelect=window.seleccionarProyecto;
+window.seleccionarProyecto=async function(...args){
+ requestNo++;lastSuccessProject='';statusEl.style.display='none';
+ const result=await oldSelect.apply(this,args);
+ if(home())await loadRemote(true);
+ return result;
+};
+const oldRecords=window.hpAbrirRegistros;
+window.hpAbrirRegistros=function(...args){
+ const value=oldRecords.apply(this,args);
+ if(home())loadRemote(false);
+ return value;
+};
+window.addEventListener('online',()=>{if(home())loadRemote(true)});
+// La restauración automática del proyecto puede no pasar por seleccionarProyecto.
+window.addEventListener('load',()=>{
+ let attempts=0;
+ const check=()=>{
+  if(home()&&currentUser()&&currentPid())loadRemote(false);
+  else if(attempts++<12)setTimeout(check,1000);
+ };
+ setTimeout(check,1100);
+});
+})();
+</script>
+
+<!-- V157: vista previa de fotografías y formulario reducido en CANCHA, ZONA VERDE y LOTE -->
+<style id="hpV157Styles">
+#hpOverlay .hpV157Hide{display:none!important}
+#hpOverlay .hpV157PhotoCard{margin-top:8px;border:1px solid #36526d;border-radius:11px;padding:8px;background:#081725;min-height:42px}
+#hpOverlay .hpV157PhotoCard img{display:block;width:100%;max-height:235px;object-fit:contain;border-radius:7px;background:#030712;cursor:zoom-in}
+#hpOverlay .hpV157PhotoCard .hpV157PhotoNote{display:block;margin:5px 0;color:#a5b4c8;font-size:11px}
+#hpOverlay .hpV157PhotoCard .hpV157PhotoActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+#hpOverlay .hpV157PhotoCard button{border:1px solid #36526d;border-radius:7px;background:#114363;color:white;padding:6px 9px;font-size:11px}
+#hpV157Lightbox{display:none;position:fixed;inset:0;z-index:60000;background:rgba(0,0,0,.96);align-items:center;justify-content:center;padding:55px 12px 18px}
+#hpV157Lightbox.open{display:flex}#hpV157Lightbox img{max-width:100%;max-height:100%;object-fit:contain}#hpV157Lightbox button{position:absolute;right:12px;top:12px;background:#dc2626;color:white;border:0;border-radius:9px;padding:10px 14px;font-weight:800}
+</style>
+<div id="hpV157Lightbox" role="dialog" aria-label="Vista previa de fotografía"><button type="button" id="hpV157ClosePhoto">Cerrar ✕</button><img alt="Fotografía ampliada"></div>
+<script>
+(function(){
+'use strict';
+const root=document.getElementById('hpOverlay');if(!root)return;
+const control=n=>root.querySelector('[data-hp-name="'+n+'"]');
+const wrap=n=>root.querySelector('[data-hp-wrap="'+n+'"]');
+const exempt=()=>['CANCHA','ZONA VERDE','LOTE'].includes(String(control('TIPOPREDIO')?.value||'').trim().toUpperCase());
+const home=()=>typeof hpType==='function'&&hpType();
+// Los nombres de columnas se conservan; solo se cambia su visibilidad y validación.
+const noAddress=['VIA PPAL','Num','LETRAVIAPP','AGREGADOVI','IDENTIFICA','VIA2','LETRAVIASE','AGREADOVIA','Placa','DIRECCION','TIPODIRECC'];
+const noHomepass=['HOMRESIDEN','HOMECOMERI','CANTTOTALH','UNIDHABITA','HHPPXUNIDA','CANTCASAS','CANTEDIFCO','DISTRIBUCI'];
+const noOther=['ACTPREDIO','TIPACCESO','NOMADMINIS','CELADMINIS','PREDIOPLAC','CANTCONTAD','SERIALCONT','FOTOCONT','FOTOFACHAD'];
+const excluded=[...new Set([...noAddress,...noHomepass,...noOther])];
+const groups=[...root.querySelectorAll('fieldset.hpGroup')].filter(g=>{
+ const l=g.querySelector(':scope > legend');return l&&['DIRECCION','CONTACTO'].includes(l.textContent.trim().toUpperCase());
+});
+function apply(){
+ if(!home())return;
+ const skip=exempt();
+ excluded.forEach(n=>wrap(n)?.classList.toggle('hpV157Hide',skip));
+ groups.forEach(g=>g.classList.toggle('hpV157Hide',skip));
+ // Evitar validaciones HTML sobre entradas ocultas.
+ excluded.forEach(n=>{const el=control(n);if(el){if(skip){el.dataset.hpV157Skip='1';el.required=false}else if(el.dataset.hpV157Skip)delete el.dataset.hpV157Skip}});
+ if(skip){
+  // Dirección y cantidades no aplican: conservar los campos en SQL, pero no exigirlos.
+  const dir=control('DIRECCION');if(dir)dir.value='';
+  for(const n of ['HOMRESIDEN','HOMECOMERI','CANTTOTALH']){const el=control(n);if(el)el.value='0'}
+ }
+}
+root.addEventListener('change',e=>{if(e.target?.dataset?.hpName==='TIPOPREDIO')queueMicrotask(apply)});
+root.addEventListener('input',e=>{if(e.target?.dataset?.hpName==='TIPOPREDIO')queueMicrotask(apply)});
+const previousNew=window.hpNuevo;
+window.hpNuevo=function(...args){const out=previousNew.apply(this,args);apply();return out};
+const previousEdit=window.hpEditar;
+window.hpEditar=async function(...args){const out=await previousEdit.apply(this,args);apply();await previewAll();return out};
+// Usar los datos ya diligenciados y no enviar valores de uso/cobertura que no aplican.
+const previousRead=window.hpReadForm;
+window.hpReadForm=function(...args){const r=previousRead.apply(this,args);if(home()&&exempt()){
+  for(const n of [...noAddress,...noHomepass,...noOther]){
+    if(['HOMRESIDEN','HOMECOMERI','CANTTOTALH'].includes(n))r[n]=0;
+    else if(n==='FOTOCONT'||n==='FOTOFACHAD')continue;
+    else r[n]=null;
+  }
+ }return r};
+const previousSave=window.hpGuardar;
+window.hpGuardar=function(...args){apply();return previousSave.apply(this,args)};
+// Fotografías: vista previa local (IndexedDB) y remota (signed URL del bucket privado).
+const photoKeys=['FOTO2','FOTOFACHAD','FOTOCONT'];
+const caches=new Map();let request=0;
+const lightbox=document.getElementById('hpV157Lightbox');
+const imageBig=lightbox.querySelector('img');
+document.getElementById('hpV157ClosePhoto').onclick=()=>lightbox.classList.remove('open');
+lightbox.addEventListener('click',e=>{if(e.target===lightbox)lightbox.classList.remove('open')});
+function release(k){const c=caches.get(k);if(c?.objectUrl)URL.revokeObjectURL(c.objectUrl);caches.delete(k)}
+function ensureCard(k){const holder=root.querySelector('[data-hp-wrap="'+k+'"]');if(!holder)return null;
+ let card=holder.querySelector('.hpV157PhotoCard');if(!card){card=document.createElement('div');card.className='hpV157PhotoCard';card.innerHTML='<small class="hpV157PhotoNote">Sin fotografía</small><img alt="Vista previa" style="display:none"/><div class="hpV157PhotoActions"></div>';holder.appendChild(card)}return card;
+}
+function show(k,src,desc,objectUrl){const card=ensureCard(k);if(!card)return;release(k);caches.set(k,{src,objectUrl});const img=card.querySelector('img');img.src=src;img.style.display='block';img.onclick=()=>{imageBig.src=src;lightbox.classList.add('open')};card.querySelector('.hpV157PhotoNote').textContent=desc;const actions=card.querySelector('.hpV157PhotoActions');actions.replaceChildren();const view=document.createElement('button');view.type='button';view.textContent='🔍 Ampliar';view.onclick=()=>img.click();actions.append(view)}
+function empty(k,msg){const card=ensureCard(k);if(!card)return;release(k);const img=card.querySelector('img');img.removeAttribute('src');img.style.display='none';card.querySelector('.hpV157PhotoNote').textContent=msg||'Sin fotografía';card.querySelector('.hpV157PhotoActions').replaceChildren()}
+async function previewOne(k,token){if(!home()||!hpEditing)return;const id=hpEditing;const local=await hpPhotoGet(id+'|'+k).catch(()=>null);if(token!==request||id!==hpEditing)return;
+ if(local){const src=URL.createObjectURL(local);show(k,src,'✓ Fotografía guardada en el dispositivo',src);return}
+ const r=hpRows.find(x=>String(x.offline_id)===String(id));const path=String(r?.[k]||'').trim();
+ if(path&&navigator.onLine&&typeof mappingSb!=='undefined'){
+  const {data,error}=await mappingSb.storage.from('censo-homepass-fotos').createSignedUrl(path,1800);
+  if(token!==request||id!==hpEditing)return;
+  if(!error&&data?.signedUrl){show(k,data.signedUrl,'✓ Fotografía sincronizada (vista temporal)');return}
+  empty(k,'Fotografía remota: '+String(error?.message||'no disponible'));return;
+ }
+ empty(k,path?'Fotografía sincronizada: conecta internet para verla':'Sin fotografía');
+}
+async function previewAll(){const token=++request;await Promise.all(photoKeys.map(k=>previewOne(k,token)))}
+const originalPhoto=window.hpFotoElegida;
+window.hpFotoElegida=async function(el){const key=el.dataset.hpPhoto;await originalPhoto.call(this,el);if(key&&home())await previewOne(key,++request)};
+const oldNew=window.hpNuevo;
+window.hpNuevo=function(...args){++request;for(const k of photoKeys)empty(k);return oldNew.apply(this,args)};
+const oldClose=window.hpCerrar;
+window.hpCerrar=function(...args){++request;lightbox.classList.remove('open');photoKeys.forEach(release);return oldClose.apply(this,args)};
+photoKeys.forEach(ensureCard);
+})();
+</script>
+
+
+<!-- V159 · Iconos limpios, identificación y búsqueda de manzanas Homepass -->
+<style id="hpV159Style">
+/* El símbolo no tiene recuadro, fondo ni borde. Conserva la etiqueta independiente. */
+.hpV155House .hpV155Icon{background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important;display:inline-block!important;line-height:31px!important;filter:drop-shadow(0 2px 2px #000a)!important}
+#hpV159Search{display:none;position:fixed;inset:0;z-index:31000;background:rgba(2,6,23,.86);overflow-y:auto;padding:12px}
+#hpV159Search.open{display:block}
+#hpV159Search .hpV159Panel{max-width:610px;margin:5vh auto 50px;background:#0d1b2a;color:#f8fafc;border:1px solid #36526d;border-radius:16px;padding:14px;box-shadow:0 20px 60px #000a}
+#hpV159Search .hpV159Head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#hpV159Search .hpV159Head h2{margin:0;font-size:17px}
+#hpV159Search input{display:block;width:100%;margin:12px 0;background:#07111f;color:#fff;padding:12px;font-size:16px;border:1px solid #506b85;border-radius:10px}
+#hpV159Search .hpV159Results{max-height:55vh;overflow:auto;display:grid;gap:6px}
+#hpV159Search .hpV159Result{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#10253b;border:1px solid #31506c;color:#fff;border-radius:10px;padding:11px;text-align:left;font-size:13px;cursor:pointer}
+#hpV159Search .hpV159Result small{color:#aec6dd}
+#hpV159Search .hpV159Close{border:0;border-radius:8px;background:#dc2626;color:#fff;padding:8px 12px;font-weight:800}
+#hpV159Search .hpV159Tip{font-size:11px;color:#b5c7db;margin:6px 0 10px}
+</style>
+<div id="hpV159Search" role="dialog" aria-modal="true" aria-label="Buscar manzana">
+ <div class="hpV159Panel">
+  <div class="hpV159Head"><h2>🗺️ Buscar manzana</h2><button class="hpV159Close" type="button" onclick="hpV159CerrarBuscar()">Cerrar ✕</button></div>
+  <div class="hpV159Tip">Busca por el número de manzana (por ejemplo, 113). Solo se muestran las manzanas asignadas a este técnico.</div>
+  <input id="hpV159Query" type="search" inputmode="numeric" placeholder="Número de manzana: 113" oninput="hpV159Filtrar()" autocomplete="off">
+  <div id="hpV159Results" class="hpV159Results"></div>
+ </div>
+</div>
+<script>
+(function(){
+ 'use strict';
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const home=()=>typeof hpType==='function'&&hpType();
+ const menu=document.getElementById('sideMenu');
+ const btn=document.createElement('button');btn.type='button';btn.id='hpV159MenuManzana';btn.textContent='🗺️ Buscar manzana';btn.style.display='none';
+ btn.onclick=()=>{if(typeof toggleSideMenu==='function')toggleSideMenu(false);window.hpV159AbrirBuscar()};
+ if(menu){const prior=document.getElementById('hpV155MenuBuscar');if(prior)prior.insertAdjacentElement('afterend',btn);else menu.appendChild(btn)}
+ const dialog=document.getElementById('hpV159Search');
+ window.hpV159CerrarBuscar=()=>{dialog.classList.remove('open')};
+ dialog.addEventListener('click',e=>{if(e.target===dialog)window.hpV159CerrarBuscar()});
+ dialog.addEventListener('keydown',e=>{if(e.key==='Escape')window.hpV159CerrarBuscar()});
+ function all(){return home()&&Array.isArray(mzTechManzanas)?mzTechManzanas:[]}
+ const label=m=>'MZ '+m.mz;
+ function localizar(m){
+  if(!home()||typeof map==='undefined'||!map)return;
+  const l=L.geoJSON({type:'Feature',geometry:m.geometria,properties:{}});
+  const bounds=l.getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(.55),{maxZoom:19,animate:true});
+  window.hpV159CerrarBuscar();
+  // Resaltado temporal: no altera la capa ni las asignaciones.
+  const overlay=L.geoJSON({type:'Feature',geometry:m.geometria,properties:{}},{interactive:false,style:{color:'#ffffff',weight:5,fillOpacity:.08,dashArray:'7 6'}}).addTo(map);
+  setTimeout(()=>{if(map.hasLayer(overlay))map.removeLayer(overlay)},2800);
+  setTimeout(()=>{if(typeof mzTechDraw==='function'&&home())mzTechDraw()},2850);
+ }
+ window.hpV159IrManzana=mz=>{const m=all().find(x=>String(x.mz)===String(mz));if(m)localizar(m)};
+ window.hpV159Filtrar=()=>{
+  const q=String(document.getElementById('hpV159Query')?.value||'').trim().toLowerCase().replace(/^mz\s*/,'');
+  const result=document.getElementById('hpV159Results');if(!result)return;
+  result.replaceChildren();
+  const found=all().filter(m=>!q||String(m.mz).toLowerCase().includes(q)).sort((a,b)=>Number(a.mz)-Number(b.mz));
+  if(!found.length){result.textContent='No hay manzanas asignadas que coincidan con la búsqueda.';return}
+  for(const m of found){const b=document.createElement('button');b.className='hpV159Result';b.type='button';
+   const left=document.createElement('span'),right=document.createElement('small');left.textContent=label(m)+' · Grupo '+m.grupo;right.textContent='Ver en mapa';
+   const dot=document.createElement('span');dot.style.cssText='display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:8px;background:'+(m.color||mzTechColor(m.grupo));
+   left.prepend(dot);b.append(left,right);b.onclick=()=>localizar(m);result.appendChild(b)}
+ };
+ window.hpV159AbrirBuscar=()=>{
+  if(!home())return;
+  dialog.classList.add('open');const input=document.getElementById('hpV159Query');input.value='';window.hpV159Filtrar();input.focus();
+ };
+ function update(){btn.style.display=home()?'':'none'}
+ // V147 dibujaba polígonos con interactive:false, de ahí que no se pudieran tocar.
+ window.mzTechDraw=function(){
+  if(typeof map==='undefined'||!map)return;
+  if(mzTechLayer){map.removeLayer(mzTechLayer);mzTechLayer=null}
+  if(!home()){update();return}
+  const feats=all().filter(m=>m.geometria).map(r=>({type:'Feature',geometry:r.geometria,properties:r}));
+  mzTechLayer=L.geoJSON(feats,{
+   interactive:true,
+   style:f=>({color:f.properties.color||mzTechColor(f.properties.grupo),fillColor:f.properties.color||mzTechColor(f.properties.grupo),fillOpacity:.23,weight:2.5}),
+   onEachFeature:(feature,layer)=>{
+    const r=feature.properties;
+    layer.bindTooltip('MZ '+r.mz,{sticky:true,direction:'top'});
+    const box=document.createElement('div');box.style.minWidth='155px';
+    const title=document.createElement('strong');title.textContent='Manzana '+r.mz;box.appendChild(title);
+    const detail=document.createElement('div');detail.style.margin='6px 0';detail.textContent='Grupo '+r.grupo+' · Área asignada';box.appendChild(detail);
+    const go=document.createElement('button');go.type='button';go.textContent='🔎 Centrar en MZ '+r.mz;
+    go.style.cssText='border:0;border-radius:7px;padding:7px 9px;background:#087fa5;color:white;font-weight:800;cursor:pointer';
+    go.onclick=()=>{map.closePopup();localizar(r)};box.appendChild(go);layer.bindPopup(box,{maxWidth:240});
+   }
+  }).addTo(map);
+  // Mover el polígono al fondo permite seleccionar las casas que se superponen.
+  if(typeof mzTechLayer.bringToBack==='function')mzTechLayer.bringToBack();
+  update();
+ };
+ const oldSelect=window.seleccionarProyecto;
+ window.seleccionarProyecto=async function(...args){const result=await oldSelect.apply(this,args);update();if(home())mzTechDraw();return result};
+ const oldIndicator=window.actualizarIndicadorTipoProyecto;
+ window.actualizarIndicadorTipoProyecto=function(...args){const result=oldIndicator.apply(this,args);update();return result};
+ window.addEventListener('load',()=>{setTimeout(update,600);setTimeout(()=>{if(home())mzTechDraw()},1600)});
+})();
+</script>
+
+
+<!-- V160 · Censo Homepass: vías distintas y tipo de predio previo a fotografías -->
+<style id="hpV160Styles">
+ #hpOverlay .hpV160RuleNote{font-size:11px;color:#94a3b8;margin:4px 0 7px;line-height:1.4}
+ #hpOverlay .hpV160Error{font-size:11px;color:#fca5a5;margin-top:5px;font-weight:800}
+ #hpOverlay select.hpV160Conflict{border:2px solid #ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.18)!important}
+ #hpOverlay .hpV160First{border-left:3px solid #22d3ee;padding-left:10px}
+</style>
+<script id="hpV160Script">
+(function(){
+ 'use strict';
+ const root=document.getElementById('hpOverlay');if(!root)return;
+ const field=name=>root.querySelector('[data-hp-name="'+name+'"]');
+ const wrap=name=>root.querySelector('[data-hp-wrap="'+name+'"]');
+ const main=field('VIA PPAL'),secondary=field('IDENTIFICA'),type=field('TIPOPREDIO');
+ if(!main||!secondary||!type)return;
+ const home=()=>typeof hpType==='function'&&hpType();
+ const same=()=>!!main.value&&!!secondary.value&&main.value.trim().toUpperCase()===secondary.value.trim().toUpperCase();
+ const mainWrap=wrap('VIA PPAL'),secWrap=wrap('IDENTIFICA'),typeWrap=wrap('TIPOPREDIO');
+ const typePhoto=wrap('FOTO2')||wrap('FOTOFACHAD')||wrap('FOTOCONT');
+ // El tipo de predio se diligencia antes de abrir la cámara, pero se conservan los datos al editar.
+ if(typeWrap&&typePhoto&&typePhoto.parentElement){
+  typePhoto.parentElement.insertBefore(typeWrap,typePhoto);
+  typeWrap.classList.add('hpV160First');
+  const note=document.createElement('div');note.className='hpV160RuleNote';
+  note.textContent='1. Selecciona el tipo de predio antes de capturar fotografías; los campos se adaptarán a esta elección.';
+  typeWrap.appendChild(note);
+ }
+ // VIA PPAL y IDENTIFICA representan el TIPO de vía; VIA2 es el número de la vía secundaria.
+ const explanation=document.createElement('div');explanation.className='hpV160RuleNote';
+ explanation.textContent='El identificador de vía secundaria debe ser diferente del tipo de vía principal.';
+ if(secWrap)secWrap.appendChild(explanation);
+ const warning=document.createElement('div');warning.className='hpV160Error';warning.hidden=true;
+ warning.textContent='La vía principal y la secundaria no pueden ser del mismo tipo.';
+ if(secWrap)secWrap.appendChild(warning);
+ function refreshOptions(){
+  const principal=main.value,secundaria=secondary.value;
+  Array.from(secondary.options).forEach(o=>{o.disabled=!!principal&&!!o.value&&o.value===principal});
+  Array.from(main.options).forEach(o=>{o.disabled=!!secundaria&&!!o.value&&o.value===secundaria});
+  const conflict=same();
+  main.classList.toggle('hpV160Conflict',conflict);
+  secondary.classList.toggle('hpV160Conflict',conflict);
+  warning.hidden=!conflict;
+  main.setCustomValidity(conflict?'El tipo de vía principal y secundaria debe ser diferente.':'');
+  secondary.setCustomValidity(conflict?'El tipo de vía principal y secundaria debe ser diferente.':'');
+  return !conflict;
+ }
+ // Si el usuario cambia una vía, se descarta la selección opuesta incompatible.
+ function onChange(changed){
+  if(!home())return;
+  const other=changed===main?secondary:main;
+  if(changed.value&&changed.value===other.value){
+   other.value='';
+   if(typeof hpMsg==='function')hpMsg('El tipo de vía no se puede repetir. Selecciona una vía diferente en '+(other===main?'Vía principal.':'Vía secundaria.'));
+   other.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  refreshOptions();
+ }
+ main.addEventListener('change',()=>onChange(main));
+ secondary.addEventListener('change',()=>onChange(secondary));
+ // Evitar capturar fotografías sin haber identificado previamente el tipo de predio.
+ root.addEventListener('click',e=>{
+  const file=e.target.closest?.('input[data-hp-photo]');
+  if(!home()||!file||type.value)return;
+  e.preventDefault();e.stopPropagation();
+  if(typeof hpMsg==='function')hpMsg('Selecciona primero el TIPO DE PREDIO antes de tomar fotografías.');
+  type.focus();type.scrollIntoView({behavior:'smooth',block:'center'});
+ },true);
+ function restore(){refreshOptions()}
+ const oldNew=window.hpNuevo;
+ if(typeof oldNew==='function')window.hpNuevo=function(...args){const r=oldNew.apply(this,args);queueMicrotask(restore);return r};
+ const oldEdit=window.hpEditar;
+ if(typeof oldEdit==='function')window.hpEditar=async function(...args){const r=await oldEdit.apply(this,args);restore();return r};
+ const oldSave=window.hpGuardar;
+ if(typeof oldSave==='function')window.hpGuardar=function(...args){
+  if(home()&&!refreshOptions()){
+   if(typeof hpMsg==='function')hpMsg('No es posible guardar: la vía principal y la secundaria tienen el mismo tipo.');
+   secondary.focus();secondary.scrollIntoView({behavior:'smooth',block:'center'});return;
+  }
+  return oldSave.apply(this,args);
+ };
+ refreshOptions();
+})();
+</script>
+
 </body></html>
-
-
-
