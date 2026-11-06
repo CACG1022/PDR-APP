@@ -3637,6 +3637,15 @@ header{
             <option value="admin">Administrador</option>
           </select>
           <button class="btn purple" onclick="crearUsuarioMapping()">Crear usuario</button>
+          <section id="relevaAdminGlobalPanel" style="display:none;margin-top:18px;padding:14px;border:1px solid #2b6078;border-radius:12px;background:rgba(12,43,61,.7)">
+            <h3 style="margin:0 0 6px;color:#c9faff">Administradores globales · Solo propietario</h3>
+            <p style="font-size:12px;color:#b9d8e6;line-height:1.5;margin:0 0 12px">Crea un administrador con acceso completo a todas las empresas y proyectos. No requiere empresa asignada.</p>
+            <label>Nombre</label><input id="relevaGlobalNombre" placeholder="Nombre completo" autocomplete="off">
+            <label>Correo electrónico *</label><input id="relevaGlobalEmail" type="email" placeholder="correo@empresa.com" autocomplete="off">
+            <label>Contraseña temporal *</label><input id="relevaGlobalPassword" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+            <button type="button" class="btn blue" id="relevaGlobalCrearBtn" onclick="relevaCrearAdminGlobal()">Crear administrador global</button>
+            <div id="relevaGlobalMsg" class="hint" role="status">Acceso reservado al propietario principal de RELEVA.</div>
+          </section>
           <div id="uMsg" class="hint">Los usuarios se crean en servicio de autenticación y en mapping_usuarios.</div>
         </div>
 
@@ -5594,27 +5603,29 @@ function pintarUsuarios(){
     ? lista.map(u=>{
         const rol=String(u.rol||'tecnico').toLowerCase();
         const esYo=String(u.id)===String(user?.id);
+        const esGlobal=rol==='admin'&&!u.empresa_id;
+        const bloquearGlobal=rol==='admin'&&!window.relevaEsPropietario;
 
         return `<tr>
           <td>${esc(u.nombre||'')}${esYo?'<div class="userRoleCurrent">Tu usuario actual</div>':''}</td>
-          <td>${esc(u.empresa_nombre||'SIN EMPRESA')}</td>
+          <td>${esGlobal?'GLOBAL · Todas las empresas':esc(u.empresa_nombre||'SIN EMPRESA')}</td>
           <td>${esc(u.email)}</td>
           <td><span class="roleBadge ${esc(rol)}">${esc(rol)}</span></td>
           <td>
             <div class="userRoleEditor">
-              <select id="rolUsuario_${esc(u.id)}">
+              <select id="rolUsuario_${esc(u.id)}" ${bloquearGlobal?'disabled':''}>
                 <option value="tecnico" ${rol==='tecnico'?'selected':''}>Técnico</option>
                 <option value="coordinador" ${rol==='coordinador'?'selected':''}>Coordinador</option>
                 <option value="admin" ${rol==='admin'?'selected':''}>Administrador</option>
               </select>
-              <button class="btn small blue userRoleSave" onclick="guardarRolUsuario('${esc(u.id)}')">Guardar</button>
+              ${bloquearGlobal?'':`<button class="btn small blue userRoleSave" onclick="guardarRolUsuario('${esc(u.id)}')">Guardar</button>`}
             </div>
           </td>
           <td><span class="inlineStatus ${u.activo===false?'inactive':'active'}">${u.activo===false?'Inactivo':'Activo'}</span></td>
           <td>
             <div class="rowActions">
-              <button class="btn small gray" onclick="abrirEditarUsuario('${esc(u.id)}')">Editar</button>
-              ${esYo?'':`<button class="btn small danger" onclick="eliminarUsuarioMapping('${esc(u.id)}')">Eliminar</button>`}
+              ${bloquearGlobal?'Acceso protegido':`<button class="btn small gray" onclick="abrirEditarUsuario('${esc(u.id)}')">Editar</button>`}
+              ${esYo||bloquearGlobal?'':`<button class="btn small danger" onclick="eliminarUsuarioMapping('${esc(u.id)}')">Eliminar</button>`}
             </div>
           </td>
         </tr>`;
@@ -5687,6 +5698,7 @@ async function guardarRolUsuario(usuarioId){
   }
 
   const usuario=usuarios.find(u=>String(u.id)===String(usuarioId));
+  if(usuario?.rol==='admin'&&!window.relevaEsPropietario)return alert('Solo el propietario puede modificar administradores.');
   if(!usuario){
     alert('No se encontró el usuario seleccionado.');
     return;
@@ -5697,6 +5709,7 @@ async function guardarRolUsuario(usuarioId){
 
   const rolAnterior=String(usuario.rol||'tecnico').toLowerCase();
   const nuevoRol=String(select.value||'').toLowerCase();
+  if((nuevoRol==='admin'||rolAnterior==='admin')&&!await relevaConsultarPropietario())return alert('Solo el propietario puede asignar o modificar cuentas con rol administrador.');
 
   if(!['tecnico','coordinador','admin'].includes(nuevoRol)){
     alert('El rol seleccionado no es válido.');
@@ -5800,6 +5813,7 @@ async function guardarRolUsuario(usuarioId){
 
 async function crearUsuarioMapping(){
   if(perfil?.rol!=='admin')return alert('Solo un administrador puede crear usuarios.');
+  if(uRol.value==='admin'&&!await relevaConsultarPropietario())return alert('Solo el propietario puede crear cuentas con rol administrador.');
 
   const empresa_id=uEmpresa.value;
   const nombre=uNombre.value.trim();
@@ -13785,6 +13799,7 @@ async function eliminarEmpresaMapping(id){
 
 function abrirGestionUsuarios(){
   if(!esAdminMaster())return alert('Solo un administrador puede gestionar usuarios.');
+  relevaConsultarPropietario();
   llenarSelects();
   pintarUsuarios();
   document.getElementById('usuariosModal')?.classList.add('open');
@@ -13797,6 +13812,7 @@ function abrirEditarUsuario(id){
   if(!esAdminMaster())return;
   const u=usuarios.find(x=>String(x.id)===String(id));
   if(!u)return;
+  if(u.rol==='admin'&&!window.relevaEsPropietario)return alert('Solo el propietario puede editar administradores.');
 
   editUsuarioId.value=u.id;
   editUsuarioNombre.value=u.nombre||'';
@@ -13825,6 +13841,7 @@ async function guardarEdicionUsuario(){
 
   const empresa_id=editUsuarioEmpresa.value||null;
   const rol=editUsuarioRol.value;
+  if((rol==='admin'||u.rol==='admin')&&!await relevaConsultarPropietario())return alert('Solo el propietario puede editar cuentas administradoras.');
   if(rol==='coordinador'&&!empresa_id){
     return alert('Un coordinador debe tener una empresa asignada.');
   }
@@ -13853,6 +13870,7 @@ async function eliminarUsuarioMapping(id){
 
   const u=usuarios.find(x=>String(x.id)===String(id));
   if(!u)return;
+  if(u.rol==='admin'&&!await relevaConsultarPropietario())return alert('Solo el propietario puede desactivar administradores.');
 
   if(!confirm(
     `¿Eliminar el acceso de ${u.nombre||u.email}?\n\n`+
@@ -17633,6 +17651,63 @@ window.relevaInfraExportarPDF=function(){
 #avanceModal .dashTables .table td a{color:#8de7ff!important;text-decoration:underline!important}
 </style>
 
+<!-- V153 · Administradores globales protegidos por permisos de base de datos -->
+<script id="relevaV153AdministradoresGlobales">
+window.relevaEsPropietario=false;
+async function relevaConsultarPropietario(){
+  const panel=document.getElementById('relevaAdminGlobalPanel');
+  if(panel)panel.style.display='none';
+  try{
+    const {data,error}=await sb.rpc('releva_puede_crear_admin_global');
+    if(error){console.warn('Configuración de propietario pendiente:',error.message);return false;}
+    window.relevaEsPropietario=data===true;
+    if(panel)panel.style.display=window.relevaEsPropietario?'block':'none';
+    const adminOpt=document.querySelector('#uRol option[value=admin]');
+    if(adminOpt){adminOpt.disabled=!window.relevaEsPropietario;if(adminOpt.selected&&!window.relevaEsPropietario)document.getElementById('uRol').value='tecnico';}
+    if(document.getElementById('usuariosModal')?.classList.contains('open'))pintarUsuarios();
+    return window.relevaEsPropietario;
+  }catch(e){console.warn('No fue posible verificar el propietario:',e);return false;}
+}
+async function relevaCrearAdminGlobal(){
+  const msg=document.getElementById('relevaGlobalMsg');
+  const btn=document.getElementById('relevaGlobalCrearBtn');
+  const nombre=String(document.getElementById('relevaGlobalNombre')?.value||'').trim();
+  const email=String(document.getElementById('relevaGlobalEmail')?.value||'').trim().toLowerCase();
+  const password=String(document.getElementById('relevaGlobalPassword')?.value||'');
+  if(!email||!password)return alert('Ingresa correo y contraseña temporal.');
+  if(password.length<8)return alert('La contraseña temporal debe tener al menos 8 caracteres.');
+  if(!await relevaConsultarPropietario())return alert('Esta operación está reservada exclusivamente al propietario de RELEVA. Verifica que ejecutaste el SQL V153.');
+  if(!confirm(`¿Crear un administrador GLOBAL con acceso a todas las empresas y proyectos?\n\n${email}\n\nEste usuario tendrá los mismos permisos administrativos generales que tú.`))return;
+  btn.disabled=true;
+  try{
+    msg.textContent='Creando acceso en el servicio de autenticación...';
+    // Cliente temporal aislado: NO reemplaza la sesión del propietario.
+    const temporal=supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'releva-global-signup-temp'}
+    });
+    const {data:created,error:authError}=await temporal.auth.signUp({
+      email,password,options:{data:{nombre:nombre||email}}
+    });
+    if(authError)throw authError;
+    const uid=created?.user?.id;
+    if(!uid)throw Error('El servicio de autenticación no devolvió el ID del usuario.');
+    msg.textContent='Asignando acceso global protegido...';
+    const {data:profile,error:profileError}=await sb.from('mapping_usuarios').upsert({
+      id:uid,email,nombre:nombre||email,rol:'admin',empresa_id:null,activo:true
+    },{onConflict:'id'}).select('id').single();
+    if(profileError)throw Error('Se creó la cuenta de acceso, pero no se pudo asignar el perfil global: '+profileError.message+'; revisa el usuario en Authentication.');
+    if(!profile?.id)throw Error('No se confirmó el perfil global en la base de datos.');
+    document.getElementById('relevaGlobalNombre').value='';
+    document.getElementById('relevaGlobalEmail').value='';
+    document.getElementById('relevaGlobalPassword').value='';
+    msg.textContent='Administrador global creado. El nuevo usuario podrá ingresar cuando su correo esté confirmado, si la verificación está activa.';
+    await cargarUsuarios();
+  }catch(e){msg.textContent='Error: '+(e?.message||e);console.error('Creación de administrador global:',e);}
+  finally{btn.disabled=false;}
+}
+</script>
+
 </body>
 </html>
+
 
