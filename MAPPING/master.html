@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>PDR-APP · Master V127 · Manzanas Homepass · V79 Google Maps · V74 · Editor visual de etiquetas</title>
+<title>RELEVA · Master V127 · Manzanas Homepass · V79 Google Maps · V74 · Editor visual de etiquetas</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2336,8 +2336,8 @@ header::after{
 .masterBrand{gap:9px!important;min-width:0}
 .masterLogoWrap{
   flex:0 0 auto;
-  width:88px;
-  height:38px;
+  width:112px;
+  height:42px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2349,7 +2349,7 @@ header::after{
 }
 .pdrMasterLogo{
   width:100%;
-  max-height:29px;
+  max-height:35px;
   display:block;
   object-fit:contain;
   filter:drop-shadow(0 0 9px rgba(92,239,255,.08));
@@ -2508,7 +2508,7 @@ aside .mapFilterCard:hover{border-color:rgba(103,232,249,.22)!important}
 
 /* En pantallas medianas conservamos scroll y no deformamos la barra. */
 @media(max-width:1350px){
-  .masterLogoWrap{width:72px}
+  .masterLogoWrap{width:92px}
   .masterBrandTitle h1{font-size:13px!important}
   .masterBrandCopy small{display:none}
   .topHeaderActions .topActionBtn,.topHeaderActions .deliverablesBtn{padding:7px 9px!important;gap:5px!important;font-size:8px!important}
@@ -3249,11 +3249,11 @@ header{
   <div class="brand masterBrand">
     <div class="masterLogoWrap">
       <img class="pdrMasterLogo"
-        src="https://static.wixstatic.com/media/63e6ec_6f519a0e397d4f6fbe3f82ce81606614~mv2.png/v1/fill/w_529,h_173,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/PDR-1.png"
-        alt="PDR-APP" loading="eager" referrerpolicy="no-referrer">
+        src="https://static.wixstatic.com/media/63e6ec_ed565acf4e4e4b02b7718e378e331c61~mv2.png/v1/fill/w_600,h_200,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RELEVA%20V3%20BLANCO.png"
+        alt="RELEVA" loading="eager" referrerpolicy="no-referrer">
     </div>
     <div class="masterBrandCopy">
-      <div class="masterBrandTitle"><h1>MASTER MAPPING Y SITE SURVEY</h1><span>MASTER</span></div>
+      <div class="masterBrandTitle"><span>MASTER</span></div>
       <small>Proyectos · técnicos · filtros avanzados · entregables</small>
     </div>
   </div>
@@ -3633,7 +3633,7 @@ header{
             <option value="admin">Administrador</option>
           </select>
           <button class="btn purple" onclick="crearUsuarioMapping()">Crear usuario</button>
-          <div id="uMsg" class="hint">Los usuarios se crean en Supabase Auth y en mapping_usuarios.</div>
+          <div id="uMsg" class="hint">Los usuarios se crean en servicio de autenticación y en mapping_usuarios.</div>
         </div>
 
         <div class="managementPanel">
@@ -3748,8 +3748,8 @@ header{
             <div class="pdrTagToggleHint">Si activas esta opción, se mostrará el editor visual para personalizar manualmente las etiquetas, franjas, mini mapa y logotipo.</div>
             <div class="pdrTagEditor hidden" data-etiqueta-editor="crear">
 <div class="pdrTemplateLibrary" data-pdr-template-manager>
-  <h4>Biblioteca de plantillas de etiquetas · Supabase</h4>
-  <p>Las plantillas se almacenan en Supabase por empresa y se comparten entre computadores. Al aplicar una plantilla, guarda la configuración del proyecto para actualizar Mapping.</p>
+  <h4>Biblioteca de plantillas de etiquetas · Base de datos</h4>
+  <p>Las plantillas se almacenan en Base de datos por empresa y se comparten entre computadores. Al aplicar una plantilla, guarda la configuración del proyecto para actualizar Mapping.</p>
   <div class="pdrTemplateInputs">
     <label>Nombre de la plantilla<input data-template-name maxlength="70" placeholder="Ej. Etiquetas FO Bogotá"></label>
     <label>Plantillas guardadas<select data-template-list><option value="">Selecciona una plantilla…</option></select></label>
@@ -3812,7 +3812,7 @@ header{
             <h3>⬡ Archivo de polígonos</h3>
             <div class="hint">
               Selecciona el archivo directamente desde tu computador. El MASTER lo validará y lo
-              almacenará en <b>Supabase Storage</b>; ya no necesitas publicarlo en GitHub.
+              almacenará en <b>Base de datos (almacenamiento)</b>; ya no necesitas publicarlo en GitHub.
             </div>
 
             <label>Archivo *</label>
@@ -3901,8 +3901,8 @@ header{
             <div class="pdrTagToggleHint">Al activar el geoetiquetado podrás editar visualmente la plantilla de fotos de este proyecto.</div>
             <div class="pdrTagEditor hidden" data-etiqueta-editor="existente">
 <div class="pdrTemplateLibrary" data-pdr-template-manager>
-  <h4>Biblioteca de plantillas de etiquetas · Supabase</h4>
-  <p>Las plantillas se almacenan en Supabase por empresa y se comparten entre computadores. Al aplicar una plantilla, guarda la configuración del proyecto para actualizar Mapping.</p>
+  <h4>Biblioteca de plantillas de etiquetas · Base de datos</h4>
+  <p>Las plantillas se almacenan en Base de datos por empresa y se comparten entre computadores. Al aplicar una plantilla, guarda la configuración del proyecto para actualizar Mapping.</p>
   <div class="pdrTemplateInputs">
     <label>Nombre de la plantilla<input data-template-name maxlength="70" placeholder="Ej. Etiquetas FO Bogotá"></label>
     <label>Plantillas guardadas<select data-template-list><option value="">Selecciona una plantilla…</option></select></label>
@@ -3979,7 +3979,7 @@ header{
       <button type="button" class="btn blue" onclick="pdrCamposPlantillaGuardar()">💾 Guardar plantilla</button>
     </div>
     <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:8px">
-      <label style="margin:0">Plantillas guardadas en Supabase<select id="pdrCamposPlantillaSelect"><option value="">Seleccionar plantilla…</option></select></label>
+      <label style="margin:0">Plantillas guardadas en Base de datos<select id="pdrCamposPlantillaSelect"><option value="">Seleccionar plantilla…</option></select></label>
       <button type="button" class="btn blue" onclick="pdrCamposPlantillaAplicar()">↙ Cargar plantilla</button>
     </div>
     <div class="miniActions" style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap">
@@ -4147,7 +4147,7 @@ header{
 
       <div class="projectDeleteWarning">
         <b>Esta eliminación es irreversible desde el MASTER.</b><br>
-        Se eliminarán los puntos levantados, fotografías registradas en Supabase,
+        Se eliminarán los puntos levantados, fotografías registradas en Base de datos,
         asignaciones, polígonos del catálogo y ubicación en vivo asociada al proyecto.
         <br><br>
         Para confirmar, escribe exactamente:
@@ -5405,7 +5405,7 @@ async function eliminarProyectoDefinitivamente(){
       if(error)throw new Error('Polígonos: '+error.message);
     }
 
-    // 8. Archivo(s) de polígonos del proyecto en Supabase Storage.
+    // 8. Archivo(s) de polígonos del proyecto en Base de datos (almacenamiento).
     try{
       const {data:polyFiles,error:listPolyError}=await sb.storage
         .from(POLIGONOS_BUCKET)
@@ -5432,7 +5432,7 @@ async function eliminarProyectoDefinitivamente(){
       console.warn('Limpieza Storage polígonos:',e);
     }
 
-    // 9. Cartografía del proyecto en Supabase Storage.
+    // 9. Cartografía del proyecto en Base de datos (almacenamiento).
     if(p.cartografia_path){
       const {error:cartError}=await sb.storage
         .from(CARTOGRAFIA_BUCKET)
@@ -6111,7 +6111,7 @@ function actualizarEstadoPoligonosStorageMaster(){
   }
 
   const origen=path
-    ? `Supabase Storage · ${POLIGONOS_BUCKET}`
+    ? `Base de datos (almacenamiento) · ${POLIGONOS_BUCKET}`
     : 'URL externa / proyecto legacy';
 
   box.className='polygonStorageStatus ok';
@@ -6172,7 +6172,7 @@ async function subirArchivoPoligonosStorage(proyecto,archivo,analisis=null){
     upsert:true,
     contentType:'application/geo+json'
   });
-  if(upError)throw new Error('Supabase Storage (subida/sobrescritura en mapping-poligonos): '+(upError.message||upError));
+  if(upError)throw new Error('Base de datos (almacenamiento) (subida/sobrescritura en mapping-poligonos): '+(upError.message||upError));
 
   const publicUrl=urlPublicaStoragePoligonos(path);
   if(!publicUrl)throw new Error('El archivo se guardó, pero no se pudo obtener su URL pública.');
@@ -6191,7 +6191,7 @@ async function subirArchivoPoligonosStorage(proyecto,archivo,analisis=null){
       .eq('id',proyecto.id)
       .select('id,poligonos_version');
     if(updateError)throw new Error('Tabla mapping_proyectos (UPDATE): '+(updateError.message||updateError));
-    if(!actualizados?.length)throw new Error('Supabase no confirmó la actualización del proyecto. Verifica RLS.');
+    if(!actualizados?.length)throw new Error('Base de datos no confirmó la actualización del proyecto. Verifica RLS.');
   }catch(e){
     // No borrar aquí la ruta estable: contiene el archivo activo del proyecto.
     // Un fallo posterior a la subida debe avisarse y permitir reintento.
@@ -6616,7 +6616,7 @@ async function actualizarGeoJSONProyectoExistente(){
   const box=document.getElementById('poligonosStorageEstado');
   if(box){
     box.className='polygonStorageStatus';
-    box.textContent='Validando y subiendo archivo a Supabase Storage...';
+    box.textContent='Validando y subiendo archivo a Base de datos (almacenamiento)...';
   }
 
   try{
@@ -7214,7 +7214,7 @@ async function subirCartografiaProyecto(){
   const box=document.getElementById('cartografiaMasterEstado');
   if(box){
     box.className='cartographyStatus';
-    box.textContent='Subiendo cartografía a Supabase Storage...';
+    box.textContent='Subiendo cartografía a Base de datos (almacenamiento)...';
   }
 
   try{
@@ -7494,7 +7494,7 @@ async function crearProyecto(){
 
     if(duplicado){
       return alert(
-        `El código de proyecto "${codigo}" ya existe en Supabase y no puede repetirse.\n\n`+
+        `El código de proyecto "${codigo}" ya existe en Base de datos y no puede repetirse.\n\n`+
         'Ingresa un código diferente e intenta nuevamente.'
       );
     }
@@ -7531,7 +7531,7 @@ async function crearProyecto(){
     }catch(_){}
 
     return alert(
-      'No se pudo cargar el archivo de polígonos en Supabase. '+
+      'No se pudo cargar el archivo de polígonos en Base de datos. '+
       'El proyecto fue revertido.\n\n'+(e?.message||e)
     );
   }
@@ -7563,7 +7563,7 @@ async function crearProyecto(){
 
   alert(
     `Proyecto ${tipo_proyecto} creado correctamente.\n\n`+
-    `${analisis.poligonos.length} polígonos cargados directamente en Supabase Storage.`
+    `${analisis.poligonos.length} polígonos cargados directamente en Base de datos (almacenamiento).`
   );
 }
 
@@ -14246,9 +14246,9 @@ for(const tipo of ['crear','existente']){
  const check=document.getElementById(pdrTagCheckId(tipo));check?.addEventListener('change',()=>pdrToggleTagEditor(tipo));
 }
 
-/* V78 · Biblioteca centralizada en Supabase.
+/* V78 · Biblioteca centralizada en Base de datos.
    No se guarda ninguna plantilla nueva en localStorage; se mantienen
-   las anteriores de V77 para migrarlas explícitamente a Supabase. */
+   las anteriores de V77 para migrarlas explícitamente a Base de datos. */
 const PDR_TEMPLATE_STORAGE_KEY='pdr_master_geoetiquetas_templates_v1';
 const PDR_TEMPLATE_TABLE='mapping_plantillas_etiquetas';
 const PDR_TEMPLATE_MAX=80;
@@ -14288,27 +14288,27 @@ function pdrTplSelected(tipo){
 }
 function pdrTplError(err){
  const msg=String(err?.message||err||'Error desconocido');
- if(/does not exist|schema cache|PGRST205|42P01|permission denied|42501/i.test(msg))return 'No se pudo consultar la tabla de plantillas. Ejecuta el SQL entregado en Supabase y verifica sus permisos. Detalle: '+msg;
+ if(/does not exist|schema cache|PGRST205|42P01|permission denied|42501/i.test(msg))return 'No se pudo consultar la tabla de plantillas. Ejecuta el SQL entregado en Base de datos y verifica sus permisos. Detalle: '+msg;
  return msg;
 }
 async function pdrTplLoad(tipo='existente'){
  if(pdrTplLoading)return;
  const empresaId=pdrTplCompany(tipo);
  if(!empresaId){pdrTplRows=[];pdrTplCurrentCompany='';pdrTplSync('');pdrTplStatusBoth('Selecciona primero una empresa o un proyecto.');return;}
- pdrTplLoading=true;pdrTplStatusBoth('Consultando plantillas en Supabase…');
+ pdrTplLoading=true;pdrTplStatusBoth('Consultando plantillas en Base de datos…');
  try{
   const {data,error}=await sb.from(PDR_TEMPLATE_TABLE).select('id,empresa_id,nombre,diseno,updated_at').eq('empresa_id',empresaId).order('nombre',{ascending:true}).limit(PDR_TEMPLATE_MAX+1);
   if(error)throw error;
   pdrTplCurrentCompany=empresaId;pdrTplRows=(data||[]).slice(0,PDR_TEMPLATE_MAX);
   pdrTplSync('');pdrTplStatusBoth('Biblioteca sincronizada: '+pdrTplRows.length+' plantilla(s) de '+pdrTplCompanyName(empresaId)+'.');
- }catch(e){pdrTplRows=[];pdrTplCurrentCompany='';pdrTplSync('');pdrTplStatusBoth('Error de Supabase: '+pdrTplError(e));}
+ }catch(e){pdrTplRows=[];pdrTplCurrentCompany='';pdrTplSync('');pdrTplStatusBoth('Error de Base de datos: '+pdrTplError(e));}
  finally{pdrTplLoading=false;}
 }
 async function pdrTplEnsureCompany(tipo){
  const company=pdrTplCompany(tipo);
  if(!company){alert('Selecciona una empresa o proyecto antes de administrar plantillas.');return null;}
  if(company!==pdrTplCurrentCompany)await pdrTplLoad(tipo);
- if(company!==pdrTplCurrentCompany){alert('No se pudo sincronizar la biblioteca en Supabase. Revisa el mensaje del editor.');return null;}
+ if(company!==pdrTplCurrentCompany){alert('No se pudo sincronizar la biblioteca en Base de datos. Revisa el mensaje del editor.');return null;}
  return company;
 }
 function pdrTplSanitize(design){
@@ -14330,8 +14330,8 @@ async function pdrTplSave(tipo){
  if(!existing&&pdrTplRows.length>=PDR_TEMPLATE_MAX)return alert('Máximo de 80 plantillas por empresa.');
  try{await pdrTplUpsert(empresaId,nombre,pdrTagRead(tipo),existing);await pdrTplLoad(tipo);
  const row=pdrTplRows.find(t=>t.nombre.toLocaleLowerCase('es-CO')===nombre.toLocaleLowerCase('es-CO'));
- pdrTplSync(row?.id||'');pdrTplStatusBoth('Plantilla «'+nombre+'» guardada en Supabase.');}
- catch(e){alert('No se pudo guardar en Supabase: '+pdrTplError(e));}
+ pdrTplSync(row?.id||'');pdrTplStatusBoth('Plantilla «'+nombre+'» guardada en Base de datos.');}
+ catch(e){alert('No se pudo guardar en Base de datos: '+pdrTplError(e));}
 }
 async function pdrTplApply(tipo){
  const company=await pdrTplEnsureCompany(tipo);if(!company)return;
@@ -14347,15 +14347,15 @@ async function pdrTplRename(tipo){
  if(!nombre)return alert('Escribe el nombre nuevo.');
  if(pdrTplRows.some(t=>t.id!==selected.id&&t.nombre.toLocaleLowerCase('es-CO')===nombre.toLocaleLowerCase('es-CO')))return alert('Ese nombre ya existe.');
  try{await pdrTplUpsert(empresaId,nombre,selected.diseno,selected);await pdrTplLoad(tipo);
- const row=pdrTplRows.find(t=>t.nombre===nombre);pdrTplSync(row?.id||'');pdrTplStatusBoth('Plantilla renombrada en Supabase.');}
+ const row=pdrTplRows.find(t=>t.nombre===nombre);pdrTplSync(row?.id||'');pdrTplStatusBoth('Plantilla renombrada en Base de datos.');}
  catch(e){alert('No se pudo renombrar: '+pdrTplError(e));}
 }
 async function pdrTplDelete(tipo){
  const empresaId=await pdrTplEnsureCompany(tipo);if(!empresaId)return;
  const selected=pdrTplSelected(tipo);if(!selected)return alert('Selecciona una plantilla.');
- if(!confirm('¿Eliminar definitivamente de Supabase la plantilla «'+selected.nombre+'»? No modifica proyectos ya configurados.'))return;
+ if(!confirm('¿Eliminar definitivamente de Base de datos la plantilla «'+selected.nombre+'»? No modifica proyectos ya configurados.'))return;
  try{const {error}=await sb.from(PDR_TEMPLATE_TABLE).delete().eq('id',selected.id).eq('empresa_id',empresaId);if(error)throw error;
- await pdrTplLoad(tipo);pdrTplStatusBoth('Plantilla eliminada de Supabase.');}
+ await pdrTplLoad(tipo);pdrTplStatusBoth('Plantilla eliminada de Base de datos.');}
  catch(e){alert('No se pudo eliminar: '+pdrTplError(e));}
 }
 async function pdrTplExport(tipo){
@@ -14363,7 +14363,7 @@ async function pdrTplExport(tipo){
  const backup={tipo:'PDR_PLANTILLAS_ETIQUETADO',version:1,exportado:new Date().toISOString(),plantillas:pdrTplRows};
  const url=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
  const a=document.createElement('a');a.href=url;a.download='PDR_plantillas_etiquetas_'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
- pdrTplStatus(tipo,'Copia de seguridad exportada desde Supabase.');
+ pdrTplStatus(tipo,'Copia de seguridad exportada desde Base de datos.');
 }
 async function pdrTplImport(tipo,file){
  if(!file)return;
@@ -14375,7 +14375,7 @@ async function pdrTplImport(tipo,file){
 }
 async function pdrTplImportRecords(tipo,records,empresaId){
  if(records.length>PDR_TEMPLATE_MAX)return alert('Máximo 80 plantillas por importación.');
- if(!confirm('¿Importar '+records.length+' plantilla(s) a la empresa '+pdrTplCompanyName(empresaId)+' en Supabase? Los nombres repetidos se actualizarán.'))return;
+ if(!confirm('¿Importar '+records.length+' plantilla(s) a la empresa '+pdrTplCompanyName(empresaId)+' en Base de datos? Los nombres repetidos se actualizarán.'))return;
  let saved=0,failed=0;
  for(const raw of records){
   if(!raw||typeof raw.nombre!=='string'||!raw.nombre.trim()||!raw.diseno||typeof raw.diseno!=='object')continue;
@@ -14385,7 +14385,7 @@ async function pdrTplImportRecords(tipo,records,empresaId){
    if(!existing)pdrTplRows.push({id:'temp_'+saved,nombre,diseno:raw.diseno});
   }catch(e){console.warn('Plantilla no importada:',nombre,e);failed++;}
  }
- await pdrTplLoad(tipo);pdrTplStatusBoth('Importación a Supabase: '+saved+' guardadas, '+failed+' fallidas.');
+ await pdrTplLoad(tipo);pdrTplStatusBoth('Importación a Base de datos: '+saved+' guardadas, '+failed+' fallidas.');
 }
 async function pdrTplMigrateLocal(tipo){
  const legacy=pdrTplLegacy();if(!legacy.length)return alert('No hay plantillas locales de V77 en este navegador.');
@@ -14402,7 +14402,7 @@ for(const tipo of ['crear','existente']){
  ui.querySelector('[data-template-import]').addEventListener('click',()=>ui.querySelector('[data-template-import-file]').click());
  ui.querySelector('[data-template-import-file]').addEventListener('change',async e=>{try{await pdrTplImport(tipo,e.target.files?.[0]);}finally{e.target.value='';}});
  ui.querySelector('[data-template-list]').addEventListener('change',()=>{const t=pdrTplSelected(tipo);if(t)ui.querySelector('[data-template-name]').value=t.nombre;});
- const refresh=document.createElement('button');refresh.type='button';refresh.className='btn gray small';refresh.textContent='↻ Actualizar desde Supabase';refresh.addEventListener('click',()=>pdrTplLoad(tipo));ui.querySelector('.pdrTemplateActions')?.append(refresh);
+ const refresh=document.createElement('button');refresh.type='button';refresh.className='btn gray small';refresh.textContent='↻ Actualizar desde Base de datos';refresh.addEventListener('click',()=>pdrTplLoad(tipo));ui.querySelector('.pdrTemplateActions')?.append(refresh);
  const migrate=document.createElement('button');migrate.type='button';migrate.className='btn gray small';migrate.textContent='Migrar plantillas locales V77';migrate.addEventListener('click',()=>pdrTplMigrateLocal(tipo));ui.querySelector('.pdrTemplateActions')?.append(migrate);
 }
 pdrTplSync('');
@@ -14442,7 +14442,7 @@ function pdrUpdateMiniMapPreview(tipo){
  const cfg=pdrReadMiniMapConfig(tipo);
  const zoom=box.querySelector('[data-minimapa-zoom-valor]');if(zoom)zoom.textContent=cfg.zoom;
  const hint=box.querySelector('[data-minimapa-ayuda]');
- if(hint)hint.textContent=cfg.proveedor==='google'?'Vista de referencia Google Maps. Para mostrar un mapa GPS real en fotos, Mapping debe usar una función segura de Supabase con Google Maps Static API. Nunca pongas aquí una API Key.':'OpenStreetMap: el Mapping actual puede seguir utilizando este proveedor. La foto del editor es solo una referencia de ubicación.';
+ if(hint)hint.textContent=cfg.proveedor==='google'?'Vista de referencia Google Maps. Para mostrar un mapa GPS real en fotos, Mapping debe usar una función segura de Base de datos con Google Maps Static API. Nunca pongas aquí una API Key.':'OpenStreetMap: el Mapping actual puede seguir utilizando este proveedor. La foto del editor es solo una referencia de ubicación.';
  const item=box.querySelector('.pdrVisualItem.mini_mapa');
  if(!item)return;
  item.replaceChildren();
@@ -14755,9 +14755,9 @@ async function pdrMasterGuardarCampos(){
  const {error}=await sb.from('mapping_proyectos').update({campos_config:config}).eq('id',id);
  if(error)return alert('Error guardando campos: '+error.message);
  const p=proyectos.find(x=>String(x.id)===String(id));if(p)p.campos_config=config;pdrCamposVistaTemporal=null;
- document.getElementById('pdrCamposEstado').textContent='✅ Configuración guardada en Supabase para '+(p?.nombre||'el proyecto')+'.';
+ document.getElementById('pdrCamposEstado').textContent='✅ Configuración guardada en Base de datos para '+(p?.nombre||'el proyecto')+'.';
 }
-// ===== V87: biblioteca de plantillas de CAMPOS (Supabase, por empresa) =====
+// ===== V87: biblioteca de plantillas de CAMPOS (Base de datos, por empresa) =====
 const PDR_CAMPOS_TPL_TABLA='mapping_plantillas_campos';
 let pdrCamposPlantillas=[];
 let pdrCamposVistaTemporal=null;
@@ -14772,7 +14772,7 @@ async function pdrCamposPlantillaListar(){
  pdrCamposPlantillas=[];pdrCamposPlantillaEmpresaActual='';
  sel.innerHTML='<option value="">Seleccionar plantilla…</option>';
  if(!empresaId){pdrCamposPlantillaMensaje('Selecciona un proyecto para consultar plantillas de su empresa.');return;}
- pdrCamposPlantillaMensaje('Consultando plantillas en Supabase…');
+ pdrCamposPlantillaMensaje('Consultando plantillas en Base de datos…');
  const {data,error}=await sb.from(PDR_CAMPOS_TPL_TABLA).select('id,empresa_id,nombre,config,updated_at').eq('empresa_id',empresaId).order('nombre').limit(200);
  if(error){pdrCamposPlantillaMensaje('No se pudieron consultar plantillas. Ejecuta el SQL V87. '+error.message);return;}
  if(empresaId!==pdrCamposPlantillaEmpresa())return;
@@ -14793,7 +14793,7 @@ async function pdrCamposPlantillaGuardar(){
  if(error)return alert('No se pudo guardar la plantilla: '+error.message);
  await pdrCamposPlantillaListar();
  const sel=document.getElementById('pdrCamposPlantillaSelect');const guardada=pdrCamposPlantillas.find(t=>t.nombre===nombre);if(sel&&guardada)sel.value=guardada.id;
- pdrCamposPlantillaMensaje('✅ Plantilla «'+nombre+'» guardada en Supabase. Ahora puedes aplicarla a otros proyectos de la misma empresa.');
+ pdrCamposPlantillaMensaje('✅ Plantilla «'+nombre+'» guardada en Base de datos. Ahora puedes aplicarla a otros proyectos de la misma empresa.');
 }
 function pdrCamposPlantillaAplicar(){
  const tpl=pdrCamposPlantillaElegida();if(!tpl)return alert('Selecciona una plantilla.');
@@ -14873,7 +14873,7 @@ async function pdrPropGuardarListaProyecto(lista){
  const normal=[...new Set(lista.map(x=>String(x||'').trim().toUpperCase()).filter(Boolean))].sort();
  const {data,error}=await sb.from('mapping_proyectos').update({propietarios_config:normal}).eq('id',pid).select('id').maybeSingle();
  if(error)throw error;
- if(!data)throw new Error('Supabase no confirmó la actualización: revisa los permisos RLS de mapping_proyectos.');
+ if(!data)throw new Error('Base de datos no confirmó la actualización: revisa los permisos RLS de mapping_proyectos.');
  pdrPropConfiguracion=normal;pdrPropProyectoCargado=pid;pdrPropPintar();
 }
 async function pdrPropPropagarGlobal(nombre,activo){
@@ -15159,7 +15159,7 @@ async function pdrDescargarFotosProyecto(){
     await cargarFotosKMZ(puntos);
     const fotos=puntos.flatMap(p=>(p.__fotos_kmz||[]).map(f=>({p,f})));
     if(!fotos.length)return alert('No hay fotografías sincronizadas para este proyecto. Las fotos pendientes en el celular no pueden descargarse desde Master.');
-    if(!confirm(`Se encontraron ${fotos.length} fotografías asociadas a ${puntos.length} elementos. Se descargarán mediante la función segura de Supabase y se creará un ZIP. ¿Continuar?`))return;
+    if(!confirm(`Se encontraron ${fotos.length} fotografías asociadas a ${puntos.length} elementos. Se descargarán mediante la función segura de Base de datos y se creará un ZIP. ¿Continuar?`))return;
     panel=document.createElement('div');
     panel.id='pdrFotoZipProgress';
     panel.style.cssText='position:fixed;z-index:100000;right:16px;bottom:18px;max-width:min(440px,calc(100vw - 32px));background:#0c2036;color:#fff;border:1px solid #38bdf8;border-radius:12px;padding:16px;box-shadow:0 12px 40px #000a;font:13px Arial';
@@ -15198,7 +15198,7 @@ async function pdrDescargarFotosProyecto(){
           if(fileId){
             const {data:sesion}=await sb.auth.getSession();
             const accessToken=sesion?.session?.access_token;
-            if(!accessToken)throw new Error('Sesión de Supabase no disponible');
+            if(!accessToken)throw new Error('Sesión de Base de datos no disponible');
             const api=await fetch(`${SUPABASE_URL}/functions/v1/pdr-descargar-foto-drive`,{
               method:'POST',
               headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`,'apikey':SUPABASE_ANON},
@@ -15243,7 +15243,7 @@ async function pdrDescargarFotosProyecto(){
 }
 
 
-// V93: gestiona versiones de archivo fotográfico con inventario autoritativo en Supabase.
+// V93: gestiona versiones de archivo fotográfico con inventario autoritativo en Base de datos.
 let pdrZipProyectoActualV93='',pdrZipEstadoV93=null,pdrZipOcupadoV93=false;
 let pdrZipVerificacionAutomaticaV98=null;
 function pdrZipElV93(id){return document.getElementById(id);}
@@ -15280,7 +15280,7 @@ async function pdrAbrirZipFotograficoV93(){
 }
 async function pdrVerificarZipV93(){
  if(pdrZipOcupadoV93)return;
- pdrZipBloquearV93(true);pdrZipMensajeV93('Consultando inventario en Supabase…');
+ pdrZipBloquearV93(true);pdrZipMensajeV93('Consultando inventario en Base de datos…');
  try{
   const r=await pdrZipSolicitarFuncionV93('status'),d=await r.json();pdrZipEstadoV93=d;
   const zip=d.archivo||{};let txt=`Fotografías sincronizadas: ${d.total_fotos??0}\nFotos en el último ZIP: ${zip.total_fotos??0}\nEstado: ${d.estado||'SIN GENERAR'}`;
@@ -15487,7 +15487,7 @@ const pdrBizFeatureCatalog={"Mapping · Captura e inventario":[["map_postes","Ce
 const pdrBizSelectedFeatures=new Set();
 document.addEventListener('input',e=>{if(['pdrBizPlanPrecio','pdrBizPlanPrecioManual'].includes(e.target?.id))pdrBizRenderPlanBreakdown();});
 document.addEventListener('change',e=>{if(e.target?.id==='pdrBizPlanPeriodo')pdrBizRenderFeaturePicker();});
-/* PDR V107: Gestión general y comercial. Todos los cambios requieren sesión admin y RLS de Supabase. */
+/* PDR V107: Gestión general y comercial. Todos los cambios requieren sesión admin y RLS de Base de datos. */
 const pdrBizState={tab:'dashboard',planes:[],tarifas:[],asignaciones:[],funciones:[],counts:{},correcciones:{},loaded:false};
 const pdrBizEl=id=>document.getElementById(id);
 const pdrBizSafe=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -15783,7 +15783,7 @@ async function pdrBizDeleteFeature(id,button){
    : await q.delete().eq('id',id).select('id');
   if(result.error)throw result.error;
   if(!Array.isArray(result.data)||!result.data.some(row=>String(row.id)===String(id))){
-   throw new Error('Supabase no modificó ningún registro. Comprueba que tu cuenta tenga permisos de administrador y que la política RLS permita UPDATE/DELETE en public.pdr_com_funcionalidades.');
+   throw new Error('Base de datos no modificó ningún registro. Comprueba que tu cuenta tenga permisos de administrador y que la política RLS permita UPDATE/DELETE en public.pdr_com_funcionalidades.');
   }
   pdrBizSelectedFeatures.delete(id);pdrBizFeatureBulkSelection.delete(String(id));
   if(pdrBizEl('pdrBizFuncId')?.value===id)pdrBizResetFeature();
@@ -16047,7 +16047,7 @@ async function pdrV117UpdatePrice(id){
  if(!Number.isFinite(amount)||amount<0)return alert('Introduce un precio válido y no negativo.');
  const {data,error}=await sb.from('pdr_com_planes').update({precio_total:amount,precio_manual:amount,updated_at:new Date().toISOString()}).eq('id',id).select('id');
  if(error)return alert('No se pudo guardar el precio: '+error.message);
- if(!data?.length)return alert('Supabase no confirmó la actualización. Revisa los permisos RLS.');
+ if(!data?.length)return alert('Base de datos no confirmó la actualización. Revisa los permisos RLS.');
  p.precio_total=amount;p.precio_manual=amount;pdrBizRenderPlanes();pdrV117RenderCards();pdrBizStatus('Precio actualizado para «'+p.nombre+'».');
 }
 async function pdrV117AddItemToCombo(kind,id){
@@ -16071,7 +16071,7 @@ async function pdrV117AddItemToCombo(kind,id){
  const row={funcionalidades:funcs,servicios_incluidos:services,precio_total:p.precio_manual==null?Number(p.precio_total??p.precio_base??0)+delta:Number(p.precio_manual),updated_at:new Date().toISOString()};
  const {data,error}=await sb.from('pdr_com_planes').update(row).eq('id',comboId).select('id');
  if(error)return alert('Error al agregar al combo: '+error.message);
- if(!data?.length)return alert('Supabase no confirmó el guardado. Revisa permisos de actualización.');
+ if(!data?.length)return alert('Base de datos no confirmó el guardado. Revisa permisos de actualización.');
  Object.assign(p,row);pdrBizRenderPlanes();pdrV117RenderCards();pdrBizStatus('Ítem agregado a «'+p.nombre+'».'+(p.precio_manual==null?' Se actualizó el total automático.':' Se conservó el precio final personalizado.'));
 }
 function pdrV117QuoteCombo(id){
@@ -16855,7 +16855,7 @@ if(typeof window.pdrHpRenderDashboard==='function'){
  const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const id=r=>String(r?.['ID-ENERGIZ']||r?.id||'Predio');
  window.hp137Close=()=>{el('hp137Panel').classList.remove('open');current=null};
- window.hp137Open=async function(row){if(!row?.id){alert('Primero sincroniza el predio con Supabase.');return}current=row;el('hp137Panel').classList.add('open');el('hp137Title').textContent='Correcciones · '+id(row);el('hp137Hint').textContent='Técnico responsable: '+(row.NOMBRETECN||row.tecnico_id||'Sin asignar');el('hp137Create').style.display='block';el('hp137Field').value='';el('hp138Tipo').value='';el('hp137Desc').value='';await hp137Load()};
+ window.hp137Open=async function(row){if(!row?.id){alert('Primero sincroniza el predio con Base de datos.');return}current=row;el('hp137Panel').classList.add('open');el('hp137Title').textContent='Correcciones · '+id(row);el('hp137Hint').textContent='Técnico responsable: '+(row.NOMBRETECN||row.tecnico_id||'Sin asignar');el('hp137Create').style.display='block';el('hp137Field').value='';el('hp138Tipo').value='';el('hp137Desc').value='';await hp137Load()};
  window.hp137Load=async function(){if(!current)return;const list=el('hp137List');list.textContent='Cargando solicitudes...';const {data,error}=await sb.from('censo_homepass_correcciones').select('*').eq('predio_id',current.id).order('fecha_solicitud',{ascending:false});if(error){list.textContent='No fue posible consultar: '+error.message;return}list.replaceChildren();if(!data?.length){list.textContent='Todavía no hay correcciones para este predio.';return}for(const c of data){const item=document.createElement('div');item.className='hp137Item';const head=document.createElement('div');head.innerHTML='<span class="hp137State">'+safe(c.estado.toUpperCase())+'</span> · '+safe(new Date(c.fecha_solicitud).toLocaleString('es-CO'))+'<br><b>'+safe(c.tipificacion||'SIN TIPIFICAR')+' · '+safe(c.campo_objetivo||'Revisión general')+'</b><br>'+safe(c.descripcion)+(c.respuesta_tecnico?'<br><br>Respuesta técnico: '+safe(c.respuesta_tecnico):'');item.append(head);if(c.estado==='corregida'||c.estado==='cerrada'){const btn=document.createElement('button');btn.className='btn small '+(c.estado==='corregida'?'blue':'warn');btn.textContent=c.estado==='corregida'?'✓ Aprobar y cerrar':'↺ Reabrir';btn.onclick=()=>hp137Status(c.id,c.estado==='corregida'?'cerrada':'reabierta');item.append(btn)}list.append(item)}};
  window.hp137Send=async function(){if(!current)return;const desc=el('hp137Desc').value.trim();const tipo=el('hp138Tipo').value;if(!tipo)return alert('Selecciona el tipo de corrección.');if(desc.length<5)return alert('Describe la corrección con al menos 5 caracteres.');if(!current.tecnico_id)return alert('El predio no tiene técnico responsable.');const payload={proyecto_id:current.proyecto_id,predio_id:current.id,tecnico_id:current.tecnico_id,descripcion:desc,tipificacion:tipo,campo_objetivo:el('hp137Field').value.trim()||null,estado:'pendiente'};const {error}=await sb.from('censo_homepass_correcciones').insert(payload);if(error)return alert('Error enviando: '+error.message);el('hp137Desc').value='';el('hp137Field').value='';el('hp138Tipo').value='';await hp137Load();alert('Corrección creada. El técnico la verá al actualizar o abrir su proyecto.')};
  window.hp137Status=async function(cid,state){if(!current)return;if(!confirm(state==='cerrada'?'¿Aprobar y cerrar esta corrección?':'¿Reabrir esta corrección para el técnico?'))return;const data={estado:state,fecha_cierre:state==='cerrada'?new Date().toISOString():null};const {error}=await sb.from('censo_homepass_correcciones').update(data).eq('id',cid).eq('predio_id',current.id);if(error)return alert(error.message);await hp137Load()};
