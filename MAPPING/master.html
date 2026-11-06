@@ -4346,11 +4346,11 @@ header{
   <div class="modal dashboardModal">
     <div class="modalHead noPrint dashboardTopHead">
       <div>
-        <h2>Centro de Control · Mapping & Site Survey</h2>
-        <small id="avanceSubtitulo" style="color:var(--muted)">Analítica integral del levantamiento</small>
+        <h2>RELEVA · Dashboard de Infraestructura</h2>
+        <small id="avanceSubtitulo" style="color:var(--muted)">Productividad, infraestructura y calidad del levantamiento</small>
       </div>
       <div class="dashHeadActions">
-        <button class="btn blue" onclick="imprimirDashboard()">🖨️ Exportar / PDF</button>
+        <button class="btn blue" onclick="relevaInfraExportarPDF()" title="Informe profesional de Infraestructura con indicadores, gráficas y tablas">📄 Exportar PDF</button>
         <button class="close" onclick="cerrarDashboardAvances()">Cerrar</button>
       </div>
     </div>
@@ -4358,7 +4358,7 @@ header{
     <div class="modalBody dashboardBody" id="dashboardPrintArea">
       <div class="dashPrintHeader">
         <div>
-          <h1>INFORME MAPPING</h1>
+          <h1>INFORME DE INFRAESTRUCTURA</h1>
           <div id="dashPrintProyecto"></div>
         </div>
         <div id="dashPrintFecha"></div>
@@ -4367,14 +4367,14 @@ header{
       <div class="reportBanner executiveBanner">
         <div>
           <div class="rbMetaTitle">CENTRO DE CONTROL OPERATIVO</div>
-          <h1>DASHBOARD MAPPING</h1>
+          <h1>DASHBOARD DE INFRAESTRUCTURA</h1>
           <div class="rbMetaTitle" style="margin-top:8px">FECHA DE REPORTE</div>
           <div class="rbDate" id="dashFechaReporte">—</div>
           <div class="rbContext" id="dashContextoReporte">Proyecto: Todos · Ciudad: Todas · Técnico: Todos</div>
         </div>
         <div class="executiveBrand">
-          <b>PDR</b>
-          <span>PROJECT DATA & REPORTING</span>
+          <img class="relevaInfraBrand" src="https://static.wixstatic.com/media/63e6ec_ed565acf4e4e4b02b7718e378e331c61~mv2.png/v1/fill/w_600,h_200,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RELEVA%20V3%20BLANCO.png" alt="RELEVA" referrerpolicy="no-referrer">
+          <span>DATOS DE CAMPO · CONTROL DE CALIDAD</span>
         </div>
       </div>
 
@@ -10783,7 +10783,53 @@ function exportarDetalleGraficaDashboard(){
   );
 }
 
+// V151: modificar las opciones de Chart.js ANTES de dibujar cada gráfico.
+// Los canvas no obedecen a los colores CSS del dashboard.
+function relevaInfraChartContraste(config){
+  if(!config || !config.options)return;
+  const opt=config.options;
+  const BLANCO='#f3faff', EJE='#e1effa', REJILLA='rgba(159,196,214,.24)';
+  if(opt.scales && typeof opt.scales==='object'){
+    for(const eje of Object.values(opt.scales)){
+      if(!eje || typeof eje!=='object')continue;
+      eje.ticks=eje.ticks||{};
+      eje.ticks.color=EJE;
+      eje.ticks.font=Object.assign({},eje.ticks.font||{},{size:11,weight:'600'});
+      eje.grid=eje.grid||{};
+      if(eje.grid.display!==false)eje.grid.color=REJILLA;
+      if(eje.title && eje.title.display)eje.title.color=BLANCO;
+    }
+  }
+  opt.plugins=opt.plugins||{};
+  if(opt.plugins.legend!==false){
+    opt.plugins.legend=opt.plugins.legend||{};
+    opt.plugins.legend.labels=opt.plugins.legend.labels||{};
+    opt.plugins.legend.labels.color=BLANCO;
+    opt.plugins.legend.labels.font=Object.assign({},opt.plugins.legend.labels.font||{},{size:11,weight:'600'});
+  }
+  for(const name of ['title','subtitle']){
+    if(opt.plugins[name] && opt.plugins[name]!==false)opt.plugins[name].color=BLANCO;
+  }
+  if(opt.plugins.datalabels && opt.plugins.datalabels!==false){
+    const p=opt.plugins.datalabels;
+    // Mantener blancos los valores de dona y aclarar los valores sobre barras.
+    p.color='#f3faff';
+    p.font=Object.assign({},p.font||{},{weight:'bold'});
+  }
+  if(opt.plugins.tooltip && opt.plugins.tooltip!==false){
+    const tt=opt.plugins.tooltip;
+    tt.titleColor=BLANCO;tt.bodyColor=BLANCO;
+    tt.backgroundColor='rgba(7,24,39,.96)';
+  }
+  // Algunos gráficos definen datalabels en el dataset, no en plugins.
+  for(const ds of (config.data && config.data.datasets)||[]){
+    if(ds.datalabels && ds.datalabels!==false){
+      ds.datalabels.color=BLANCO;
+    }
+  }
+}
 function crearChart(id,config){
+  relevaInfraChartContraste(config);
   destruirChart(id);
   const el=document.getElementById(id);
   if(!el)return;
@@ -17393,6 +17439,200 @@ window.relevaHpExportarPDF=function(){
 };
 })();
 </script>
+
+<!-- V148 · Infraestructura con identidad visual RELEVA alineada a Censo Homepass -->
+<style id="relevaV148InfraDashboardTheme">
+#avanceModal .dashboardModal{width:min(1760px,99vw)!important;border:1px solid #29415d!important;background:#071725!important}
+#avanceModal .dashboardTopHead{background:#071827!important;border-bottom:1px solid #29415d!important}
+#avanceModal .dashboardTopHead h2{color:#f3faff!important;font-size:17px!important;letter-spacing:.15px}
+#avanceModal .dashboardBody{background:#081827!important;color:#e6f4ff!important;padding:17px!important}
+#avanceModal .executiveBanner{background:linear-gradient(112deg,#082135 0%,#073f5f 60%,#065b69 100%)!important;border:1px solid #286078!important;border-radius:14px!important;box-shadow:none!important}
+#avanceModal .executiveBanner h1{font-size:clamp(22px,3vw,32px)!important;color:#fff!important}
+#avanceModal .executiveBrand{align-items:flex-end;justify-content:center;min-width:165px}
+#avanceModal .relevaInfraBrand{width:178px;max-height:73px;object-fit:contain;display:block;filter:drop-shadow(0 0 10px #21d4ea16)}
+#avanceModal .executiveBrand span{color:#cae6f2;letter-spacing:1px;font-size:8px}
+#avanceModal .dashboardFilterBar{background:#0b2034!important;border-color:#29415d!important;box-shadow:none!important}
+#avanceModal .dashboardFilterBar label{color:#a9c5d7!important}
+#avanceModal .dashboardFilterBar input,#avanceModal .dashboardFilterBar select{background:#081725!important;color:#f0fbff!important;border-color:#365674!important}
+#avanceModal .dashSectionTitle{border-bottom-color:#29415d!important}
+#avanceModal .dashSectionTitle span{color:#baf7f2!important}
+#avanceModal .dashSectionTitle small{color:#95b2c7!important}
+#avanceModal .executiveKpi,#avanceModal .miniMetric,#avanceModal .typeExecutiveCard,#avanceModal .networkKpiGrid>div{background:#0b2034!important;border:1px solid #29415d!important;box-shadow:none!important;border-radius:12px!important}
+#avanceModal .executiveKpi span,#avanceModal .executiveKpi small,#avanceModal .miniMetric span,#avanceModal .miniMetric small,#avanceModal .typeExecutiveCard span,#avanceModal .networkKpiGrid span{color:#a7c1d4!important}
+#avanceModal .executiveKpi b,#avanceModal .miniMetric b,#avanceModal .typeExecutiveCard b,#avanceModal .networkKpiGrid b{color:#f4fbff!important}
+#avanceModal .dashboardMosaic>.chartCard,#avanceModal .dashTables>.chartCard{background:#0b2034!important;border:1px solid #29415d!important;border-radius:13px!important;box-shadow:none!important}
+#avanceModal .dashboardMosaic .chartCard h3,#avanceModal .dashTables .chartCard h3{color:#baf7f2!important}
+#avanceModal .dashboardMosaic .chartCard h3::before{opacity:.95}
+#avanceModal .chartCard .table,#avanceModal .dashTables .table{color:#e5f2fb!important}
+#avanceModal .dashTables .table th{background:#112c43!important;color:#baf7f2!important;border-color:#29415d!important}
+#avanceModal .dashTables .table td{border-color:#29415d!important;color:#ddeefa!important}
+#avanceModal .dashboardMosaic .cityDashboardCard .cityRow{color:#e5f2fb!important}
+#avanceModal .dashboardMosaic .chartBox{min-height:225px}
+#avanceModal .executiveKpi,#avanceModal .miniMetric,#avanceModal .typeExecutiveCard,#avanceModal .networkKpiGrid>div{transition:transform .16s,border-color .16s}
+#avanceModal .executiveKpi:hover,#avanceModal .miniMetric:hover,#avanceModal .typeExecutiveCard:hover,#avanceModal .networkKpiGrid>div:hover{transform:translateY(-2px);border-color:#22d3ee!important}
+#avanceModal .dashPrintHeader{display:none!important}
+@media(max-width:800px){#avanceModal .executiveBrand{min-width:100px}#avanceModal .relevaInfraBrand{width:120px}#avanceModal .dashboardBody{padding:9px!important}}
+</style>
+<script id="relevaV148InfraPDF">
+(function(){
+'use strict';
+const logo='https://static.wixstatic.com/media/63e6ec_ed565acf4e4e4b02b7718e378e331c61~mv2.png/v1/fill/w_600,h_200,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RELEVA%20V3%20BLANCO.png';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// El dashboard usa letras claras sobre fondo oscuro. Para el PDF se
+// renderiza cada gráfica en un canvas aparte con texto oscuro: nunca
+// se toma una captura directa del gráfico del dashboard.
+function clonePdfConfig(value,seen=new WeakMap()){
+ if(!value || typeof value!=='object')return value;
+ if(seen.has(value))return seen.get(value);
+ if(Array.isArray(value)){
+   const a=[];seen.set(value,a);value.forEach(v=>a.push(clonePdfConfig(v,seen)));return a;
+ }
+ const obj={};seen.set(value,obj);
+ Object.keys(value).forEach(k=>{if(k!=='_chartjs')obj[k]=clonePdfConfig(value[k],seen)});
+ return obj;
+}
+function graficaParaPdf(source){
+ if(!source || typeof Chart==='undefined')return '';
+ const chart=Chart.getChart(source);
+ if(!chart)return '';
+ const canvas=document.createElement('canvas');
+ // Las dimensiones se toman del gráfico visible; la resolución de
+ // impresión se duplica sin aumentar la altura física del informe.
+ canvas.width=Math.max(480,Math.round(chart.width||source.clientWidth||700));
+ canvas.height=Math.max(260,Math.round(chart.height||source.clientHeight||320));
+ const config={
+   type:chart.config.type,
+   data:clonePdfConfig(chart.config.data),
+   options:clonePdfConfig(chart.config.options||{}),
+   plugins:chart.config.plugins||[]
+ };
+ const o=config.options;
+ o.responsive=false;
+ o.maintainAspectRatio=false;
+ o.animation=false;
+ o.events=[];
+ o.devicePixelRatio=2;
+ o.color='#253b50';
+ o.plugins=o.plugins||{};
+ if(o.plugins.legend!==false){
+   o.plugins.legend=o.plugins.legend||{};
+   o.plugins.legend.labels=o.plugins.legend.labels||{};
+   o.plugins.legend.labels.color='#28445e';
+   o.plugins.legend.labels.font=Object.assign({},o.plugins.legend.labels.font||{},{size:12,weight:'600'});
+ }
+ for(const type of ['title','subtitle']){
+   if(o.plugins[type] && o.plugins[type]!==false)o.plugins[type].color='#16334b';
+ }
+ if(o.plugins.datalabels && o.plugins.datalabels!==false){
+   o.plugins.datalabels.color='#20394f';
+   o.plugins.datalabels.font=Object.assign({},o.plugins.datalabels.font||{},{weight:'bold'});
+ }
+ for(const dataset of (config.data.datasets||[])){
+   if(dataset && dataset.datalabels && dataset.datalabels!==false)dataset.datalabels.color='#20394f';
+ }
+ for(const axis of Object.values(o.scales||{})){
+   if(!axis || typeof axis!=='object')continue;
+   axis.ticks=axis.ticks||{};
+   axis.ticks.color='#28445e';
+   axis.ticks.font=Object.assign({},axis.ticks.font||{},{size:11,weight:'600'});
+   axis.grid=axis.grid||{};
+   if(axis.grid.display!==false)axis.grid.color='rgba(42,78,108,.16)';
+   if(axis.title && axis.title.display)axis.title.color='#20394f';
+ }
+ // Evita que el gráfico transparente herede el fondo oscuro al exportar.
+ const fondoBlanco={
+   id:'relevaPdfFondoBlanco',
+   beforeDraw(c){const {ctx,width,height}=c;ctx.save();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);ctx.restore()}
+ };
+ config.plugins=[...(config.plugins||[]),fondoBlanco];
+ let pdfChart;
+ try{
+   pdfChart=new Chart(canvas.getContext('2d'),config);
+   pdfChart.update('none');
+   return canvas.toDataURL('image/png');
+ } finally {
+   if(pdfChart)pdfChart.destroy();
+ }
+}
+function htmlInforme(){
+ const root=document.getElementById('dashboardPrintArea');
+ if(!root||!document.getElementById('avanceModal')?.classList.contains('open'))throw Error('Abre el dashboard de Infraestructura antes de exportar.');
+ const source=root.querySelectorAll('canvas');
+ const clone=root.cloneNode(true);
+ clone.querySelectorAll('canvas').forEach((c,i)=>{
+   const img=document.createElement('img');img.className='infPdfChartImg';img.alt='Gráfica de Infraestructura';
+   try{
+     if(source[i]?.width && source[i]?.height){
+       img.src=graficaParaPdf(source[i]);
+     }
+   }catch(e){console.warn('No se pudo preparar la gráfica para el PDF',e)}
+   c.replaceWith(img.src?img:document.createTextNode('Gráfica no disponible para impresión'));
+ });
+ clone.querySelectorAll('.noPrint,.dashboardFilterBar,.dashPrintHeader').forEach(e=>e.remove());
+ clone.querySelectorAll('[onclick]').forEach(e=>e.removeAttribute('onclick'));
+ clone.querySelectorAll('.chartMap').forEach(e=>{
+   // Leaflet crea capas DOM y mosaicos de mapa que no se pueden imprimir de forma fiable desde una ventana independiente.
+   e.replaceWith(Object.assign(document.createElement('p'),{className:'infPdfMapNote',textContent:'Para consultar la ubicación precisa de los elementos, utiliza el mapa interactivo del Master de RELEVA.'}));
+ });
+ clone.querySelectorAll('[style]').forEach(e=>{if(e.style.overflow==='auto'||e.style.overflow==='scroll')e.style.overflow='visible';if(e.style.maxHeight)e.style.maxHeight='none'});
+ clone.querySelectorAll('.tableWrap').forEach(e=>{e.style.overflow='visible';e.style.maxHeight='none'});
+ return clone.innerHTML;
+}
+function proyecto(){const el=document.getElementById('dashProyecto');return el?.selectedOptions?.[0]?.textContent?.trim()||'Todos los proyectos'}
+function filtro(id){const el=document.getElementById(id);return el?.selectedOptions?.[0]?.textContent?.trim()||el?.value||'Todos'}
+function documento(content){
+ const fecha=new Date().toLocaleString('es-CO',{dateStyle:'long',timeStyle:'short'});
+ const nombre=proyecto();const ciudad=filtro('dashCiudad'),tecnico=filtro('dashTecnico');const desde=document.getElementById('dashDesde')?.value||'Inicio',hasta=document.getElementById('dashHasta')?.value||'Hoy';
+ return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc('Informe Infraestructura · '+nombre)} — RELEVA</title><style>
+ @page{size:A4 landscape;margin:11mm 12mm 13mm}*{box-sizing:border-box}html,body{margin:0;font:10px/1.45 Arial,Helvetica,sans-serif;color:#14273d;background:#edf2f8}
+ .toolbar{position:sticky;top:0;z-index:10;padding:12px 18px;background:#0b1b30;color:white;display:flex;align-items:center;justify-content:space-between;gap:14px}
+ .toolbar strong{font-size:13px}.toolbar p{margin:2px 0;color:#c7d7e8}.toolbar button{background:#12bed5;border:0;border-radius:7px;color:#072033;font-weight:bold;padding:10px 16px;cursor:pointer}
+ .page{max-width:1140px;margin:20px auto;background:#fff;box-shadow:0 10px 35px #132d4d25;padding:22px}
+ .cover{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#0b2034;color:#fff;border-radius:11px;padding:16px 21px;margin-bottom:14px;break-inside:avoid}
+ .cover img{width:155px;height:60px;object-fit:contain}.cover h1{font-size:20px;margin:0 0 4px}.cover p{font-size:10px;color:#b6dce9;margin:2px 0}
+ .context{margin:0 0 14px;padding:10px 13px;background:#eef6fb;border-left:4px solid #0c9db9;border-radius:5px;font-size:10px}
+ .reportBanner{display:none!important}.dashSectionTitle{border-bottom:1px solid #dae5ed;margin:16px 0 9px;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+ .dashSectionTitle span{font-weight:900;letter-spacing:.5px;color:#075575;font-size:12px}.dashSectionTitle small{color:#658397;font-size:9px}
+ .executiveKpiGrid,.operationalKpiGrid,.typeExecutiveGrid,.networkKpiGrid{display:grid;gap:8px;margin-bottom:10px}
+ .executiveKpiGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.operationalKpiGrid{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .typeExecutiveGrid{grid-template-columns:repeat(5,minmax(0,1fr))}.networkKpiGrid{grid-template-columns:repeat(7,minmax(0,1fr))}
+ .executiveKpi,.miniMetric,.typeExecutiveCard,.networkKpiGrid>div{padding:9px 10px;border:1px solid #cfdfeb;background:#eaf4fa;border-radius:8px;min-width:0;break-inside:avoid}
+ .executiveKpi span,.miniMetric span,.typeExecutiveCard span,.networkKpiGrid span{display:block;color:#4b6b85;font-size:9px;font-weight:bold;text-transform:uppercase}
+ .executiveKpi b,.miniMetric b,.typeExecutiveCard b,.networkKpiGrid b{display:block;font-size:18px;color:#12344f;margin:4px 0;overflow-wrap:anywhere}
+ .executiveKpi small,.miniMetric small{font-size:8px;color:#496f81}
+ .chartsGrid,.dashboardMosaic{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}
+ .dashboardMosaic>.chartCard{grid-column:auto!important}.dashboardMosaic>.chartCard.span12{grid-column:1/-1!important}
+ .chartCard{min-width:0;padding:12px;border:1px solid #d4e3ed;border-radius:9px;background:#fff;margin-bottom:9px;break-inside:avoid;page-break-inside:avoid}
+ .chartCard h3{color:#075575;font-size:12px;margin:0 0 8px}.chartBox{width:100%;height:175px!important;min-height:0!important;display:flex;align-items:center;justify-content:center}
+ .infPdfChartImg{display:block;width:100%;height:100%;object-fit:contain}.infPdfMapNote{padding:15px;background:#edf6fa;color:#496f81;border-radius:6px}
+ .dashTables{display:block}.dashTables>.chartCard{break-inside:auto}.tableWrap,.dashTableWrap{overflow:visible!important;max-height:none!important}
+ table{width:100%;border-collapse:collapse;font-size:9px}th,td{padding:5px 6px;text-align:left;border-bottom:1px solid #dce5ec;overflow-wrap:anywhere;vertical-align:top}th{background:#e4f0f7!important;color:#1a4b6c!important}
+ thead{display:table-header-group}tr{break-inside:avoid}.foot{margin-top:18px;border-top:1px solid #d1e0e9;padding-top:8px;font-size:9px;color:#60798b}
+ @media print{html,body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar{display:none!important}.page{margin:0;padding:0;max-width:none;box-shadow:none}.cover{border-radius:0}.chartCard{break-inside:avoid}.dashTables>.chartCard{break-inside:auto}}
+ @media(max-width:680px){.page{padding:12px;margin:0}.chartsGrid,.dashboardMosaic{grid-template-columns:1fr!important}.executiveKpiGrid{grid-template-columns:repeat(2,1fr)}.operationalKpiGrid{grid-template-columns:repeat(2,1fr)}}
+ </style></head><body><div class="toolbar"><div><strong>RELEVA · Informe de Infraestructura</strong><p>Selecciona «Guardar como PDF» en el diálogo de impresión.</p></div><button onclick="window.print()">📄 Guardar como PDF</button></div>
+ <main class="page"><header class="cover"><div><h1>Informe de levantamiento de Infraestructura</h1><p><b>Proyecto:</b> ${esc(nombre)}</p><p><b>Generado:</b> ${esc(fecha)}</p></div><img src="${logo}" alt="RELEVA" referrerpolicy="no-referrer"></header>
+ <div class="context"><b>Filtros aplicados:</b> Ciudad: ${esc(ciudad)} · Técnico: ${esc(tecnico)} · Desde: ${esc(desde)} · Hasta: ${esc(hasta)}. Los resultados reflejan los datos sincronizados del periodo seleccionado.</div>
+ <article>${content}</article><footer class="foot">RELEVA · Informe de Infraestructura generado desde Master. Valores sujetos a la información disponible en la fecha de emisión.</footer></main></body></html>`;
+}
+window.relevaInfraExportarPDF=function(){
+ const pop=window.open('','_blank');if(!pop){alert('El navegador bloqueó la ventana de impresión. Habilita ventanas emergentes para RELEVA.');return}
+ try{const content=htmlInforme();pop.document.open();pop.document.write(documento(content));pop.document.close();pop.focus()}
+ catch(e){console.error('No se pudo preparar el informe de Infraestructura:',e);try{pop.close()}catch(_){}alert('Error al generar PDF: '+(e?.message||e))}
+};
+})();
+</script>
+
+<!-- V150: estilos de alto contraste exclusivos del dashboard de Infraestructura -->
+<style id="relevaV150ContrasteDashboard">
+#avanceModal .dashTables .table{color:#f2f8ff!important}
+#avanceModal .dashTables .table th{background:#14314a!important;color:#e8fcff!important;border-color:#355470!important}
+#avanceModal .dashTables .table td{background:#0b2034!important;color:#f1f8ff!important;border-color:#29415d!important;opacity:1!important}
+#avanceModal .dashTables .table tbody tr:nth-child(even) td{background:#102a40!important}
+#avanceModal .dashTables .table tbody tr:hover td{background:#153c52!important}
+#avanceModal .dashTables .table td a{color:#8de7ff!important;text-decoration:underline!important}
+</style>
+
 </body>
 </html>
 
