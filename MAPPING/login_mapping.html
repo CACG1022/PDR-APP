@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#07111d" />
-<title>PDR-APP | Login Mapping</title>
+<title>RELEVA | Acceso administrativo</title>
 
 <style>
   :root{
@@ -562,17 +562,17 @@
         <div class="brand">
           <img
             class="brand-logo-real"
-            src="https://static.wixstatic.com/media/63e6ec_6f519a0e397d4f6fbe3f82ce81606614~mv2.png/v1/fill/w_529,h_173,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/PDR-1.png"
-            alt="PDR-APP"
+            src="https://static.wixstatic.com/media/63e6ec_ed565acf4e4e4b02b7718e378e331c61~mv2.png/v1/fill/w_600,h_200,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RELEVA%20V3%20BLANCO.png"
+            alt="RELEVA"
             loading="eager"
             referrerpolicy="no-referrer"
           />
-          <div class="access-badge">MAPPING</div>
+          <div class="access-badge master">MASTER</div>
         </div>
 
         <div class="heading">
-          <h2>Ingreso a <span>PDR-APP MAPPING</span></h2>
-          <p>Accede a tus proyectos de mapping<br>y levantamiento en campo.</p>
+          <h2>Ingreso a <span>RELEVA</span></h2>
+          <p>Acceso administrativo al panel de RELEVA.</p>
         </div>
 
         <form id="loginForm">
@@ -610,7 +610,7 @@
           </button>
 
           <div class="helper">
-            <span>Inicia sesión para ver los proyectos<br>que te han asignado.</span>
+            <span>Inicia sesión para acceder al panel<br>de administración Master.</span>
           </div>
 
           <div class="status" id="status"></div>
@@ -618,13 +618,13 @@
       </section>
     </div>
 
-    <div class="footer-note">PDR-APP · MAPPING</div>
+    <div class="footer-note">RELEVA · MASTER</div>
   </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const LOGIN_MODE='MAPPING';
-  const DEFAULT_RETURN='infraestructura.html';
+  const LOGIN_MODE='MASTER';
+  const DEFAULT_RETURN='master.html';
   const SUPABASE_URL='https://qaypedqascrkmlolmiuf.supabase.co';
   const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFheXBlZHFhc2Nya21sb2xtaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDk4NTAsImV4cCI6MjA2NjM4NTg1MH0.Ll6IjEljNK9TUuT1ZdiRP-mtuMRoCKYBWsmgQE4No6g';
   const authSb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
@@ -698,7 +698,7 @@
     try{
       const {data,error}=await authSb.auth.signInWithPassword({email,password});
       if(error)throw error;
-      if(!data?.user)throw new Error('Supabase no devolvió un usuario válido.');
+      if(!data?.user)throw new Error('La base de datos no devolvió un usuario válido.');
 
       if(LOGIN_MODE==='MASTER')await validarMaster(data.user);
 
@@ -820,3 +820,4 @@
 </script>
 </body>
 </html>
+
