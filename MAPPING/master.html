@@ -3369,8 +3369,24 @@ header{
     <h3>🗺️ Visualización del mapa</h3>
     <label>Empresa</label>
     <select id="fEmpresa" onchange="filtrarProyectosPorEmpresa()"></select>
+    <label>Ciudad del proyecto</label>
+    <select id="relevaV154Ciudad" onchange="relevaV154FiltrarProyectos()"><option value="">Todas las ciudades</option></select>
+    <label>Tipo de proyecto</label>
+    <select id="relevaV154Tipo" onchange="relevaV154FiltrarProyectos()"><option value="">Todos los tipos</option><option value="CENSO HOMEPASS">Censo Homepass</option><option value="MAPPING">Mapping</option><option value="VIABILIDAD">Viabilidad</option></select>
     <label>Proyecto</label>
     <select id="fProyecto" onchange="cargarProyectoMapa()"></select>
+    <div class="relevaDualPanel" id="relevaDualPanel">
+      <div class="relevaDualTitle">🗺️ Comparar dos proyectos</div>
+      <div class="relevaDualHint">El proyecto de arriba es el principal. Superpón otro como capa de consulta.</div>
+      <label for="relevaDualProject">Segundo proyecto</label>
+      <select id="relevaDualProject" onchange="relevaDualChange()"><option value="">Sin segundo proyecto</option></select>
+      <div class="relevaDualActions">
+        <button type="button" class="btn blue" id="relevaDualToggle" onclick="relevaDualToggle()">👁️ Mostrar segundo</button>
+        <button type="button" class="btn gray" id="relevaDualFit" onclick="relevaDualFit()">⌖ Ver ambos</button>
+      </div>
+      <div id="relevaDualStatus" class="relevaDualStatus" role="status" aria-live="polite">Selecciona otro proyecto para compararlo.</div>
+      <div class="relevaDualLegend"><span class="relevaDualDot"></span> Capa secundaria — contorno azul celeste discontinuo</div>
+    </div>
     <div id="pdrInfraFiltrosPrincipales">
     <div style="margin:12px 0;padding:10px;border:1px solid #246481;border-radius:10px;background:#0c2537">
       <label for="pdrBuscarConsecutivoMaster" style="margin-top:0">🔎 Buscar elemento por consecutivo</label>
@@ -3421,6 +3437,14 @@ header{
     <div style="display:flex;gap:6px;margin-top:9px"><button class="btn blue" onclick="pdrHpRecargar()">Actualizar</button><button class="btn gray" onclick="pdrHpLimpiarFiltros()">Limpiar</button></div>
     <div id="hpSidebarResumen" class="hint" style="margin-top:10px">Selecciona un proyecto Censo Homepass.</div>
     <div class="hpMasterMode"><span style="font-size:11px">Ver predios:</span><button type="button" id="hpModoPuntos" onclick="pdrHpModoCambiar('PUNTOS')">● Puntos</button><button type="button" id="hpModoIconos" onclick="pdrHpModoCambiar('ICONOS')">🏠 Íconos</button></div>
+    <div class="hpCartografiaControls">
+      <h3>🗺️ Cartografía del proyecto</h3>
+      <button type="button" class="btn layerOff" id="btnCartografiaHomepassMaster"
+        onclick="toggleCartografiaMapaMaster()" disabled>🗺️ Sin cartografía</button>
+      <button type="button" class="btn gray" id="btnUbicarCartografiaHomepass" onclick="relevaIrACartografiaHomepass()" disabled>📍 Ir a cartografía</button>
+      <div id="relevaCartografiaEstadoHomepass" class="hint" role="status" aria-live="polite">Selecciona un proyecto con cartografía.</div>
+      <div class="hint">Muestra u oculta la cartografía cargada en Proyectos, sin ocultar manzanas ni predios.</div>
+    </div>
     <button class="btn blue" onclick="pdrHpAbrirDashboard()">▥ Dashboard Homepass</button>
     <button class="btn gray" onclick="mzMasterAbrirParaProyecto(document.getElementById('fProyecto').value)">Gestionar manzanas</button>
   </div>
@@ -7279,7 +7303,19 @@ async function subirCartografiaProyecto(){
     const sel=document.getElementById('cartografiaProyecto');
     if(sel)sel.value=p.id;
     actualizarEstadoCartografiaMaster();
-
+    cartografiaMapaMasterCache.delete(String(p.id));
+    if(String(document.getElementById('fProyecto')?.value||'')===String(p.id)){
+      limpiarCartografiaMapaMaster();
+      if(typeof pdrHpEsActivo==='function' && pdrHpEsActivo()){
+        localStorage.setItem('releva_hp_cartografia_visible_v1','1');
+        mostrarCartografiaMapaMaster=true;
+      }
+      actualizarBotonesCapasMapaMaster();
+      if(mostrarCartografiaMapaMaster){
+        const projectNow=proyectos.find(x=>String(x.id)===String(p.id));
+        if(projectNow)await cargarCartografiaMapaMaster(projectNow);
+      }
+    }
     alert(`Cartografía cargada correctamente para ${p.codigo||p.nombre}.`);
   }catch(e){
     console.error('Cartografía:',e);
@@ -8597,11 +8633,12 @@ function actualizarBotonesCapasMapaMaster(){
     bo.classList.toggle('layerOff',!mapaBaseOscuroMaster);
   }
 
-  const b=document.getElementById('btnCartografiaMapaMaster');
   const p=proyectos.find(x=>String(x.id)===String(document.getElementById('fProyecto')?.value||''));
   const disponible=!!String(p?.cartografia_path||'').trim();
 
-  if(b){
+  for(const idBoton of ['btnCartografiaMapaMaster','btnCartografiaHomepassMaster']){
+    const b=document.getElementById(idBoton);
+    if(!b)continue;
     b.disabled=!disponible;
     b.textContent=!disponible
       ? '🗺️ Sin cartografía'
@@ -8611,11 +8648,30 @@ function actualizarBotonesCapasMapaMaster(){
   }
 }
 
+let relevaCartografiaLoadId=0;
+let relevaCartografiaUltimoBounds=null;
+function relevaEstadoCartografiaHomepass(message,level='info'){
+  const el=document.getElementById('relevaCartografiaEstadoHomepass');
+  if(!el)return;
+  el.textContent=message;
+  el.style.color=level==='error'?'#fca5a5':level==='ok'?'#86efac':'#b7d7e6';
+  const button=document.getElementById('btnUbicarCartografiaHomepass');
+  if(button)button.disabled=!mostrarCartografiaMapaMaster||!relevaCartografiaUltimoBounds?.isValid?.();
+}
+function relevaIrACartografiaHomepass(){
+  const b=relevaCartografiaUltimoBounds;
+  if(!map||!b?.isValid?.())return alert('Todavía no hay una cartografía con coordenadas válidas para ubicar.');
+  map.invalidateSize();
+  map.fitBounds(b.pad(.12),{padding:[30,30],maxZoom:19});
+}
 function limpiarCartografiaMapaMaster(){
+  ++relevaCartografiaLoadId; // evita que una descarga antigua pinte capas del proyecto previo
   if(cartografiaMapaMasterLayer&&map){
     try{map.removeLayer(cartografiaMapaMasterLayer)}catch(_){}
   }
   cartografiaMapaMasterLayer=null;
+  relevaCartografiaUltimoBounds=null;
+  relevaEstadoCartografiaHomepass('Cartografía oculta o pendiente de cargar.');
 }
 
 function parseCoordsCartografiaMaster(texto){
@@ -8714,62 +8770,59 @@ function popupCartografiaMaster(feature){
 async function cargarCartografiaMapaMaster(proyecto){
   limpiarCartografiaMapaMaster();
   if(!mostrarCartografiaMapaMaster||!proyecto?.cartografia_path)return null;
-
+  const token=++relevaCartografiaLoadId;
+  const projectId=String(proyecto.id);
+  relevaEstadoCartografiaHomepass('Cargando geometrías de '+(proyecto.cartografia_nombre||'cartografía')+'…');
   try{
-    let geo=cartografiaMapaMasterCache.get(String(proyecto.id));
-
+    let geo=cartografiaMapaMasterCache.get(projectId);
     if(!geo){
-      const {data,error}=await sb.storage
-        .from(CARTOGRAFIA_BUCKET)
-        .download(proyecto.cartografia_path);
+      const {data,error}=await sb.storage.from(CARTOGRAFIA_BUCKET).download(proyecto.cartografia_path);
       if(error)throw error;
-
-      geo=await blobCartografiaMasterAGeoJSON(
-        data,
-        proyecto.cartografia_tipo,
-        proyecto.cartografia_nombre||proyecto.cartografia_path
-      );
-
-      cartografiaMapaMasterCache.set(String(proyecto.id),geo);
+      geo=await blobCartografiaMasterAGeoJSON(data,proyecto.cartografia_tipo,proyecto.cartografia_nombre||proyecto.cartografia_path);
+      cartografiaMapaMasterCache.set(projectId,geo);
     }
-
-    cartografiaMapaMasterLayer=L.geoJSON(geo,{
-      style:()=>({
-        color:'#ffffff',
-        weight:2,
-        opacity:.95,
-        fillColor:'#ffffff',
-        fillOpacity:.05
-      }),
-      pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{
-        radius:4,
-        color:'#ffffff',
-        weight:2,
-        fillColor:'#ffffff',
-        fillOpacity:.8
-      }),
-      onEachFeature:(feature,l)=>{
-        const h=popupCartografiaMaster(feature);
-        if(h)l.bindPopup(h);
-      }
-    }).addTo(map);
-
-    cartografiaMapaMasterLayer.eachLayer?.(l=>{
-      try{l.bringToBack?.()}catch(_){}
+    if(token!==relevaCartografiaLoadId || !mostrarCartografiaMapaMaster || String(document.getElementById('fProyecto')?.value)!==projectId)return null;
+    const features=geo?.type==='FeatureCollection'?(geo.features||[]):geo?.type==='Feature'?[geo]:geo?.type? [{type:'Feature',properties:{},geometry:geo}]:[];
+    if(!features.length)throw new Error('El archivo no contiene geometrías GeoJSON que puedan dibujarse.');
+    // Pane superior a las manzanas (overlayPane=400), inferior a marcadores (markerPane=600).
+    if(!map.getPane('relevaCartografiaMaster')){
+      const pane=map.createPane('relevaCartografiaMaster');
+      pane.style.zIndex='460';
+      pane.style.pointerEvents='auto';
+    }
+    const layer=L.geoJSON(geo,{
+      pane:'relevaCartografiaMaster',
+      style:()=>({pane:'relevaCartografiaMaster',color:'#f8fbff',weight:3,opacity:1,fillColor:'#f5fbff',fillOpacity:.035,dashArray:'8 4'}),
+      pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{pane:'relevaCartografiaMaster',radius:5,color:'#fff',weight:2.5,fillColor:'#0ea5e9',fillOpacity:.85}),
+      onEachFeature:(feature,l)=>{const h=popupCartografiaMaster(feature);if(h)l.bindPopup(h);}
     });
-
-    return cartografiaMapaMasterLayer;
-
+    const bounds=layer.getBounds();
+    if(!bounds?.isValid?.())throw new Error('Las geometrías no tienen coordenadas geográficas válidas. Revisa la referencia espacial del archivo.');
+    const west=bounds.getWest(),east=bounds.getEast(),south=bounds.getSouth(),north=bounds.getNorth();
+    if(![west,east,south,north].every(Number.isFinite) || Math.abs(west)>180 || Math.abs(east)>180 || Math.abs(south)>90 || Math.abs(north)>90){
+      throw new Error('El archivo parece estar en coordenadas proyectadas. Exporta la cartografía desde QGIS usando EPSG:4326 (WGS 84).');
+    }
+    if(token!==relevaCartografiaLoadId || String(document.getElementById('fProyecto')?.value)!==projectId)return null;
+    layer.addTo(map);
+    cartografiaMapaMasterLayer=layer;
+    relevaCartografiaUltimoBounds=bounds;
+    const n=layer.getLayers().length;
+    const visible=map.getBounds().intersects(bounds);
+    const mzBounds=pdrHpEsActivo()&&pdrHpMainLayer?.getBounds?.();
+    const coincide=!mzBounds?.isValid?.() || mzBounds.intersects(bounds);
+    let message=n+' geometría'+(n===1?'':'s')+' cargada'+(n===1?'':'s')+' · capa visible.';
+    if(!coincide)message+=' ⚠ No coincide con las manzanas; revisa la ubicación.';
+    else if(!visible)message+=' Está fuera de la vista: pulsa «Ir a cartografía».';
+    relevaEstadoCartografiaHomepass(message,'ok');
+    return layer;
   }catch(e){
-    console.warn('Cartografía MASTER:',e);
-    alert('No fue posible visualizar la cartografía del proyecto.\n\n'+(e?.message||e));
-    mostrarCartografiaMapaMaster=false;
-    localStorage.setItem('master_mostrar_cartografia_v1','0');
-    actualizarBotonesCapasMapaMaster();
+    if(token!==relevaCartografiaLoadId)return null;
+    console.error('Cartografía del proyecto:',e);
+    relevaEstadoCartografiaHomepass('No se pudo mostrar: '+(e?.message||e),'error');
+    // El archivo permanece en el proyecto para que se pueda corregir o reemplazar.
     return null;
   }
 }
-
 async function toggleCartografiaMapaMaster(){
   const id=document.getElementById('fProyecto')?.value||'';
   const p=proyectos.find(x=>String(x.id)===String(id));
@@ -8780,7 +8833,11 @@ async function toggleCartografiaMapaMaster(){
   }
 
   mostrarCartografiaMapaMaster=!mostrarCartografiaMapaMaster;
-  localStorage.setItem('master_mostrar_cartografia_v1',mostrarCartografiaMapaMaster?'1':'0');
+  if(typeof pdrHpEsActivo==='function' && pdrHpEsActivo()){
+    localStorage.setItem('releva_hp_cartografia_visible_v1',mostrarCartografiaMapaMaster?'1':'0');
+  }else{
+    localStorage.setItem('master_mostrar_cartografia_v1',mostrarCartografiaMapaMaster?'1':'0');
+  }
   actualizarBotonesCapasMapaMaster();
 
   if(mostrarCartografiaMapaMaster)await cargarCartografiaMapaMaster(p);
@@ -9408,7 +9465,24 @@ async function cargarProyectoMapa(){
     return;
   }
 
-  if(pdrHpEsActivo()) { await pdrHpCargarPrincipal(id); return; }
+  if(pdrHpEsActivo()) {
+    await pdrHpCargarPrincipal(id);
+    // V157: la ruta Homepass también carga cartografía de proyecto.
+    // Se habilita al abrir un proyecto que tenga un archivo cargado, salvo
+    // cuando el supervisor haya desactivado manualmente la capa.
+    const saved=localStorage.getItem('releva_hp_cartografia_visible_v1');
+    if(proyecto.cartografia_path && saved===null){
+      mostrarCartografiaMapaMaster=true;
+    }else if(saved!==null){
+      mostrarCartografiaMapaMaster=saved==='1';
+    }
+    actualizarBotonesCapasMapaMaster();
+    if(mostrarCartografiaMapaMaster && proyecto.cartografia_path &&
+       String(document.getElementById('fProyecto')?.value||'')===String(id)){
+      await cargarCartografiaMapaMaster(proyecto);
+    }
+    return;
+  }
   pdrHpLimpiarCapas();
   pdrHpMostrarUI(false);
 
@@ -15660,9 +15734,9 @@ function pdrBizRenderDashboard(){
   const metas=ps.filter(p=>pdrBizMetaProject(p)>0);
   const aggregate=metas.length?metas.reduce((sum,p)=>sum+Math.min(100,pdrBizPct(p)||0),0)/metas.length:null;
   return `<div class="pdrBizCompany"><div class="pdrBizCompanyHead"><h3>${pdrBizSafe(e?.nombre||'Sin empresa asignada')} <span class="pdrBizMuted">(${ps.length} proyectos)</span></h3><div style="min-width:190px"><b>${aggregate===null?'Sin meta':aggregate.toFixed(1)+'%'} de cumplimiento promedio</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${aggregate===null?0:aggregate}%"></div></div></div></div>
-  <div class="pdrBizTableWrap" style="border:0;margin:0"><table class="pdrBizTable"><thead><tr><th>Proyecto</th><th>Estado / plan</th><th>Ejecutado / meta</th><th>Avance</th><th>Correcciones abiertas</th><th>Fecha compromiso</th><th>Gestión</th></tr></thead><tbody>${ps.map(p=>{
+  <div class="pdrBizTableWrap" style="border:0;margin:0"><table class="pdrBizTable"><thead><tr><th>Proyecto</th><th>Estado / plan</th><th>Ejecutado / meta</th><th>Avance</th><th>Correcciones abiertas</th><th>Promedio/día</th><th>Días restantes</th><th>Finalización estimada</th><th>Fecha compromiso</th><th>Gestión</th></tr></thead><tbody>${ps.map(p=>{
    const a=pdrBizAssignment(p.id),plan=pdrBizState.planes.find(x=>x.id===a?.plan_id),pct=pdrBizPct(p),meta=pdrBizMetaProject(p),value=pdrBizState.counts[p.id]||0,unidad=pdrBizUnitLabel(p);
-   return `<tr><td><b>${pdrBizSafe(p.nombre||p.codigo)}</b><div class="pdrBizMuted">${pdrBizSafe(p.codigo||'')}</div></td><td>${pdrBizSafe(a?.estado||'Sin estado')}<div class="pdrBizMuted">${pdrBizSafe(plan?.nombre||'Sin plan')}</div></td><td>${pdrBizN(value)} / ${meta?pdrBizN(meta):'Sin meta'} <small class="pdrBizMuted">${unidad}</small></td><td><b>${pct===null?'Sin meta':pct.toFixed(1)+'%'}</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${Math.min(100,pct||0)}%"></div></div></td><td>${pdrBizN(pdrBizState.correcciones[p.id]||0)}</td><td>${pdrBizSafe(a?.fecha_compromiso||'—')}</td><td><button class="pdrBizBtn" data-pdr-project="${pdrBizSafe(p.id)}">Configurar</button></td></tr>`;}).join('')}</tbody></table></div></div>`;
+   return `<tr><td><b>${pdrBizSafe(p.nombre||p.codigo)}</b><div class="pdrBizMuted">${pdrBizSafe(p.codigo||'')}</div></td><td>${pdrBizSafe(a?.estado||'Sin estado')}<div class="pdrBizMuted">${pdrBizSafe(plan?.nombre||'Sin plan')}</div></td><td>${pdrBizN(value)} / ${meta?pdrBizN(meta):'Sin meta'} <small class="pdrBizMuted">${unidad}</small></td><td><b>${pct===null?'Sin meta':pct.toFixed(1)+'%'}</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${Math.min(100,pct||0)}%"></div></div></td><td>${pdrBizN(pdrBizState.correcciones[p.id]||0)}</td><td class="relevaV156Rate" data-releva-pid="${pdrBizSafe(p.id)}">Calculando…</td><td class="relevaV156Days" data-releva-pid="${pdrBizSafe(p.id)}">—</td><td class="relevaV156End" data-releva-pid="${pdrBizSafe(p.id)}">—</td><td>${pdrBizSafe(a?.fecha_compromiso||'—')}</td><td><button class="pdrBizBtn" data-pdr-project="${pdrBizSafe(p.id)}">Configurar</button></td></tr>`;}).join('')}</tbody></table></div></div>`;
  }).join('')||'<div class="pdrBizEmpty">No hay proyectos en el filtro.</div>';
  pdrBizEl('pdrBizEmpresasPanel').querySelectorAll('[data-pdr-project]').forEach(b=>b.addEventListener('click',()=>{pdrBizEl('pdrBizProyectoSelect').value=b.dataset.pdrProject;pdrBizLoadAssignmentForm();pdrBizTab('asignacion');}));
 }
@@ -16570,6 +16644,17 @@ async function relevaExportarCarteraHomepass(desdePanel=false){
    <div><label>Archivo de manzanas</label><input type="file" id="mzMasterArchivo" accept=".geojson,.json,.kmz,application/geo+json,application/json,application/vnd.google-earth.kmz" onchange="mzMasterImportar(this)"></div>
   </div>
   <div id="mzMasterMensaje" class="hint">Selecciona un proyecto e importa las manzanas.</div>
+  <div class="relevaV154MzEdit" id="relevaV154MzEdit">
+    <b>Modificar el grupo de una manzana existente</b>
+    <p>Selecciona una manzana en el mapa o en el listado. Al cambiar de grupo, adoptará el color y el técnico asignado al grupo de destino.</p>
+    <div class="relevaV154MzEditGrid">
+      <div><label>Manzana</label><select id="relevaV154MzSel" onchange="relevaV154MzSeleccionar()"><option value="">Seleccionar manzana</option></select></div>
+      <div><label>Nuevo grupo</label><select id="relevaV154GrupoSel" onchange="relevaV154MzMostrarCambio()"></select></div>
+      <div><label>Técnico de destino</label><div id="relevaV154MzTech" class="hint">Selecciona un grupo</div></div>
+      <button type="button" class="btn blue" id="relevaV154GuardarMz" onclick="relevaV154GuardarGrupoMz()">Guardar cambio</button>
+    </div>
+    <div id="relevaV154MzAviso" class="hint">La geometría y los predios existentes se conservarán.</div>
+  </div>
   <div id="mzMasterGrupos" style="margin:12px 0"></div>
   <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
     <button class="btn blue small" onclick="mzMasterGuardarAsignaciones()">Guardar asignaciones</button>
@@ -16810,7 +16895,15 @@ function pdrHpLlenarSelect(id,values,fmt){const el=document.getElementById(id);i
 function pdrHpAsignado(m){const u=(typeof usuarios!=='undefined'?usuarios:[]).find(x=>String(x.id)===String(m.tecnico_id));return u?.nombre||u?.email||(m.tecnico_id?'Técnico asignado':'Sin asignar');}
 function pdrHpFiltros(){return {grupo:document.getElementById('hpFGrupo')?.value||'',mz:document.getElementById('hpFMz')?.value||'',tecnico:document.getElementById('hpFTecnico')?.value||'',tipo:document.getElementById('hpFTipo')?.value||'',uso:document.getElementById('hpFUso')?.value||'',buscar:String(document.getElementById('hpFBuscar')?.value||'').trim().toLowerCase()};}
 function pdrHpPredioMz(r){return String(pdrHpVal(r,'MZ')).trim();}
-function pdrHpRecargar(){return pdrHpCargarPrincipal(document.getElementById('fProyecto')?.value)}
+async function pdrHpRecargar(){
+  const pid=document.getElementById('fProyecto')?.value;
+  await pdrHpCargarPrincipal(pid);
+  const p=proyectos.find(x=>String(x.id)===String(pid));
+  if(p?.cartografia_path&&mostrarCartografiaMapaMaster&&
+     String(document.getElementById('fProyecto')?.value)===String(pid)){
+    await cargarCartografiaMapaMaster(p);
+  }
+}
 async function pdrHpCargarPrincipal(pid){
  const token=++pdrHpMainRequest;pdrHpMostrarUI(true);
  if(layer){layer.remove();layer=null;}if(polygonMasterLayer){try{map.removeLayer(polygonMasterLayer)}catch(_){}polygonMasterLayer=null;}
@@ -17707,7 +17800,420 @@ async function relevaCrearAdminGlobal(){
 }
 </script>
 
+
+<!-- RELEVA V154 · Ciudad, tipo de proyecto, proyecciones y edición de grupo Homepass -->
+<style id="relevaV154Css">
+.relevaV154MzEdit{border:1px solid #2e7893;border-radius:12px;background:#0c2739;padding:13px;margin:12px 0;color:#e6f7ff}
+.relevaV154MzEdit>b{font-size:13px;color:#baf7f2}.relevaV154MzEdit p{font-size:11px;color:#b5d5e5;line-height:1.5}
+.relevaV154MzEditGrid{display:grid;grid-template-columns:1fr 1fr 1fr auto;align-items:end;gap:9px}
+.relevaV154MzEditGrid label{display:block;font-size:10px;color:#b9d9ea;margin:0 0 5px}
+.relevaV154MzEditGrid select{width:100%;min-width:0}
+.relevaV154MzEditGrid .btn{white-space:nowrap;min-height:39px}
+.relevaV154MzChip{display:inline-flex;align-items:center;gap:6px;border:1px solid #36536c;border-radius:7px;background:#102336;color:#effbff;padding:5px 8px;margin:3px;cursor:pointer;font-size:11px}
+.relevaV154MzChip.active{outline:2px solid #67e8f9}
+.relevaV154Projection{padding:15px;margin:12px 0;background:#0b2539;border:1px solid #2d6583;border-radius:13px;color:#e9f9ff;clear:both}
+.relevaV154Projection h3{color:#baf7f2;font-size:14px;margin:0 0 9px}
+.relevaV154ProjectionGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
+.relevaV154ProjectionGrid>div{border:1px solid #36516a;background:#122e45;border-radius:9px;padding:10px}
+.relevaV154ProjectionGrid small{color:#b7d1df;display:block;font-size:10px;margin-bottom:5px}
+.relevaV154ProjectionGrid b{color:#fff;font-size:17px;overflow-wrap:anywhere}
+.relevaV154ProjectionNote{font-size:11px;color:#c1d8e5;line-height:1.5;margin-top:9px}
+.relevaV154BizProjTable{width:100%;border-collapse:collapse;font-size:11px}
+.relevaV154BizProjTable th,.relevaV154BizProjTable td{padding:8px;border-bottom:1px solid #29445d;text-align:left;color:#e6f4ff}
+.relevaV154BizProjTable th{color:#baf7f2;background:#132d42}
+@media(max-width:850px){.relevaV154MzEditGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:550px){.relevaV154MzEditGrid{grid-template-columns:1fr}}
+@media print{.relevaV154Projection{background:#fff!important;color:#102a43!important;border-color:#cbd5e1!important;break-inside:avoid}.relevaV154Projection h3,.relevaV154ProjectionGrid b{color:#123b56!important}.relevaV154ProjectionGrid>div{background:#f0f7fc!important;border-color:#dae3ea!important}.relevaV154ProjectionGrid small,.relevaV154ProjectionNote{color:#475569!important}}
+</style>
+<script id="relevaV154Funcionalidades">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const norm=x=>String(x??'').trim().toUpperCase();
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('es-CO',{maximumFractionDigits:2});
+const campoFecha=date=>{
+ if(!date)return '';
+ const d=new Date(date);
+ if(!Number.isFinite(d.getTime()))return '';
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+ const v=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ return v.year+'-'+v.month+'-'+v.day;
+};
+const diasEntre=(a,b)=>Math.max(1,Math.ceil((Date.parse(b+'T12:00:00Z')-Date.parse(a+'T12:00:00Z'))/86400000)+1);
+function proyeccion(meta,actual,fechaInicio){
+ if(!(Number(meta)>0))return {status:'Sin meta',mensaje:'Configura una meta en el proyecto.'};
+ if(Number(actual)>=Number(meta))return {status:'Meta alcanzada',actual,meta,rate:null,remaining:0,days:0,end:'Meta cumplida'};
+ if(!(Number(actual)>0)||!fechaInicio)return {status:'Sin producción',mensaje:'Aún no hay producción o fecha de captura suficiente para estimar el cierre.'};
+ const hoy=campoFecha(new Date());
+ const dias=diasEntre(fechaInicio,hoy),rate=actual/dias,remaining=Math.max(0,meta-actual);
+ if(!(rate>0))return {status:'Sin rendimiento',mensaje:'No se puede estimar la finalización.'};
+ const days=Math.ceil(remaining/rate);
+ const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);
+ return {status:'En progreso',actual,meta,rate,remaining,days,end:new Intl.DateTimeFormat('es-CO',{timeZone:'America/Bogota',day:'2-digit',month:'short',year:'numeric'}).format(d),start:fechaInicio};
+}
+function summaryHTML(p,unidad){
+ const metrics=p.status==='En progreso'||p.status==='Meta alcanzada';
+ const values=metrics?[
+ ['Estado',p.status],['Pendiente',fmt(p.remaining)+' '+unidad],['Promedio diario',p.rate===null?'—':fmt(p.rate)+' '+unidad+'/día'],['Días estimados',p.days],['Fecha estimada de cierre',p.end]
+ ]:[['Estado',p.status]];
+ return '<div class="relevaV154ProjectionGrid">'+values.map(([k,v])=>'<div><small>'+esc(k)+'</small><b>'+esc(v)+'</b></div>').join('')+'</div>'+
+ '<div class="relevaV154ProjectionNote">'+esc(p.mensaje||'Proyección orientativa: rendimiento promedio por día calendario desde el primer registro hasta hoy. Los días sin producción se incluyen. No contempla cambios futuros de personal ni de productividad.')+'</div>';
+}
+function inicioMasAntiguo(rows,cb){let first='';for(const r of rows||[]){const f=campoFecha(cb(r));if(f&&(!first||f<first))first=f;}return first;}
+function unit(p){return norm(p?.meta_unidad||(norm(p?.tipo_proyecto)==='CENSO HOMEPASS'?'HOMEPASS':'ELEMENTOS'));}
+function currentProject(){return (typeof proyectos!=='undefined'?proyectos:[]).find(p=>String(p.id)===String($('fProyecto')?.value));}
+// 1. Filtros en barra lateral: filtran la lista de proyectos sin modificar ningún registro.
+window.relevaV154FiltrarProyectos=function(preferPrevious=true){
+ const e=$('fEmpresa'),city=$('relevaV154Ciudad'),type=$('relevaV154Tipo'),sel=$('fProyecto');if(!sel||typeof proyectos==='undefined')return;
+ const ci=city?.value||'',ti=type?.value||'',ei=e?.value||'';
+ const permitted=proyectos.filter(p=>!ei||String(p.empresa_id)===ei);
+ const cities=[...new Set(permitted.map(p=>String(p.ciudad||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+ const previousCity=city?.value||'';
+ if(city){city.innerHTML='<option value="">Todas las ciudades</option>'+cities.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');city.value=cities.includes(previousCity)?previousCity:'';}
+ const filtered=permitted.filter(p=>(!city?.value||norm(p.ciudad)===norm(city.value))&&(!ti||norm(p.tipo_proyecto)===ti));
+ const old=sel.value;sel.innerHTML='<option value="">Seleccione...</option>'+filtered.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.codigo)+' · '+esc(p.nombre)+'</option>').join('');
+ const chosen=preferPrevious&&filtered.some(p=>String(p.id)===String(old))?old:(filtered[0]?.id||'');
+ if(String(sel.value)!==String(chosen)){sel.value=chosen;}
+ if(typeof cargarProyectoMapa==='function')cargarProyectoMapa();
+};
+if(typeof window.filtrarProyectosPorEmpresa==='function'){
+ const orig=window.filtrarProyectosPorEmpresa;
+ window.filtrarProyectosPorEmpresa=function(){
+   if($('relevaV154Ciudad')&&typeof proyectos!=='undefined'){window.relevaV154FiltrarProyectos(true);return;}
+   return orig.apply(this,arguments);
+ };
+}
+// 2. Edición de una manzana con propagación de grupo, color y técnico asignado.
+function targetGroupTech(grupo){
+ const rows=(typeof mzMasterRows!=='undefined'?mzMasterRows:[]).filter(r=>String(r.grupo)===String(grupo));
+ const ids=[...new Set(rows.map(r=>r.tecnico_id).filter(Boolean).map(String))];
+ return ids.length===1?ids[0]:null;
+}
+function groupOptions(){
+ const groups=[...new Set((typeof mzMasterRows!=='undefined'?mzMasterRows:[]).map(r=>String(r.grupo)))].sort((a,b)=>Number(a)-Number(b));
+ return groups.length?groups:Array.from({length:7},(_,i)=>String(i+1));
+}
+function selectedMz(){const id=$('relevaV154MzSel')?.value;return (typeof mzMasterRows!=='undefined'?mzMasterRows:[]).find(r=>String(r.id)===String(id));}
+window.relevaV154MzSeleccionar=function(){
+ const r=selectedMz();if(!r)return;
+ $('relevaV154GrupoSel').value=String(r.grupo);
+ window.relevaV154MzMostrarCambio();
+ try{
+  if(typeof mzMasterMap!=='undefined'&&mzMasterMap&&typeof mzMasterLayer!=='undefined'&&mzMasterLayer){
+    mzMasterLayer.eachLayer(l=>{if(String(l.feature?.properties?.id)===String(r.id)){mzMasterMap.fitBounds(l.getBounds().pad(.5));}});
+  }
+ }catch(_){ }
+};
+window.relevaV154MzMostrarCambio=function(){
+ const r=selectedMz(),grp=$('relevaV154GrupoSel')?.value,tid=targetGroupTech(grp);
+ const name=typeof usuarios!=='undefined'?usuarios.find(u=>String(u.id)===String(tid))?.nombre||usuarios.find(u=>String(u.id)===String(tid))?.email:null;
+ const msg=tid?'Técnico: '+(name||tid):'Grupo sin técnico asignado';
+ if($('relevaV154MzTech'))$('relevaV154MzTech').textContent=msg;
+ if($('relevaV154MzAviso'))$('relevaV154MzAviso').textContent=r?'MZ '+r.mz+': grupo actual '+r.grupo+'. Nuevo grupo '+grp+'. '+msg+'. Se conservan geometría, predios y fotografías.':'Selecciona una manzana para modificarla.';
+};
+window.relevaV154SeleccionarMz=id=>{if($('relevaV154MzSel')){$('relevaV154MzSel').value=String(id);window.relevaV154MzSeleccionar();const panel=$('relevaV154MzSel').closest('.relevaV154MzEdit');if(panel)panel.scrollIntoView({behavior:'smooth',block:'center'});}};
+function updateMzUI(){
+ const rows=typeof mzMasterRows!=='undefined'?mzMasterRows:[];
+ if(!$('relevaV154MzSel'))return;
+ const id=$('relevaV154MzSel').value;
+ $('relevaV154MzSel').innerHTML='<option value="">Seleccionar manzana</option>'+rows.map(r=>'<option value="'+esc(r.id)+'">MZ '+esc(r.mz)+' · Grupo '+esc(r.grupo)+'</option>').join('');
+ if(rows.some(r=>String(r.id)===String(id)))$('relevaV154MzSel').value=id;
+ const before=$('relevaV154GrupoSel')?.value||'';
+ $('relevaV154GrupoSel').innerHTML=groupOptions().map(g=>'<option value="'+esc(g)+'">Grupo '+esc(g)+'</option>').join('');
+ const r=selectedMz();if(r)$('relevaV154GrupoSel').value=String(r.grupo);
+ else if(before&&groupOptions().includes(before))$('relevaV154GrupoSel').value=before;
+ window.relevaV154MzMostrarCambio();
+ const list=$('mzMasterListado');if(list){
+  list.querySelectorAll('[data-v154-mz-id]').forEach(x=>x.addEventListener('click',()=>window.relevaV154SeleccionarMz(x.dataset.v154MzId)));
+ }
+}
+if(typeof window.mzMasterDibujar==='function'){
+ const old=window.mzMasterDibujar;
+ window.mzMasterDibujar=function(){const ret=old.apply(this,arguments);updateMzUI();
+  try{if(typeof mzMasterLayer!=='undefined'&&mzMasterLayer){mzMasterLayer.eachLayer(layer=>{
+   const r=layer.feature?.properties;if(!r)return;
+   layer.on('click',()=>window.relevaV154SeleccionarMz(r.id));
+   layer.bindPopup('<b>Manzana '+esc(r.mz)+'</b><p>Grupo '+esc(r.grupo)+'</p><button type="button" class="btn small blue" data-mz-id="'+esc(r.id)+'" onclick="relevaV154SeleccionarMz(this.dataset.mzId)">Cambiar grupo</button>');
+  });}}
+  catch(err){console.warn('Selector manzanas:',err)}
+  return ret;};
+}
+window.relevaV154GuardarGrupoMz=async function(){
+ const row=selectedMz(),newGroup=$('relevaV154GrupoSel')?.value,pid=$('mzMasterProyecto')?.value;
+ if(!row||!pid)return alert('Selecciona una manzana del proyecto.');
+ if(!newGroup)return alert('Selecciona el grupo destino.');
+ if(String(row.grupo)===String(newGroup))return alert('La manzana ya pertenece a ese grupo.');
+ if(typeof exigirProyectoPermitidoMaster==='function'&&!exigirProyectoPermitidoMaster(pid,'modificar grupos de manzanas'))return;
+ if(typeof mzMasterBusy!=='undefined'&&mzMasterBusy)return;
+ const tech=targetGroupTech(newGroup);
+ const same=(typeof mzMasterRows!=='undefined'?mzMasterRows:[]).filter(r=>String(r.grupo)===String(newGroup));
+ const assigned=[...new Set(same.map(r=>r.tecnico_id).filter(Boolean))];
+ if(assigned.length>1)return alert('El grupo de destino tiene técnicos diferentes. Uniforma las asignaciones antes de mover la manzana.');
+ const msg='¿Mover MZ '+row.mz+' del grupo '+row.grupo+' al '+newGroup+'?\n\nEl responsable será '+(tech||'Sin asignar')+'. Los predios existentes no se eliminan. Si el técnico tiene datos sin sincronizar, deben enviarse antes de continuar.';
+ if(!confirm(msg))return;
+ const btn=$('relevaV154GuardarMz');try{
+  if(btn){btn.disabled=true;btn.textContent='Guardando...'}
+  // La manzana no cambia de geometría; solo grupo, color y responsable.
+  const {error}=await sb.from('censo_manzanas').update({grupo:newGroup,color:mzMasterColor(newGroup),tecnico_id:tech||null}).eq('proyecto_id',pid).eq('id',row.id);
+  if(error)throw error;
+  if(typeof mzMasterCargar==='function')await mzMasterCargar();
+  if(String($('fProyecto')?.value)===String(pid)&&typeof pdrHpRecargar==='function')await pdrHpRecargar();
+  const updated=(typeof mzMasterRows!=='undefined'?mzMasterRows:[]).find(r=>String(r.id)===String(row.id));
+  if(updated)window.relevaV154SeleccionarMz(updated.id);
+  alert('MZ '+row.mz+' actualizada. El técnico debe sincronizar sus manzanas en Mapping para recibir la nueva asignación.');
+ }catch(e){alert('No fue posible actualizar el grupo: '+(e?.message||e));}
+ finally{if(btn){btn.disabled=false;btn.textContent='Guardar cambio';}}
+};
+// 3. Proyección del dashboard de Homepass.
+function renderHpProjection(){
+ const container=$('pdrHpDashContent');if(!container||!container.children.length)return;
+ let el=$('relevaV154HpProjection');if(!el){el=document.createElement('section');el.id='relevaV154HpProjection';el.className='relevaV154Projection';container.prepend(el);}
+ const p=currentProject();if(!p||norm(p.tipo_proyecto)!=='CENSO HOMEPASS'){el.style.display='none';return;}el.style.display='block';
+ const rows=typeof pdrHpMainPredios!=='undefined'?pdrHpMainPredios:[];
+ const total=rows.reduce((a,r)=>a+(Number(r.CANTTOTALH)||Number(r['CANTTOTALH'])||((Number(r.HOMRESIDEN)||0)+(Number(r.HOMECOMERI)||0))),0);
+ const first=inicioMasAntiguo(rows,r=>r.created_at||r.fecha_captura_app||r.FECHA);
+ const pr=proyeccion(Number(p.meta_valor)||0,total,first);
+ el.innerHTML='<h3>📅 Proyección de finalización · Censo Homepass</h3>'+summaryHTML(pr,'Homepass');
+}
+if(typeof window.pdrHpRenderDashboard==='function'){
+ const old=window.pdrHpRenderDashboard;
+ window.pdrHpRenderDashboard=function(){const x=old.apply(this,arguments);renderHpProjection();return x;};
+}
+// 4. Proyección del dashboard de Infraestructura. Se calcula con la producción total
+// del proyecto (sin alterar filtros de gráficas ni inventar fechas).
+function renderInfraProjection(){
+ const root=$('dashboardPrintArea');if(!root)return;
+ let el=$('relevaV154InfraProjection');if(!el){el=document.createElement('section');el.id='relevaV154InfraProjection';el.className='relevaV154Projection';
+  const goal=$('pdrMetaAvanceDashboard');if(goal&&goal.parentNode===root)goal.insertAdjacentElement('afterend',el);else root.prepend(el);
+ }
+ const id=$('dashProyecto')?.value||'';const p=(typeof proyectos!=='undefined'?proyectos:[]).find(x=>String(x.id)===String(id));
+ if(!p||norm(p.tipo_proyecto)==='CENSO HOMEPASS'){el.style.display='none';return;}el.style.display='block';
+ const unitVal=unit(p),rows=(typeof dashboardPuntos!=='undefined'?dashboardPuntos:[]).filter(r=>String(r.proyecto_id)===String(id));
+ const actual=unitVal==='METROS'?pdrMetaMetros(rows):rows.length;
+ const first=inicioMasAntiguo(rows,r=>r.fecha_captura_app||r.created_at||r.fecha);
+ const pr=proyeccion(Number(p.meta_valor)||0,actual,first);
+ el.innerHTML='<h3>📅 Proyección de finalización · Infraestructura</h3>'+summaryHTML(pr,unitVal==='METROS'?'metros':'elementos');
+}
+if(typeof window.renderDashboardAvances==='function'){
+ const old=window.renderDashboardAvances;
+ window.renderDashboardAvances=function(){const r=old.apply(this,arguments);renderInfraProjection();return r;};
+}
+// 5. Reporte general de avances: proyección por proyecto, sin sumar unidades distintas.
+const firstDateCache=new Map();
+let generation=0;
+async function fetchFirstDate(project){
+ const key=String(project.id);if(firstDateCache.has(key))return firstDateCache.get(key);
+ const table=norm(project.tipo_proyecto)==='CENSO HOMEPASS'?'censo_homepass':'mapping_puntos';
+ const column=table==='censo_homepass'?'created_at':'fecha_captura_app';
+ let r=await sb.from(table).select(column).eq('proyecto_id',project.id).not(column,'is',null).order(column,{ascending:true}).limit(1);
+ if(r.error&&column==='fecha_captura_app')r=await sb.from(table).select('created_at').eq('proyecto_id',project.id).order('created_at',{ascending:true}).limit(1);
+ if(r.error){console.warn('Primera fecha proyecto',project.id,r.error);return ''}
+ const first=campoFecha(r.data?.[0]?.[column]||r.data?.[0]?.created_at||'');firstDateCache.set(key,first);return first;
+}
+async function renderGeneralProjection(){
+ // V156: proyección integrada directamente en cada fila de la tabla general de avance.
+ // No crea panel o tabla adicional.
+ const previous=$('relevaV154GeneralProjection');
+ if(previous)previous.remove();
+ const projects=typeof pdrBizFiltered==='function'?pdrBizFiltered():(typeof proyectos!=='undefined'?proyectos:[]);
+ const seq=++generation;
+ const table=$('pdrBizEmpresasPanel');
+ if(!table)return;
+ const currentCells=table.querySelectorAll('.relevaV156Rate');
+ if(!currentCells.length)return;
+ const formatResult=(pr)=>{
+  if(pr.rate==null)return ['—','—',pr.end||pr.status||'Sin datos'];
+  return [fmt(pr.rate),pr.days??'—',pr.end||pr.status||'—'];
+ };
+ for(let i=0;i<projects.length;i+=4){
+  const items=await Promise.all(projects.slice(i,i+4).map(async p=>{
+   try{
+    const first=await fetchFirstDate(p);
+    const done=Number(pdrBizState?.counts?.[p.id]||0);
+    const pr=proyeccion(Number(p.meta_valor)||0,done,first);
+    return {p,pr};
+   }catch(e){return {p,pr:{status:'No disponible',mensaje:e.message}};}
+  }));
+  if(seq!==generation)return; // Se cambió filtro o se reconstruyó el reporte.
+  for(const {p,pr} of items){
+   const pid=String(p.id);
+   const cells=[
+    [...table.querySelectorAll('.relevaV156Rate')].find(el=>el.dataset.relevaPid===pid),
+    [...table.querySelectorAll('.relevaV156Days')].find(el=>el.dataset.relevaPid===pid),
+    [...table.querySelectorAll('.relevaV156End')].find(el=>el.dataset.relevaPid===pid)
+   ];
+   const values=formatResult(pr);
+   cells.forEach((el,j)=>{if(el){el.textContent=String(values[j]);el.title=j===0?'Promedio diario desde la primera captura, incluyendo días sin producción':j===1?'Días calendario estimados para completar la meta':'Fecha proyectada según la productividad registrada';}});
+  }
+ }
+}
+if(typeof window.pdrBizRenderDashboard==='function'){
+ const old=window.pdrBizRenderDashboard;
+ window.pdrBizRenderDashboard=function(){const r=old.apply(this,arguments);renderGeneralProjection().catch(console.warn);return r;};
+}
+})();
+</script>
+
+<style id="relevaV156ProjectionTableStyle">
+#pdrBizEmpresasPanel .pdrBizTable {min-width:1180px}
+#pdrBizEmpresasPanel .relevaV156Rate,
+#pdrBizEmpresasPanel .relevaV156Days,
+#pdrBizEmpresasPanel .relevaV156End {white-space:nowrap;font-weight:650;color:#d9faff}
+#pdrBizEmpresasPanel .relevaV156End {color:#a9f4dc}
+</style>
+<style id="relevaV157HomepassCartografia">
+.pdrHpActive .hpCartografiaControls{
+  margin:10px 0 13px;padding:10px;border:1px solid #2b6680;
+  border-radius:11px;background:#0b2132;
+}
+.hpCartografiaControls{display:none}
+.pdrHpActive .hpCartografiaControls{display:block}
+.hpCartografiaControls h3{font-size:12px;color:#baf7f2;margin:0 0 8px}
+.hpCartografiaControls button{width:100%;margin-bottom:7px}
+.hpCartografiaControls .hint{font-size:10px;color:#a9c5d7}
+</style>
+<style id="relevaV158CartografiaDiagnostics">
+.pdrHpActive #btnUbicarCartografiaHomepass{display:block;width:100%;margin:0 0 7px}
+#relevaCartografiaEstadoHomepass{line-height:1.45;margin:4px 0 8px;overflow-wrap:anywhere}
+</style>
+<!-- V159: dos proyectos de consulta en el mismo mapa, sin mezclar sus datos -->
+<style id="relevaDualStyles">
+.relevaDualPanel{margin:11px 0 12px;padding:11px;border-radius:12px;background:#0a2539;border:1px solid #286681;box-sizing:border-box}
+.relevaDualTitle{color:#c6f8ff;font-weight:850;font-size:12px;margin-bottom:5px}
+.relevaDualHint,.relevaDualStatus,.relevaDualLegend{color:#b5d3e3;font-size:10px;line-height:1.5}
+.relevaDualPanel label{display:block;margin-top:9px}
+.relevaDualPanel select{width:100%;min-width:0}
+.relevaDualActions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.relevaDualActions .btn{min-width:0;padding:9px 3px;font-size:11px}
+.relevaDualStatus{padding:7px;background:#061725;border-radius:8px;overflow-wrap:anywhere}
+.relevaDualStatus.error{color:#fecaca}.relevaDualStatus.ok{color:#bffbea}
+.relevaDualLegend{margin-top:7px}.relevaDualDot{width:11px;height:11px;border:2px dashed #3be4ff;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+.relevaSecondaryMarker{width:18px;height:18px;border-radius:50%;border:2px solid #fff;background:#06b6d4;box-shadow:0 0 0 3px #082f49aa;display:flex;justify-content:center;align-items:center;color:#fff;font-size:11px;font-weight:900}
+</style>
+<script id="relevaDualProjectsScript">
+(function(){
+'use strict';
+let activeLayer=null,activeId='',activeVisible=false,stamp=0,counts='',currentBounds=null;
+const $=id=>document.getElementById(id);
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const selected=()=>String($('relevaDualProject')?.value||'');
+const main=()=>String($('fProyecto')?.value||'');
+const getP=id=>(typeof proyectos!=='undefined'?proyectos:[]).find(p=>String(p.id)===String(id));
+function status(s,err=false){const el=$('relevaDualStatus');if(el){el.textContent=s;el.classList.toggle('error',err);el.classList.toggle('ok',!err&&!!activeLayer);}}
+function clear(){++stamp; if(activeLayer&&typeof map!=='undefined'&&map){try{map.removeLayer(activeLayer)}catch(_){}}activeLayer=null;currentBounds=null;activeId='';counts='';}
+function buttons(){let b=$('relevaDualToggle'),fit=$('relevaDualFit');if(b){b.disabled=!selected()||selected()===main();b.textContent=activeVisible?'🙈 Ocultar segundo':'👁️ Mostrar segundo';}if(fit)fit.disabled=!activeLayer;}
+function projects(){
+ const el=$('relevaDualProject');if(!el||typeof proyectos==='undefined')return;
+ const old=selected(), primary=main();
+ const ps=proyectos.filter(p=>String(p.id)!==primary);
+ el.innerHTML='<option value="">Sin segundo proyecto</option>'+ps.map(p=>'<option value="'+safe(p.id)+'">'+safe(p.codigo||'')+' · '+safe(p.nombre||'')+' ('+safe(p.tipo_proyecto||'')+')</option>').join('');
+ el.value=ps.some(p=>String(p.id)===old)?old:'';
+ if(!el.value){if(activeLayer)clear();activeVisible=false;status('Selecciona otro proyecto para compararlo.');}
+ buttons();
+}
+function boundsOf(layer){try{const b=layer.getBounds?.();return b?.isValid?.()?b:null;}catch(_){return null;}}
+function union(a,b){if(!a)return b;if(!b)return a;return a.extend(b);}
+function validGeo(pt){const lat=Number(pt[0]),lon=Number(pt[1]);return Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180;}
+function currentBoundsPrimary(){
+ let b=null;
+ for(const lyr of [typeof pdrHpMainLayer!=='undefined'?pdrHpMainLayer:null,typeof pdrHpMainMarkerLayer!=='undefined'?pdrHpMainMarkerLayer:null,typeof layer!=='undefined'?layer:null,typeof polygonMasterLayer!=='undefined'?polygonMasterLayer:null,typeof cartografiaMapaMasterLayer!=='undefined'?cartografiaMapaMasterLayer:null]){
+  const x=lyr&&boundsOf(lyr);if(x)b=union(b,x);
+ }
+ return b;
+}
+function onFeaturePopup(project,properties,label){return '<b>Proyecto secundario · '+safe(project.nombre||project.codigo)+'</b><br>'+safe(label||'')+(properties?'<br>'+properties:'')+'<br><small>Solo consulta. Para editar, selecciónalo como principal.</small>';}
+function addGeometry(group,geo,project,caption){
+ if(!geo)return 0;
+ const features=geo.type==='FeatureCollection'?(geo.features||[]):geo.type==='Feature'?[geo]:geo.type?[{type:'Feature',properties:{},geometry:geo}]:[];
+ if(!features.length)return 0;
+ const l=L.geoJSON({type:'FeatureCollection',features},{
+  style:()=>({color:'#39e4ff',weight:3,dashArray:'7 5',opacity:1,fillColor:'#22d3ee',fillOpacity:.07}),
+  pointToLayer:(feature,ll)=>L.circleMarker(ll,{radius:6,color:'#e0faff',weight:1.7,fillColor:'#0891b2',fillOpacity:.88}),
+  onEachFeature:(f,lyr)=>{lyr.bindPopup(onFeaturePopup(project,'',caption||f.properties?.name||f.properties?.NOMBRE||'Cartografía'));}
+ }).addTo(group);
+ return l.getLayers().length;
+}
+async function queryAll(table,pid){
+ let all=[];for(let from=0;from<100000;from+=1000){
+  const {data,error}=await sb.from(table).select('*').eq('proyecto_id',pid).range(from,from+999);
+  if(error)throw error;all.push(...(data||[]));if((data||[]).length<1000)break;
+ }return all;
+}
+async function draw(){
+ clear();if(!activeVisible||!selected()){buttons();return;}
+ const id=selected(),p=getP(id),token=stamp;
+ if(!p||id===main()){activeVisible=false;status('Selecciona un proyecto distinto del principal.');buttons();return;}
+ if(typeof exigirProyectoPermitidoMaster==='function'&&!exigirProyectoPermitidoMaster(id,'visualizar el segundo proyecto')){activeVisible=false;buttons();return;}
+ status('Consultando registros del segundo proyecto…');
+ const group=L.featureGroup();let amount=0,geom=0;
+ try{
+  const hp=String(p.tipo_proyecto||'').toUpperCase().includes('CENSO HOMEPASS');
+  if(hp){
+   const [mzs,predios]=await Promise.all([queryAll('censo_manzanas',id),queryAll('censo_homepass',id)]);
+   if(token!==stamp||id!==selected()||!activeVisible)return;
+   for(const m of mzs){
+    if(!m.geometria)continue;
+    try{geom+=addGeometry(group,{type:'Feature',properties:{name:'Manzana '+m.mz},geometry:m.geometria},p,'Manzana '+m.mz+' · Grupo '+m.grupo);}catch(e){console.warn('Manzana secundaria',e);}
+   }
+   for(const r of predios){
+    const val=k=>typeof pdrHpVal==='function'?pdrHpVal(r,k):(r[k]??'');
+    const pt=[val('LATITUDE'),val('LONGITUDE')];if(!validGeo(pt))continue;
+    const label=val('ID-ENERGIZ')||'Predio';
+    L.circleMarker([Number(pt[0]),Number(pt[1])],{radius:7,color:'#fff',weight:2,fillColor:'#06b6d4',fillOpacity:.9})
+     .bindPopup(onFeaturePopup(p,'',safe(label)+'<br>'+safe(val('DIRECCION')||''))).addTo(group);amount++;
+   }
+  }else{
+   const rows=await queryAll('mapping_puntos',id);
+   if(token!==stamp||id!==selected()||!activeVisible)return;
+   for(const r of rows){
+    const pt=[r.latitude,r.longitude];if(!validGeo(pt))continue;
+    L.circleMarker([Number(pt[0]),Number(pt[1])],{radius:7,color:'#fff',weight:2,fillColor:'#06b6d4',fillOpacity:.9})
+      .bindPopup(onFeaturePopup(p,'',safe(r.idcampo||r.consecutiv||'Elemento')+' · '+safe(r.tipo||''))).addTo(group);amount++;
+   }
+   const url=p.poligonos_url||p.poligonos_drive_url;
+   if(url&&typeof descargarGeoJSONPublico==='function'){
+    try{const response=await descargarGeoJSONPublico(typeof pdrUrlPoligonosVersionadaMaster==='function'?pdrUrlPoligonosVersionadaMaster(url,p.poligonos_version):url);
+      if(token!==stamp||id!==selected()||!activeVisible)return;
+      geom+=addGeometry(group,response.geojson,p,'Polígonos del proyecto');
+    }catch(e){console.warn('Polígonos proyecto secundario:',e);}
+   }
+  }
+  // También superpone la cartografía adicional del segundo proyecto si existe.
+  if(p.cartografia_path&&typeof CARTOGRAFIA_BUCKET!=='undefined'&&typeof blobCartografiaMasterAGeoJSON==='function'){
+   try{
+    const {data,error}=await sb.storage.from(CARTOGRAFIA_BUCKET).download(p.cartografia_path);
+    if(error)throw error;
+    const geo=await blobCartografiaMasterAGeoJSON(data,p.cartografia_tipo,p.cartografia_nombre||p.cartografia_path);
+    if(token!==stamp||id!==selected()||!activeVisible)return;
+    geom+=addGeometry(group,geo,p,'Cartografía · '+(p.cartografia_nombre||'archivo de proyecto'));
+   }catch(e){console.warn('Cartografía proyecto secundario:',e);}
+  }
+  if(token!==stamp||id!==selected()||!activeVisible)return;
+  if(!group.getLayers().length){status('El segundo proyecto no tiene geometrías o puntos válidos.');buttons();return;}
+  group.addTo(map);activeLayer=group;activeId=id;currentBounds=boundsOf(group);
+  status('Segundo proyecto: '+(p.codigo||p.nombre)+' · '+amount+' registros · '+geom+' geometrías.');buttons();
+ }catch(e){if(token!==stamp)return;console.error('Comparación de proyectos:',e);status('No fue posible cargar el segundo proyecto: '+(e.message||e),true);buttons();}
+}
+window.relevaDualChange=function(){activeVisible=!!selected();draw();};
+window.relevaDualToggle=function(){if(!selected())return status('Selecciona el segundo proyecto.');activeVisible=!activeVisible;draw();};
+window.relevaDualFit=function(){const a=currentBoundsPrimary(),b=currentBounds;const fit=union(a,b);if(!fit?.isValid?.())return alert('No hay coordenadas válidas para encuadrar los proyectos.');map.invalidateSize();map.fitBounds(fit.pad(.10),{padding:[35,35],maxZoom:18});};
+// Respetar las cargas originales del proyecto principal y restaurar la capa secundaria.
+if(typeof window.cargarProyectoMapa==='function'){
+ const original=window.cargarProyectoMapa;
+ window.cargarProyectoMapa=async function(...args){
+  const response=await original.apply(this,args);
+  projects();
+  if(activeVisible&&selected())await draw();
+  return response;
+ };
+}
+function init(){projects();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
 </body>
 </html>
+
 
 
