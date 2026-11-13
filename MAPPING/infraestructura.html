@@ -18558,10 +18558,12 @@ window.hpRenderMarkers=function(){
    'CENTRO COMERCIAL':['🏬','#06b6d4']
   };
   const [emoji,color]=simbolos[tipo]||['📍','#38bdf8'];
-  const icon=L.divIcon({className:'hpV155Marker',html:'<div class="hpV155House" title="'+esc(tipo)+'"><span class="hpV155Icon" style="background:'+color+'24;border:2px solid '+color+';border-radius:12px;padding:2px 7px;line-height:31px">'+emoji+'</span><span class="hpV155Id" style="border-color:'+color+'">'+esc(id)+'</span></div>',iconSize:[116,64],iconAnchor:[58,23]});
+  const qaBadge=(typeof window.relevaQaBadgePredio==='function'?window.relevaQaBadgePredio(r):'');
+  const icon=L.divIcon({className:'hpV155Marker',html:'<div class="hpV155House" title="'+esc(tipo)+'"><span class="hpV155Icon" style="background:'+color+'24;border:2px solid '+color+';border-radius:12px;padding:2px 7px;line-height:31px">'+emoji+'</span>'+qaBadge+'<span class="hpV155Id" style="border-color:'+color+'">'+esc(id)+'</span></div>',iconSize:[116,64],iconAnchor:[58,23]});
   const m=L.marker([Number(r.LATITUDE),Number(r.LONGITUDE)],{icon,pane:'hpV155Pane',interactive:true,riseOnHover:true}).addTo(window.hpLayer);
   const box=document.createElement('div'),title=document.createElement('b');title.textContent=emoji+' '+id;box.appendChild(title);
   const d=document.createElement('div');d.textContent=[r.DIRECCION,r.TIPOPREDIO].filter(Boolean).join(' · ');box.appendChild(d);
+  if(qaBadge){const qaText=document.createElement('div');qaText.style.cssText='margin-top:6px;color:#92400e;font-weight:700';qaText.textContent='⚠ Posibles inconsistencias: revisa el formulario y el control de calidad.';box.appendChild(qaText);}
   box.appendChild(popupButton('✎ Editar',()=>edit(r.offline_id),'#0284c7'));
   box.appendChild(popupButton('📍 Mover',()=>move(r.offline_id),'#7c3aed'));
   m.bindPopup(box,{maxWidth:280,autoPan:true});
@@ -19282,6 +19284,64 @@ if(typeof window.hpGuardar==='function'){
    return original.apply(this,args);
  };
 }
+})();
+</script>
+
+<style id="relevaV166QaMarkerStyle">
+.hpV155House{position:relative!important}
+.relevaQaMapWarning{position:absolute;z-index:7;right:19px;top:-19px;display:flex;align-items:center;justify-content:center;
+ width:29px;height:29px;border-radius:50%;border:2px solid #fff;background:#f59e0b;color:#261500;
+ box-shadow:0 2px 8px #0009;font-size:18px;font-weight:900;line-height:1;pointer-events:none}
+</style>
+<script id="relevaV166QaMapScript">
+(function(){
+ 'use strict';
+ let alerts=new Map(),lastProject='',busy=false;
+ const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+ const label=r=>String(r['ID-ENERGIZ']||((r.MZ!=null&&r.LOTEO!=null)?'MZ'+r.MZ+' P'+r.LOTEO:'')).trim();
+ function localWarn(r){
+  const typ=norm(r.TIPOPREDIO),hp=Number(r.CANTTOTALH??((Number(r.HOMRESIDEN)||0)+(Number(r.HOMECOMERI)||0)));
+  if(typ&&!['PREDIO BALDIO','POTRERO','ZONA VERDE','CANCHA','LOTE'].includes(typ)&&hp===0)return true;
+  if(typ==='CASA'&&hp>=12)return true;
+  const floors=Number(r.UNIDHABITA||r.CANTPISOS||0);
+  if(typ==='EDIFICIO'&&floors>=4&&hp<floors)return true;
+  const rows=typeof hpRowsProject==='function'?hpRowsProject():[];
+  return rows.some(x=>x!==r&&String(x.offline_id||x.supabase_id||'')!==String(r.offline_id||r.supabase_id||'')&&(
+   (norm(r['ID-ENERGIZ'])&&norm(r['ID-ENERGIZ'])===norm(x['ID-ENERGIZ']))||
+   (norm(r.DIRECCION)&&norm(r.DIRECCION)===norm(x.DIRECCION))||
+   (String(r.SERIALCONT||'').trim()&&String(r.SERIALCONT)!=='0'&&String(r.SERIALCONT)===String(x.SERIALCONT))));
+ }
+ window.relevaQaBadgePredio=function(r){
+  const uuid=String(r.supabase_id||r.id||'');
+  const hits=alerts.get(uuid)||[];
+  if(!hits.length&&!localWarn(r))return '';
+  const title=hits.length?hits.length+' alerta(s) de calidad pendientes':'Posible inconsistencia local';
+  return '<span class="relevaQaMapWarning" title="'+title+'" aria-label="'+title+'">!</span>';
+ };
+ async function reload(){
+  if(busy||!navigator.onLine||typeof mappingSb==='undefined'||typeof mappingUser==='undefined'||!mappingUser?.id||typeof hpType!=='function'||!hpType())return;
+  const pid=String(hpProject()||'');if(!pid)return;
+  busy=true;
+  try{
+   const {data,error}=await mappingSb.rpc('releva_qa_alertas_tecnico',{p_proyecto:pid});
+   if(error)throw error;
+   if(pid!==String(hpProject()||''))return;
+   const next=new Map();for(const r of data||[]){const id=String(r.registro_id);if(!next.has(id))next.set(id,[]);next.get(id).push(r);}
+   alerts=next;lastProject=pid;
+   if(typeof hpRenderMarkers==='function')hpRenderMarkers();
+  }catch(e){console.warn('Control de calidad del mapa: ',e.message||e);}
+  finally{busy=false;}
+ }
+ const oldSelect=window.seleccionarProyecto;
+ if(typeof oldSelect==='function')window.seleccionarProyecto=function(...args){
+  const output=oldSelect.apply(this,args);
+  Promise.resolve(output).then(()=>{alerts=new Map();lastProject='';setTimeout(reload,700)});
+  return output;
+ };
+ window.relevaQaActualizarMapa=reload;
+ setInterval(()=>{if(typeof hpType==='function'&&hpType()&&document.visibilityState==='visible')reload();},25000);
+ window.addEventListener('online',()=>setTimeout(reload,500));
+ setTimeout(reload,1800);
 })();
 </script>
 </body></html>
