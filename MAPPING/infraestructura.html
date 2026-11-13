@@ -19135,7 +19135,157 @@ window.addEventListener('online',()=>{if(home()){subscribe();hp161Refresh()}});d
 setTimeout(enter,1800);
 })();
 </script>
+
+<style id="relevaV165PrecheckStyle">
+#hpOverlay .relevaQaPreflight{border:1px solid #1a6473;border-radius:12px;padding:10px 12px;background:#082638;margin:9px 0 12px;line-height:1.45;color:#d5f5ff;font-size:12px}
+#hpOverlay .relevaQaPreflight strong{display:block;color:#9ff6ee;font-size:12px;margin-bottom:4px}
+#hpOverlay .relevaQaPreflight .qaFind{padding:7px 9px;margin-top:6px;border:1px solid #a35334;background:#402417;color:#ffddb7;border-radius:8px}
+#hpOverlay .relevaQaPreflight .qaFind.qaHard{background:#451d25;border-color:#f87171;color:#ffe1e1}
+#hpOverlay .relevaQaPreflight .qaFind.qaOk{background:#0a392e;border-color:#2f8f77;color:#adfbd9}
+#hpOverlay [data-hp-name].relevaQaInvalid{border:2px solid #fb5555!important;box-shadow:0 0 0 2px #fb555529!important}
+#hpOverlay [data-hp-name].relevaQaWarning{border:2px solid #f59e0b!important;box-shadow:0 0 0 2px #f59e0b29!important}
+</style>
+
+<script id="relevaV165Precheck">
+(function(){
+'use strict';
+const overlay=document.getElementById('hpOverlay');
+if(!overlay)return;
+const body=overlay.querySelector('.hpBody');if(!body)return;
+const notice=document.createElement('section');
+notice.className='relevaQaPreflight';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+notice.innerHTML='<strong>🛡️ Verificación preventiva del predio</strong><div id="relevaQaPrecheckResults">Diligencia la dirección, el identificador y el serial para comprobar posibles duplicados.</div>';
+body.insertBefore(notice,body.querySelector('#hpMsg')||body.firstChild);
+const results=notice.querySelector('#relevaQaPrecheckResults');
+const relevant=['DIRECCION','ID-ENERGIZ','SERIALCONT','TIPOPREDIO','HOMRESIDEN','HOMECOMERI','UNIDHABITA','MZ','LOTEO'];
+let timer=0,revision=0,lastKey='',lastResult=null;
+const get=k=>typeof hpGet==='function'?String(hpGet(k)||'').trim():'';
+const norm=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+const serial=x=>{const v=String(x??'').trim();return /^\d{1,6}$/.test(v)?v.padStart(6,'0'):''};
+const add=(arr,type,msg,fields)=>arr.push({type,msg,fields});
+const visible=()=>overlay.classList.contains('open')&&typeof hpType==='function'&&hpType();
+const project=()=>typeof hpProject==='function'?String(hpProject()||''):'';
+const key=()=>[project(),String(typeof hpEditing!=='undefined'?hpEditing:''),...relevant.map(get)].join('\u001f');
+function draw(items,remoteStatus){
+ overlay.querySelectorAll('.relevaQaInvalid,.relevaQaWarning').forEach(el=>el.classList.remove('relevaQaInvalid','relevaQaWarning'));
+ results.replaceChildren();
+ const fragments=[];
+ if(!items.length){fragments.push({type:'ok',msg:'Sin inconsistencias detectadas con los datos disponibles.'});}
+ else fragments.push(...items);
+ if(remoteStatus)fragments.push({type:'info',msg:remoteStatus});
+ fragments.forEach(x=>{
+   const node=document.createElement('div');node.className='qaFind'+(x.type==='hard'?' qaHard':x.type==='ok'?' qaOk':'');
+   node.textContent=(x.type==='hard'?'⛔ ':x.type==='warn'?'⚠️ ':x.type==='ok'?'✓ ':'ℹ️ ')+x.msg;
+   results.appendChild(node);
+   for(const field of x.fields||[]){
+      const el=typeof hpControl==='function'?hpControl(field):null;
+      if(el)el.classList.add(x.type==='hard'?'relevaQaInvalid':'relevaQaWarning');
+   }
+ });
+}
+function localRows(){
+ try{return typeof hpRowsProject==='function'?hpRowsProject():[];}catch(_){return [];}
+}
+function localCheck(){
+ const issues=[],candidate={addr:norm(get('DIRECCION')),energy:norm(get('ID-ENERGIZ')),meter:serial(get('SERIALCONT'))};
+ const current=String(typeof hpEditing!=='undefined'?hpEditing:'');
+ const others=localRows().filter(r=>String(r.offline_id||'')!==current);
+ const type=norm(get('TIPOPREDIO'));
+ const total=(Number(get('HOMRESIDEN'))||0)+(Number(get('HOMECOMERI'))||0);
+ const pisos=Number(get('UNIDHABITA'))||0;
+ const excluded=['PREDIO BALDIO','POTRERO','ZONA VERDE','CANCHA','LOTE'];
+ if(type&&!excluded.includes(type)&&total===0)add(issues,'warn','Este predio tiene 0 Homepass. Verifica que sea correcto.',['HOMRESIDEN','HOMECOMERI']);
+ if(type==='EDIFICIO'&&pisos>=4&&total<pisos)add(issues,'warn',`Edificio de ${pisos} pisos con ${total} Homepass. Comprueba las unidades censadas.`,['UNIDHABITA','HOMRESIDEN','HOMECOMERI']);
+ if(type==='CASA'&&total>=12)add(issues,'warn',`Casa con ${total} Homepass. Es un valor atípico y conviene revisarlo.`,['HOMRESIDEN','HOMECOMERI']);
+ for(const r of others){
+   const id=String(r['ID-ENERGIZ']||r.MZ&&r.LOTEO? (r['ID-ENERGIZ']||`MZ${r.MZ} P${r.LOTEO}`):'');
+   const label=String(r['ID-ENERGIZ']||r.DIRECCION||'otro predio');
+   if(candidate.energy&&norm(id)===candidate.energy)add(issues,'hard',`ID-ENERGIZ ya usado en este equipo (${label}).`,['ID-ENERGIZ']);
+   if(candidate.meter&&serial(r.SERIALCONT)===candidate.meter)add(issues,'warn',`Serial de contador repetido en este equipo (${label}).`,['SERIALCONT']);
+   if(candidate.addr&&norm(r.DIRECCION)===candidate.addr)add(issues,'warn',`Dirección igual a otro predio del equipo (${label}). Puede ser válida en un edificio o conjunto.`,['DIRECCION']);
+ }
+ return {issues,candidate};
+}
+async function remoteCheck(candidate,token){
+ if(!navigator.onLine||!window.mappingSb||!project())return {issues:[],status:'Sin conexión: solo se comprobaron los registros guardados en el equipo. Al sincronizar se realizará otra validación.'};
+ const pid=project(),current=String(typeof hpEditing!=='undefined'?hpEditing:'');
+ const checks=[];
+ const addQuery=(kind,field,value)=>{
+   if(!value)return;
+   // Consultas exactas, limitadas a 5 resultados y siempre restringidas al proyecto activo.
+   const query=mappingSb.from('censo_homepass').select('offline_id,DIRECCION,"ID-ENERGIZ",SERIALCONT').eq('proyecto_id',pid).eq(field,value).limit(5);
+   checks.push({kind,promise:query});
+ };
+ if(candidate.addr){
+   addQuery('addr','DIRECCION',get('DIRECCION'));
+ }
+ if(candidate.energy)addQuery('energy','ID-ENERGIZ',get('ID-ENERGIZ'));
+ if(candidate.meter)addQuery('meter','SERIALCONT',candidate.meter);
+ if(!checks.length)return {issues:[],status:''};
+ const replies=await Promise.all(checks.map(async c=>{
+    try {return {...c,result:await c.promise};}
+    catch(e){return {...c,result:{error:e}};}
+ }));
+ if(token!==revision||pid!==project())return null;
+ const issues=[];let failures=0;
+ const found=new Set();
+ for(const {kind,result} of replies){
+   if(result?.error){failures++;continue;}
+   for(const r of result.data||[]){
+     if(current&&String(r.offline_id)===current)continue;
+     const unique=kind+':'+String(r.offline_id);if(found.has(unique))continue;found.add(unique);
+     const label=String(r['ID-ENERGIZ']||'predio existente');
+     if(kind==='energy'&&candidate.energy===norm(r['ID-ENERGIZ']))add(issues,'hard',`ID-ENERGIZ existente en Base de datos (${label}).`,['ID-ENERGIZ']);
+     if(kind==='meter'&&candidate.meter===serial(r.SERIALCONT))add(issues,'warn',`Serial de contador ya registrado (${label}).`,['SERIALCONT']);
+     if(kind==='addr'&&candidate.addr===norm(r.DIRECCION))add(issues,'warn',`Dirección registrada en otro predio (${label}); revisa antes de continuar.`,['DIRECCION']);
+   }
+ }
+ return {issues,status:failures?'No se pudieron verificar todos los datos en Base de datos. Revisa tu conexión y permisos.':''};
+}
+async function validate(force=false){
+ if(!visible())return {hard:false};
+ const k=key();
+ if(!force&&k===lastKey&&lastResult)return lastResult;
+ const token=++revision;
+ lastKey=k;
+ const local=localCheck();
+ draw(local.issues,'Comprobando coincidencias con Base de datos…');
+ const remote=await remoteCheck(local.candidate,token);
+ if(token!==revision||!visible())return {hard:false,stale:true};
+ const all=[...local.issues,...(remote?.issues||[])];
+ // Evitar avisos duplicados si hay un mismo registro tanto offline como online.
+ const seen=new Set();const unique=all.filter(x=>{const k=x.type+':'+x.msg;if(seen.has(k))return false;seen.add(k);return true;});
+ draw(unique,remote?.status||'');
+ lastResult={hard:unique.some(x=>x.type==='hard'),issues:unique};
+ return lastResult;
+}
+function schedule(){clearTimeout(timer);timer=setTimeout(()=>{validate().catch(console.warn)},650);}
+overlay.addEventListener('input',e=>{if(e.target?.matches('[data-hp-name]')){lastKey='';schedule();}},true);
+overlay.addEventListener('change',e=>{if(e.target?.matches('[data-hp-name]')){lastKey='';schedule();}},true);
+// hpNuevo y hpEditar abren el formulario desde distintos botones; detectar el cambio de visibilidad.
+const observer=new MutationObserver(()=>{
+ if(visible()){lastKey='';setTimeout(()=>validate().catch(console.warn),200);}
+ else {clearTimeout(timer);revision++;}
+});
+observer.observe(overlay,{attributes:true,attributeFilter:['class']});
+if(typeof window.hpGuardar==='function'){
+ const original=window.hpGuardar;
+ window.hpGuardar=async function(...args){
+   const result=await validate(true);
+   if(result.hard){
+     const name=result.issues?.find(x=>x.type==='hard')?.fields?.[0];
+     if(typeof hpMsg==='function')hpMsg('Corrige el identificador duplicado señalado en rojo antes de guardar.');
+     if(name&&typeof hpControl==='function')hpControl(name)?.focus();
+     notice.scrollIntoView({block:'nearest',behavior:'smooth'});
+     return;
+   }
+   return original.apply(this,args);
+ };
+}
+})();
+</script>
 </body></html>
+
 
 
 
