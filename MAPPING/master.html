@@ -3258,7 +3258,7 @@ header{
     </div>
   </div>
   <div class="topHeaderActions">
-    <button class="topActionBtn adminOnly managementBtn" onclick="pdrBizOpen('dashboard')" title="Control integral por empresas y proyectos"><span class="hdrIcon">▤</span><span>Gestión general</span></button>
+    <button class="topActionBtn managementBtn" onclick="pdrBizOpen('dashboard')" title="Control integral por empresas y proyectos"><span class="hdrIcon">▤</span><span>Gestión general</span></button>
     <button class="topActionBtn adminOnly managementBtn" onclick="pdrBizOpen('planes')" title="Catálogo de precios y planes"><span class="hdrIcon">$</span><span>Planes y precios</span></button>
     <button class="topActionBtn adminOnly managementBtn hdrEmpresas" onclick="abrirGestionEmpresas()"><span class="hdrIcon">▦</span><span>Empresas</span></button>
     <button class="topActionBtn adminOnly managementBtn hdrUsuarios" onclick="abrirGestionUsuarios()"><span class="hdrIcon">◉</span><span>Usuarios</span></button>
@@ -3266,6 +3266,7 @@ header{
     <button class="topActionBtn hdrDashboard" onclick="abrirDashboardAvances()"><span class="hdrIcon">▥</span><span>Reporte de avances</span></button>
     <button class="topActionBtn hdrDashboard" onclick="abrirControlSyncMaster()"><span class="hdrIcon">↻</span><span>Sincronización</span></button>
     <button class="topActionBtn hdrAsignaciones" onclick="abrirModalAsignaciones()"><span class="hdrIcon">✓</span><span>Asignaciones</span></button>
+    <button class="topActionBtn" id="relevaQaTop" type="button" onclick="relevaQAOpen()" title="Hallazgos detectados automáticamente">🛡 Control de calidad <span id="relevaQaBadge" class="correctionHeaderBadge zero">0</span></button>
     <button class="topActionBtn hdrCorrecciones" onclick="abrirCentroCorreccionesMaster()" title="Solicitudes de corrección">
       <span class="hdrIcon">!</span><span>Correcciones</span><span class="correctionHeaderBadge" id="correccionesTopBadge">0</span>
     </button>
@@ -3373,6 +3374,7 @@ header{
     <select id="relevaV154Ciudad" onchange="relevaV154FiltrarProyectos()"><option value="">Todas las ciudades</option></select>
     <label>Tipo de proyecto</label>
     <select id="relevaV154Tipo" onchange="relevaV154FiltrarProyectos()"><option value="">Todos los tipos</option><option value="CENSO HOMEPASS">Censo Homepass</option><option value="MAPPING">Mapping</option><option value="VIABILIDAD">Viabilidad</option></select>
+    <button type="button" id="zrMasterOpen" onclick="relevaZrMasterOpen()">⚠ Gestionar zonas de seguridad</button>
     <label>Proyecto</label>
     <select id="fProyecto" onchange="cargarProyectoMapa()"></select>
     <div class="relevaDualPanel" id="relevaDualPanel">
@@ -5702,6 +5704,9 @@ function exigirProyectoPermitidoMaster(proyectoId,accion='consultar este proyect
 
 function aplicarVisibilidadAdmin(){
   const ok=esAdminMaster();
+  // V161: el rol se refleja en el contenedor principal; CSS !important
+  // evita que los estilos del header vuelvan a mostrar botones restringidos.
+  document.body.classList.toggle('relevaVistaCoordinador', !ok);
   document.querySelectorAll('.adminOnly').forEach(el=>{
     if(!ok){
       el.style.display='none';
@@ -5713,6 +5718,7 @@ function aplicarVisibilidadAdmin(){
       el.style.display='';
     }
   });
+  if(typeof pdrBizAplicarVistaRol==='function')pdrBizAplicarVistaRol();
 }
 
 async function guardarRolUsuario(usuarioId){
@@ -15512,15 +15518,15 @@ async function pdrDescargarZipV93(){
 
 <div id="pdrBizOverlay" class="pdrBizOverlay" aria-hidden="true">
  <div class="pdrBizShell">
-  <div class="pdrBizTop"><div><h2>Centro de gestión · PDR NETWORKS</h2><div class="pdrBizMuted">Seguimiento por empresa, cumplimiento operativo y configuración comercial. Solo administradores.</div></div><div class="pdrBizToolbarButtons"><button class="pdrBizBtn" onclick="pdrBizRefresh()">↻ Actualizar</button><button class="pdrBizBtn" onclick="pdrBizClose()">✕ Cerrar</button></div></div>
-  <div class="pdrBizTabs"><button class="pdrBizTab active" data-biz-tab="dashboard" onclick="pdrBizTab('dashboard')">▥ Avance general</button><button class="pdrBizTab" data-biz-tab="planes" onclick="pdrBizTab('planes')">◈ Combos / planes</button><button class="pdrBizTab" data-biz-tab="funciones" onclick="pdrBizTab('funciones')">▤ Mis ítems</button><button class="pdrBizTab" data-biz-tab="cotizador" onclick="pdrBizTab('cotizador');pdrCotInit()">▤ Nueva cotización</button><button class="pdrBizTab" data-biz-tab="asignacion" onclick="pdrBizTab('asignacion')">▤ Condiciones por proyecto</button></div>
+  <div class="pdrBizTop"><div><h2>Centro de gestión · PDR NETWORKS</h2><div class="pdrBizMuted">Seguimiento de avances y cumplimiento por empresa y proyecto.</div></div><div class="pdrBizToolbarButtons"><button class="pdrBizBtn" onclick="pdrBizRefresh()">↻ Actualizar</button><button class="pdrBizBtn" onclick="pdrBizClose()">✕ Cerrar</button></div></div>
+  <div class="pdrBizTabs"><button class="pdrBizTab active" data-biz-tab="dashboard" onclick="pdrBizTab('dashboard')">▥ Avance general</button><button class="pdrBizTab pdrBizAdminOnly" data-biz-tab="planes" onclick="pdrBizTab('planes')">◈ Combos / planes</button><button class="pdrBizTab pdrBizAdminOnly" data-biz-tab="funciones" onclick="pdrBizTab('funciones')">▤ Mis ítems</button><button class="pdrBizTab pdrBizAdminOnly" data-biz-tab="cotizador" onclick="pdrBizTab('cotizador');pdrCotInit()">▤ Nueva cotización</button><button class="pdrBizTab pdrBizAdminOnly" data-biz-tab="asignacion" onclick="pdrBizTab('asignacion')">▤ Condiciones por proyecto</button></div>
   <div class="pdrBizContent"><div id="pdrBizStatus" class="pdrBizStatus" role="status"></div>
    <section class="pdrBizPane active" id="pdrBizPane-dashboard">
-     <div class="pdrBizTools"><label>Empresa<select id="pdrBizEmpresaFiltro" onchange="pdrBizRenderDashboard()"><option value="">Todas las empresas</option></select></label><label>Buscar proyecto<input id="pdrBizBuscar" placeholder="Código o nombre" oninput="pdrBizRenderDashboard()"></label><button class="pdrBizBtn" onclick="pdrBizExportCsv()">Exportar seguimiento CSV</button></div>
+     <div class="pdrBizTools"><label class="pdrBizAdminOnly">Empresa<select id="pdrBizEmpresaFiltro" onchange="pdrBizRenderDashboard()"><option value="">Todas las empresas</option></select></label><label>Buscar proyecto<input id="pdrBizBuscar" placeholder="Código o nombre" oninput="pdrBizRenderDashboard()"></label><button class="pdrBizBtn pdrBizAdminOnly" onclick="pdrBizExportCsv()">Exportar seguimiento CSV</button></div>
      <div id="pdrBizKpis" class="pdrBizGrid"></div><div id="pdrBizEmpresasPanel"></div>
      <div class="pdrBizMuted">Avance = ejecutado ÷ meta configurada en Administrar proyectos. Homepass: suma de hogares; infraestructura: elementos o metros de odómetro. El porcentaje agregado es el promedio entre proyectos con meta.</div>
    </section>
-   <section class="pdrBizPane" id="pdrBizPane-planes">
+   <section class="pdrBizPane pdrBizAdminOnly" id="pdrBizPane-planes">
      <div class="pdrBizTools" style="justify-content:space-between;align-items:center"><div><h3 class="pdrBizSectionTitle" style="margin:0">Combos y planes disponibles</h3><small class="pdrBizMuted">Precios editables · Abre un combo para consultar sus ítems incluidos.</small></div><button type="button" class="pdrBizBtn primary" onclick="pdrV117OpenEditor()">+ Crear combo</button></div>
      <div id="pdrV117Cards" class="pdrV117Cards"></div>
      <details id="pdrV117Advanced" style="margin:18px 0;border:1px solid #29445c;border-radius:12px;padding:14px"><summary style="cursor:pointer;font-weight:750;color:#d4edff">Editor de combo · abrir para crear o modificar</summary>
@@ -15532,7 +15538,7 @@ async function pdrDescargarZipV93(){
      </details>
      <div style="display:none" class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Plan</th><th>Modalidad</th><th>Precio total</th><th>Usuarios</th><th>Funcionalidades</th><th>Descripción</th><th>Acción</th></tr></thead><tbody id="pdrBizPlanesRows"></tbody></table></div>
    </section>
-   <section class="pdrBizPane" id="pdrBizPane-funciones"><div class="pdrFeaturePanel" style="margin:0 0 16px"><div class="pdrFeatureHeading"><strong>+ Crear ítem reutilizable</strong><span class="pdrBizMuted">Guarda el precio una sola vez; úsalo en combos y cotizaciones.</span></div>
+   <section class="pdrBizPane pdrBizAdminOnly" id="pdrBizPane-funciones"><div class="pdrFeaturePanel" style="margin:0 0 16px"><div class="pdrFeatureHeading"><strong>+ Crear ítem reutilizable</strong><span class="pdrBizMuted">Guarda el precio una sola vez; úsalo en combos y cotizaciones.</span></div>
  <form id="pdrQuickItemForm" class="pdrBizForm" onsubmit="pdrQuickSaveItem(event)">
  <label>Tipo de ítem<select id="pdrQuickType" onchange="pdrQuickToggle()"><option value="servicio">Servicio por unidad (poste, km, Homepass…)</option><option value="funcion">Funcionalidad de software</option></select></label>
  <label>Nombre<input id="pdrQuickName" maxlength="160" required placeholder="Ej. Censo de postes"></label>
@@ -15567,13 +15573,13 @@ async function pdrDescargarZipV93(){
      <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th><input type="checkbox" id="pdrBizSelectAllVisible" title="Seleccionar todas las funcionalidades visibles" onchange="pdrBizSelectVisibleFeatures(this.checked)" aria-label="Seleccionar todas las funcionalidades visibles"></th><th>Funcionalidad / categoría</th><th>Mensual</th><th>Anual</th><th>Único</th><th>Costo mensual</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="pdrBizFuncRows"></tbody></table></div>
      </details>
    </section>
-   <section class="pdrBizPane" id="pdrBizPane-tarifas">
+   <section class="pdrBizPane pdrBizAdminOnly" id="pdrBizPane-tarifas">
      <div class="pdrBizToolbarButtons" style="margin-bottom:14px"><button type="button" class="pdrBizBtn" onclick="pdrBizTab('funciones')">Funcionalidades y servicios de software</button><button type="button" class="pdrBizBtn primary" onclick="pdrBizTab('tarifas')">Tarifas por unidad (poste, km, Homepass)</button></div><h3 class="pdrBizSectionTitle">Tarifario de servicios y unidades</h3>
      <form id="pdrBizTarifaForm" class="pdrBizForm" onsubmit="pdrBizSaveTarifa(event)"><input type="hidden" id="pdrBizTarifaId"><label>Servicio<input id="pdrBizTarifaNombre" required placeholder="Ej. Censo de poste"></label><label>Unidad<select id="pdrBizTarifaUnidad"><option value="punto">Punto</option><option value="poste">Poste</option><option value="camara">Cámara</option><option value="km">Kilómetro</option><option value="m">Metro</option><option value="homepass">Homepass</option><option value="elemento">Elemento</option><option value="usuario">Usuario</option><option value="foto">Foto</option><option value="proyecto">Proyecto</option><option value="mes">Mes</option><option value="hora">Hora</option><option value="unidad">Unidad</option></select></label><label>Precio unitario COP<input id="pdrBizTarifaPrecio" type="number" min="0" step="1" value="0" required></label><label class="full">Descripción<textarea id="pdrBizTarifaDescripcion" rows="2"></textarea></label><div class="full pdrBizToolbarButtons"><button class="pdrBizBtn primary" type="submit">Guardar tarifa</button><button class="pdrBizBtn" type="button" onclick="pdrBizResetTarifa()">Nuevo / limpiar</button></div></form>
      <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Servicio</th><th>Unidad</th><th>Precio</th><th>Descripción</th><th>Acción</th></tr></thead><tbody id="pdrBizTarifasRows"></tbody></table></div>
    </section>
 
-   <section class="pdrBizPane" id="pdrBizPane-cotizador">
+   <section class="pdrBizPane pdrBizAdminOnly" id="pdrBizPane-cotizador">
      <h3 class="pdrBizSectionTitle">Cotizador comercial · PDR NETWORKS</h3>
      <p class="pdrBizMuted">Combina levantamientos por elemento, distancia, Homepass, servicios y planes recurrentes. El precio puede ajustarse en cada propuesta sin modificar el tarifario.</p>
      <form id="pdrCotForm" onsubmit="event.preventDefault();pdrCotSave()">
@@ -15614,7 +15620,7 @@ async function pdrDescargarZipV93(){
      <h3 class="pdrBizSectionTitle">Historial de cotizaciones</h3>
      <div class="pdrBizTableWrap"><table class="pdrBizTable"><thead><tr><th>Cliente</th><th>Propuesta</th><th>Estado</th><th>Único</th><th>Mensual</th><th>Anual</th><th>Actualizada</th><th>Acción</th></tr></thead><tbody id="pdrCotHistorial"><tr><td colspan="8">Abre la sección para consultar cotizaciones guardadas.</td></tr></tbody></table></div>
    </section>
-   <section class="pdrBizPane" id="pdrBizPane-asignacion">
+   <section class="pdrBizPane pdrBizAdminOnly" id="pdrBizPane-asignacion">
      <h3 class="pdrBizSectionTitle">Condiciones comerciales y metas por proyecto</h3>
      <div class="pdrBizTools"><label>Proyecto<select id="pdrBizProyectoSelect" onchange="pdrBizLoadAssignmentForm()"></select></label></div>
      <form id="pdrBizAsignacionForm" class="pdrBizForm" onsubmit="pdrBizSaveAsignacion(event)"><label>Plan contratado<select id="pdrBizAsignacionPlan" onchange="pdrBizRenderAssignmentPlanPreview()"></select></label><div class="full" id="pdrBizPlanPreview" style="display:none"></div><label>Meta comercial (opcional; no determina el avance)<input id="pdrBizMeta" type="number" min="1" step="1" placeholder="Referencia contractual"></label><label>Precio acordado COP (opcional)<input id="pdrBizPrecioAcordado" type="number" min="0" step="1" placeholder="Usar precio total del plan"></label><label>Estado comercial<select id="pdrBizEstado"><option value="propuesta">Propuesta</option><option value="contratado">Contratado</option><option value="en_ejecucion">En ejecución</option><option value="suspendido">Suspendido</option><option value="finalizado">Finalizado</option></select></label><label>Fecha compromiso<input id="pdrBizFechaFin" type="date"></label><label>Descuento (%)<input id="pdrBizDescuento" type="number" min="0" max="100" step="0.01" value="0"></label><label class="full">Observaciones contractuales<textarea id="pdrBizNotas" rows="3"></textarea></label><div class="full pdrBizToolbarButtons"><button type="submit" class="pdrBizBtn primary">Guardar condiciones del proyecto</button></div></form>
@@ -15637,19 +15643,41 @@ const pdrBizMoney=v=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'C
 const pdrBizN=v=>new Intl.NumberFormat('es-CO').format(Number(v)||0);
 function pdrBizStatus(t){if(pdrBizEl('pdrBizStatus'))pdrBizEl('pdrBizStatus').textContent=t||'';}
 function pdrBizGuard(){if(!esAdminMaster()){alert('Acceso exclusivo para usuarios administradores.');return false;}return true;}
+function pdrBizPuedeVerAvance(){return esAdminMaster()||esCoordinadorMaster();}
+function pdrBizAplicarVistaRol(){
+ const coordinador=esCoordinadorMaster();
+ document.querySelectorAll('#pdrBizOverlay .pdrBizAdminOnly').forEach(el=>{el.style.display=coordinador?'none':'';});
+ const tabs=document.querySelector('#pdrBizOverlay .pdrBizTabs');
+ if(tabs)tabs.setAttribute('data-vista',coordinador?'coordinador':'admin');
+}
 async function pdrBizOpen(tab='dashboard'){
- if(!pdrBizGuard())return;
+ if(!pdrBizPuedeVerAvance())return;
+ if(esCoordinadorMaster())tab='dashboard';
+ pdrBizAplicarVistaRol();
  pdrBizEl('pdrBizOverlay').classList.add('open');pdrBizEl('pdrBizOverlay').setAttribute('aria-hidden','false');
  pdrBizTab(tab);await pdrBizRefresh();
 }
 function pdrBizClose(){pdrBizEl('pdrBizOverlay').classList.remove('open');pdrBizEl('pdrBizOverlay').setAttribute('aria-hidden','true');}
-function pdrBizTab(tab){if(!pdrBizGuard())return;pdrBizState.tab=tab;if(tab==='planes')pdrPlanRenderServices();
+function pdrBizTab(tab){if(!pdrBizPuedeVerAvance())return;if(esCoordinadorMaster()&&tab!=='dashboard')return;pdrBizState.tab=tab;if(tab==='planes')pdrPlanRenderServices();
  document.querySelectorAll('.pdrBizTab').forEach(x=>x.classList.toggle('active',x.dataset.bizTab===(tab==='tarifas'?'funciones':tab))); 
  document.querySelectorAll('.pdrBizPane').forEach(x=>x.classList.toggle('active',x.id==='pdrBizPane-'+tab));
 }
 async function pdrBizAllRows(table,columns='*',filter=null){let arr=[];let offset=0;while(true){let q=sb.from(table).select(columns).range(offset,offset+999);if(filter)q=filter(q);const {data,error}=await q;if(error)throw error;arr.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000;}return arr;}
 async function pdrBizRefresh(){
- if(!pdrBizGuard())return;
+ if(!pdrBizPuedeVerAvance())return;
+ if(esCoordinadorMaster()){
+  pdrBizStatus('Actualizando avances de los proyectos autorizados...');
+  try{
+   await Promise.all([cargarEmpresas(),cargarProyectos()]);
+   pdrBizState.planes=[];pdrBizState.tarifas=[];pdrBizState.asignaciones=[];pdrBizState.funciones=[];
+   const empresa=document.getElementById('pdrBizEmpresaFiltro');
+   if(empresa)empresa.value='';
+   await pdrBizRefreshMetrics();
+   pdrBizState.loaded=true;
+   pdrBizStatus('Avances actualizados: '+new Date().toLocaleString('es-CO'));
+  }catch(e){console.error('Seguimiento coordinador:',e);pdrBizStatus('No se pudieron consultar los avances: '+(e.message||e));}
+  return;
+ }
  pdrBizStatus('Consultando empresas, proyectos y catálogo comercial...');
  try{
   await Promise.all([cargarEmpresas(),cargarProyectos()]);
@@ -15679,11 +15707,12 @@ function pdrBizHpTotal(r){
 }
 async function pdrBizRefreshMetrics(){
  const counts={},corr={};
- for(const p of proyectos){counts[p.id]=0;corr[p.id]=0;}
+ const proyectosVisibles=proyectos.filter(p=>esAdminMaster()||puedeVerProyectoMaster(p));
+ for(const p of proyectosVisibles){counts[p.id]=0;corr[p.id]=0;}
  // Homepass se mide por suma de hogares comerciales y residenciales; no por puntos.
  // Metros se mide por datos de odómetro; elementos por cantidad de registros.
- for(let i=0;i<proyectos.length;i+=8){
-  await Promise.all(proyectos.slice(i,i+8).map(async p=>{
+ for(let i=0;i<proyectosVisibles.length;i+=8){
+  await Promise.all(proyectosVisibles.slice(i,i+8).map(async p=>{
    const unidad=pdrBizUnidad(p);
    if(unidad==='HOMEPASS'){
     let suma=0,desde=0;
@@ -15719,7 +15748,7 @@ async function pdrBizRefreshMetrics(){
 }
 function pdrBizAssignment(id){return pdrBizState.asignaciones.find(a=>String(a.proyecto_id)===String(id));}
 function pdrBizPct(p){const meta=pdrBizMetaProject(p);return meta>0?100*(pdrBizState.counts[p.id]||0)/meta:null;}
-function pdrBizFiltered(){const eid=pdrBizEl('pdrBizEmpresaFiltro')?.value||'',needle=(pdrBizEl('pdrBizBuscar')?.value||'').trim().toLowerCase();return proyectos.filter(p=>(!eid||String(p.empresa_id)===eid)&&(!needle||(String(p.nombre||'')+' '+String(p.codigo||'')).toLowerCase().includes(needle)));}
+function pdrBizFiltered(){const eid=esAdminMaster()?(pdrBizEl('pdrBizEmpresaFiltro')?.value||''):empresaPerfilMaster(),needle=(pdrBizEl('pdrBizBuscar')?.value||'').trim().toLowerCase();return proyectos.filter(p=>puedeVerProyectoMaster(p)&&(!eid||String(p.empresa_id)===String(eid))&&(!needle||(String(p.nombre||'')+' '+String(p.codigo||'')).toLowerCase().includes(needle)));}
 function pdrBizRenderDashboard(){
  const list=pdrBizFiltered();
  const withGoal=list.filter(p=>pdrBizMetaProject(p)>0);
@@ -15727,16 +15756,18 @@ function pdrBizRenderDashboard(){
  const average=withGoal.length?withGoal.reduce((sum,p)=>sum+Math.min(100,pdrBizPct(p)||0),0)/withGoal.length:null;
  const open=list.reduce((a,p)=>a+(pdrBizState.correcciones[p.id]||0),0);
  const assigned=list.filter(p=>pdrBizAssignment(p.id)?.plan_id).length;
- pdrBizEl('pdrBizKpis').innerHTML=[['Empresas',new Set(list.map(p=>p.empresa_id).filter(Boolean)).size],['Proyectos',list.length],['Cumplimiento promedio',average===null?'Sin meta':average.toFixed(1)+'%'],['Proyectos con meta',withGoal.length+' / '+list.length],['Correcciones abiertas',pdrBizN(open)],['Proyectos con plan',assigned+' / '+list.length]].map(k=>`<div class="pdrBizCard"><small>${k[0]}</small><b>${k[1]}</b></div>`).join('');
+ const resumenKpis=[['Empresas',new Set(list.map(p=>p.empresa_id).filter(Boolean)).size],['Proyectos',list.length],['Cumplimiento promedio',average===null?'Sin meta':average.toFixed(1)+'%'],['Proyectos con meta',withGoal.length+' / '+list.length],['Correcciones abiertas',pdrBizN(open)],['Proyectos con plan',assigned+' / '+list.length]];
+ if(esCoordinadorMaster())resumenKpis.pop();
+ pdrBizEl('pdrBizKpis').innerHTML=resumenKpis.map(k=>`<div class="pdrBizCard"><small>${k[0]}</small><b>${k[1]}</b></div>`).join('');
  const groups=new Map();list.forEach(p=>{let id=p.empresa_id||'__sin_empresa';if(!groups.has(id))groups.set(id,[]);groups.get(id).push(p);});
  pdrBizEl('pdrBizEmpresasPanel').innerHTML=[...groups].map(([id,ps])=>{
   const e=empresas.find(e=>String(e.id)===String(id));
   const metas=ps.filter(p=>pdrBizMetaProject(p)>0);
   const aggregate=metas.length?metas.reduce((sum,p)=>sum+Math.min(100,pdrBizPct(p)||0),0)/metas.length:null;
   return `<div class="pdrBizCompany"><div class="pdrBizCompanyHead"><h3>${pdrBizSafe(e?.nombre||'Sin empresa asignada')} <span class="pdrBizMuted">(${ps.length} proyectos)</span></h3><div style="min-width:190px"><b>${aggregate===null?'Sin meta':aggregate.toFixed(1)+'%'} de cumplimiento promedio</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${aggregate===null?0:aggregate}%"></div></div></div></div>
-  <div class="pdrBizTableWrap" style="border:0;margin:0"><table class="pdrBizTable"><thead><tr><th>Proyecto</th><th>Estado / plan</th><th>Ejecutado / meta</th><th>Avance</th><th>Correcciones abiertas</th><th>Promedio/día</th><th>Días restantes</th><th>Finalización estimada</th><th>Fecha compromiso</th><th>Gestión</th></tr></thead><tbody>${ps.map(p=>{
+  <div class="pdrBizTableWrap" style="border:0;margin:0"><table class="pdrBizTable"><thead><tr><th>Proyecto</th>${esAdminMaster()?'<th>Estado / plan</th>':''}<th>Ejecutado / meta</th><th>Avance</th><th>Correcciones abiertas</th><th>Promedio/día</th><th>Días restantes</th><th>Finalización estimada</th>${esAdminMaster()?'<th>Fecha compromiso</th><th>Gestión</th>':''}</tr></thead><tbody>${ps.map(p=>{
    const a=pdrBizAssignment(p.id),plan=pdrBizState.planes.find(x=>x.id===a?.plan_id),pct=pdrBizPct(p),meta=pdrBizMetaProject(p),value=pdrBizState.counts[p.id]||0,unidad=pdrBizUnitLabel(p);
-   return `<tr><td><b>${pdrBizSafe(p.nombre||p.codigo)}</b><div class="pdrBizMuted">${pdrBizSafe(p.codigo||'')}</div></td><td>${pdrBizSafe(a?.estado||'Sin estado')}<div class="pdrBizMuted">${pdrBizSafe(plan?.nombre||'Sin plan')}</div></td><td>${pdrBizN(value)} / ${meta?pdrBizN(meta):'Sin meta'} <small class="pdrBizMuted">${unidad}</small></td><td><b>${pct===null?'Sin meta':pct.toFixed(1)+'%'}</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${Math.min(100,pct||0)}%"></div></div></td><td>${pdrBizN(pdrBizState.correcciones[p.id]||0)}</td><td class="relevaV156Rate" data-releva-pid="${pdrBizSafe(p.id)}">Calculando…</td><td class="relevaV156Days" data-releva-pid="${pdrBizSafe(p.id)}">—</td><td class="relevaV156End" data-releva-pid="${pdrBizSafe(p.id)}">—</td><td>${pdrBizSafe(a?.fecha_compromiso||'—')}</td><td><button class="pdrBizBtn" data-pdr-project="${pdrBizSafe(p.id)}">Configurar</button></td></tr>`;}).join('')}</tbody></table></div></div>`;
+   return `<tr><td><b>${pdrBizSafe(p.nombre||p.codigo)}</b><div class="pdrBizMuted">${pdrBizSafe(p.codigo||'')}</div></td>${esAdminMaster()?`<td>${pdrBizSafe(a?.estado||'Sin estado')}<div class="pdrBizMuted">${pdrBizSafe(plan?.nombre||'Sin plan')}</div></td>`:''}<td>${pdrBizN(value)} / ${meta?pdrBizN(meta):'Sin meta'} <small class="pdrBizMuted">${unidad}</small></td><td><b>${pct===null?'Sin meta':pct.toFixed(1)+'%'}</b><div class="pdrBizTrack"><div class="pdrBizFill" style="width:${Math.min(100,pct||0)}%"></div></div></td><td>${pdrBizN(pdrBizState.correcciones[p.id]||0)}</td><td class="relevaV156Rate" data-releva-pid="${pdrBizSafe(p.id)}">Calculando…</td><td class="relevaV156Days" data-releva-pid="${pdrBizSafe(p.id)}">—</td><td class="relevaV156End" data-releva-pid="${pdrBizSafe(p.id)}">—</td>${esAdminMaster()?`<td>${pdrBizSafe(a?.fecha_compromiso||'—')}</td><td><button class="pdrBizBtn" data-pdr-project="${pdrBizSafe(p.id)}">Configurar</button></td>`:''}</tr>`;}).join('')}</tbody></table></div></div>`;
  }).join('')||'<div class="pdrBizEmpty">No hay proyectos en el filtro.</div>';
  pdrBizEl('pdrBizEmpresasPanel').querySelectorAll('[data-pdr-project]').forEach(b=>b.addEventListener('click',()=>{pdrBizEl('pdrBizProyectoSelect').value=b.dataset.pdrProject;pdrBizLoadAssignmentForm();pdrBizTab('asignacion');}));
 }
@@ -18212,8 +18243,626 @@ function init(){projects();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+
+<style id="relevaV160CoordinadorUI">
+/* El coordinador solo consulta avance de los proyectos de su empresa. */
+#pdrBizOverlay .pdrBizTabs[data-vista="coordinador"] .pdrBizAdminOnly,
+#pdrBizOverlay .pdrBizAdminOnly[style*="display: none"]{display:none!important}
+</style>
+
+<!-- V161 · Ocultar navegación administrativa al coordinador, incluso frente a display:inline-flex!important del header -->
+<style id="relevaV161RolHeader">
+body.relevaVistaCoordinador .topHeaderActions button.adminOnly,
+body.relevaVistaCoordinador .topHeaderActions .hdrEmpresas,
+body.relevaVistaCoordinador .topHeaderActions .hdrUsuarios,
+body.relevaVistaCoordinador .topHeaderActions button[onclick*="pdrBizOpen('planes')"],
+body.relevaVistaCoordinador .topHeaderActions button[onclick*="abrirGestionEmpresas()"],
+body.relevaVistaCoordinador .topHeaderActions button[onclick*="abrirGestionUsuarios()"]{
+ display:none!important;
+ visibility:hidden!important;
+ pointer-events:none!important;
+}
+</style>
+
+<style id="relevaQAV162Style">
+#relevaQaOverlay{position:fixed;inset:0;z-index:125000;background:#030b16ed;display:none;overflow:auto;padding:18px;color:#e9f5ff}
+#relevaQaOverlay.open{display:block}
+#relevaQaBox{max-width:1390px;margin:0 auto;background:#0b1b2c;border:1px solid #365774;border-radius:16px;overflow:hidden}
+.relevaQaHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px;background:#102c42;border-bottom:1px solid #365774;flex-wrap:wrap}
+.relevaQaHead h2{font-size:19px;margin:0;color:#eafbff}.relevaQaBody{padding:17px}
+.relevaQaFilters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:15px}
+.relevaQaFilters label{font-size:11px;color:#b8d6e7;display:block}
+.relevaQaFilters select{background:#091827;border:1px solid #43637c;border-radius:8px;color:#fff;padding:10px;width:100%}
+.relevaQaCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.relevaQaCard{border:1px solid #365774;background:#10273b;border-radius:12px;padding:12px}
+.relevaQaCard small{display:block;color:#a9cadb;font-size:11px}.relevaQaCard b{font-size:26px;color:#fff}
+.relevaQaScroll{max-height:62vh;overflow:auto;border:1px solid #365774;border-radius:11px}
+.relevaQaTable{width:100%;border-collapse:collapse;font-size:12px;min-width:1050px}
+.relevaQaTable th{position:sticky;top:0;background:#17405b;color:#defbfc;text-align:left;padding:11px;z-index:1}
+.relevaQaTable td{padding:10px;color:#e7f4ff;border-top:1px solid #26465e;vertical-align:top}
+.relevaQaTable tr:hover td{background:#17364d}.relevaQaTable .btn{margin:2px;padding:6px 9px;font-size:11px}
+.relevaQaStatus{font-size:12px;color:#acd0e0;margin:10px 0;min-height:20px}
+@media(max-width:850px){.relevaQaFilters{grid-template-columns:1fr 1fr}.relevaQaCards{grid-template-columns:1fr 1fr}}
+</style>
+<div id="relevaQaOverlay" role="dialog" aria-modal="true" aria-label="Control de calidad automático">
+<div id="relevaQaBox">
+ <div class="relevaQaHead"><div><h2>🛡 Control de calidad automático · RELEVA</h2><small>Hallazgos generados por reglas SQL al sincronizar cada registro. Revisión del supervisor antes de solicitar una corrección.</small></div><button class="btn gray" type="button" onclick="relevaQAClose()">✕ Cerrar</button></div>
+ <div class="relevaQaBody">
+ <div class="relevaQaFilters">
+   <label>Proyecto<select id="relevaQaProyecto" onchange="relevaQARender()"><option value="">Todos los proyectos permitidos</option></select></label>
+   <label>Módulo<select id="relevaQaModulo" onchange="relevaQARender()"><option value="">Todos</option><option value="HOMEPASS">Censo Homepass</option><option value="INFRAESTRUCTURA">Infraestructura</option></select></label>
+   <label>Estado<select id="relevaQaEstado" onchange="relevaQARender()"><option value="pendiente">Por revisar</option><option value="gestionado">Corrección solicitada</option><option value="resuelto">Resuelto por datos</option><option value="descartado">Descartado</option><option value="">Todos</option></select></label>
+   <label>Severidad<select id="relevaQaGravedad" onchange="relevaQARender()"><option value="">Todas</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></label>
+   <button class="btn blue" type="button" onclick="relevaQARefresh()">↻ Actualizar</button>
+ </div>
+ <div class="relevaQaCards"><div class="relevaQaCard"><small>Hallazgos activos</small><b id="relevaQaCountPending">0</b></div><div class="relevaQaCard"><small>Correcciones solicitadas</small><b id="relevaQaCountManaged">0</b></div><div class="relevaQaCard"><small>Descartados</small><b id="relevaQaCountDiscard">0</b></div><div class="relevaQaCard"><small>Resueltos por sincronización</small><b id="relevaQaCountResolved">0</b></div></div>
+ <p class="relevaQaStatus" id="relevaQaStatus">La validación se ejecuta en la base de datos al recibir registros nuevos o editados.</p>
+ <details id="relevaQaReglasHomepass" class="relevaQaRules">
+  <summary>🔎 Ver reglas automáticas de Censo Homepass · V163</summary>
+  <div class="relevaQaRulesGrid">
+   <div><strong>Predios sin Homepass</strong><small>Alerta cuando un predio construido tiene 0 HP. Excluye lote, potrero, cancha, zona verde y baldío.</small></div>
+   <div><strong>ID-ENERGIZ repetido</strong><small>Coincidencia en el mismo proyecto. Si existe restricción única en la base de datos, la sincronización del duplicado será rechazada antes del análisis.</small></div>
+   <div><strong>Serial de contador repetido</strong><small>Coincidencia numérica del serial en el mismo proyecto; excluye valores vacíos y 0.</small></div>
+   <div><strong>Dirección duplicada</strong><small>Compara direcciones normalizadas; puede ser válido cuando varios predios comparten acceso.</small></div>
+   <div><strong>Edificio con pocos HP</strong><small>Desde 4 pisos, alerta si hay menos de 1 Homepass por piso. Ejemplo: 8 pisos y 3 HP.</small></div>
+   <div><strong>Casa con Homepass atípicos</strong><small>Alerta desde 12 Homepass en tipos Casa; no implica error confirmado.</small></div>
+   <div><strong>Posible duplicado geográfico</strong><small>Coordenadas de predios a 2,5 metros o menos, dentro del mismo proyecto.</small></div>
+   <div><strong>Fuera de manzana</strong><small>Compara las coordenadas con la geometría GeoJSON de la manzana.</small></div>
+  </div>
+  <p class="relevaQaStatus">Los umbrales de edificios, viviendas y distancias son configurables por proyecto en la tabla de ajustes de calidad. Los hallazgos requieren revisión humana antes de solicitar corrección.</p>
+ </details>
+ <div class="relevaQaScroll"><table class="relevaQaTable"><thead><tr><th>Proyecto / módulo</th><th>Técnico</th><th>Categoría / gravedad</th><th>Registro / campo</th><th>Hallazgo detectado</th><th>Estado / fecha</th><th>Acciones</th></tr></thead><tbody id="relevaQaRows"><tr><td colspan="7">Abre el módulo para consultar los hallazgos.</td></tr></tbody></table></div>
+ <p class="relevaQaStatus">Las coincidencias se consultan automáticamente y se agrupan por regla y predios relacionados. Los hallazgos son alertas automáticas, no errores certificados. La confirmación crea una solicitud en el sistema de correcciones que ya recibe el técnico en Mapping. Ningún resultado se envía automáticamente sin tu revisión.</p>
+ </div>
+</div></div>
+<script id="relevaQAV162Script">
+(function(){
+ 'use strict';
+ const el=id=>document.getElementById(id);
+ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let rows=[],busy=false,channel=null,loaded=false,lastCount=null,refreshTimer=null;
+ let predios=new Map(),coincidencias=new Map(),coincidenciaErrores=new Map();
+ const reglasCoincidencia=new Set(['HPX_DIRECCION_DUP','HPX_ID_ENERGIZ_DUP','HPX_SERIAL_DUP','HPX_GPS_PROXIMO']);
+ const predioLabel=p=>p?(String(p['ID-ENERGIZ']||'').trim()||((p.MZ!=null&&p.LOTEO!=null)?'MZ'+p.MZ+' P'+p.LOTEO:'Predio '+String(p.id).slice(0,8))):null;
+ async function loadPredios(){
+  const ids=[...new Set(rows.filter(r=>r.modulo==='HOMEPASS').map(r=>String(r.registro_id)))];
+  const next=new Map();
+  for(let i=0;i<ids.length;i+=75){
+   const {data,error}=await sb.from('censo_homepass').select('id,proyecto_id,"ID-ENERGIZ",MZ,LOTEO,DIRECCION').in('id',ids.slice(i,i+75));
+   if(error){console.warn('No se pudo consultar identificadores de predios para QA',error);break;}
+   for(const p of data||[])next.set(String(p.id),p);
+  }
+  predios=next;
+ }
+
+ const canView=()=>!!(typeof perfil!=='undefined'&&perfil&&['admin','coordinador'].includes(String(perfil.rol||'').toLowerCase()));
+ const nameProject=id=>{const p=(typeof proyectos!=='undefined'&&proyectos||[]).find(p=>String(p.id)===String(id));return p?(p.codigo||p.nombre||id):id};
+ const nameTech=id=>{const t=(typeof usuarios!=='undefined'&&usuarios||[]).find(x=>String(x.id)===String(id));return t?(t.nombre||t.email||'Técnico'):id||'—'};
+ const setStatus=t=>{const e=el('relevaQaStatus');if(e)e.textContent=t};
+ function badges(){
+  const count=rows.filter(x=>x.estado==='pendiente').length;
+  const b=el('relevaQaBadge');if(b){b.textContent=String(count);b.classList.toggle('zero',count===0);}
+  const btn=el('relevaQaTop');if(btn)btn.style.display=canView()?'':'none';
+  if(loaded && lastCount!==null && count>lastCount && !document.hidden){
+   if(btn)btn.style.boxShadow='0 0 0 3px rgba(245,158,11,.45)';
+   setTimeout(()=>{if(btn)btn.style.boxShadow='';},3500);
+  }
+  lastCount=count;
+  for(const [id,state] of [['relevaQaCountPending','pendiente'],['relevaQaCountManaged','gestionado'],['relevaQaCountDiscard','descartado'],['relevaQaCountResolved','resuelto']]){
+   const element=el(id);if(element)element.textContent=String(rows.filter(x=>x.estado===state).length);
+  }
+ }
+ function updateProjects(){
+  const sel=el('relevaQaProyecto');if(!sel)return;
+  const selected=sel.value;
+  const activeProject=String(el('fProyecto')?.value||'');
+  const ids=new Set(rows.map(r=>String(r.proyecto_id)));
+  sel.innerHTML='<option value="">Todos los proyectos permitidos</option>'+[...ids].map(id=>'<option value="'+esc(id)+'">'+esc(nameProject(id))+'</option>').join('');
+  if([...sel.options].some(o=>o.value===selected))sel.value=selected;
+  else if(!loaded&&activeProject&&ids.has(activeProject))sel.value=activeProject;
+ }
+ const isMatch=r=>r.modulo==='HOMEPASS'&&reglasCoincidencia.has(String(r.regla));
+ const nameRecord=r=>predioLabel(predios.get(String(r.registro_id)))||'Predio '+String(r.registro_id).slice(0,8);
+ function groupFindings(items){
+  // Componentes conectados por coincidencias, siempre en el mismo proyecto y regla.
+  // No agrupa por simple proximidad textual sin confirmación de la consulta SQL.
+  const groups=[];
+  const matchRows=items.filter(isMatch);
+  const rest=items.filter(r=>!isMatch(r));
+  const parents=new Map(matchRows.map(r=>[String(r.id),String(r.id)]));
+  const root=id=>{while(parents.get(id)!==id){const p=parents.get(id);parents.set(id,parents.get(p));id=parents.get(id);}return id;};
+  const merge=(a,b)=>{a=root(a);b=root(b);if(a!==b)parents.set(b,a)};
+  const byKey=new Map();
+  for(const r of matchRows){const k=String(r.proyecto_id)+'|'+r.regla+'|'+String(r.registro_id);if(!byKey.has(k))byKey.set(k,[]);byKey.get(k).push(r);}
+  for(const r of matchRows){
+   for(const peer of coincidencias.get(String(r.id))||[]){
+    const k=String(r.proyecto_id)+'|'+r.regla+'|'+String(peer.registro_id||peer.id);
+    for(const other of byKey.get(k)||[])merge(String(r.id),String(other.id));
+   }
+  }
+  const map=new Map();
+  for(const r of matchRows){const k=root(String(r.id));if(!map.has(k))map.set(k,[]);map.get(k).push(r)}
+  for(const member of map.values())groups.push({members:member,matching:true,at:Math.max(...member.map(x=>Date.parse(x.detectado_at)||0))});
+  for(const r of rest)groups.push({members:[r],matching:false,at:Date.parse(r.detectado_at)||0});
+  return groups.sort((a,b)=>b.at-a.at);
+ }
+ function renderRow(r,grouped){
+    const date=r.detectado_at?new Date(r.detectado_at).toLocaleString('es-CO'):'—';
+    const act=r.estado==='pendiente'?'<button class="btn blue" type="button" data-qa-action="solicitar" data-qa-id="'+esc(r.id)+'">Solicitar corrección</button><button class="btn gray" type="button" data-qa-action="descartar" data-qa-id="'+esc(r.id)+'">Descartar</button>':'—';
+    const pred=predios.get(String(r.registro_id));
+    const idLabel=r.modulo==='HOMEPASS'?(predioLabel(pred)||'No disponible'):String(r.registro_id);
+    const peers=isMatch(r)?coincidencias.get(String(r.id)):null;
+    const loaded=coincidencias.has(String(r.id));
+    const matching=(isMatch(r)&&peers&&peers.length)?'<small class="qaGroupedCount">'+esc(peers.length)+' predio(s) relacionado(s)</small>':'';
+    const message=isMatch(r)&&!loaded?'<small class="qaGroupedWarning">Consultando coincidencias…</small>':coincidenciaErrores.has(String(r.id))?'<small class="qaGroupedWarning">No se pudo consultar: '+esc(coincidenciaErrores.get(String(r.id)))+'</small>':'';
+    const rowClass=grouped?' class="qaGroupedMember"':'';
+    return '<tr'+rowClass+'><td><b>'+esc(nameProject(r.proyecto_id))+'</b><br>'+esc(r.modulo)+'</td><td>'+esc(nameTech(r.tecnico_id))+'</td><td>'+esc(r.tipificacion)+'<br>'+esc(r.gravedad)+'</td><td><b>'+esc(idLabel)+'</b><br><small>'+esc(r.campo||'—')+'</small></td><td>'+esc(r.descripcion)+'<br><small>'+esc(r.valor_detectado||'')+'</small>'+matching+message+'</td><td>'+esc(r.estado)+'<br>'+esc(date)+'</td><td>'+act+'</td></tr>';
+ }
+ function renderGroup(g){
+  if(!g.matching)return renderRow(g.members[0],false);
+  const first=g.members[0];
+  const preds=new Map();
+  for(const r of g.members){
+    const key=String(r.registro_id);
+    preds.set(key,{id:key,label:nameRecord(r),tech:nameTech(r.tecnico_id),source:true});
+    for(const p of coincidencias.get(String(r.id))||[]){
+      const peerId=String(p.registro_id||p.id||'');
+      if(peerId && !preds.has(peerId))preds.set(peerId,{id:peerId,label:String(p.identificador||peerId.slice(0,8)),tech:'',source:false});
+    }
+  }
+  const all=[...preds.values()];
+  const title={HPX_DIRECCION_DUP:'Dirección duplicada',HPX_ID_ENERGIZ_DUP:'ID-ENERGIZ duplicado',HPX_SERIAL_DUP:'Serial de contador repetido',HPX_GPS_PROXIMO:'Ubicaciones GPS próximas'}[first.regla]||'Coincidencia entre predios';
+  const names=all.map(p=>'<span class="qaGroupedChip" title="'+esc(p.source?'Con hallazgo registrado':'Predio coincidente')+'">'+esc(p.label)+(p.tech?' · '+esc(p.tech):'')+'</span>').join('<span class="qaGroupedArrow">↔</span>');
+  const status=coincidenciaErrores.has(String(first.id))?'<span class="qaGroupedWarning">Consulta incompleta; se muestran los registros disponibles</span>':'';
+  const groupRow='<tr class="qaGroupedHeader"><td colspan="7"><strong>⚠ '+esc(title)+'</strong><span class="qaGroupedCountTitle">'+all.length+' predio(s) relacionado(s) · '+g.members.length+' hallazgo(s)</span><div class="qaGroupedChips">'+names+'</div>'+status+'</td></tr>';
+  return groupRow+g.members.map(r=>renderRow(r,true)).join('');
+ }
+ window.relevaQARender=()=>{
+  const proj=el('relevaQaProyecto')?.value||'';
+  const mod=el('relevaQaModulo')?.value||'';
+  const est=el('relevaQaEstado')?.value||'';
+  const sev=el('relevaQaGravedad')?.value||'';
+  const filtered=rows.filter(r=>(!proj||String(r.proyecto_id)===proj)&&(!mod||r.modulo===mod)&&(!est||r.estado===est)&&(!sev||r.gravedad===sev));
+  const grouped=groupFindings(filtered);
+  el('relevaQaRows').innerHTML=grouped.length?grouped.map(renderGroup).join(''):'<tr><td colspan="7">No hay hallazgos con estos filtros.</td></tr>';
+  setStatus(grouped.length+' grupo(s) visible(s) · '+filtered.length+' hallazgo(s) · '+rows.length+' consultados. Coincidencias automáticas, actualizadas al sincronizar.');
+ };
+ async function loadCoincidencias(){
+  const active=rows.filter(isMatch);
+  coincidencias=new Map();coincidenciaErrores=new Map();
+  // Consulta automática con concurrencia limitada para no saturar Supabase.
+  const workers=Array.from({length:Math.min(5,active.length)},async(_,wi)=>{
+    for(let i=wi;i<active.length;i+=5){
+      const r=active[i];
+      try{
+       const {data,error}=await sb.rpc('releva_qa_coincidencias',{p_hallazgo:r.id});
+       if(error)throw error;
+       coincidencias.set(String(r.id),Array.isArray(data)?data:[]);
+      }catch(err){coincidenciaErrores.set(String(r.id),err?.message||String(err));}
+    }
+  });
+  await Promise.all(workers);
+ }
+ window.relevaQARefresh=async()=>{
+  if(busy||!canView())return;
+  busy=true;
+  try{
+   const out=[];
+   for(let i=0;i<10000;i+=1000){
+    const {data,error}=await sb.from('releva_hallazgos_calidad').select('*').order('actualizado_at',{ascending:false}).range(i,i+999);
+    if(error)throw error;
+    out.push(...(data||[]));if((data||[]).length<1000)break;
+   }
+   rows=out;await loadPredios();badges();updateProjects();relevaQARender();await loadCoincidencias();relevaQARender();loaded=true;
+  }catch(e){setStatus('No se pudo cargar Control de calidad: '+(e?.message||e)+'. Ejecuta primero el SQL V162.');console.warn('QA RELEVA:',e);}
+  finally{busy=false;}
+ };
+ window.relevaQAOpen=()=>{
+  if(!canView())return alert('Esta sección es exclusiva de administradores y coordinadores autorizados.');
+  el('relevaQaOverlay').classList.add('open');
+  relevaQARefresh();
+ };
+ window.relevaQAClose=()=>el('relevaQaOverlay').classList.remove('open');
+ async function review(r,action,msg){
+  const {error}=await sb.rpc('releva_qa_revisar',{p_hallazgo:r.id,p_accion:action,p_observacion:msg||null});
+  if(error)throw error;
+  await relevaQARefresh();
+ }
+ async function submitCorrection(r){
+  if(!confirm('¿Confirmas que el hallazgo es real y quieres enviar una solicitud al técnico?'))return;
+  try{
+   if(r.modulo==='HOMEPASS'){
+    const {data:pred,error:e}=await sb.from('censo_homepass').select('id,proyecto_id,tecnico_id').eq('id',r.registro_id).single();
+    if(e)throw e;
+    if(!pred.tecnico_id)throw Error('El predio no tiene técnico asignado.');
+    const tipos=['DIRECCION','UBICACION','HOMEPASS','TIPO_PREDIO','CONTADOR','DATOS_INCOMPLETOS','DUPLICADO','FOTOGRAFIA'];
+    const tipo=tipos.includes(r.tipificacion)?r.tipificacion:'OTROS';
+    const {error}=await sb.from('censo_homepass_correcciones').insert({proyecto_id:pred.proyecto_id,predio_id:pred.id,tecnico_id:pred.tecnico_id,descripcion:r.descripcion,tipificacion:tipo,campo_objetivo:r.campo||null,estado:'pendiente'});
+    if(error)throw error;
+   }else{
+    const {data:p,error:e}=await sb.from('mapping_puntos').select('*').eq('id',r.registro_id).single();
+    if(e)throw e;
+    if(typeof responsableActualCorreccionMaster!=='function')throw Error('No está disponible la función de responsables de Infraestructura.');
+    const resp=await responsableActualCorreccionMaster(p);
+    const {error}=await sb.from('mapping_correcciones').insert({
+      proyecto_id:p.proyecto_id,punto_id:p.id,idcampo:p.idcampo||null,
+      tecnico_id:resp.tecnico_id,tecnico_email:resp.tecnico_email,tecnico_nombre:resp.tecnico_nombre,
+      solicitado_por:user.id,solicitado_por_email:user.email||null,solicitado_por_nombre:perfil?.nombre||user.email||null,solicitado_por_rol:perfil?.rol||null,
+      categoria:'DATOS',campo_objetivo:r.campo||null,descripcion:r.descripcion,prioridad:r.gravedad==='alta'?'alta':'normal',estado:'pendiente'
+    });
+    if(error)throw error;
+   }
+   try{await review(r,'gestionado','Solicitud de corrección creada desde el análisis automático.');}
+   catch(e){alert('Solicitud enviada al técnico, pero no se actualizó el estado del hallazgo: '+e.message);}
+   if(typeof cargarCorreccionesMasterGlobal==='function')cargarCorreccionesMasterGlobal(true).catch(()=>{});
+   if(typeof hp138Refresh==='function')hp138Refresh().catch(()=>{});
+   alert('Solicitud enviada. El técnico recibirá la corrección mediante el sistema existente.');
+  }catch(e){alert('No se pudo solicitar la corrección: '+(e?.message||e));}
+ }
+ el('relevaQaRows')?.addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-qa-action]');if(!b)return;
+  const r=rows.find(x=>String(x.id)===String(b.dataset.qaId));if(!r)return;
+  b.disabled=true;
+  try{
+   if(b.dataset.qaAction==='solicitar')await submitCorrection(r);
+   else if(confirm('¿Descartar este posible error? Se conservará el historial.'))await review(r,'descartado','Descartado por el supervisor.');
+  }catch(err){alert('No fue posible gestionar el hallazgo: '+(err?.message||err));}
+  finally{b.disabled=false;}
+ });
+ function connect(){
+  if(!canView()||channel)return;
+  channel=sb.channel('releva-qa-v162-master').on('postgres_changes',{event:'*',schema:'public',table:'releva_hallazgos_calidad'},()=>{
+    clearTimeout(refreshTimer);refreshTimer=setTimeout(relevaQARefresh,350);
+  }).subscribe();
+  relevaQARefresh();
+ }
+ // La autenticación es asíncrona; esperar al perfil cargado y actualizar la conexión.
+ setInterval(()=>{
+  const btn=el('relevaQaTop');if(btn)btn.style.display=canView()?'':'none';
+  if(canView())connect();
+  else if(channel){sb.removeChannel(channel);channel=null;rows=[];badges();loaded=false;}
+ },3500);
+ setInterval(()=>{if(canView()&&!document.hidden)relevaQARefresh()},30000);
+})();
+</script>
+
+<style id="relevaQaRulesV163Style">
+.relevaQaRules{border:1px solid #355773;border-radius:12px;margin:10px 0 16px;padding:9px 14px;background:#0d2437;color:#eaf7ff}
+.relevaQaRules summary{cursor:pointer;color:#a5f3fc;font-size:13px;font-weight:800;padding:5px 0}
+.relevaQaRulesGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.relevaQaRulesGrid>div{padding:11px;border:1px solid #34566b;border-radius:10px;background:#102f44}
+.relevaQaRulesGrid strong{font-size:12px;color:#effcff;display:block;margin-bottom:5px}
+.relevaQaRulesGrid small{font-size:11px;color:#bed7e5;line-height:1.5;display:block}
+@media(max-width:790px){.relevaQaRulesGrid{grid-template-columns:1fr}}
+</style>
+
+<style id="relevaV166QaMasterStyle">
+.relevaQaPeerList{margin-top:6px;max-height:170px;overflow:auto;color:#d2f9ec}
+.relevaQaPeer{margin:4px 0;padding:7px 9px;background:#0d3343;border:1px solid #27828b;border-radius:7px;font-size:11px}
+.relevaQaPeer small{color:#d3e9f0}
+#relevaQaRows td:nth-child(4) b{color:#fef08a;font-size:12px}
+#relevaQaRows [data-qa-action="coincidencias"]{margin:0 5px 5px 0}
+</style>
+<!-- V165 · Vista de verificación de predio al validar una corrección Homepass -->
+<style id="relevaV165RevisionCss">
+#relevaV165Review{display:none;position:fixed;z-index:56008;top:75px;left:33.2vw;width:34.3vw;height:calc(100vh - 90px);overflow:auto;background:#0a2033;border:1px solid #3d6e88;border-radius:14px;color:#f1faff;box-shadow:0 14px 46px #000b;font:12px/1.5 Inter,Arial,sans-serif;padding:13px}
+#relevaV165Review.open{display:block}
+@media(min-width:1151px){#hp137Panel.open .hp137Box{width:min(32vw,580px)!important}}
+#relevaV165Review .v165Head{display:flex;position:sticky;top:-13px;z-index:3;justify-content:space-between;align-items:center;gap:7px;background:#0a2033;padding:10px 0;border-bottom:1px solid #31536d}
+#relevaV165Review h3{font-size:14px;color:#baf7f2;margin:0}
+#relevaV165Review button,#relevaV165Review select{padding:7px;border:1px solid #426d88;border-radius:8px;background:#12344d;color:#fff;cursor:pointer}
+#relevaV165Review .v165Select{width:100%;margin:8px 0 10px}
+#relevaV165Review .v165Message{background:#102d42;border:1px solid #41647c;padding:9px;border-radius:9px;margin:10px 0;color:#cde5f5}
+#relevaV165Review .v165Form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#relevaV165Review .v165Field{padding:9px;background:#0d2a40;border:1px solid #2d5168;border-radius:9px;min-width:0;word-break:break-word}
+#relevaV165Review .v165Field b{font-size:12px;display:block;color:#fff}
+#relevaV165Review .v165Field small{color:#a7c7dd;display:block;font-size:10px;margin-bottom:3px}
+#relevaV165Review .v165Field.changed{border-color:#3ed8a5;background:#0d3a36}
+#relevaV165Review .v165Field.focus{outline:1px solid #f59e0b}
+#relevaV165Review .v165Compare{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+#relevaV165Review .v165Old{color:#ffc6bb;text-decoration:line-through;overflow-wrap:anywhere}
+#relevaV165Review .v165New{color:#a7ffce;font-weight:800;overflow-wrap:anywhere}
+#relevaV165Review .v165PhotoGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#relevaV165Review .v165PhotoGrid img{width:100%;height:95px;object-fit:cover;border:1px solid #55748b;border-radius:7px}
+#relevaV165Review .v165PhotoGrid a{display:block;font-size:10px;color:#7dd3fc}
+#relevaV165Review .v165PhotoGrid>div{min-width:0;overflow-wrap:anywhere}
+#relevaV165Review .v165Section{color:#a5f3fc;font-size:12px;font-weight:800;margin:14px 0 8px;border-bottom:1px solid #35556c;padding-bottom:5px}
+#relevaV165Review .v165Footer{font-size:10px;color:#b3c9d9;margin-top:10px}
+@media(max-width:1150px){#relevaV165Review{left:20vw;width:44vw}#hp137Panel .hp137Box{width:min(43vw,580px)!important}}
+@media(max-width:800px){#relevaV165Review{left:2vw;top:61px;width:96vw;height:calc(100dvh - 72px);z-index:56025}#relevaV165Review .v165Form{grid-template-columns:1fr}#relevaV165Review .v165PhotoGrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+<div id="relevaV165Review" role="region" aria-label="Verificación de la información corregida">
+  <div class="v165Head"><h3 id="relevaV165Title">🔎 Verificación del predio</h3><div><button id="relevaV165Refresh" type="button">⟳ Actualizar</button> <button id="relevaV165Close" type="button">Cerrar</button></div></div>
+  <div id="relevaV165Status" class="v165Message">Selecciona una corrección para revisar.</div>
+  <label for="relevaV165Choice">Solicitud que deseas validar</label>
+  <select id="relevaV165Choice" class="v165Select"></select>
+  <div id="relevaV165Content"></div>
+</div>
+<script id="relevaV165RevisionJS">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const panel=$('relevaV165Review'), chooser=$('relevaV165Choice'), status=$('relevaV165Status'), content=$('relevaV165Content');
+ const names={'ID-ENERGIZ':'ID ENERGIZ','MZ':'Manzana','LOTEO':'Lote','TIPOPREDIO':'Tipo de predio','NOMPREDIO':'Nombre del predio','DIRECCION':'Dirección','BARRIO':'Barrio','HOMRESIDEN':'Homepass residenciales','HOMECOMERI':'Homepass comerciales','CANTTOTALH':'Total de Homepass','CANTPISOS':'Cantidad de pisos','CANTPISXTO':'Pisos por torre','CANTCONTAD':'Cantidad de contadores','SERIALCONT':'Serial contador','PREDIOPLAC':'Tiene placa','Placa':'Placa','ACTPREDIO':'Uso del predio','NOMBRETECN':'Técnico','LATITUDE':'Latitud','LONGITUDE':'Longitud','OBSERVACIO':'Observaciones','DEPARTAMEN':'Departamento','MUNICIPIO':'Municipio','TIPACCESO':'Tipo de acceso','INTERIOR O BLOQUE':'Interior o bloque'};
+ const photos=[['FOTOFACHAD','Foto de placa'],['FOTO2','Foto de fachada'],['FOTOCONT','Foto de contador']];
+ const skip=new Set(['id','proyecto_id','tecnico_id','offline_id','created_at','updated_at','FOTOFACHAD','FOTO2','FOTOCONT']);
+ let currentId='',loadSeq=0,corrections=[],record=null;
+ function node(t,cls,txt){const n=document.createElement(t);if(cls)n.className=cls;if(txt!==undefined)n.textContent=String(txt);return n}
+ function section(txt){return node('div','v165Section',txt)}
+ function printable(v){if(v===undefined||v===null||v==='')return '—';if(typeof v==='object')return JSON.stringify(v);return String(v)}
+ function same(a,b){return printable(a)===printable(b)}
+ function activeCorrection(){return corrections.find(c=>String(c.id)===String(chooser.value))||corrections[0]||null}
+ async function photoCard(grid, r, key, title, seq){const div=node('div');div.append(node('b',null,title));grid.append(div);const v=String(r[key]||'').trim();if(!v){div.append(node('div',null,'Sin evidencia'));return}
+  const note=node('div',null,'Cargando…');div.append(note);
+  try{let url='';if(/^https:\/\//i.test(v)){url=v}else{const {data,error}=await sb.storage.from('censo-homepass-fotos').createSignedUrl(v,600);if(error)throw error;url=data?.signedUrl||''}
+   if(seq!==loadSeq||!url)return;note.remove();const a=node('a',null,'Abrir fotografía');a.href=url;a.target='_blank';a.rel='noopener noreferrer';const img=node('img');img.src=url;img.alt=title;img.loading='lazy';img.onerror=()=>{img.remove();div.prepend(node('small',null,'No se pudo abrir la imagen.'))};div.append(img,a)
+  }catch(e){note.textContent='Foto no disponible: '+(e?.message||e)}
+ }
+ async function display(){const correction=activeCorrection();if(!record)return;const seq=++loadSeq;content.replaceChildren();const ref=printable(record['ID-ENERGIZ']||record.id);$('relevaV165Title').textContent='🔎 Ficha del predio · '+ref;
+  const before=correction?.snapshot_antes&&typeof correction.snapshot_antes==='object'?correction.snapshot_antes:null;
+  const after=correction?.snapshot_despues&&typeof correction.snapshot_despues==='object'?correction.snapshot_despues:null;
+  const observed=record;
+  status.textContent=correction?('Solicitud: '+(correction.tipificacion||'Sin tipificar')+' · '+(correction.campo_objetivo||'Revisión general')+' · Estado: '+correction.estado):'Ficha actual del predio';
+  if(correction){content.append(section('Observación del supervisor'));content.append(node('div','v165Message',correction.descripcion||'Sin descripción'));
+    if(correction.respuesta_tecnico){content.append(section('Respuesta del técnico'));content.append(node('div','v165Message',correction.respuesta_tecnico))}}
+  if(!before)content.append(node('div','v165Message','No hay copia anterior para esta solicitud. Se muestra la información actual sincronizada; no es posible demostrar qué valores cambiaron antes de instalar el historial.'));
+  else if(!after)content.append(node('div','v165Message','Existe una copia al solicitar la corrección, pero todavía no hay copia posterior. Las diferencias se completan cuando el técnico marque la solicitud como corregida.'));
+  else content.append(node('div','v165Message','Comparación histórica: antes de solicitar la corrección y al marcarla corregida. La ficha actual se consulta de nuevo desde la base de datos.'));
+  const selectFocus=String(correction?.campo_objetivo||'').toUpperCase();
+  const keys=Object.keys(names).filter(k=>!skip.has(k));
+  const allKeys=[...new Set([...keys,...Object.keys(observed),...(before?Object.keys(before):[])])].filter(k=>!skip.has(k)&&!k.startsWith('_')&&(!['object','function'].includes(typeof observed[k])||observed[k]===null));
+  const prioritized=allKeys.sort((a,b)=>(keys.indexOf(a)<0?999:keys.indexOf(a))-(keys.indexOf(b)<0?999:keys.indexOf(b)));
+  content.append(section('Datos del formulario · Solo lectura'));
+  const fields=node('div','v165Form');content.append(fields);let changed=0;
+  for(const k of prioritized){const old=before?.[k],newval=observed[k];if((newval===null||newval===undefined||newval==='')&&(!before||old===undefined||old===null||old===''))continue;
+   const modified=before&&after&&!same(before[k],after[k]);if(modified)changed++;
+   const c=node('div','v165Field'+(modified?' changed':'')+(selectFocus.includes(k.toUpperCase())?' focus':''));c.append(node('small',null,(names[k]||k)+' · '+k));
+   if(modified){const compare=node('div','v165Compare');const a=node('div','v165Old','Antes: '+printable(old));const b=node('div','v165New','Después: '+printable(after[k]));compare.append(a,b);c.append(compare)}else c.append(node('b',null,printable(newval)));fields.append(c)
+  }
+  if(before&&after){const note=node('div','v165Message',changed?changed+' campo(s) con cambios registrados. Revisa especialmente los valores destacados en verde.':'No se detectan cambios de campos entre las dos copias guardadas. Confirma si el técnico corrigió la observación o solo respondió.');content.insertBefore(note,fields)}
+  content.append(section('Fotografías actuales del levantamiento'));const grid=node('div','v165PhotoGrid');content.append(grid);for(const [k,t] of photos){photoCard(grid,record,k,t,seq)}
+  if(before&&after){content.append(section('Fotografías: comparación de rutas'));const f=node('div','v165Form');content.append(f);for(const [k,label] of photos){const c=node('div','v165Field'+(!same(before[k],after[k])?' changed':''));c.append(node('small',null,label));c.append(node('b',null,!same(before[k],after[k])?'La referencia de foto cambió':'Sin cambio de referencia'));f.append(c)}}
+  content.append(node('div','v165Footer','Los datos actuales corresponden a la última sincronización disponible en la base de datos. Para aprobar una corrección revisa las fotografías, las observaciones y los valores modificados.'));
+ }
+ async function fetchRecord(){if(!currentId)return;const seq=++loadSeq;status.textContent='Consultando información actual del predio…';try{
+  const [{data:pred,error:predError},{data:hist,error:histError}]=await Promise.all([
+    sb.from('censo_homepass').select('*').eq('id',currentId).single(),
+    sb.from('censo_homepass_correcciones').select('*').eq('predio_id',currentId).order('fecha_solicitud',{ascending:false})
+  ]);
+  if(seq!==loadSeq)return;if(predError)throw predError;if(histError)throw histError;
+  record=pred;corrections=hist||[];const selected=chooser.value;chooser.replaceChildren();for(const c of corrections){const option=node('option',null,(c.estado||'').toUpperCase()+' · '+(c.tipificacion||c.campo_objetivo||'Observación')+' · '+new Date(c.fecha_solicitud||Date.now()).toLocaleString('es-CO'));option.value=c.id;chooser.append(option)}
+  if(selected&&corrections.some(c=>String(c.id)===selected))chooser.value=selected;
+  await display();
+  const historyCards=[...document.querySelectorAll('#hp137List .hp137Item')];
+  historyCards.forEach((card,i)=>{if(card.querySelector('.relevaV165OpenBtn'))return;const btn=node('button','btn small blue relevaV165OpenBtn','🔎 Ver ficha y cambios');btn.type='button';btn.onclick=()=>{panel.classList.add('open');if(corrections[i])chooser.value=corrections[i].id;display()};card.append(btn)});
+ }catch(e){status.textContent='No se pudo consultar el predio: '+(e.message||e);content.replaceChildren()}}
+ function close(){panel.classList.remove('open');currentId='';corrections=[];record=null;loadSeq++}
+ window.relevaV165VerificarPredio=async function(row){if(!row?.id)return;currentId=String(row.id);panel.classList.add('open');await fetchRecord()};
+ $('relevaV165Close').addEventListener('click',close);
+ $('relevaV165Refresh').addEventListener('click',fetchRecord);
+ chooser.addEventListener('change',display);
+ const original=window.hp137Open;
+ if(typeof original==='function')window.hp137Open=async function(row){const r=await original.apply(this,arguments);if(row?.id)window.relevaV165VerificarPredio(row);return r};
+ const prevClose=window.hp137Close;
+ if(typeof prevClose==='function')window.hp137Close=function(){close();return prevClose.apply(this,arguments)};
+ const prevStatus=window.hp137Status;
+ if(typeof prevStatus==='function')window.hp137Status=async function(...args){const res=await prevStatus.apply(this,args);if(currentId)await fetchRecord();return res};
+ // Integrar acceso a la ficha en cada tarjeta del historial, además del autoabierto.
+ const prevLoad=window.hp137Load;
+ if(typeof prevLoad==='function')window.hp137Load=async function(...args){const result=await prevLoad.apply(this,args);const list=$('hp137List');if(list&&currentId){const cards=[...list.querySelectorAll('.hp137Item')];cards.forEach((c,i)=>{if(c.querySelector('.relevaV165OpenBtn'))return;const b=node('button','btn small blue relevaV165OpenBtn','🔎 Ver datos corregidos');b.type='button';b.onclick=()=>{panel.classList.add('open');if(corrections[i])chooser.value=corrections[i].id;display()};c.append(b)})}return result};
+})();
+</script>
+
+
+<!-- V166 Master · Verificación cruzada de predios coincidentes -->
+
+
+<style id="relevaV167QAGroupedStyles">
+#relevaQaRows .qaGroupedHeader td{background:#113b50!important;border-top:2px solid #22b9c9!important;padding:12px 13px;color:#fff!important}
+.qaGroupedHeader strong{display:inline-block;color:#ffda86;font-size:13px;margin-right:12px}
+.qaGroupedCountTitle{font-size:11px;color:#bddced}
+.qaGroupedChips{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:8px}
+.qaGroupedChip{background:#092739;border:1px solid #2c9aab;color:#eaffff;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700}
+.qaGroupedArrow{color:#fbbf24;font-size:17px}
+.qaGroupedWarning{display:block;margin-top:4px;color:#ffc98c;font-size:11px}
+.qaGroupedCount{display:block;color:#a8e7d9;margin-top:5px}
+#relevaQaRows .qaGroupedMember td{background:#0d2436!important}
+#relevaQaRows .qaGroupedMember:hover td{background:#183f55!important}
+</style>
+<style id="relevaZonasRojasMasterStyle">
+#zrMasterOpen{display:block;width:100%;border:1px solid #f87171;border-radius:10px;padding:10px;color:#fff;background:#832323;font-weight:800;margin:10px 0;cursor:pointer}
+#zrMasterPanel{display:none;position:fixed;right:18px;top:85px;bottom:25px;width:min(520px,94vw);z-index:32001;background:#091c2c;border:1px solid #356079;color:#f1f8ff;border-radius:15px;padding:16px;box-shadow:0 20px 60px #000a;overflow:auto}#zrMasterPanel.zrVisible{display:block}#zrMasterPanel h3{margin:0 0 12px;font-size:18px;color:#c0faf6}#zrMasterPanel button{background:#0a80b5;color:#fff;border:0;border-radius:7px;padding:9px 11px;margin:4px;font-weight:800;cursor:pointer}#zrMasterPanel .zrApprove{background:#af1724}#zrMasterPanel .zrReject{background:#4e6576}#zrMasterPanel textarea{display:block;width:100%;box-sizing:border-box;border:1px solid #37546a;border-radius:9px;background:#081522;color:white;padding:10px;min-height:76px}#zrMasterPanel .zrEntry{border:1px solid #304b63;border-radius:9px;padding:12px;margin:10px 0;background:#10283c}#zrMasterPanel .zrEntry p{font-size:12px;line-height:1.5}#zrMasterPanel .zrState{color:#abd8e5;font-size:12px;margin:6px 0}#zrMasterPanel .zrActions{display:flex;flex-wrap:wrap;gap:5px}
+</style>
+<style id="relevaZrV170NotificationStyle">
+#zrMasterNotification{display:none;position:fixed;right:20px;bottom:78px;z-index:31990;max-width:min(440px,calc(100vw - 35px));background:#102c40;border:2px solid #fbbf24;border-radius:13px;box-shadow:0 14px 40px #000a;color:#fff;padding:12px 14px;box-sizing:border-box}
+#zrMasterNotification.zrNoticeOn{display:block}
+#zrMasterNotification .zrNoticeHead{display:flex;align-items:center;gap:9px;justify-content:space-between;font-weight:900}
+#zrMasterNotification .zrNoticeCount{background:#f59e0b;color:#1c1917;padding:3px 8px;border-radius:12px}
+#zrMasterNotification p{margin:7px 0;font-size:12px;color:#e6f1fa;line-height:1.5}
+#zrMasterNotification button{background:#0b8fc2;border:0;border-radius:7px;color:white;font-weight:800;padding:8px 10px;cursor:pointer}
+#zrMasterNotification .zrDismiss{background:#334f62}
+@media(max-width:600px){#zrMasterNotification{right:8px;bottom:90px}}
+</style>
+<div id="zrMasterNotification" role="status" aria-live="polite">
+ <div class="zrNoticeHead"><span>⚠ Zonas de seguridad por validar</span><span class="zrNoticeCount" id="zrNoticeNumber">0</span></div>
+ <p id="zrNoticeMessage">Hay reportes de zonas de seguridad pendientes de revisión.</p>
+ <button type="button" onclick="relevaZrMasterOpen(true)">🔎 Revisar zonas</button>
+ <button type="button" class="zrDismiss" onclick="relevaZrNoticeDismiss()">Ocultar aviso</button>
+</div>
+<div id="zrMasterPanel" aria-label="Supervisión de zonas de seguridad">
+ <div style="display:flex;justify-content:space-between;align-items:center"><h3>⚠ Zonas de seguridad</h3><button onclick="relevaZrMasterOpen(false)">Cerrar</button></div>
+ <p style="font-size:12px;color:#cbd5e1">Blanco: reporte pendiente. Rojo mate sólido: restricción aprobada. No aprobar sin verificar el riesgo con responsables de seguridad.</p>
+ <div id="zrMasterSummary" class="zrState">Consultando zonas…</div>
+ <button onclick="relevaZrMasterRefresh()">⟳ Actualizar</button>
+ <button type="button" onclick="relevaZrEditStartNew()">✚ Crear zona desde Master</button>
+ <div id="zrMasterEditHint" style="font-size:12px;color:#a7d9f5;line-height:1.5"></div>
+ <div class="zrMasterFilterBar"><label for="zrMasterStatusFilter">Mostrar zonas</label><select id="zrMasterStatusFilter" onchange="relevaZrMasterSetFilter(this.value)"><option value="activas">Activas (pendientes y aprobadas)</option><option value="rechazada">Rechazadas / historial</option><option value="todas">Todas</option></select><small>Las rechazadas se conservan en el historial, pero no aparecen como restricciones activas.</small></div>
+ <div id="zrMasterList"></div>
+</div>
+<script id="relevaZonasRojasMasterScript">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const escZr=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let group=null,channel=null,current='',list=[],timer=null,fetching=false,notifyKey='',lastPending=-1,dismissed=false,filter='activas',rejectedPreview=null;
+function proj(){const id=$('fProyecto')?.value||'';return typeof proyectos!=='undefined'?proyectos.find(p=>String(p.id)===String(id)):null}
+function company(){return String(proj()?.empresa_id||'')}
+function city(){return String(proj()?.ciudad||'').trim().toUpperCase()}
+function ensure(){if(typeof map==='undefined'||!map||typeof L==='undefined')return false;if(!group){group=L.layerGroup().addTo(map);map.createPane('zrMasterPane').style.zIndex='622'}return true}
+function style(z){return z.estado==='aprobada'?{color:'#871b1b',weight:3,fillColor:'#b52b2b',fillOpacity:1}:{color:'#ffffff',weight:3,fillColor:'#ffffff',fillOpacity:.58,dashArray:'7 4'}}
+function popup(z){return `<b>⚠ ${escZr(z.nombre)}</b><p><b>${z.estado==='aprobada'?'🔴 RESTRINGIDA':'⚪ PENDIENTE DE REVISIÓN'}</b></p><p><b>Motivo:</b> ${escZr(z.motivo)}</p><p><b>Supervisor:</b> ${escZr(z.observacion_master||'Pendiente')}</p>`}
+function zoom(id){const z=list.find(x=>String(x.id)===String(id));if(!z)return;try{const b=L.geoJSON(z.geometria).getBounds();if(b.isValid())map.fitBounds(b.pad(.15),{maxZoom:19})}catch(e){alert('No se puede centrar esta geometría')}}
+function draw(){if(!ensure())return;group.clearLayers();if(rejectedPreview){map.removeLayer(rejectedPreview);rejectedPreview=null}for(const z of list.filter(z=>z.estado!=='rechazada')){try{L.geoJSON({type:'Feature',geometry:z.geometria,properties:{}},{style:style(z),pane:'zrMasterPane'}).bindPopup(popup(z)).addTo(group)}catch(e){console.warn('Zona con geometría inválida',z.id)}}}
+function updateNotification(){
+ const key=company()+':'+city();
+ if(!key||key===':'||!proj()){$('zrMasterNotification')?.classList.remove('zrNoticeOn');return}
+ if(notifyKey!==key){notifyKey=key;lastPending=-1;dismissed=false}
+ const pending=list.filter(z=>z.estado==='pendiente');
+ const count=pending.length;
+ // Mostrar al abrir el Master si hay pendientes, o al detectar un nuevo reporte.
+ if(count>lastPending && count>0)dismissed=false;
+ lastPending=count;
+ $('zrNoticeNumber').textContent=String(count);
+ $('zrNoticeMessage').textContent=count===1
+ ? 'Hay una zona reportada que necesita validación del supervisor.'
+ : `Hay ${count} zonas reportadas pendientes de validación.`;
+ $('zrMasterNotification')?.classList.toggle('zrNoticeOn',count>0&&!dismissed);
+}
+window.relevaZrNoticeDismiss=function(){dismissed=true;$('zrMasterNotification')?.classList.remove('zrNoticeOn')};
+window.relevaZrMasterSetFilter=function(value){filter=['activas','rechazada','todas'].includes(value)?value:'activas';render()};
+function previewRejected(id){
+ const z=list.find(x=>String(x.id)===String(id));if(!z)return;
+ if(!ensure())return;
+ if(rejectedPreview){map.removeLayer(rejectedPreview);rejectedPreview=null}
+ if(z.estado==='rechazada'){
+  rejectedPreview=L.geoJSON({type:'Feature',geometry:z.geometria},{style:{color:'#cbd5e1',weight:4,dashArray:'8 6',fillColor:'#64748b',fillOpacity:.14},pane:'zrMasterPane',interactive:false}).addTo(map);
+ }
+ zoom(id);$('zrMasterPanel')?.classList.remove('zrVisible');
+}
+function render(){
+ const summary=$('zrMasterSummary'),box=$('zrMasterList');updateNotification();if(!box)return;
+ const pending=list.filter(z=>z.estado==='pendiente').length,approved=list.filter(z=>z.estado==='aprobada').length,rejected=list.filter(z=>z.estado==='rechazada').length;
+ summary.textContent=`${pending} pendiente(s) · ${approved} aprobada(s) · ${rejected} rechazada(s) en historial`;
+ const select=$('zrMasterStatusFilter');if(select)select.value=filter;
+ const rows=list.filter(z=>filter==='todas'||(filter==='rechazada'?z.estado==='rechazada':z.estado!=='rechazada'));
+ box.innerHTML=rows.map(z=>`<section class="zrEntry"><b>⚠ ${escZr(z.nombre)}</b> <span style="color:${z.estado==='aprobada'?'#f87171':z.estado==='rechazada'?'#cbd5e1':'#7dd3fc'}">${escZr(z.estado)}</span><p><b>Motivo:</b> ${escZr(z.motivo)}</p><p><b>Ciudad:</b> ${escZr(z.ciudad)} · <b>Reportado:</b> ${new Date(z.creado_at).toLocaleString('es-CO')}</p>${z.observacion_master?`<p><b>Observación supervisor:</b> ${escZr(z.observacion_master)}</p>`:''}${z.estado==='rechazada'?'<p class="zrHistoryNote">Registro histórico: no visible como zona activa para los técnicos.</p>':''}<div class="zrActions"><button data-zr-go="${escZr(z.id)}">⌖ ${z.estado==='rechazada'?'Localizar historial':'Ver en mapa'}</button><button data-zr-edit="${escZr(z.id)}">✎ Editar zona / vértices</button>${z.estado==='pendiente'?`<button class="zrApprove" data-zr-approve="${escZr(z.id)}">Aprobar zona roja</button><button class="zrReject" data-zr-reject="${escZr(z.id)}">Rechazar</button>`:''}</div></section>`).join('')||'<p class="zrState">No hay zonas en el estado seleccionado.</p>';
+ box.querySelectorAll('[data-zr-edit]').forEach(b=>b.onclick=()=>window.relevaZrEditExisting(b.dataset.zrEdit));
+ box.querySelectorAll('[data-zr-go]').forEach(b=>b.onclick=()=>previewRejected(b.dataset.zrGo));
+ box.querySelectorAll('[data-zr-approve]').forEach(b=>b.onclick=()=>decide(b.dataset.zrApprove,'aprobada'));
+ box.querySelectorAll('[data-zr-reject]').forEach(b=>b.onclick=()=>decide(b.dataset.zrReject,'rechazada'));
+}
+async function decide(id,state){const z=list.find(x=>x.id===id);if(!z)return;const reason=prompt(state==='aprobada'?'Justificación del supervisor al aprobar la restricción:':'Motivo para rechazar el reporte:');if(reason===null)return;if(reason.trim().length<5)return alert('Explica la decisión (mínimo 5 caracteres)');if(!confirm(`¿${state==='aprobada'?'APROBAR y mostrar en ROJO SÓLIDO':'RECHAZAR y retirar de todos los mapas'} la zona ${z.nombre}?`))return;
+ const {error}=await sb.from('releva_zonas_rojas').update({estado:state,observacion_master:reason.trim()}).eq('id',id).eq('estado','pendiente');if(error)return alert('No se pudo guardar: '+error.message);if(state==='rechazada'){const item=list.find(x=>x.id===id);if(item)item.estado='rechazada';draw();render()}await refresh()}
+async function refresh(){if(!ensure()||!proj()||!company()||!city()||!navigator.onLine)return;if(fetching)return;const k=company()+':'+city();fetching=true;
+ try{const {data,error}=await sb.from('releva_zonas_rojas').select('*').eq('empresa_id',company()).eq('ciudad',city()).order('creado_at',{ascending:false}).limit(1000);if(error)throw error;if(k!==company()+':'+city())return;list=data||[];draw();render()}catch(e){if($('zrMasterSummary'))$('zrMasterSummary').textContent='Error consultando zonas: '+(e.message||e)}finally{fetching=false}}
+window.relevaZrMasterOpen=function(open){$('zrMasterPanel').classList.toggle('zrVisible',typeof open==='boolean'?open:!$('zrMasterPanel').classList.contains('zrVisible'));if($('zrMasterPanel').classList.contains('zrVisible'))window.relevaZrNoticeDismiss();refresh()};
+window.relevaZrMasterRefresh=refresh;
+window.relevaZrZoneById=id=>list.find(x=>String(x.id)===String(id));
+window.relevaZrReload=refresh;
+function connect(){const k=company()+':'+city();if(!proj()||!company()||!city()){if(group)group.clearLayers();current='';list=[];render();return}if(current===k)return;current=k;if(channel){sb.removeChannel(channel);channel=null}if(group)group.clearLayers();refresh();channel=sb.channel('zr-master-'+proj().id).on('postgres_changes',{event:'*',schema:'public',table:'releva_zonas_rojas'},()=>refresh()).subscribe()}
+function init(){if(typeof map==='undefined'||!map||typeof sb==='undefined'){setTimeout(init,700);return}setInterval(connect,1500);timer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},25000);window.addEventListener('online',refresh)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,900));else setTimeout(init,900);
+})();
+</script>
+
+
+<style id="relevaV171MasterStyle">
+#zrMasterEditing{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:33010;background:#000b;padding:14px;box-sizing:border-box}
+#zrMasterEditing.open{display:flex}#zrMasterEditing .box{width:min(510px,100%);max-height:88dvh;overflow:auto;background:#091e30;color:#eefaff;border:1px solid #38778d;padding:18px;border-radius:15px}
+#zrMasterEditing label{display:block;margin:12px 0 4px;font-size:12px;font-weight:bold}#zrMasterEditing input,#zrMasterEditing textarea,#zrMasterEditing select{box-sizing:border-box;width:100%;background:#061525;color:#fff;border:1px solid #406078;border-radius:8px;padding:10px;font-size:14px}#zrMasterEditing textarea{min-height:100px}
+#zrMasterEditing button,#zrMasterDrawToolbar button,#relevaBroadcastMaster button{border:0;border-radius:7px;background:#0785b4;color:white;padding:10px;font-weight:800;margin:4px;cursor:pointer}
+#zrMasterDrawToolbar{display:none;position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:33008;background:#09263c;color:white;border:2px solid #22d3ee;border-radius:12px;padding:10px;box-shadow:0 12px 35px #0008;max-width:95vw;text-align:center}
+#zrMasterDrawToolbar.on{display:block}#relevaBroadcastMaster{display:none;position:fixed;right:20px;top:80px;width:min(500px,94vw);max-height:80dvh;overflow:auto;background:#091e30;border:1px solid #34748e;border-radius:13px;z-index:32900;padding:16px;color:#effaff;box-shadow:0 10px 40px #000a}
+#relevaBroadcastMaster.on{display:block}#relevaBroadcastMaster label{font-size:12px;display:block;margin-top:12px}#relevaBroadcastMaster select,#relevaBroadcastMaster input,#relevaBroadcastMaster textarea{width:100%;box-sizing:border-box;background:#061525;color:#fff;border:1px solid #42657f;border-radius:8px;padding:10px}
+#relevaBroadcastMaster textarea{min-height:110px}#relevaBroadcastMaster article{margin-top:9px;border:1px solid #385b74;border-radius:9px;padding:9px;font-size:12px}
+</style>
+<div id="zrMasterDrawToolbar"><b>📍 Editar zona en el mapa</b><div id="zrMasterDrawCount">Arrastra los círculos amarillos para mover los vértices. Toca el mapa para añadir otro.</div><button onclick="relevaZrEditUndo()">↶ Quitar vértice</button><button onclick="relevaZrEditFinish()">✓ Terminar polígono</button><button onclick="relevaZrEditCancel()">Cancelar</button></div>
+<div id="zrMasterEditing"><div class="box"><h3 id="zrMasterEditTitle">Zona de seguridad</h3><div style="font-size:12px;color:#cbd5e1">Puedes modificar el motivo, estado y geometría. Pulsa «Mover vértices en el mapa» para arrastrar los puntos amarillos. Al terminar, guarda los cambios para sincronizarlos.</div>
+<label>Nombre de zona</label><input id="zrMasterEditName" readonly/>
+<label>Motivo de seguridad</label><textarea id="zrMasterEditReason" maxlength="2500"></textarea>
+<label>Estado de la zona</label><select id="zrMasterEditState"><option value="pendiente">Pendiente (blanco)</option><option value="aprobada">Aprobada (rojo mate)</option><option value="rechazada">Rechazada</option></select>
+<label>Justificación de la decisión o edición</label><textarea id="zrMasterEditNote" maxlength="2500" placeholder="Indica el motivo del cambio o de la decisión"></textarea>
+<div id="zrMasterEditVertices" style="font-size:12px;color:#a7d9f5;margin:8px 0"></div><button onclick="relevaZrEditRedraw()">✎ Mover vértices en el mapa</button>
+<div><button onclick="relevaZrEditSave()">💾 Guardar zona</button><button onclick="relevaZrEditClose()" style="background:#52677a">Cerrar</button></div>
+</div></div>
+<div id="relevaBroadcastMaster"><div style="display:flex;justify-content:space-between;align-items:center"><b>📢 Difusión a técnicos del proyecto</b><button onclick="relevaDifMasterOpen(false)">Cerrar</button></div><label>Proyecto destinatario</label><select id="relevaDifProject"></select><label>Asunto</label><input id="relevaDifSubject" maxlength="140" placeholder="Ej. Instrucción de levantamiento"/><label>Mensaje</label><textarea id="relevaDifBody" maxlength="3000" placeholder="Mensaje para todos los técnicos asignados al proyecto"></textarea><label>Prioridad</label><select id="relevaDifPriority"><option value="normal">Normal</option><option value="importante">Importante</option><option value="urgente">Urgente</option></select><button onclick="relevaDifMasterSend()">📣 Enviar difusión</button><p style="color:#bcd6e7;font-size:12px">Los técnicos verán el aviso al abrir Mapping o mientras estén conectados. Se guardará confirmación de lectura.</p><b>Mensajes enviados</b><div id="relevaDifMasterList"></div></div>
+<script id="relevaV171MasterExtras">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+let edit={id:null,points:[],drawing:false,layer:null,markers:null,original:null}, difChannel=null,difScope='';
+const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function project(){let id=$('fProyecto')?.value;return typeof proyectos!=='undefined'?proyectos.find(p=>String(p.id)===String(id)):null}
+function projId(){return project()?.id}
+function rmPreview(){if(typeof map==='undefined'||!map)return;if(edit.layer){map.removeLayer(edit.layer);edit.layer=null}if(edit.markers){map.removeLayer(edit.markers);edit.markers=null}}
+function ensureEditPanes(){
+ if(typeof map==='undefined'||!map)return false;
+ for(const [name,z] of [['zrEditShapePane',695],['zrEditHandlesPane',725]]){
+  let pane=map.getPane(name);if(!pane)pane=map.createPane(name);pane.style.zIndex=String(z);
+ }
+ return true;
+}
+function syncPreviewPolygon(){
+ if(!edit.layer)return;
+ if(edit.points.length>=3){edit.layer.setLatLngs(edit.points);edit.layer.setStyle({opacity:1,fillOpacity:.16})}
+ else if(edit.points.length===2){edit.layer.setLatLngs(edit.points);edit.layer.setStyle({opacity:1,fillOpacity:0})}
+ else edit.layer.setLatLngs([]);
+ const counter=$('zrMasterDrawCount');if(counter)counter.textContent=edit.points.length+' vértices · arrastra círculos amarillos para ajustar · toca mapa para añadir vértice';
+ const count=$('zrMasterEditVertices');if(count)count.textContent='Vértices actuales: '+edit.points.length;
+}
+function renderPoints(){
+ rmPreview();if(typeof map==='undefined'||!map||!window.L||!ensureEditPanes())return;
+ // El original sigue como referencia. El editor tiene pane superior y relleno tenue.
+ edit.layer=L.polygon(edit.points.length>=3?edit.points:[],{
+  pane:'zrEditShapePane',color:'#fef08a',weight:4,dashArray:'9 5',
+  fillColor:'#22d3ee',fillOpacity:.16,interactive:false
+ }).addTo(map);
+ edit.markers=L.layerGroup().addTo(map);
+ edit.points.forEach((p,i)=>{
+  const icon=L.divIcon({className:'zr-edit-handle-icon',html:'<span title="Arrastrar vértice '+(i+1)+'">'+(i+1)+'</span>',iconSize:[29,29],iconAnchor:[14,14]});
+  const marker=L.marker(p,{icon,pane:'zrEditHandlesPane',draggable:true,keyboard:false,autoPan:true,zIndexOffset:1000}).addTo(edit.markers);
+  marker.on('dragstart',()=>{edit.justDragged=true});
+  marker.on('drag',(ev)=>{const ll=ev.target.getLatLng();edit.points[i]=[ll.lat,ll.lng];syncPreviewPolygon()});
+  marker.on('dragend',(ev)=>{const ll=ev.target.getLatLng();edit.points[i]=[ll.lat,ll.lng];syncPreviewPolygon();setTimeout(()=>{edit.justDragged=false},250)});
+  marker.on('click',(ev)=>{L.DomEvent.stopPropagation(ev)});
+ });
+ syncPreviewPolygon();
+}
+
+function hideForms(){$('zrMasterEditing').classList.remove('open');$('zrMasterDrawToolbar').classList.remove('on');$('zrMasterPanel')?.classList.remove('zrVisible')}
+function showEditor(){edit.drawing=false;$('zrMasterDrawToolbar').classList.remove('on');$('zrMasterEditing').classList.add('open');$('zrMasterEditVertices').textContent='Vértices: '+edit.points.length}
+window.relevaZrEditCancel=function(){edit.drawing=false;hideForms();rmPreview()};
+window.relevaZrEditClose=window.relevaZrEditCancel;
+window.relevaZrEditStartNew=function(){if(!projId())return alert('Selecciona un proyecto');edit={id:null,points:[],drawing:false,layer:null,markers:null,original:null};$('zrMasterEditName').value='Nombre automático';$('zrMasterEditReason').value='';$('zrMasterEditNote').value='';$('zrMasterEditState').value='pendiente';$('zrMasterEditTitle').textContent='Crear zona de seguridad';window.relevaZrEditRedraw()};
+window.relevaZrEditExisting=function(id){const z=window.relevaZrZoneById?.(id);if(!z)return alert('Actualiza la lista de zonas');if(String(z.proyecto_id)!==String(projId()))return alert('Selecciona primero el proyecto donde se creó esta zona para editarla');const ring=z.geometria?.coordinates?.[0]||[];rmPreview();edit={id:z.id,original:z,points:ring.slice(0,-1).map(([lng,lat])=>[lat,lng]),drawing:false,layer:null,markers:null,justDragged:false};$('zrMasterEditTitle').textContent='Editar · '+z.nombre;$('zrMasterEditName').value=z.nombre;$('zrMasterEditReason').value=z.motivo;$('zrMasterEditNote').value='';$('zrMasterEditState').value=z.estado;window.relevaZrEditRedraw();try{const b=L.geoJSON(z.geometria).getBounds();if(b.isValid())map.fitBounds(b.pad(.22),{maxZoom:19})}catch(_){} };
+window.relevaZrEditRedraw=function(){if(!projId())return alert('Selecciona un proyecto');edit.drawing=true;hideForms();$('zrMasterDrawToolbar').classList.add('on');renderPoints()};
+window.relevaZrEditUndo=function(){if(!edit.drawing)return;edit.points.pop();renderPoints()};
+window.relevaZrEditFinish=function(){if(edit.points.length<3)return alert('Marca al menos tres vértices');showEditor();renderPoints()};
+function onMapClick(e){if(!edit.drawing||edit.justDragged)return;const t=e.originalEvent?.target;if(t?.closest?.('.leaflet-control,.zr-edit-handle-icon'))return;edit.points.push([e.latlng.lat,e.latlng.lng]);renderPoints()}
+window.relevaZrEditSave=async function(){if(!projId()||edit.points.length<3)return alert('Completa el polígono');const reason=$('zrMasterEditReason').value.trim(),note=$('zrMasterEditNote').value.trim(),state=$('zrMasterEditState').value;if(reason.length<10)return alert('Escribe un motivo de al menos 10 caracteres');if(note.length<5)return alert('Documenta el motivo de la creación, edición o aprobación (mínimo 5 caracteres)');const ring=edit.points.map(([lat,lng])=>[Number(lng.toFixed(7)),Number(lat.toFixed(7))]);ring.push([...ring[0]]);const geometry={type:'Polygon',coordinates:[ring]};try{let query;if(edit.id){query=await sb.from('releva_zonas_rojas').update({motivo:reason,geometria:geometry,estado:state,observacion_master:note}).eq('id',edit.id).eq('proyecto_id',projId()).select('id').single()}else{query=await sb.from('releva_zonas_rojas').insert({proyecto_id:projId(),nombre:'Zona 1',motivo:reason,geometria:geometry}).select('id,nombre').single();if(!query.error){query=await sb.from('releva_zonas_rojas').update({estado:state,observacion_master:note}).eq('id',query.data.id).select('id').single()}}if(query.error)throw query.error;window.relevaZrEditCancel();await window.relevaZrReload?.();alert('Zona de seguridad guardada correctamente')}catch(e){alert('No se pudo guardar la zona: '+(e.message||e))}};
+function initDraw(){if(typeof map==='undefined'||!map){setTimeout(initDraw,700);return}map.on('click',onMapClick)}
+// Mensajes de difusión para los técnicos asignados.
+window.relevaDifMasterOpen=function(show){const panel=$('relevaBroadcastMaster');const opening=typeof show==='boolean'?show:!panel.classList.contains('on');panel.classList.toggle('on',opening);if(opening){const sel=$('relevaDifProject');sel.innerHTML=(typeof proyectos!=='undefined'?proyectos:[]).map(p=>'<option value="'+escapeText(p.id)+'">'+escapeText((p.codigo||'')+' · '+p.nombre)+'</option>').join('');sel.value=projId()||sel.value;window.relevaDifMasterRefresh()}};
+window.relevaDifMasterSend=async function(){const pid=$('relevaDifProject').value,subject=$('relevaDifSubject').value.trim(),body=$('relevaDifBody').value.trim(),priority=$('relevaDifPriority').value;if(!pid||subject.length<4||body.length<10)return alert('Selecciona proyecto, asunto (4 caracteres) y mensaje (10 caracteres)');if(!confirm('¿Enviar esta difusión a todos los técnicos asignados al proyecto?'))return;try{const r=await sb.from('releva_difusiones').insert({proyecto_id:pid,asunto:subject,mensaje:body,prioridad:priority});if(r.error)throw r.error;$('relevaDifSubject').value='';$('relevaDifBody').value='';await window.relevaDifMasterRefresh();alert('Mensaje enviado a los técnicos del proyecto')}catch(e){alert('No se pudo enviar: '+(e.message||e))}};
+window.relevaDifMasterRefresh=async function(){const pid=$('relevaDifProject').value;if(!pid)return;try{const [messages,readings]=await Promise.all([sb.from('releva_difusiones').select('id,asunto,mensaje,prioridad,creado_at').eq('proyecto_id',pid).order('creado_at',{ascending:false}).limit(50),sb.from('releva_difusion_lecturas').select('difusion_id,usuario_id').limit(5000)]);if(messages.error)throw messages.error;const counts={};if(!readings.error)for(const x of readings.data||[])counts[x.difusion_id]=(counts[x.difusion_id]||0)+1;$('relevaDifMasterList').innerHTML=(messages.data||[]).map(m=>'<article><b>'+escapeText(m.asunto)+'</b> · '+escapeText(m.prioridad)+'<p>'+escapeText(m.mensaje)+'</p><small>'+new Date(m.creado_at).toLocaleString('es-CO')+' · Lecturas confirmadas: '+(counts[m.id]||0)+'</small></article>').join('')||'<p>No hay mensajes enviados.</p>'}catch(e){$('relevaDifMasterList').textContent='No se pudo consultar: '+(e.message||e)}};
+function addButton(){if($('relevaDifOpen'))return;const base=$('zrMasterOpen');if(!base){setTimeout(addButton,900);return}const b=document.createElement('button');b.id='relevaDifOpen';b.type='button';b.className=base.className;b.style.cssText='display:block;width:100%;border:1px solid #06b6d4;border-radius:10px;padding:10px;background:#086889;color:white;font-weight:800;margin:10px 0;cursor:pointer';b.textContent='📢 Difusión a técnicos del proyecto';b.onclick=()=>window.relevaDifMasterOpen(true);base.insertAdjacentElement('afterend',b)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{addButton();initDraw()});else{addButton();initDraw()}
+})();
+</script>
+
+
+<style id="relevaV173ZoneFixes">
+#zrMasterPanel .zrMasterFilterBar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0;padding:10px;border:1px solid #35516a;border-radius:10px;background:#0a2033}
+#zrMasterPanel .zrMasterFilterBar label{font-size:12px;font-weight:800;color:#baf7f2}
+#zrMasterPanel .zrMasterFilterBar select{background:#081725;color:white;border:1px solid #52748d;border-radius:7px;padding:9px;max-width:100%}
+#zrMasterPanel .zrMasterFilterBar small{width:100%;color:#9bbbd0}
+#zrMasterPanel .zrHistoryNote{color:#fbbf24;font-weight:700}
+.zr-edit-handle-icon{background:none!important;border:0!important;overflow:visible!important}
+.zr-edit-handle-icon span{width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#facc15;color:#172554;border:3px solid #fff;font-size:12px;font-weight:1000;box-shadow:0 2px 9px #000b;cursor:grab;touch-action:none;box-sizing:border-box}
+.zr-edit-handle-icon.leaflet-marker-draggable span{cursor:grab}
+#zrMasterDrawToolbar{max-width:min(650px,96vw)}
+</style>
 </body>
 </html>
-
 
 
