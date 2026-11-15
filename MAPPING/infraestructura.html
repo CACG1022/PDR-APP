@@ -19344,7 +19344,67 @@ if(typeof window.hpGuardar==='function'){
  setTimeout(reload,1800);
 })();
 </script>
+<style id="relevaZonasRojasMappingStyle">
+#zrTechOpen{position:fixed;right:16px;top:118px;z-index:1400;border:1px solid #38bdf8;border-radius:12px;background:#082238;color:white;padding:9px 12px;font-size:12px;font-weight:800;box-shadow:0 5px 14px #0007}
+#zrTechPanel{display:none;position:fixed;z-index:1600;left:12px;right:12px;top:140px;max-width:450px;max-height:68vh;overflow:auto;border:1px solid #38bdf8;background:#071c2d;color:#f0f9ff;border-radius:15px;padding:15px;box-shadow:0 16px 50px #000b}
+#zrTechPanel.zrOpen{display:block}#zrTechPanel h3{margin:0 0 8px;font-size:16px;color:#e0f7ff}#zrTechPanel label{display:block;font-size:12px;margin:9px 0 4px}#zrTechPanel input,#zrTechPanel textarea{width:100%;background:#06121d;color:white;border:1px solid #335a72;border-radius:7px;padding:9px;box-sizing:border-box}#zrTechPanel textarea{min-height:76px}#zrTechPanel button{border:0;border-radius:8px;padding:10px;margin:5px 2px;font-weight:700;color:#fff;background:#087eb3}#zrTechPanel button.zrDanger{background:#b91c1c}#zrTechPanel small{display:block;color:#b9d2df;margin-top:6px;line-height:1.4}#zrTechStatus{font-size:12px;color:#a8e9ff;min-height:19px}#zrTechOpen.zrDrawing{background:#f59e0b;color:#18181b}
+</style>
+<button type="button" id="zrTechOpen" onclick="relevaZrTechToggle()">⚠ Zonas de seguridad</button>
+<div id="zrTechPanel" aria-label="Reportar zona de seguridad">
+ <h3>⚠ Reportar zona de seguridad</h3>
+ <small>Azul = reportada, pendiente del supervisor. Rojo sólido = restricción aprobada. Cualquier zona debe tratarse con precaución; el mapa no garantiza seguridad.</small>
+ <label>Nombre o sector</label><input id="zrTechNombre" maxlength="140" placeholder="Barrio o sector de referencia"/>
+ <label>Motivo / observación *</label><textarea id="zrTechMotivo" maxlength="2500" placeholder="Explica por qué no es seguro ingresar; evita datos personales sensibles"></textarea>
+ <div id="zrTechStatus">Selecciona Dibujar y marca al menos 3 vértices tocando el mapa.</div>
+ <button type="button" onclick="relevaZrStart()">✏ Dibujar polígono</button>
+ <button type="button" onclick="relevaZrUndo()">↶ Quitar vértice</button>
+ <button type="button" onclick="relevaZrSave()">✓ Enviar al Master</button>
+ <button type="button" class="zrDanger" onclick="relevaZrCancel()">Cancelar dibujo</button>
+ <button type="button" onclick="relevaZrTechToggle(false)">Cerrar panel</button>
+</div>
+<script id="relevaZonasRojasMappingScript">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const sanitize=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let draw=false,points=[],draft=null,vertexLayer=null,group=null,channel=null,refreshTimer=null,scope='',busy=false;
+function project(){return typeof proyectoActivo==='object'&&proyectoActivo?proyectoActivo:null}
+function city(){return String(project()?.ciudad||'').trim().toUpperCase()}
+function company(){return String(project()?.empresa_id||project()?.empresa?.id||'')}
+function status(t){if($('zrTechStatus'))$('zrTechStatus').textContent=t}
+function ensure(){if(typeof map==='undefined'||!map||typeof L==='undefined')return false;if(!group){group=L.layerGroup().addTo(map);const pane=map.createPane('zrZonaPane');pane.style.zIndex='620';}if(!vertexLayer)vertexLayer=L.layerGroup().addTo(map);return true}
+function style(z){return z.estado==='aprobada'?{color:'#7f0000',weight:3,fillColor:'#ed1010',fillOpacity:1}:{color:'#38bdf8',weight:3,fillColor:'#1688df',fillOpacity:0.45,dashArray:'8 5'}}
+function describe(z){return `<div style="min-width:195px;max-width:300px"><b>⚠ ${sanitize(z.nombre)}</b><p><b>Estado:</b> ${z.estado==='aprobada'?'🔴 Zona restringida, aprobada por supervisor':z.estado==='rechazada'?'Rechazada':'🔵 Reportada, pendiente de validación'}</p><p><b>Motivo:</b> ${sanitize(z.motivo)}</p>${z.observacion_master?'<p><b>Supervisor:</b> '+sanitize(z.observacion_master)+'</p>':''}<small>Reportada por usuario autorizado · ${new Date(z.creado_at).toLocaleDateString('es-CO')}</small></div>`}
+async function refresh(){if(!ensure()||!project()||!company()||!city()||!navigator.onLine)return;
+ const key=company()+':'+city();if(busy)return;busy=true;
+ try{const {data,error}=await mappingSb.from('releva_zonas_rojas').select('id,empresa_id,ciudad,nombre,motivo,geometria,estado,observacion_master,creado_at').eq('empresa_id',company()).eq('ciudad',city()).in('estado',['pendiente','aprobada']).order('creado_at',{ascending:false}).limit(1000);if(error)throw error;
+ if(key!==company()+':'+city())return;
+ group.clearLayers();let count=0;for(const z of data||[]){try{const l=L.geoJSON({type:'Feature',geometry:z.geometria,properties:{}},{style:style(z),pane:'zrZonaPane'});l.bindPopup(describe(z));l.addTo(group);count++}catch(e){console.warn('Polígono de zona no válido',z.id,e)}}
+ status(`Zonas visibles en ${city()}: ${count}. Azul pendiente, rojo restringida.`);
+ }catch(e){status('No se pudieron consultar las zonas: '+(e.message||e))}finally{busy=false}}
+function redraw(){if(!ensure())return;vertexLayer.clearLayers();if(draft){map.removeLayer(draft);draft=null}for(const x of points)L.circleMarker(x,{radius:5,color:'#fff',fillColor:'#2563eb',fillOpacity:1,weight:2}).addTo(vertexLayer);if(points.length>1)draft=L.polyline(points,{color:'#fbbf24',weight:4,dashArray:'6 5'}).addTo(map)}
+function mapClick(e){if(!draw)return;const t=e.originalEvent?.target;if(t&&t.closest&&t.closest('.leaflet-control'))return;points.push([e.latlng.lat,e.latlng.lng]);redraw();status(`${points.length} vértice(s). Marca mínimo 3 y pulsa Enviar al Master.`)}
+function cancel(){draw=false;points=[];redraw();$('zrTechOpen')?.classList.remove('zrDrawing');status('Dibujo cancelado')}
+window.relevaZrTechToggle=function(open){const p=$('zrTechPanel');p?.classList.toggle('zrOpen',typeof open==='boolean'?open:!p.classList.contains('zrOpen'))};
+window.relevaZrStart=function(){if(!project())return alert('Primero selecciona un proyecto asignado');if(!ensure())return alert('El mapa no está disponible');points=[];draw=true;redraw();$('zrTechOpen')?.classList.add('zrDrawing');$('zrTechPanel')?.classList.remove('zrOpen');status('Toca el mapa para crear vértices y luego abre Zonas de seguridad para enviar.')};
+window.relevaZrUndo=function(){points.pop();redraw();status(`${points.length} vértices disponibles`)};
+window.relevaZrCancel=cancel;
+window.relevaZrSave=async function(){if(!project())return alert('Primero selecciona el proyecto');if(points.length<3)return alert('Necesitas mínimo 3 vértices');const name=$('zrTechNombre').value.trim(),reason=$('zrTechMotivo').value.trim();if(name.length<3||reason.length<10)return alert('Escribe un sector y un motivo de al menos 10 caracteres');if(!navigator.onLine)return alert('Sin conexión. Conserva la información y envíala cuando tengas internet; esta versión no guarda reportes de zonas offline.');
+ const ring=points.map(p=>[Number(p[1].toFixed(7)),Number(p[0].toFixed(7))]);ring.push([...ring[0]]);
+ const pid=project().proyecto_id||project().id;
+ const {error}=await mappingSb.from('releva_zonas_rojas').insert({proyecto_id:pid,nombre:name,motivo:reason,geometria:{type:'Polygon',coordinates:[ring]}});
+ if(error)return alert('No se pudo enviar el reporte: '+error.message);
+ cancel();$('zrTechPanel')?.classList.remove('zrOpen');$('zrTechNombre').value='';$('zrTechMotivo').value='';await refresh();alert('Zona reportada. Es visible en azul para los técnicos autorizados, pendiente de aprobación del Master.')};
+function connect(){const key=company()+':'+city();if(!project()||!company()||!city())return;if(scope===key)return;scope=key;if(channel){mappingSb.removeChannel(channel);channel=null}if(group)group.clearLayers();cancel();refresh();channel=mappingSb.channel('zr-tech-'+(project()?.proyecto_id||project()?.id)).on('postgres_changes',{event:'*',schema:'public',table:'releva_zonas_rojas'},()=>refresh()).subscribe()}
+function init(){if(typeof map==='undefined'||!map||typeof mappingSb==='undefined'||!map.on){setTimeout(init,700);return}map.on('click',mapClick);setInterval(()=>{if(project()&&company()&&city())connect()},1600);refreshTimer=setInterval(()=>{if(document.visibilityState==='visible')refresh()},25000);window.addEventListener('online',refresh)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,900));else setTimeout(init,900);
+})();
+</script>
+
 </body></html>
+
+
+
 
 
 
