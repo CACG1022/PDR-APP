@@ -19370,6 +19370,22 @@ if(typeof window.hpGuardar==='function'){
 #zrTechWarning{display:none;color:#fed7aa;margin-top:7px;font-size:12px}
 @media(max-height:650px){#zrTechPanel .zrDialog{max-height:88dvh}}
 </style>
+<style id="relevaZrV169InfoStyles">
+#zrInfoOverlay{display:none;position:fixed;inset:0;z-index:120000;align-items:center;justify-content:center;background:rgba(2,12,24,.60);padding:18px;box-sizing:border-box}
+#zrInfoOverlay.zrInfoOpen{display:flex}
+#zrInfoCard{width:min(450px,100%);max-height:min(75dvh,620px);overflow:auto;border:1px solid #6b9bb1;border-radius:17px;background:#0b2335;color:#eff9ff;padding:18px;box-shadow:0 25px 75px #000b;box-sizing:border-box}
+#zrInfoCard h3{color:#f8fbff;margin:0 0 12px;font-size:19px}
+#zrInfoCard p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;margin:8px 0;font-size:14px}
+#zrInfoCard .zrInfoState{display:inline-block;border-radius:7px;padding:6px 9px;background:#fef3c7;color:#613909;font-weight:800;font-size:12px}
+#zrInfoCard .zrInfoState.approved{background:#b52b2b;color:white}
+#zrInfoCard .zrInfoClose{width:100%;margin-top:15px;background:#1685ba;border:0;color:white;border-radius:10px;padding:12px;cursor:pointer;font-weight:800}
+</style>
+<div id="zrInfoOverlay" role="dialog" aria-modal="true" aria-label="Detalles de zona de seguridad">
+ <section id="zrInfoCard"><h3 id="zrInfoTitle"></h3><span id="zrInfoState" class="zrInfoState"></span>
+ <p><b>Motivo:</b></p><p id="zrInfoReason"></p><div id="zrInfoSupervisorBox" style="display:none"><p><b>Observación del supervisor:</b></p><p id="zrInfoSupervisor"></p></div>
+ <p id="zrInfoDate" style="color:#bed2df;font-size:12px"></p>
+ <button type="button" class="zrInfoClose" onclick="relevaZrInfoClose()">✓ Entendido / Cerrar</button></section>
+</div>
 <div id="zrDrawToolbar" aria-live="polite">
   <div class="zrDrawHeader" id="zrDrawCount">⚠ Zona de seguridad · toca el mapa para agregar vértices</div>
   <div class="zrDrawActions">
@@ -19410,10 +19426,22 @@ function ensure(){if(typeof map==='undefined'||!map||typeof L==='undefined')retu
  if(!group){const pane=map.getPane('zrZonaPane')||map.createPane('zrZonaPane');pane.style.zIndex='620';group=L.layerGroup().addTo(map)}
  if(!vertices)vertices=L.layerGroup().addTo(map);return true}
 function style(z){return z.estado==='aprobada'?{color:'#871b1b',weight:3,fillColor:'#b52b2b',fillOpacity:1}:{color:'#ffffff',weight:3,fillColor:'#ffffff',fillOpacity:.58,dashArray:'7 4'}}
-function describe(z){return `<div style="min-width:190px;max-width:300px;color:#13233a"><b>⚠ ${escapeHTML(z.nombre)}</b><p><b>Estado:</b> ${z.estado==='aprobada'?'🔴 Zona restringida aprobada':'⚪ Reportada, pendiente de validación'}</p><p><b>Motivo:</b> ${escapeHTML(z.motivo)}</p>${z.observacion_master?'<p><b>Supervisor:</b> '+escapeHTML(z.observacion_master)+'</p>':''}<small>Reportada: ${z.creado_at?new Date(z.creado_at).toLocaleDateString('es-CO'):''}</small></div>`}
+function showZone(z){
+ const el=$('zrInfoOverlay');if(!el)return;
+ $('zrInfoTitle').textContent='⚠ '+String(z.nombre||'Zona de seguridad');
+ const state=$('zrInfoState');state.textContent=z.estado==='aprobada'?'🔴 Zona restringida aprobada':'⚪ Reportada · pendiente del supervisor';state.classList.toggle('approved',z.estado==='aprobada');
+ $('zrInfoReason').textContent=String(z.motivo||'Sin observación');
+ $('zrInfoSupervisorBox').style.display=z.observacion_master?'block':'none';
+ $('zrInfoSupervisor').textContent=String(z.observacion_master||'');
+ $('zrInfoDate').textContent=z.creado_at?'Reportada: '+new Date(z.creado_at).toLocaleString('es-CO'):'';
+ el.classList.add('zrInfoOpen');
+}
+window.relevaZrInfoClose=function(){$('zrInfoOverlay')?.classList.remove('zrInfoOpen')};
+$('zrInfoOverlay')?.addEventListener('click',e=>{if(e.target.id==='zrInfoOverlay')window.relevaZrInfoClose()});
+
 async function refresh(){if(!ensure()||!project()||!company()||!city()||!navigator.onLine||busy)return;busy=true;const expected=company()+':'+city();
  try{const {data,error}=await mappingSb.from('releva_zonas_rojas').select('id,empresa_id,ciudad,nombre,motivo,geometria,estado,observacion_master,creado_at').eq('empresa_id',company()).eq('ciudad',city()).in('estado',['pendiente','aprobada']).limit(1000);if(error)throw error;
- if(expected!==company()+':'+city())return;group.clearLayers();for(const z of data||[]){try{L.geoJSON({type:'Feature',geometry:z.geometria,properties:{}},{style:style(z),pane:'zrZonaPane'}).bindPopup(describe(z)).addTo(group)}catch(e){console.warn('Zona no válida',z.id,e)}}
+ if(expected!==company()+':'+city())return;group.clearLayers();for(const z of data||[]){try{L.geoJSON({type:'Feature',geometry:z.geometria,properties:{}},{style:style(z),pane:'zrZonaPane',onEachFeature:(_feature,layer)=>layer.on('click',event=>{L.DomEvent.stopPropagation(event);showZone(z)})}).addTo(group)}catch(e){console.warn('Zona no válida',z.id,e)}}
  }catch(e){console.warn('No se pudieron actualizar zonas de seguridad',e.message||e)}finally{busy=false}}
 function redraw(){if(!ensure())return;vertices.clearLayers();if(draft){map.removeLayer(draft);draft=null}for(const p of points)L.circleMarker(p,{radius:6,color:'#fff',fillColor:'#0ea5e9',fillOpacity:1,weight:2,interactive:false}).addTo(vertices);if(points.length>1)draft=L.polyline(points,{color:'#ffde72',weight:4,dashArray:'6 4',interactive:false}).addTo(map);
  $('zrDrawCount').textContent=`⚠ Zona de seguridad · ${points.length} vértice(s) · mínimo 3`;$('zrFinishButton').disabled=points.length<3}
@@ -19434,6 +19462,31 @@ window.relevaZrSave=async function(){if(submitting)return;if(!projectId()||point
 function connect(){const key=company()+':'+city();if(!projectId()||!company()||!city()){if(group)group.clearLayers();scope='';return}if(scope===key)return;scope=key;if(channel){mappingSb.removeChannel(channel);channel=null}if(group)group.clearLayers();cancel();refresh();channel=mappingSb.channel('zr-tech-'+projectId()).on('postgres_changes',{event:'*',schema:'public',table:'releva_zonas_rojas'},()=>refresh()).subscribe()}
 function init(){if(typeof map==='undefined'||!map||typeof mappingSb==='undefined'){setTimeout(init,650);return}map.on('click',mapClick);setInterval(connect,1600);setInterval(()=>{if(document.visibilityState==='visible')refresh()},25000);window.addEventListener('online',refresh)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,900));else setTimeout(init,900);
+})();
+</script>
+
+
+<style id="relevaV170DifusionTechStyle">
+#relevaDifTechBadge{position:fixed;right:12px;top:205px;z-index:6500;background:#f59e0b;color:#1c1917;border:2px solid #fff;border-radius:12px;font-weight:900;padding:10px 12px;display:none;box-shadow:0 5px 25px #000a}
+#relevaDifTechBadge.on{display:block}#relevaDifTechOverlay{display:none;position:fixed;inset:0;background:#000b;z-index:9000;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+#relevaDifTechOverlay.on{display:flex}#relevaDifTechOverlay .dialog{width:min(480px,100%);max-height:84dvh;overflow:auto;background:#091f32;border:1px solid #35a0b6;color:#effbff;border-radius:16px;padding:16px;box-sizing:border-box}
+#relevaDifTechOverlay article{border:1px solid #365a75;padding:11px;border-radius:10px;margin:9px 0}#relevaDifTechOverlay p{white-space:pre-wrap;line-height:1.5}#relevaDifTechOverlay button{background:#0788b7;border:0;padding:11px;color:white;border-radius:9px;font-weight:800;margin:5px}
+</style>
+<button type="button" id="relevaDifTechBadge" onclick="relevaDifTechOpen()">📢 Mensajes del proyecto <span id="relevaDifTechCount">0</span></button>
+<div id="relevaDifTechOverlay"><div class="dialog"><div style="display:flex;justify-content:space-between;align-items:center"><h3>📢 Comunicados del proyecto</h3><button onclick="relevaDifTechClose()">Cerrar</button></div><p style="font-size:12px;color:#bfdae7">Los avisos importantes se muestran mientras la aplicación está abierta y conectada.</p><div id="relevaDifTechList"></div></div></div>
+<script id="relevaV170DifusionTech">
+(function(){
+'use strict';const $=id=>document.getElementById(id);let projectKey='',channel=null,items=[],busy=false;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function pid(){const p=typeof proyectoActivo==='object'?proyectoActivo:null;return p?.proyecto_id||p?.id||''}
+async function currentUser(){try{const r=await mappingSb.auth.getUser();return r.data?.user?.id||null}catch(_){return null}}
+async function refresh(){if(!pid()||busy||!navigator.onLine)return;busy=true;const key=pid();try{const user=await currentUser();if(!user)return;const [msg,reads]=await Promise.all([mappingSb.from('releva_difusiones').select('id,asunto,mensaje,prioridad,creado_at').eq('proyecto_id',key).order('creado_at',{ascending:false}).limit(100),mappingSb.from('releva_difusion_lecturas').select('difusion_id').eq('usuario_id',user).limit(1000)]);if(msg.error)throw msg.error;if(reads.error)throw reads.error;if(pid()!==key)return;const seen=new Set((reads.data||[]).map(r=>r.difusion_id));items=(msg.data||[]).map(m=>({...m,read:seen.has(m.id)}));render()}catch(e){console.warn('Difusiones RELEVA:',e.message||e)}finally{busy=false}}
+function render(){const unread=items.filter(x=>!x.read).length;$('relevaDifTechCount').textContent=String(unread);$('relevaDifTechBadge').classList.toggle('on',items.length>0);$('relevaDifTechBadge').style.background=unread?'#f59e0b':'#0e7490';$('relevaDifTechList').innerHTML=items.length?items.map(m=>'<article><b>'+esc(m.asunto)+'</b> <span style="color:#fcd34d">'+esc(m.prioridad)+'</span>'+(m.read?' <small>✓ Leído</small>':' <small style="color:#fdba74">● Nuevo</small>')+'<p>'+esc(m.mensaje)+'</p><small>'+new Date(m.creado_at).toLocaleString('es-CO')+'</small>'+(m.read?'':'<div><button data-read="'+esc(m.id)+'">✓ Confirmar lectura</button></div>')+'</article>').join(''):'<p>No hay mensajes para este proyecto.</p>';$('relevaDifTechList').querySelectorAll('[data-read]').forEach(b=>b.onclick=()=>confirmRead(b.dataset.read))}
+async function confirmRead(id){const user=await currentUser();if(!user)return;const r=await mappingSb.from('releva_difusion_lecturas').upsert({difusion_id:id,usuario_id:user},{onConflict:'difusion_id,usuario_id'});if(r.error)return alert('No se pudo confirmar lectura: '+r.error.message);const msg=items.find(m=>m.id===id);if(msg)msg.read=true;render()}
+window.relevaDifTechOpen=()=>{$('relevaDifTechOverlay').classList.add('on');refresh()};window.relevaDifTechClose=()=>{$('relevaDifTechOverlay').classList.remove('on')};
+function connect(){const key=pid();if(key===projectKey)return;projectKey=key;items=[];render();if(channel){mappingSb.removeChannel(channel);channel=null}if(!key)return;refresh();channel=mappingSb.channel('releva-dif-tech-'+key).on('postgres_changes',{event:'INSERT',schema:'public',table:'releva_difusiones'},()=>refresh()).subscribe()}
+function init(){if(typeof mappingSb==='undefined'){setTimeout(init,700);return}setInterval(connect,1700);setInterval(()=>{if(document.visibilityState==='visible')refresh()},25000);window.addEventListener('online',refresh)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1000));else setTimeout(init,1000);
 })();
 </script>
 
